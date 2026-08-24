@@ -1,0 +1,122 @@
+---
+id: data-and-storage
+titel: Daten und Persistenz
+praefix: DATA
+status: draft
+version: 0.1.0
+owner: FSR FB4
+last_reviewed: 2026-08-24
+derived_from:
+  - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
+  - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
+  - alte apps/fb4_app-main/fb4_app-main/lib/core/settings/settings_service.dart
+  - alte apps/fb4_app-main/fb4_app-main/lib/areas/ticket/viewmodels/ticket_overview_viewmodel.dart
+  - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/viewmodels/login_page_viewmodel.dart
+  - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
+  - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
+implemented_in: []
+related:
+  - backend-and-api.md
+  - security-and-privacy.md
+  - identity-and-moderation.md
+  - integrations.md
+  - ../features/schedule/spec.md
+  - ../features/semester-ticket/spec.md
+  - ../features/settings/spec.md
+  - ../features/news/spec.md
+  - ../features/canteen-ratings/spec.md
+  - ../features/event-volunteers/spec.md
+---
+
+# Daten und Persistenz
+
+## 1. Zweck
+
+Dieses Dokument legt fest, welche Datenklassen die App verarbeitet, wo sie liegen, wie lange sie gelten und wie sie gelöscht werden. Es gilt geräteweit für alle Features; Feature-Specs verweisen hierher statt Regeln zu wiederholen. Endpunktdetails der Datenquellen stehen in `integrations.md` (INT-###), Auth-Mechanik in `identity-and-moderation.md` (IDENT), Schutzmaßnahmen in `security-and-privacy.md` (SEC).
+
+## 2. Datenklassen
+
+| Datenklasse | Speicherort | Verschlüsselung | Lebensdauer | Löschweg | Personenbezogen |
+|---|---|---|---|---|---|
+| Stundenplan der Nutzerin | lokal, Gerät | nein | dauerhaft, bis manuell geändert | Bearbeitung im Stundenplan; „Alle lokalen Daten löschen" | ja (Kursauswahl, optionale Gruppenkennung) |
+| Semesterticket-Bild | lokal, Gerät | ja, verpflichtend | dauerhaft, bis neues Ticket hinterlegt oder gelöscht | „Ticket löschen"; „Alle lokalen Daten löschen" | ja (Fahrausweis) |
+| Einstellungen | lokal, Gerät | nein | dauerhaft | „Alle lokalen Daten löschen"; Deinstallation | überwiegend nein |
+| Angepinnte News | lokal, Gerät | nein | dauerhaft, bis entpinnt | manuell entpinnen; „Alle lokalen Daten löschen" | nein |
+| Zwischengespeicherte Fremddaten (Speisepläne, News, Raumbelegung, Wiki-Inhalte) | lokal, Gerät | nein | begrenzt, siehe Abschnitt 4 | automatischer Ablauf; „Alle lokalen Daten löschen" | nein |
+| Offline-Warteschlange (Bewertungen, Helfer-Anmeldungen) | lokal, Gerät | nein, außer personenbezogene Helfer-Angaben: ja | bis Übertragung oder Verfall, siehe Abschnitt 5 | automatisch nach Übertragung; Verfall; „Alle lokalen Daten löschen" | ja bei Helfer-Anmeldungen |
+| Zugangsdaten bzw. Sitzungsmerkmal | lokal, Gerät, gesicherter Systemspeicher | ja, verpflichtend | bis Abmeldung oder Sitzungsablauf | Abmeldung; „Alle lokalen Daten löschen" | ja |
+
+## 3. Verhalten der Alt-App
+
+Grundlage ist ausschließlich die Flutter/iOS-Alt-App; für die Android-Alt-App liegt kein Quellcode vor.
+
+| Bereich | Quelle | Befund | Bewertung |
+|---|---|---|---|
+| Stundenplan | `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:93-152` | Lokale Datenbank über fünf Einträge, Schlüsselmuster `schedule-<Wochentag>`; je Wochentag eine Abbildung von Hashwert auf Termin (Zeile 105-121, 154-167) | Lokale Haltung übernehmenswert. Bei einer unerwarteten Eintragsanzahl (Zeile 136-147) wird der gesamte Bestand kommentarlos gelöscht und neu angelegt — Datenverlust ohne Rückfrage, nicht übernehmenswert |
+| Einstellungen | `alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart:19-35`, `.../lib/core/settings/settings_service.dart:7-42` | Einfache Schlüssel-Wert-Ablage über `SharedPreferences`, acht fachliche Schlüssel (siehe Tabelle unten) | Fachliche Bedeutung der Schlüssel übernehmenswert; konkretes Speicherformat ist Sache der Neuentwicklung |
+| Semesterticket | `alte apps/fb4_app-main/fb4_app-main/lib/areas/ticket/viewmodels/ticket_overview_viewmodel.dart:22-95` | Bilddatei `semester_ticket.dat` im Dokumentenverzeichnis der App, unverschlüsselt per `File.writeAsBytes` abgelegt | Lokale Bildhaltung übernehmenswert; unverschlüsselte Ablage eines Fahrausweises nicht übernehmenswert, siehe SEC |
+| Zugangsdaten Notenportal (ODS) | `alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/viewmodels/login_page_viewmodel.dart:34-39`, `.../lib/areas/ods/repositories/ods_repository.dart:14-19` | Zugangsdaten liegen im verschlüsselten Systemspeicher (`FlutterSecureStorage`), aber im Klartext und werden bei jedem Tokenablauf erneut an den Server gesendet | Für die Neuentwicklung ausgeschlossen — siehe `identity-and-moderation.md`, `security-and-privacy.md` |
+
+Fachliche Bedeutung der acht Einstellungsschlüssel aus `app_constants.dart`, für `features/settings/spec.md` zu übernehmen:
+
+| Schlüssel (Alt-App) | Fachliche Bedeutung |
+|---|---|
+| `goToCurrentDayInSchedule` | Beim Öffnen des Stundenplans automatisch zum aktuellen Wochentag springen |
+| `increaseDisplayBrightnessInTicketView` | Bildschirmhelligkeit in der Ticketansicht erhöhen |
+| `notificationOnNews` | Push-Benachrichtigungen bei neuen News aktiviert |
+| `settingsEnabledCanteenIds` | Auswahl der angezeigten Mensen |
+| `pinnedNewsItems` | Vom Nutzer angepinnte News-Meldungen |
+| `privacyPolicyAccepted` | Zustimmung zur Datenschutzerklärung erteilt |
+| `privacyPolicyAcceptedVersion` | Version der zuletzt akzeptierten Datenschutzerklärung |
+| `quickActionTicket` | Betriebssystem-Schnellzugriff auf die Ticketansicht |
+
+## 4. Zwischenspeicher-Regeln
+
+| Datenart | Gültigkeitsdauer | Quelle der Regel |
+|---|---|---|
+| Speisepläne | bis Tagesende | INT-004, Cache-Regel-Vorschlag |
+| News | 15 Minuten | INT-003, Cache-Regel-Vorschlag |
+| Raumbelegung | ein Tag (vorgeschlagen, zu bestätigen mit Backend-Betrieb) | INT-002/INT-008, serverseitige Aggregation |
+| Wiki-Inhalte | ein Tag, mit manueller Aktualisierung | INT-007, Cache-Regel-Vorschlag, unter Vorbehalt der Spike-Verifikation |
+
+Solange kein Netzzugriff besteht und der Zwischenspeicher einer Datenart abgelaufen ist, zeigt die App die zuletzt geladenen Daten mit einem sichtbaren Hinweis auf ihr Alter statt einer Leeransicht. Obergrenze für den gesamten Zwischenspeicher: vorgeschlagen 50 MB je Gerät, zu bestätigen anhand realer Wiki- und Bilddatenmengen (offen, siehe Abschnitt 9).
+
+## 5. Offline-Warteschlange für Schreibvorgänge
+
+Betrifft Mensa-Bewertungen (RATE) und Helfer-Anmeldungen (HELFER). Reihenfolge: Übertragung in Entstehungsreihenfolge (FIFO). Wiederholversuche: mit steigendem Abstand (Backoff), Obergrenze zu bestätigen im Zuge von `backend-and-api.md`. Verfallsfrist: ein Eintrag, der auch nach der maximalen Anzahl Versuche nicht übertragen werden konnte, verfällt nach 7 Tagen (vorgeschlagen, zu bestätigen) und wird der Nutzerin zur manuellen Entscheidung vorgelegt. Sichtbarkeit: die Warteschlange und ihr Status sind für die Nutzerin einsehbar, nicht nur im Hintergrund. Wiederholungen dürfen keine doppelten Wirkungen erzeugen — die Idempotenz von Schreibvorgängen ist Anforderung von `backend-and-api.md` (API), nicht dieses Dokuments.
+
+## 6. Migration
+
+Es gibt keine Datenübernahme aus den Alt-Apps. Gründe: andere Plattform (Flutter/iOS bzw. natives Android ohne Quellcode → React Native), andere Speicherformate (`JsonStore`/`SharedPreferences`/Dateisystem vs. die Persistenzschicht der Neuentwicklung) und ein geringer Nutzen gegenüber dem Aufwand einer Übernahme für zwei technisch getrennte Alt-Bestände, von denen einer nicht einmal im Quellcode vorliegt.
+
+## 7. Löschkonzept
+
+„Alle lokalen Daten löschen" ist eine Nutzeraktion, die sämtliche in Abschnitt 2 gelisteten Datenklassen vom Gerät entfernt. Bei Deinstallation entfernt das Betriebssystem alle App-eigenen Daten automatisch, sofern die App keine Daten außerhalb ihres eigenen Speicherbereichs ablegt. Löschung serverseitig gespeicherter personenbezogener Daten (Konto, Bewertungen, Helfer-Anmeldungen) ist Sache von `identity-and-moderation.md` (IDENT), nicht dieses Dokuments.
+
+## 8. Anforderungen
+
+| ID | Anforderung | Herkunft |
+|---|---|---|
+| DATA-F-010 | Das System muss den Stundenplan der Nutzerin ausschließlich lokal auf dem Gerät persistent speichern. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:93 |
+| DATA-F-020 | Falls beim Laden des lokal gespeicherten Stundenplans eine unerwartete oder inkonsistente Datenmenge festgestellt wird, muss das System den Fehler protokollieren und die Nutzerin informieren, statt den Bestand kommentarlos zu löschen. | Alt: bewusst verworfen |
+| DATA-F-030 | Das System muss das Bild des Semestertickets lokal auf dem Gerät speichern. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/ticket/viewmodels/ticket_overview_viewmodel.dart:82 |
+| DATA-F-040 | Das System muss das gespeicherte Semesterticket-Bild verschlüsselt ablegen. | Alt: bewusst verworfen |
+| DATA-F-050 | Das System muss Einstellungen lokal auf dem Gerät als persistente Schlüssel-Wert-Ablage speichern. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/core/settings/settings_service.dart:7 |
+| DATA-F-060 | Das System muss angepinnte News-Meldungen lokal auf dem Gerät persistent speichern, bis die Nutzerin sie entpinnt. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart:32 |
+| DATA-F-070 | Das System muss Speisepläne je Mensa und Tag lokal zwischenspeichern, um wiederholte Netzabrufe zu vermeiden. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart:9 |
+| DATA-F-080 | Das System muss News-Meldungen, Raumbelegungsdaten und Wiki-Inhalte lokal mit einer je Datenart begrenzten Gültigkeitsdauer zwischenspeichern (siehe Abschnitt 4). | NEU |
+| DATA-F-090 | Solange kein Netzzugriff besteht und der Zwischenspeicher einer Datenart abgelaufen ist, muss das System die zuletzt geladenen Daten mit einem sichtbaren Hinweis auf ihr Alter anzeigen statt einer Leeransicht. | NEU |
+| DATA-F-100 | Das System muss ausstehende Schreibvorgänge bei fehlendem Netzzugriff in einer lokalen Warteschlange vorhalten und nach Wiederherstellung der Verbindung in Entstehungsreihenfolge übertragen. | NEU |
+| DATA-F-110 | Falls ein Schreibvorgang in der Offline-Warteschlange auch nach wiederholten Versuchen dauerhaft fehlschlägt, muss das System die Nutzerin informieren und den Vorgang zur manuellen Entscheidung (erneut versuchen oder verwerfen) vorhalten. | NEU |
+| DATA-F-120 | Das System muss Zugangsdaten bzw. Sitzungsmerkmale ausschließlich im gesicherten Systemspeicher des Geräts ablegen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart:9 |
+| DATA-F-130 | Wenn eine aktive Sitzung beendet wird, muss das System das gespeicherte Sitzungsmerkmal aus dem gesicherten Systemspeicher entfernen. | NEU |
+| DATA-F-140 | Wenn die App zum ersten Mal gestartet wird, muss das System einen Hinweis anzeigen, dass Stundenplan und Semesterticket neu angelegt werden müssen. | NEU |
+| DATA-N-150 | Der Gesamtspeicherverbrauch aller Zwischenspeicher sollte eine Obergrenze von vorgeschlagen 50 MB nicht überschreiten (zu bestätigen, siehe Abschnitt 9). | NEU |
+| DATA-F-160 | Das System muss eine Nutzeraktion „Alle lokalen Daten löschen" bereitstellen, die alle in Abschnitt 2 gelisteten Datenklassen vom Gerät entfernt. | NEU |
+| DATA-F-170 | Das System muss alle in Abschnitt 2 gelisteten lokalen Daten ausschließlich im App-eigenen Speicherbereich ablegen, sodass eine Deinstallation sie vollständig entfernt. | NEU |
+
+## 9. Offene Fragen
+
+- Obergrenze für den Zwischenspeicher-Speicherverbrauch (DATA-N-150): vorgeschlagener Wert 50 MB ungeprüft; zu bestätigen anhand realer Wiki- und Ticketbildgrößen. Klärung durch technische Leitung im Rahmen der Backend-Architektur.
+- Gültigkeitsdauer der Raumbelegung im Gerätecache: hängt vom Aggregationsintervall des eigenen Backends (INT-008) ab, das noch nicht definiert ist. Klärung im Zuge von `backend-and-api.md`.
+- Obergrenze und Backoff-Parameter der Offline-Warteschlange (Abschnitt 5): vorgeschlagene Verfallsfrist von 7 Tagen ungeprüft. Klärung im Zuge von `backend-and-api.md`.
