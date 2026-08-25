@@ -3,9 +3,9 @@ id: architecture
 titel: Architektur
 praefix: ARCH
 status: draft
-version: 0.1.0
+version: 0.3.2
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/core/views/base_view.dart
@@ -27,7 +27,7 @@ Diese Spec legt die Systemarchitektur fest, an der sich alle Feature-Specs orien
 
 ## 1. Systemüberblick
 
-Die App besteht aus drei Bausteinen: der React-Native-App, dem eigenen Backend (INT-008) und den externen Quellsystemen (INT-001 bis INT-007). Ein Datenfluss läuft direkt von der App zur Quelle, wenn er rein lesend ist und keine Aggregation über mehrere Abfragen benötigt; alle übrigen Datenflüsse laufen über das Backend. Die vier Gründe für das Backend im Einzelnen: `backend-and-api.md`.
+Die App besteht aus drei Bausteinen: der React-Native-App, dem eigenen Backend (INT-008, betrieben vom FSR FB4 auf einem eigenen Hetzner-VPS) und den externen Quellsystemen (INT-001 bis INT-007, INT-009 bis INT-011). Ein Datenfluss läuft direkt von der App zur Quelle, wenn er rein lesend ist und keine Aggregation über mehrere Abfragen benötigt; alle übrigen Datenflüsse laufen über das Backend. Die vier Gründe für das Backend im Einzelnen: `backend-and-api.md`.
 
 | Datenfluss | Weg | Begründung |
 |---|---|---|
@@ -38,9 +38,10 @@ Die App besteht aus drei Bausteinen: der React-Native-App, dem eigenen Backend (
 | Mensa-Bewertung | App → Backend (INT-008) | Schreibpfad: Persistenz, Identitätsprüfung, Moderation |
 | Helfer-Anmeldung | App → Backend (INT-008) | Schreibpfad: Persistenz, Identitätsprüfung |
 | Raumbelegung | App → Backend (INT-008) | Aggregation über alle Studiengang/Semester-Kombinationen |
-| News | App → Backend (INT-008) → INT-003 | Ablösung privater Infrastruktur |
+| News (FSR-News) | App → Backend (INT-008) → INT-003 | Ablösung privater Infrastruktur |
+| News (FB-Aktuelles) | App → Backend (INT-008) → INT-010 | Zwischenspeicher, keine direkte App-Abhängigkeit von der Fachbereichsseite |
 | Mensa-Speiseplan | App → Backend (INT-008) → INT-004 | Ablösung privater Infrastruktur, TLS-Erzwingung |
-| Events | App → Backend (INT-008) | FSR-Redaktion |
+| Events | App → Backend (INT-008) → INT-011 | Import aus vom FSR gepflegtem ICS-Kalender, keine Backend-Redaktionsoberfläche (Entscheidung FSR FB4, 2026-08-25) |
 
 | ID | Anforderung | Herkunft |
 |---|---|---|
@@ -49,6 +50,8 @@ Die App besteht aus drei Bausteinen: der React-Native-App, dem eigenen Backend (
 | ARCH-F-030 | Wenn eine Mensa-Bewertung oder eine Helfer-Anmeldung abgesendet wird, muss die App diesen Schreibvorgang ausschließlich an das eigene Backend senden. | NEU |
 | ARCH-F-040 | Das System muss die Raumbelegung für die Raumsuche als vorab im Backend aggregierte Daten bereitstellen, nicht durch clientseitige Abfrage aller Studiengang/Semester-Kombinationen. | NEU |
 | ARCH-F-050 | Das System muss News und Mensa-Speisepläne ausschließlich über den Zwischenspeicher des Backends beziehen, nicht durch direkten App-Aufruf von `hemacode.de`. | NEU |
+
+Zu ARCH-F-040: Diese Anforderung ging ursprünglich davon aus, der FBWS biete keinen eigenen Raumbelegungs-Endpunkt. Eine Recherche am 2026-08-24 hat mit `INT-009` (`platform/integrations.md`) einen raumbezogenen FBWS-Endpunkt bestätigt, der Termine direkt nach Raum liefert. Das macht die Backend-Aggregation nicht hinfällig — INT-009 liefert Rohtermine statt einer berechneten Frei/Belegt-Auskunft, und die Abdeckung aller Räume des Fachbereichs ist unverifiziert —, ändert aber die bisherige Begründung dieser Anforderung. Die konkrete technische Wahl (Aggregation aus INT-001/INT-002 wie ursprünglich vorgesehen, direkte Nutzung von INT-009, oder eine Kombination) ist in `features/room-finder/spec.md` zu treffen, nicht hier.
 
 ## 2. Schichten in der App
 
@@ -68,6 +71,8 @@ Die Alt-App zeigte fünf Tabs: Stundenplan, News, Mensa, Semesterticket, Mehr (`
 |---|---|---|
 | ARCH-F-090 | Das System muss jedem Kernfeature (Raumsuche, Stundenplan, Mensaplan, News, Event-Kalender, Helfer-Anmeldung, Wiki) einen von der Startseite aus in höchstens zwei Interaktionsschritten erreichbaren Einstiegspunkt bieten. | NEU |
 | ARCH-N-010 | Das System muss die Navigationsstruktur so entwerfen, dass sie mehr als die fünf bisherigen Bereiche der Alt-App aufnehmen kann, ohne dass alle Bereiche als gleichrangige Einträge einer einzigen Tab-Leiste erscheinen. | Alt: bewusst verworfen |
+
+Zu ARCH-F-090: Mensa-Bewertungen (RATE) sind hier bewusst nicht als eigenes Kernfeature mit eigenem Einstiegspunkt geführt, obwohl `README.md` Abschnitt 10 RATE als Kern-Priorität einstuft — diese Einstufung betrifft die Umsetzungsreihenfolge, nicht die Navigationsstruktur. Eine Bewertung ist eine Handlung innerhalb eines im Mensaplan angezeigten Gerichts, kein eigenständiges Navigationsziel; der Einstieg erfolgt über MENSA (siehe `../features/canteen/spec.md`, `../features/canteen-ratings/spec.md`).
 
 ## 4. Offline-first als Architekturprinzip
 
@@ -116,5 +121,4 @@ Die Alt-App schnitt Quellcode nach Fachbereichen: `areas/<bereich>/{models,repos
 
 ## 8. Offene Fragen
 
-- Konkrete Navigationsstruktur (Tab-Leiste, Drawer, Sammel-Einstieg o. Ä.) — `../features/app-shell/spec.md`, Klärung durch FSR FB4 und UX.
-- Speichergrenzen und Konfliktbehandlung der Offline-Warteschlange — Klärung bei Umsetzung von `backend-and-api.md` und der betroffenen Feature-Specs (RATE, HELFER).
+- Speichergrenzen der Offline-Warteschlange: Arbeitsziel 7 Tage Verfallsfrist, siehe `data-and-storage.md` Abschnitt 9. Konfliktbehandlung bei widersprüchlichen Offline-Änderungen (z. B. doppelt gestellte Bewertung) — Klärung bei Umsetzung der betroffenen Feature-Specs (RATE, HELFER).

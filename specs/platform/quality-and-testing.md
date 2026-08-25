@@ -3,9 +3,9 @@ id: quality-and-testing
 titel: Qualität und Test
 praefix: QA
 status: draft
-version: 0.1.0
+version: 0.2.1
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/selected_course_info.dart
@@ -87,6 +87,8 @@ Eine Anforderung gilt als umgesetzt, wenn:
 | Alle Frontmatter-Pflichtfelder vorhanden | Skript parst das YAML-Frontmatter jeder Spec-Datei gegen die Feldliste aus `_templates/feature-spec.md` bzw. `_templates/adr.md` |
 | Alle Verweise zeigen auf existierende Ziele | Skript prüft referenzierte Datei- und Anforderungs-IDs (`related:`, `INT-###`, Anforderungs-ID-Nennungen im Fließtext) gegen den tatsächlichen Spec-Bestand |
 
+Kontrolle dieser Regeln sowie der Spec-Code-Kopplung aus `README.md` Abschnitt 7: automatisierte CI-Pipeline, nicht eine benannte Kontrollperson (Entscheidung FSR FB4, 2026-08-25) — überlebt den jährlichen Wechsel der FSR-Besetzung zuverlässiger als eine an eine Person gebundene Prüfpflicht. Die Pipeline läuft bei jedem Pull Request; ein Verstoß blockiert den Merge.
+
 ## 9. Anforderungen
 
 | ID | Anforderung | Herkunft |
@@ -106,6 +108,6 @@ Eine Anforderung gilt als umgesetzt, wenn:
 
 ## 10. Offene Fragen
 
-- Wer die Einhaltung der Prüfregeln aus Abschnitt 8 kontrolliert (Review-Pflicht einzelner Personen vs. automatisierte Pipeline) und in welchem Rhythmus: ungeklärt. Klärung durch technische Leitung und FSR FB4 gemeinsam.
-- Werkzeug für die Vertragstests/Schemaänderungs-Erkennung aus Abschnitt 6: noch nicht festgelegt, hängt von der in `architecture.md` gewählten Test-Toolkette ab.
-- Korrektes Sollverhalten der Gruppenzuordnungs-Sonderfälle aus Abschnitt 5 (insbesondere Wildcard `*` und Einzelwert-`studentSet`): von `features/schedule/spec.md` zu definieren, nicht von diesem Dokument.
+- Konkretes Testframework für die Vertragstests/Schemaänderungs-Erkennung aus Abschnitt 6 (z. B. xUnit/NUnit-basierter Snapshot-Vergleich der dokumentierten INT-001-INT-004-Antwortstrukturen, da diese Hochschulsysteme keine eigenen Vertragstest-Endpunkte anbieten) — konkrete Bibliothek bei Umsetzung im .NET/C#-Ökosystem (`backend-and-api.md` Abschnitt 8) zu wählen.
+
+Korrektes Sollverhalten der Gruppenzuordnungs-Sonderfälle aus Abschnitt 5 (Wildcard `*`, Einzelwert-`studentSet`) ist bereits in `features/schedule/spec.md` Abschnitt 4 (Beispieltabelle zu SCHED-F-050 bis SCHED-F-090) verbindlich festgelegt — keine offene Frage mehr, hier nur zur Einordnung erwähnt.

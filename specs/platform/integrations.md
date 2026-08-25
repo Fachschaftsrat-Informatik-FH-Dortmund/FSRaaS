@@ -3,9 +3,9 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: draft
-version: 0.1.0
+version: 0.7.0
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/course_info_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/schedule_repository.dart
@@ -134,7 +134,7 @@ Keine bekannte Alternativquelle.
 Aktiv, unverändert aus der Alt-App übernehmbar.
 
 **Nutzungshinweis für die Raumsuche**
-Der FBWS bietet keinen eigenen Endpunkt für Raumbelegung. Diese lässt sich nur herleiten, indem die Termine aller Studiengang/Semester-Kombinationen (iteriert über INT-001) abgerufen und über `roomId` zusammengeführt werden. Diese Aggregation ist Aufgabe des eigenen Backends (siehe INT-008), nicht der App direkt, um wiederholtes vollständiges Abfragen aller Kombinationen durch jedes Gerät zu vermeiden.
+Ursprünglich angenommen: Der FBWS biete keinen eigenen Endpunkt für Raumbelegung, weshalb sich diese nur herleiten lasse, indem die Termine aller Studiengang/Semester-Kombinationen (iteriert über INT-001) abgerufen und über `roomId` zusammengeführt werden. Diese Aggregation ist Aufgabe des eigenen Backends (siehe INT-008), nicht der App direkt, um wiederholtes vollständiges Abfragen aller Kombinationen durch jedes Gerät zu vermeiden. **Korrektur (2026-08-24):** Ein raumbezogener FBWS-Endpunkt existiert tatsächlich, siehe INT-009. Die Aggregation über INT-001/INT-002 bleibt dennoch als Fallback relevant, solange die Raumabdeckung von INT-009 unverifiziert ist — siehe dortigen Abschnitt „Bezug zu ARCH-F-040 / API-F-040/API-F-050" und `features/room-finder/spec.md`.
 
 Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/schedule_repository.dart`, Modell `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/schedule_item.dart`
 
@@ -379,13 +379,14 @@ Zu verifizieren. Der Spike muss klären: URL und Erreichbarkeit der Instanz, Ver
 
 ## INT-008 — Eigenes Backend
 
-**Status: zu definieren.**
+**Status: Betreiber geklärt, technische Ausgestaltung offen.**
 
 **Zweck**
 Trägt die Community- und Aggregationsfunktionen, für die es keine geeignete externe Schnittstelle gibt oder für die eine externe Abhängigkeit vermieden werden soll:
 
 - Entgegennahme und Auslieferung der Mensa-Bewertungen (RATE).
 - Verwaltung der Events und Helfer-Anmeldungen (EVENT, HELFER).
+- Vermittlung der E-Key-Verknüpfungen (EKEY) an das bestehende E-Key-Verwaltungstool des FSR (INT-014) — keine eigene E-Key-Datenhaltung, siehe dort.
 - Periodische Aggregation der Raumbelegung aus INT-002 (siehe Nutzungshinweis dort).
 - Vorgelagerter Zwischenspeicher für INT-003 und INT-004 zur Ablösung der Abhängigkeit von `hemacode.de`.
 
@@ -399,10 +400,10 @@ Zu definieren, siehe `platform/backend-and-api.md` (API).
 Zu definieren, siehe `platform/identity-and-moderation.md` (IDENT) und `platform/backend-and-api.md` (API).
 
 **Eigentümer/Betreiber**
-FSR FB4 bzw. von ihm beauftragter Betrieb; konkreter Betreiber im Rahmen der Architekturentscheidung zu klären.
+FSR FB4 selbst, auf einem eigenen Hetzner-VPS. Entschieden 2026-08-25; Details (konkreter Server-Zuschnitt, Zugriffsverwaltung, Backup-Ziel) im Rahmen von `decisions/0003-eigenes-backend-fuer-community-funktionen.md` festzuhalten.
 
 **Verfügbarkeit**
-Zu definieren; Betriebsverantwortung liegt beim Projekt selbst, nicht bei einem Dritten.
+Betriebsverantwortung liegt beim FSR FB4 selbst, nicht bei einem Dritten. Konkrete Verfügbarkeitszusage (SLA gegenüber den Nutzenden) noch zu definieren.
 
 **Cache-Regel (Vorschlag)**
 Für den Zwischenspeicher-Anteil (News/Mensa): serverseitiger Abruf der Ursprungsquellen in festem Intervall, App fragt ausschließlich das eigene Backend ab, nie direkt `hemacode.de` oder OpenMensa.
@@ -414,7 +415,248 @@ Liegt im eigenen Verantwortungsbereich (Betrieb, Kapazität, Sicherheit), anders
 Nicht zutreffend — dies ist selbst die Ersatzoption für INT-003/INT-004 und die einzige Option für RATE/EVENT/HELFER.
 
 **Status**
-Zu definieren. Siehe `platform/backend-and-api.md` und `decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+Betreiber geklärt (FSR FB4, Hetzner-VPS, siehe „Eigentümer/Betreiber" oben). Technische Ausgestaltung (Aufruf, Antwortstruktur, Authentifizierung) weiterhin zu definieren. Siehe `platform/backend-and-api.md` und `decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+
+---
+
+## INT-009 — FBWS Raumplan
+
+**Zweck**
+Liefert die Termine eines einzelnen Raums direkt, ohne Umweg über die Iteration aller Studiengang/Semester-Kombinationen aus INT-001/INT-002. Grundlage für die Raumsuche (RAUM) als mögliche Alternative oder Ergänzung zur bisher in `platform/architecture.md` (ARCH-F-040) und `platform/backend-and-api.md` (API-F-040/050) angenommenen Backend-Aggregation.
+
+**Aufruf**
+```
+GET https://ws.inf.fh-dortmund.de/timetable/current/rest/Room/{roomId}/AllEvents?Accept=application/json
+```
+`{roomId}` ist die Raumkennung im selben Format wie das Feld `roomId` aus INT-002 (z. B. `A.E.01`). Live erprobt am Beispiel `A.E.01`.
+
+**Antwortstruktur**
+Die Antwort ist eine JSON-Liste. Datensätze enthalten deutlich mehr Felder als der Termindatensatz aus INT-002:
+
+| Feld | Typ | Bedeutung |
+|---|---|---|
+| `id` | Zahl | Datensatz-ID |
+| `name` | String | Bezeichnung der Veranstaltung bzw. Prüfung |
+| `eventType` | String | `Event` (u. a. Prüfungen) oder `Course` (reguläre Lehrveranstaltung) |
+| `courseId` | String | Kennung der Lehrveranstaltung, bei Prüfungsdatensätzen leer |
+| `courseOfStudy` | String | Studiengang-Kurzname, bei Prüfungsdatensätzen leer |
+| `examinationReg` | String | Prüfungsordnung, z. B. `2019 84 079 PR` |
+| `lecturerId` / `lecturerName` / `lecturerSurname` | String | Lehrperson, bei Prüfungsdatensätzen leer |
+| `studentSet` | String | wie INT-002 |
+| `roomId` | String | Raumkennung, entspricht dem angefragten `{roomId}` |
+| `dateBegin` / `dateEnd` | Zahl (Unix-Zeitstempel, Tagesgranularität) | Gültigkeitszeitraum der Terminserie |
+| `timeBegin` / `timeEnd` | String, Format `Hmm`/`HHmm` ohne führende Null | wie INT-002, gleiche Auffüllregel nötig |
+| `timestampBegin` / `timestampEnd` | Zahl (Unix-Zeitstempel) | konkreter Beginn/Ende einer einzelnen Instanz |
+| `weekday` | String | wie INT-002 |
+| `interval` | Zahl oder String | Wiederholungsintervall — nach einem Hinweis des FSR FB4 (2026-08-25) vermutlich Rhythmus in Wochen (z. B. `2` für zweiwöchentlich); unverifiziert, siehe `features/schedule/spec.md` Abschnitt 13 |
+| `note` | String | Freitext, bei Prüfungen z. B. `Bitte nicht stören!` |
+| `flags` | Zahl | unklare Bedeutung, nicht weiter untersucht |
+
+**Authentifizierung**
+Keine.
+
+**Eigentümer/Betreiber**
+Fachbereich Informatik, FH Dortmund (dieselbe FBWS-Infrastruktur wie INT-001/INT-002, eigener Pfad `/timetable/` statt `/fbws/`).
+
+**Verfügbarkeit**
+Nicht dokumentiert, kein bekanntes SLA.
+
+**Cache-Regel (Vorschlag)**
+Wie INT-002: kurze Ablaufzeit (Vorschlag: ein Tag), da Terminänderungen kurzfristig möglich sind.
+
+**Risiko**
+Wie INT-001/INT-002 (dieselbe FBWS-Infrastruktur, keine erkennbare Versionierung). Zusätzlich unklar, ob der Endpunkt alle Räume des Fachbereichs abdeckt oder nur eine Teilmenge — vor Umsetzung an mehreren Raumkennungen zu verifizieren.
+
+**Ersatzoption**
+INT-001 + INT-002, über `roomId` serverseitig zusammengeführt (bisher angenommener Weg, weiterhin gültig als Fallback oder falls dieser Endpunkt nicht alle Räume abdeckt).
+
+**Status**
+Neu recherchiert, nicht im Alt-App-Code verwendet. Vor Umsetzung von `features/room-finder/spec.md` zu verifizieren: Abdeckt der Endpunkt alle Räume des Fachbereichs, und liefert er echte Frei/Belegt-Information oder nur Rohtermine (letzteres bestätigt durch die live abgefragte Antwort).
+
+**Bezug zu ARCH-F-040 / API-F-040/API-F-050**
+Diese beiden Anforderungen gehen davon aus, der FBWS biete keinen eigenen Raumbelegungs-Endpunkt. INT-009 widerlegt das teilweise: Ein raumbezogener Endpunkt existiert bereits. Das macht die Backend-Aggregation nicht zwingend überflüssig (INT-009 liefert Rohtermine, keine berechnete Frei/Belegt-Auskunft, und die Abdeckung aller Räume ist unverifiziert), ändert aber die Begründung in `architecture.md` und `backend-and-api.md` — siehe dortige Anmerkungen zu ARCH-F-040 bzw. API-F-040/050.
+
+Quelle: live abgefragt am 2026-08-24, `https://ws.inf.fh-dortmund.de/timetable/current/rest/Room/A.E.01/AllEvents?Accept=application/json`
+
+---
+
+## INT-010 — Fachbereichs-Aktuelles (aktuelles-ni)
+
+**Status: zu verifizieren.**
+
+**Zweck**
+Liefert die Fachbereichs-Nachrichtenseite `aktuelles-ni` (Prüfungsinfos, Raumänderungen, Stellenausschreibungen, Fundsachen) als Quelle für die Klassifizierung „FB-Aktuelles" in NEWS. Entscheidung FSR FB4, 2026-08-25: `aktuelles-ni` wird als zusätzliche News-Quelle integriert, siehe `features/news/spec.md`.
+
+**Aufruf**
+Nicht verifiziert, ob die Fachbereichsseite einen strukturierten Feed (RSS/Atom, JSON) anbietet oder nur als HTML-Seite vorliegt. Bei fehlendem strukturierten Feed ist serverseitiges Scraping durch das eigene Backend (INT-008) die einzige Option — vor Umsetzung zu prüfen.
+
+**Antwortstruktur**
+Unbekannt, abhängig vom Ergebnis der Aufruf-Prüfung.
+
+**Authentifizierung**
+Nach Kenntnisstand keine, da öffentlich zugängliche Fachbereichsseite. Unverifiziert.
+
+**Eigentümer/Betreiber**
+Fachbereich Informatik, FH Dortmund — nicht der FSR. Der FSR liest diese Quelle lediglich, hat keine Redaktionshoheit über „FB-Aktuelles"-Inhalte.
+
+**Verfügbarkeit**
+Unbekannt, kein bekanntes SLA.
+
+**Cache-Regel (Vorschlag)**
+Wie INT-003 (News-Feed): kurzfristig serverseitig cachen (Vorschlag: 15 Minuten bis 1 Stunde), da Inhalte wie Raumänderungen kurzfristig relevant sein können.
+
+**Risiko**
+Mittel bis hoch, solange unverifiziert: Falls kein strukturierter Feed existiert, macht Scraping die Anbindung anfällig für Layout-Änderungen der Fachbereichsseite außerhalb der Kontrolle des FSR.
+
+**Ersatzoption**
+Keine bekannte Alternativquelle für dieselben Inhalte. Bei fehlender technischer Machbarkeit: Verzicht auf „FB-Aktuelles" als eigene Klassifizierung, stattdessen weiterhin externer Link (Status quo vor dieser Entscheidung).
+
+**Status**
+Zu verifizieren, vor Umsetzung von NEWS-F-090 (`features/news/spec.md`): Existiert ein strukturierter Feed, welche Aktualisierungsfrequenz hat die Quelle, ist Scraping rechtlich/technisch zumutbar.
+
+---
+
+## INT-011 — FSR-Event-Kalender (ICS)
+
+**Status: Dienst geklärt, technische Details offen.**
+
+**Zweck**
+Liefert die vom FSR redaktionell gepflegten Events als ICS-Kalender (iCalendar, RFC 5545). Ersetzt die ursprünglich vorgesehene Backend-Redaktionsoberfläche für Events — Entscheidung FSR FB4, 2026-08-25: Events werden über einen externen ICS-Kalender gepflegt, nicht über eine eigene Verwaltungsoberfläche im Backend. Siehe `features/events/spec.md` (EVENT-F-060) und `specs/open-questions.md` (Archiv).
+
+**Aufruf**
+Google Calendar (Entscheidung FSR FB4, 2026-08-25). Eine spätere Ablösung durch ein selbstgehostetes Produkt (z. B. CalDAV auf dem FSR-eigenen Hetzner-VPS) ist ausdrücklich vorgemerkt, aber nicht terminiert. Zugriff über die von Google Calendar bereitgestellte öffentliche ICS-Freigabe-URL des FSR-Kalenders, die das eigene Backend (INT-008) periodisch importiert. Genaue URL und Freigabe-Konfiguration bei Umsetzung festzulegen.
+
+**Antwortstruktur**
+Standard-iCalendar-Format (RFC 5545): `VEVENT`-Komponenten mit u. a. `UID`, `SUMMARY`, `DTSTART`, `DTEND`, `LOCATION`, `DESCRIPTION`, `STATUS` (u. a. `CONFIRMED`, `CANCELLED` — relevant für EVENT-F-050, Kennzeichnung abgesagter Events).
+
+**Authentifizierung**
+Abhängig vom gewählten Kalenderdienst; bei selbstgehostetem CalDAV auf demselben Hetzner-VPS wie INT-008 vermutlich im eigenen Ermessen des FSR.
+
+**Eigentümer/Betreiber**
+FSR FB4 selbst (Redaktion der Events erfolgt hier, nicht im eigenen Backend).
+
+**Verfügbarkeit**
+Abhängig vom gewählten Kalenderdienst, noch zu definieren.
+
+**Cache-Regel (Vorschlag)**
+Periodischer Import durch das Backend (Vorschlag: alle 15–60 Minuten), App fragt ausschließlich das eigene Backend ab, nie direkt den Kalenderdienst.
+
+**Risiko**
+Gering bis mittel: Der FSR kontrolliert die Inhalte selbst, die Infrastruktur liegt jedoch bei Google (Drittanbieterabhängigkeit, vergleichbar mit INT-005 — Event-Inhalte sind aber unkritischer als Push-Gerätekennungen, da keine personenbezogenen Daten Studierender darin vorkommen). Verknüpfung eines importierten ICS-Events mit optionalem Helferbedarf (`features/event-volunteers/spec.md`) erfolgt über `UID` (bestätigt, siehe `features/events/spec.md` Abschnitt 13).
+
+**Ersatzoption**
+Bei künftiger Ablösung: selbstgehostetes CalDAV auf dem Hetzner-VPS (vorgemerkt, nicht terminiert). Rückkehr zur ursprünglich vorgesehenen Backend-Redaktionsoberfläche (API-F-080, `platform/backend-and-api.md`, mittlerweile entfallen) nur, falls sich der ICS-Weg grundsätzlich als unpraktikabel erweist.
+
+**Status**
+Kalenderdienst geklärt (Google Calendar, 2026-08-25), Matching-Schlüssel für Helferbedarf-Verknüpfung bestätigt (`UID`). Noch offen: genaue Freigabe-URL/-Konfiguration, siehe `features/events/spec.md`.
+
+---
+
+## INT-012 — Hochschul-SSO
+
+**Status: zu verifizieren.**
+
+**Zweck**
+Bevorzugter Anmeldeweg für das Konto, das für das Verfassen von Mensa-Bewertungen (RATE) und für die E-Key-Verwaltung (EKEY) benötigt wird — siehe `decisions/0004-identitaet-und-anmeldung.md`. Ziel: Studierende authentifizieren sich über den offiziellen Hochschul-Anmeldeweg, ohne dass die App eigene Zugangsdaten verwaltet.
+
+**Aufruf**
+Unbekannt, ob die FH Dortmund einen für Drittanwendungen wie diese App nutzbaren SSO-Dienst betreibt (z. B. OAuth2/OIDC, SAML). Nicht zu verwechseln mit dem ODS-Verfahren aus INT-006 (Formular-Login mit Passwort-Replay) — ein solches Verfahren ist für die Neuentwicklung ausdrücklich ausgeschlossen (siehe `platform/security-and-privacy.md`).
+
+**Antwortstruktur**
+Unbekannt, abhängig vom bereitgestellten Protokoll.
+
+**Authentifizierung**
+Erwartet: Standardprotokoll (OAuth2/OIDC oder SAML) mit Redirect-Flow über den Browser/eine System-WebView, keine Zugangsdaten im Klartext gegenüber der App.
+
+**Eigentümer/Betreiber**
+FH Dortmund (Hochschulrechenzentrum). Ansprechpartner und Verfügbarkeit eines für Drittanwendungen nutzbaren SSO-Diensts sind zu klären.
+
+**Verfügbarkeit**
+Unbekannt.
+
+**Cache-Regel (Vorschlag)**
+Nicht zutreffend (Authentifizierungsvorgang, kein abrufbarer Datenbestand).
+
+**Risiko**
+Hoch, solange unverifiziert: Ohne bestätigten SSO-Zugang ist die Hybrid-Identitätslösung aus `decisions/0004-identitaet-und-anmeldung.md` auf die Ersatzoption (eigenes, einfaches Konto) angewiesen.
+
+**Ersatzoption**
+Eigenes, vom Backend (INT-008) verwaltetes Konto, z. B. mit E-Mail-Verifizierung, ohne Bezug zu einem Hochschulsystem. Ausgestaltung offen, siehe `decisions/0004-identitaet-und-anmeldung.md` (Offene Punkte).
+
+**Status**
+Zu verifizieren: Existiert ein für diese App nutzbarer SSO-Dienst der FH Dortmund, welches Protokoll, wer ist Ansprechpartner. Klärung durch FSR FB4 in Rücksprache mit der Hochschul-IT, vor Festlegung des endgültigen Anmeldewegs für RATE/EKEY.
+
+---
+
+## INT-013 — Prüfungsplan (Intranet-Excel)
+
+**Status: zu definieren.**
+
+**Zweck**
+Liefert den offiziellen Prüfungsplan (Termine, keine Ergebnisse) des Fachbereichs als Grundlage für die Prüfungsauswahl im Stundenplan (`features/schedule/spec.md`, SCHED-F-200). Nicht zu verwechseln mit HISinOne/INT-006 (Notenergebnisse).
+
+**Aufruf**
+Der Fachbereich veröffentlicht den Prüfungsplan als Excel-Datei zu einem variablen Zeitpunkt während der Vorlesungszeit auf einer Intranet-Seite: `https://intranet.fh-dortmund.de/hochschule/organisation/fachbereiche/informatik/pruefungen/pruefungsplaene`. Diese Seite setzt einen Hochschul-Login voraus, den weder App noch Backend besitzen (siehe `product/vision.md` Nicht-Ziel 1, `platform/security-and-privacy.md` zum ausgeschlossenen Passwort-Replay). Der Zugriff ist deshalb **kein automatisierter API-Aufruf**, sondern ein zweistufiger, halbautomatischer Vorgang: Ein FSR-Mitglied oder Admin lädt die Datei manuell aus dem Intranet herunter und lädt sie anschließend in das eigene Backend hoch (`platform/backend-and-api.md` API-F-180), das die Datei parst und weiterverarbeitet.
+
+**Antwortstruktur**
+Excel-Datei. Genauer Spaltenaufbau unbekannt, bis eine reale Datei zur Analyse vorliegt.
+
+**Authentifizierung**
+Hochschul-Intranet-Login für den manuellen Download durch den Admin — betrifft nur diesen manuellen Schritt, nicht die App oder das Backend. Der Upload ins eigene Backend läuft über dessen reguläre Admin-Authentifizierung.
+
+**Eigentümer/Betreiber**
+Fachbereich Informatik, FH Dortmund (Intranet).
+
+**Verfügbarkeit**
+Nicht dokumentiert; Veröffentlichungszeitpunkt variabel innerhalb der Vorlesungszeit.
+
+**Cache-Regel (Vorschlag)**
+Nicht zutreffend — einmaliger manueller Import je Prüfungsplan-Version, kein periodischer Abruf. Bestand wird bei Import eines neuen Jahres vollständig ersetzt (`platform/backend-and-api.md` API-F-190).
+
+**Risiko**
+Mittel: Kein technisches Zugriffsrisiko, da die App/das Backend keine Hochschul-Zugangsdaten hält. Abhängigkeit von einem manuellen Schritt durch eine verantwortliche FSR-Person; Datei-Format kann sich zwischen Jahren ändern.
+
+**Ersatzoption**
+Keine bekannte automatisierte Alternative.
+
+**Status**
+Zu definieren: genaues Excel-Format erst bei Vorliegen einer realen Datei zu klären. Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen, FSR FB4, 2026-08-25.
+
+---
+
+## INT-014 — E-Key-Verwaltungstool (Postgres)
+
+**Status: zu definieren.**
+
+**Zweck**
+Bestehendes, vom FSR bereits eigenständig betriebenes Tool zur Verwaltung von E-Key-Ausgaben, Berechtigungen und Status — System der Wahrheit für alle E-Key-Daten (E-Key-Nummer, Matrikelnummer, Berechtigungen). Das neue App-Backend (INT-008) integriert sich hiermit, statt eine eigene parallele Datenhaltung aufzubauen (Entscheidung FSR FB4, 2026-08-25, siehe `features/e-key/spec.md`).
+
+**Aufruf**
+Unbekannt, ob das Tool eine API bereitstellt oder ob ausschließlich direkter Datenbankzugriff auf die zugrunde liegende Postgres-Instanz vorgesehen ist. Direkter Datenbankzugriff zweier unabhängiger Anwendungen ohne vermittelnde API ist riskant (Schema-Kopplung, siehe Risiko unten) und vor Umsetzung zu klären.
+
+**Antwortstruktur**
+Unbekannt — abhängig vom Datenbankschema des bestehenden Tools bzw. einer möglichen API.
+
+**Authentifizierung**
+Unbekannt.
+
+**Eigentümer/Betreiber**
+FSR FB4 (bestehendes, bereits im Einsatz befindliches Tool, unabhängig von der Neuentwicklung dieser App).
+
+**Verfügbarkeit**
+Unbekannt.
+
+**Cache-Regel (Vorschlag)**
+Statusabfragen kurzfristig zwischenspeichern (analog INT-003, Vorschlag 15 Minuten), da das Tool außerhalb der Kontrolle dieses Projekts steht.
+
+**Risiko**
+Mittel bis hoch, solange unverifiziert: Bei direktem Datenbankzugriff kann eine Schema-Änderung im bestehenden Tool das neue Backend unbemerkt brechen, ohne dass eine vertragliche/versionierte Schnittstelle das anzeigt.
+
+**Ersatzoption**
+Keine — dieses Tool ist die einzige Quelle für E-Key-Daten, eine parallele Datenhaltung im neuen Backend ist ausdrücklich nicht vorgesehen.
+
+**Status**
+Zu definieren: Aufruf-/Integrationsart (API vs. direkter DB-Zugriff), Antwortstruktur, Authentifizierung. Klärung durch FSR FB4 und technische Leitung vor Umsetzung von `features/e-key/spec.md`.
 
 ---
 
@@ -429,4 +671,10 @@ Zu definieren. Siehe `platform/backend-and-api.md` und `decisions/0003-eigenes-b
 | INT-005 | Push-Benachrichtigungen (FCM) | aktiv | mittel | NEWS, SET |
 | INT-006 | HISinOne (Notenübersicht) | offen | offen / hoch am Altverfahren | NOTEN |
 | INT-007 | BookStack (FSR-Wiki) | zu verifizieren | mittel bis hoch | WIKI |
-| INT-008 | Eigenes Backend | zu definieren | eigener Verantwortungsbereich | RATE, EVENT, HELFER, NEWS, MENSA, RAUM |
+| INT-008 | Eigenes Backend | Betreiber geklärt (FSR FB4, Hetzner-VPS), Ausgestaltung offen | eigener Verantwortungsbereich | RATE, EVENT, HELFER, NEWS, MENSA, RAUM, EKEY |
+| INT-009 | FBWS Raumplan | neu recherchiert, zu verifizieren | mittel | RAUM |
+| INT-010 | Fachbereichs-Aktuelles (aktuelles-ni) | zu verifizieren | mittel bis hoch | NEWS |
+| INT-011 | FSR-Event-Kalender (ICS) | Dienst geklärt (Google Calendar) | gering bis mittel | EVENT |
+| INT-012 | Hochschul-SSO | zu verifizieren | hoch, solange unverifiziert | RATE, EKEY |
+| INT-013 | Prüfungsplan (Intranet-Excel) | zu definieren | mittel | SCHED |
+| INT-014 | E-Key-Verwaltungstool (Postgres) | zu definieren | mittel bis hoch | EKEY |

@@ -3,9 +3,9 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: draft
-version: 0.1.0
+version: 0.2.1
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/config/themes/color_consts.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
@@ -85,7 +85,9 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 
 **Zu UX-F-090 (Gestensteuerung).** Langes Drücken hat in mobilen Betriebssystemen keine einheitliche Entdeckungsmethode; es gibt keinen visuellen Hinweis darauf, dass eine Aktion dahinter verborgen ist. Sowohl das Ändern der Farbe/Entfernen von Stundenplan-Einträgen als auch das Anpinnen/Ablösen von News sind dadurch in der Alt-App nur durch Ausprobieren oder Weitergabe von Wissen auffindbar.
 
-**Zu Plattformtreue (offene Entscheidung, siehe „Offene Fragen").** Empfehlung: eine eigenständige, plattformübergreifende Gestaltung statt getrennter nativer Gestaltungssprachen je Plattform. Begründung: Die Alt-App bildet ohnehin nur die iOS-Sprache nach, unabhängig von der Zielplattform — es gibt also kein etabliertes Android-Vorbild, das fortgeführt werden müsste. Eine einheitliche Gestaltung senkt zudem den Pflegeaufwand für ein kleines, ehrenamtlich getragenes Projekt und stärkt die Wiedererkennbarkeit der FSR-Marke unabhängig vom Gerät. Die endgültige Entscheidung bleibt offen und ist vor Beginn der Bildschirmgestaltung zu treffen.
+**Zu Plattformtreue (entschieden).** Eigenständige, plattformübergreifende Gestaltung statt getrennter nativer Gestaltungssprachen je Plattform — Entscheidung FSR FB4, 2026-08-25, wie empfohlen. Begründung: Die Alt-App bildet ohnehin nur die iOS-Sprache nach, unabhängig von der Zielplattform — es gibt also kein etabliertes Android-Vorbild, das fortgeführt werden müsste. Eine einheitliche Gestaltung senkt zudem den Pflegeaufwand für ein kleines, ehrenamtlich getragenes Projekt und stärkt die Wiedererkennbarkeit der FSR-Marke unabhängig vom Gerät.
+
+**Zu UX-F-150 (Symbolsystem, entschieden).** Bestehende Open-Source-Icon-Bibliothek statt eigener Schriftart oder eigenem SVG-Set — Entscheidung FSR FB4, 2026-08-25. Konkrete Bibliothek (z. B. Lucide, Material Symbols, Phosphor) wählt die technische Leitung bei Umsetzung; Kriterium ist lediglich Verfügbarkeit unter offener Lizenz und Abdeckung der benötigten fachlichen Symbole (Essen, Vegetarisch u. a.).
 
 ## Bewusst nicht übernommenes Altverhalten
 
@@ -98,5 +100,4 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 
 ## Offene Fragen
 
-- Plattformtreue: eigenständige, plattformübergreifende Gestaltung oder je Plattform native Konventionen? Empfehlung siehe Abschnitt „Begründungen"; endgültige Entscheidung durch technische Leitung und FSR FB4 vor Beginn der Bildschirmgestaltung zu treffen.
-- Wahl des konkreten Symbolsystems (eigene Schriftart analog zur Alt-App, bestehende Icon-Bibliothek oder eigenes SVG-Set): technische Entscheidung, bewusst offengelassen (siehe UX-F-150).
+- Entschieden (FSR FB4, 2026-08-25): keine Ausnahmen von der Hochformat-Vorgabe (`platform/non-functional.md` NFR-N-150) — breite Inhalte wie Wiki-Tabellen (WIKI) oder Raumpläne (RAUM) werden horizontal scrollbar gestaltet. Offen bleibt nur die konkrete Umsetzung des horizontalen Scrollens je betroffener Ansicht, Klärung im Zuge der jeweiligen Bildschirmgestaltung.

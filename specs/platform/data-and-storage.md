@@ -3,9 +3,9 @@ id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
 status: draft
-version: 0.1.0
+version: 0.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
@@ -79,7 +79,7 @@ Fachliche Bedeutung der acht Einstellungsschlüssel aus `app_constants.dart`, f�
 | Raumbelegung | ein Tag (vorgeschlagen, zu bestätigen mit Backend-Betrieb) | INT-002/INT-008, serverseitige Aggregation |
 | Wiki-Inhalte | ein Tag, mit manueller Aktualisierung | INT-007, Cache-Regel-Vorschlag, unter Vorbehalt der Spike-Verifikation |
 
-Solange kein Netzzugriff besteht und der Zwischenspeicher einer Datenart abgelaufen ist, zeigt die App die zuletzt geladenen Daten mit einem sichtbaren Hinweis auf ihr Alter statt einer Leeransicht. Obergrenze für den gesamten Zwischenspeicher: vorgeschlagen 50 MB je Gerät, zu bestätigen anhand realer Wiki- und Bilddatenmengen (offen, siehe Abschnitt 9).
+Solange kein Netzzugriff besteht und der Zwischenspeicher einer Datenart abgelaufen ist, zeigt die App die zuletzt geladenen Daten mit einem sichtbaren Hinweis auf ihr Alter statt einer Leeransicht. Obergrenze für den gesamten Zwischenspeicher: 50 MB je Gerät (Arbeitsziel, siehe Abschnitt 9).
 
 ## 5. Offline-Warteschlange für Schreibvorgänge
 
@@ -111,12 +111,12 @@ Es gibt keine Datenübernahme aus den Alt-Apps. Gründe: andere Plattform (Flutt
 | DATA-F-120 | Das System muss Zugangsdaten bzw. Sitzungsmerkmale ausschließlich im gesicherten Systemspeicher des Geräts ablegen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart:9 |
 | DATA-F-130 | Wenn eine aktive Sitzung beendet wird, muss das System das gespeicherte Sitzungsmerkmal aus dem gesicherten Systemspeicher entfernen. | NEU |
 | DATA-F-140 | Wenn die App zum ersten Mal gestartet wird, muss das System einen Hinweis anzeigen, dass Stundenplan und Semesterticket neu angelegt werden müssen. | NEU |
-| DATA-N-150 | Der Gesamtspeicherverbrauch aller Zwischenspeicher sollte eine Obergrenze von vorgeschlagen 50 MB nicht überschreiten (zu bestätigen, siehe Abschnitt 9). | NEU |
+| DATA-N-150 | Der Gesamtspeicherverbrauch aller Zwischenspeicher sollte eine Obergrenze von 50 MB nicht überschreiten. | NEU |
 | DATA-F-160 | Das System muss eine Nutzeraktion „Alle lokalen Daten löschen" bereitstellen, die alle in Abschnitt 2 gelisteten Datenklassen vom Gerät entfernt. | NEU |
 | DATA-F-170 | Das System muss alle in Abschnitt 2 gelisteten lokalen Daten ausschließlich im App-eigenen Speicherbereich ablegen, sodass eine Deinstallation sie vollständig entfernt. | NEU |
 
 ## 9. Offene Fragen
 
-- Obergrenze für den Zwischenspeicher-Speicherverbrauch (DATA-N-150): vorgeschlagener Wert 50 MB ungeprüft; zu bestätigen anhand realer Wiki- und Ticketbildgrößen. Klärung durch technische Leitung im Rahmen der Backend-Architektur.
-- Gültigkeitsdauer der Raumbelegung im Gerätecache: hängt vom Aggregationsintervall des eigenen Backends (INT-008) ab, das noch nicht definiert ist. Klärung im Zuge von `backend-and-api.md`.
-- Obergrenze und Backoff-Parameter der Offline-Warteschlange (Abschnitt 5): vorgeschlagene Verfallsfrist von 7 Tagen ungeprüft. Klärung im Zuge von `backend-and-api.md`.
+- Genauer Wert von DATA-N-150 (50 MB) gilt als Arbeitsziel, zu validieren anhand realer Wiki- und Ticketbildgrößen im ersten Betrieb; Anpassung nach dieser Validierung bleibt möglich, ohne dass die Anforderung selbst entfällt.
+- Gültigkeitsdauer der Raumbelegung im Gerätecache: gekoppelt an das vorgeschlagene Aggregationsintervall des eigenen Backends von 15 Minuten (`features/room-finder/spec.md` Abschnitt 13) — Vorschlag ebenfalls 15 Minuten, zu bestätigen sobald der Backend-Betrieb steht.
+- Obergrenze und Backoff-Parameter der Offline-Warteschlange (Abschnitt 5): 7 Tage Verfallsfrist gilt als Arbeitsziel, zu validieren im ersten Betrieb.

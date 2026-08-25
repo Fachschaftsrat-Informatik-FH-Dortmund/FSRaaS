@@ -1,0 +1,7 @@
+# WhatsApp-Mining: generierte/abgeleitete Daten, nie committen
+# (enthalten reale Handynummern/Namen bzw. daraus abgeleitete Wortlaut-Auszuege)
+/analysis/
+
+# Python
+__pycache__/
+*.pyc
