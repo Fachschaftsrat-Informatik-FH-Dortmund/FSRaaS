@@ -2,7 +2,7 @@
 id: whatsapp-feedback-inventory
 titel: Auswertung WhatsApp-Gruppenchats — Feature-Hinweise
 status: draft
-version: 0.1.1
+version: 0.1.2
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -64,7 +64,7 @@ Grenzen: rein keyword-basiert, keine Negations- oder Sarkasmus-Erkennung, kein V
 |---|---|---|---|
 | SHELL (app-shell) | ja, indirekt | Wiederkehrende iOS-Ausfälle über mehrere Jahre bestätigen hohe Priorität von „eine App, plattformübergreifend" (bereits Leitziel in vision.md). | Keine neue Anforderung nötig — als zusätzliche Begründung in `vision.md` §2 ergänzbar. |
 | RAUM (room-finder) | ja, schwach | Ein Beleg für Nutzung der Alt-Funktion „leere Räume". | Bestehende Spec ausreichend, kein neuer Bedarf erkennbar. |
-| SCHED (schedule) | ja, stark | Hohe Nutzung bestätigt; Frust über Gruppenkennungs-Änderungen deckt sich mit bereits bekanntem Alt-App-Fehler (siehe `legacy-inventory.md` M-016). | Kern-Priorität bestätigt; Robustheit bei Gruppenkennungs-/Semesterwechsel priorisieren. |
+| SCHED (schedule) | ja, stark | Hohe Nutzung bestätigt; Frust über Gruppenkennungs-Änderungen deckt sich mit bereits bekanntem Alt-App-Fehler (siehe `legacy-inventory.md` M-016). Gezielter Zusatzdurchlauf (2026-08-25, Themen Wahlpflicht/Gruppenwechsel/Kollision, s. u.) bestätigt zusätzlich informellen Gruppenwechsel als gelebtes Verhalten sowie eine konkrete Lücke: Wahlpflicht-Termine fehlten im Alt-App-Stundenplan, wenn sie einem anderen Fachsemester zugeordnet waren. | Kern-Priorität bestätigt; Robustheit bei Gruppenkennungs-/Semesterwechsel priorisieren. Wahlpflicht-Planungsmodus und Gruppenwechsel-Einsicht als SCHED-F-250 bis SCHED-F-320 in `features/schedule/spec.md` übernommen. |
 | MENSA (canteen) | nein | Keine Erwähnung in den Kandidaten-Treffern. | Keine Ableitung möglich, Spec unverändert lassen. |
 | RATE (canteen-ratings) | nein | Kein einziger „Mensa bewerten"-Treffer trotz eigener Keyword-Kategorie. | Siehe Offene Frage 1 — passive Chat-Analyse bildet dieses Bedürfnis vermutlich nicht ab. |
 | NEWS (news) | ja, mittel | News-Sektion aktiv zur Ausfallkommunikation genutzt; Wunsch nach Pin-Funktion für wichtige Infos. | Bestätigt Relevanz der bereits speced Pin-/Push-Funktion. |
@@ -98,6 +98,7 @@ Abgleich gegen die drei in `vision.md` genannten Nicht-Ziele (kein Ersatz für o
 2. **Aktualität des Ticket-Download-Bugs prüfen:** Der Beleg stammt vom 2025-10-15 — vor Übernahme in die TICKET-Spec sollte geprüft werden, ob das Problem noch besteht.
 3. **Mehr Recall bei Bedarf:** Ein Nachlauf mit `--threshold 3` (reine Wiederholung von Schritt 4 der Pipeline, ~203–285 KB Kandidaten) liefert mehr Tiefe, falls der FSR zu einzelnen Themen (z. B. RAUM, WIKI) mehr Belege sucht, die im aktuellen Schwelle-4-Set kaum vorkommen.
 4. **Kein Vollständigkeitsanspruch:** Diese Auswertung deckt nur bereits geäußerte, spontane Nachrichten ab — kein Ersatz für eine gezielte Befragung der Studis.
+5. ~~**SCHED vertiefen (Wahlpflicht/Gruppenwechsel):** Die generische Keyword-Taxonomie (siehe `scripts/whatsapp_mining/keywords_de.py`, Kategorie E) deckt Domänenbegriffe wie „Wahlpflicht", „Gruppenwechsel" oder „Kollision" nicht ab.~~ **Erledigt (2026-08-25):** Gezielter Zusatzdurchlauf direkt über `analysis/parsed/*.jsonl` (pseudonymisiert, ohne die generische Pipeline erneut auszuführen) mit sieben Zusatzbegriffen; 6 der 10 hier ausgewerteten Chats (efsk als FSR-internes Gremium ausgeschlossen) lieferten Treffer. Ergebnis in `features/schedule/spec.md` als SCHED-F-250 bis SCHED-F-320 übernommen.
 
 ## 9. Anhang: Pipeline-Reproduktion
 

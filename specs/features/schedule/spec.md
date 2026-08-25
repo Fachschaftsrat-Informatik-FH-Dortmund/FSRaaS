@@ -4,7 +4,7 @@ titel: Stundenplan
 praefix: SCHED
 status: draft
 prioritaet: kern
-version: 0.4.1
+version: 0.6.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -34,6 +34,8 @@ related:
 
 Der Stundenplan ist die meistgenutzte Funktion beider Alt-Apps und zeigt Studierenden ihre Lehrveranstaltungen für die aktuelle Woche. Er löst das Problem, dass der offizielle FBWS-Stundenplan pro Studiengang/Semester und ohne Gruppenfilterung ausgeliefert wird — die App filtert lokal auf die tatsächlich relevanten Termine der einzelnen Person und ergänzt eigene, nicht-offizielle Termine.
 
+Für Studierende mit Wahlpflichtfächern kommt eine zweite Herausforderung hinzu: passende, mit dem übrigen Stundenplan konfliktfreie Termine zu finden — teils über das eigene Fachsemester hinaus, da Wahlpflichtmodule organisatorisch oft einem anderen Fachsemester zugeordnet sind als dem eigenen. Ebenso weichen manche Studierende bei Kollisionen oder verpassten Terminen informell auf die Veranstaltung einer anderen Gruppe aus. Der Stundenplan unterstützt beides über einen eigenen Planungsmodus (SCHED-F-250 bis SCHED-F-390), einschließlich eines wählbaren Zeitfensters und Optimierungsmodus.
+
 ## 2. Scope / Nicht-Scope
 
 ### Scope
@@ -44,6 +46,10 @@ Der Stundenplan ist die meistgenutzte Funktion beider Alt-Apps und zeigt Studier
 - Lokale Persistenz des Stundenplans über App-Neustarts hinweg (siehe `platform/data-and-storage.md`, DATA-F-010).
 - Auswahl relevanter Prüfungstermine aus dem vom FSR/Admin importierten offiziellen Prüfungsplan (INT-013) und deren Anzeige im Stundenplan, gesondert gekennzeichnet.
 - Benachrichtigung bei Änderungen an ausgewählten Prüfungsterminen.
+- Planungsmodus: Einsicht und Übernahme einzelner Termine anderer Gruppen für eine Pflichtveranstaltung.
+- Planungsmodus: Auswahl konfliktfreier Termine für Wahlpflichtmodule gegenüber dem eigenen Stundenplan, einschließlich explizitem Hinweis bei fehlender konfliktfreier Konstellation.
+- Planungsmodus: auswählbares bevorzugtes Zeitfenster für die Anwesenheit an der Hochschule sowie auswählbarer Optimierungsmodus, nach dem mehrere konfliktfreie Terminoptionen geordnet werden.
+- Planungsmodus: mehrere Wahlpflichtmodule gleichzeitig in einer Planungsauswahl führen und einzelne davon als „Pflicht" markieren, um weitere Kandidaten dagegen zu prüfen.
 
 ### Nicht-Scope
 
@@ -51,6 +57,9 @@ Der Stundenplan ist die meistgenutzte Funktion beider Alt-Apps und zeigt Studier
 - Serverseitige Speicherung des persönlichen Stundenplans einschließlich der individuellen Prüfungsauswahl — ausdrücklich ausgeschlossen, siehe `platform/backend-and-api.md` API-F-100 und Abschnitt 4 (Erläuterung zu SCHED-F-220).
 - Import und Pflege des offiziellen Prüfungsplans selbst (Excel-Upload, Jahres-Rotation) — Backend-Vorgang, siehe `platform/backend-and-api.md` API-F-180 bis API-F-200 und `platform/integrations.md` INT-013.
 - Notenergebnisse zu Prüfungen — siehe `features/grades/spec.md`; diese Spec zeigt ausschließlich Termine, keine Ergebnisse.
+- Automatische, kombinatorische Optimierung über mehrere gleichzeitig **unentschiedene** Wahlpflicht-Kandidaten hinweg — mehrere Kandidaten können gleichzeitig in der Planungsauswahl geführt werden (SCHED-F-370), die Konfliktprüfung (SCHED-F-290/390) erfolgt aber je Kandidat einzeln gegen den bereits übernommenen Plan und die bereits als „Pflicht" markierten Module, nicht kombinatorisch zwischen mehreren noch unentschiedenen Kandidaten. Diese Ausgestaltung wurde bewusst erwogen und zurückgestellt (Rücksprache FSR FB4, 2026-08-25) — siehe Erläuterung zu SCHED-F-390.
+- Automatische Zuordnung „Wahlpflichtmodul → zuständiges Fachsemester" — die Nutzerin wählt das zusätzliche Fachsemester für die Wahlpflicht-Planung selbst aus (SCHED-F-270), siehe Erläuterung dazu in Abschnitt 4.
+- Echtzeit- oder Kapazitätsdaten zu Veranstaltungen (z. B. Auslastung, freie Plätze) — INT-002 liefert dazu keine Felder, siehe `platform/integrations.md` INT-002.
 
 ## 3. Nutzergeschichten
 
@@ -64,6 +73,13 @@ Der Stundenplan ist die meistgenutzte Funktion beider Alt-Apps und zeigt Studier
 - Als Studierende möchte ich erkennen, wenn sich ein eigener Termin mit einem offiziellen überschneidet, damit ich den Konflikt nicht übersehe.
 - Als Studierende möchte ich meinen Stundenplan als Kalenderdatei exportieren können, damit ich ihn in meiner bevorzugten Kalender-App weiterverwenden kann, statt eine zusätzliche App offen zu halten.
 - Als Studierende möchte ich bei einem Semesterwechsel darauf hingewiesen werden, dass sich meine Gruppenkennung geändert haben könnte, damit mein Stundenplan nicht unbemerkt veraltet.
+- Als Studierende möchte ich für eine Pflichtveranstaltung auch die Termine anderer Gruppen sehen, damit ich bei Terminkollision oder einem verpassten eigenen Termin gezielt zu einer passenderen Gruppe ausweichen kann.
+- Als Studierende möchte ich beim Zusammenstellen meines Stundenplans mit Wahlpflichtfächern unterstützt werden, damit ich nicht jedes in Frage kommende Modul einzeln manuell auf Kollisionen mit meinem übrigen Stundenplan prüfen muss.
+- Als Studierende möchte ich explizit informiert werden, wenn es für ein gewünschtes Wahlpflichtmodul keine mit meinem Stundenplan konfliktfreie Terminoption gibt, statt das mühsam selbst herauszufinden oder es erst beim Nichterscheinen-Können zu merken.
+- Als Studierende möchte ich trotz einer erkannten Terminkollision ein Wahlpflichtmodul bewusst in meinen Plan aufnehmen können, falls ich die verpasste Veranstaltung nacharbeiten möchte.
+- Als Studierende möchte ich festlegen, in welchem Zeitfenster ich überhaupt an der Hochschule sein möchte, damit mir der Planungsmodus keine für mich unpassend frühen oder späten Termine bevorzugt vorschlägt.
+- Als Studierende möchte ich zwischen verschiedenen Optimierungszielen wählen (z. B. möglichst wenig Zeit vor Ort, ein ausgeglichener Tagesablauf oder mehr Pausen zwischen Terminen), damit der Planungsmodus zu meiner persönlichen Situation passt.
+- Als Studierende möchte ich mehrere in Frage kommende Wahlpflichtmodule gleichzeitig im Blick behalten und einzelne davon als bereits entschieden markieren, damit ich schrittweise prüfen kann, ob ein weiteres Modul noch dazupasst, ohne alles gleichzeitig kombinatorisch durchrechnen zu müssen.
 
 ## 4. Funktionale Anforderungen
 
@@ -95,6 +111,21 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 | SCHED-F-220 | Wenn das Backend eine Aktualisierung des offiziellen Prüfungsplans meldet und mindestens einer der lokal ausgewählten Prüfungstermine der Nutzerin davon betroffen ist, muss das System die Nutzerin darüber informieren. | NEU |
 | SCHED-F-230 | Wenn sich ein eigener Termin zeitlich mit einem offiziellen Termin überschneidet, muss das System beide Termine mit einem sichtbaren Konflikthinweis darstellen. | NEU |
 | SCHED-F-240 | Das System muss der Nutzerin vor dem iCal-Export die separate Auswahl ermöglichen, ob offizielle Termine, eigene Termine und Prüfungstermine jeweils enthalten sind. | NEU |
+| SCHED-F-250 | Das System muss der Nutzerin ermöglichen, für eine einzelne offizielle Veranstaltung die Termine anderer Gruppen einzusehen, unabhängig von der eigenen Gruppenkennung. | Recherche: WhatsApp-Chat fh-informatik-22-23 / informatik-pi-ti-ds-ws-24-25 / praktische-informatik-ws-23-24, 2026-08-25 |
+| SCHED-F-260 | Das System muss der Nutzerin ermöglichen, einen nach SCHED-F-250 eingesehenen Termin einer anderen Gruppe anstelle des eigenen Gruppentermins in den persönlichen Stundenplan zu übernehmen; ein so übernommener Termin bleibt als offizieller Termin gekennzeichnet. | Recherche: WhatsApp-Chat informatik-pi-ti-ds-ws-24-25, 2026-08-25 |
+| SCHED-F-270 | Das System muss der Nutzerin ermöglichen, zusätzlich zum eigenen Fachsemester ein weiteres Fachsemester desselben Studiengangs auszuwählen, um dessen Termine für die Wahlpflicht-Planung abzurufen. | Recherche: WhatsApp-Chat pi-8-semester-fh-informatik, 2026-08-25 |
+| SCHED-F-280 | Das System muss der Nutzerin ermöglichen, aus den nach SCHED-F-270 abgerufenen Terminen ein Wahlpflichtmodul für die Planung auszuwählen. | NEU |
+| SCHED-F-290 | Wenn ein nach SCHED-F-280 ausgewähltes Wahlpflichtmodul mehrere parallele Termine (Gruppen) anbietet, muss das System jeden dieser Termine gegen den aktuellen persönlichen Plan (eigene Gruppentermine, bereits angenommene Wahlpflicht-Termine, eigene Termine) auf zeitliche Konflikte prüfen und je Termin kennzeichnen, ob er konfliktfrei ist. | NEU |
+| SCHED-F-300 | Wenn für ein nach SCHED-F-280 ausgewähltes Wahlpflichtmodul kein konfliktfreier Termin nach SCHED-F-290 existiert, muss das System dies der Nutzerin explizit mitteilen, statt die Termine kommentarlos aus der Auswahl auszublenden. | Recherche: WhatsApp-Chat praktische-informatik-ws-23-24 / informatik-pi-ti-ds-ws-24-25, 2026-08-25 |
+| SCHED-F-310 | Das System muss der Nutzerin ermöglichen, trotz einer nach SCHED-F-290 erkannten Kollision einen Termin bewusst in den Plan zu übernehmen; ein so übernommener Termin muss dauerhaft als „angenommener Konflikt" gekennzeichnet bleiben. | NEU |
+| SCHED-F-320 | Wenn mehrere nach SCHED-F-290 konfliktfreie Termine für ein Wahlpflichtmodul zur Auswahl stehen, muss das System zu jedem Termin den Wochentag anzeigen. | Recherche: WhatsApp-Chat pi-8-semester-fh-informatik / praktische-informatik-ws-23-24, 2026-08-25 |
+| SCHED-F-330 | Das System muss der Nutzerin ermöglichen, für den Planungsmodus ein bevorzugtes Zeitfenster (früheste Beginnzeit, späteste Endzeit) für die Anwesenheit an der Hochschule festzulegen. | NEU |
+| SCHED-F-340 | Bei der Prüfung eines Kandidaten-Termins (SCHED-F-290) muss das System zusätzlich zur Kollisionsprüfung kennzeichnen, ob der Termin außerhalb des festgelegten Zeitfensters (SCHED-F-330) liegt, ohne ihn deswegen aus der Auswahl zu entfernen. | NEU |
+| SCHED-F-350 | Das System muss der Nutzerin für den Planungsmodus die Auswahl eines Optimierungsmodus ermöglichen, mindestens aus „minimale Zeit an der Hochschule", „ausgeglichener Tagesablauf" und „mehr Abstand zwischen Lerneinheiten". | NEU |
+| SCHED-F-360 | Wenn im Planungsmodus mehrere nach SCHED-F-290 konfliktfreie Termine für einen Kandidaten zur Auswahl stehen, muss das System sie entsprechend dem gewählten Optimierungsmodus (SCHED-F-350) ordnen, sodass die nach dessen Kriterium günstigste Option zuerst erscheint. | NEU |
+| SCHED-F-370 | Das System muss der Nutzerin ermöglichen, mehrere nach SCHED-F-280 ausgewählte Wahlpflichtmodule gleichzeitig in einer Planungsauswahl zu führen. | NEU |
+| SCHED-F-380 | Das System muss der Nutzerin ermöglichen, ein Wahlpflichtmodul innerhalb der Planungsauswahl (SCHED-F-370) als „Pflicht" zu markieren, sobald sie sich für dessen Teilnahme entschieden hat. | NEU |
+| SCHED-F-390 | Bei der Konfliktprüfung (SCHED-F-290) eines nicht als „Pflicht" markierten Wahlpflichtmoduls der Planungsauswahl muss das System dessen Termine gegen den bereits übernommenen Stundenplan sowie gegen die als „Pflicht" markierten Wahlpflichtmodule derselben Planungsauswahl prüfen, nicht gegen andere, ebenfalls noch nicht als „Pflicht" markierte Kandidaten. | NEU |
 
 ### Erläuterungen
 
@@ -131,19 +162,44 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 | C1 | A1-C | ja | Endzahl leer, Grenze gilt als offen; bei Buchstabe C zählt jede Zahl (SCHED-F-090). |
 | C8 | A1B2 | ja, mit Protokolleintrag | `studentSet` entspricht weder Einzelwert- noch Bereichsmuster; sicherer Rückfall auf „sichtbar" statt fälschlich verborgen (SCHED-F-140, siehe Abschnitt 9 „Fehlerfälle"). |
 
+**`SCHED-F-250`/`SCHED-F-260` — Gruppenwechsel als beobachtetes Verhalten.** Aus der Chat-Auswertung (u. a. `pi-8-semester-fh-informatik`, 2022-12-14 und 2023-01-09; `praktische-informatik-ws-23-24`, 2023-09-21): Studierende weichen bereits informell auf andere Gruppen aus — bei eigener Krankheit, verpasstem Termin oder auf ausdrücklichen Wunsch („Will wer Gruppen wechseln?"). Ein Beleg aus `informatik-pi-ti-ds-ws-24-25` (2024-09-30) zeigt den bestehenden Workaround: Studierende tragen den Termin einer fremden Gruppe manuell als eigenen, nicht-offiziellen Termin ein (SCHED-F-110), um eine freie Lücke im eigenen Plan zu füllen. Da INT-002 mit `studentSet=*` ohnehin bereits alle Gruppentermine liefert (siehe `platform/integrations.md` INT-002) und clientseitig lediglich auf die eigene Gruppenkennung gefiltert wird (SCHED-F-140), ist dafür keine zusätzliche Integration nötig — SCHED-F-250/260 machen diesen bereits gelebten Workaround zu einem regulären, als offiziell erkennbaren Bedienweg, statt ihn über eine Nachbildung als „eigener Termin" laufen zu lassen. Ein weiterer Beleg (`fh-informatik-22-23`, 2022-12-14) nennt ausdrücklich das Risiko, dass insbesondere Termine gegen Wochenende hin „meistens sehr voll" sind — die App selbst kann diese Auslastung nicht anzeigen (INT-002 liefert keine Kapazitätsfelder, siehe Nicht-Scope), das Risiko bleibt daher der Nutzerin überlassen.
+
+**`SCHED-F-270` bis `SCHED-F-320` — Wahlpflicht-Planungsmodus.** Die Chat-Auswertung zeigt durchgängig, dass die Terminfindung für Wahlpflichtmodule eigenständig schwierig ist: Studierende fragen wiederholt nach Modullisten, Empfehlungen für „einfache" Module und danach, wann ein Modul angeboten wird (`pi-8-semester-fh-informatik`, u. a. 2024-01-30, 2024-09-01, 2025-09-23, 2026-04-11; `praktische-informatik-ws-23-24`, u. a. 2025-09-15, 2025-09-19). Ein konkreter Beleg (`pi-8-semester-fh-informatik`, 2025-04-03) zeigt eine bestehende Lücke im Alt-App-Stundenplan selbst: Termine eines Wahlpflichtmoduls fehlten dort vollständig („auch die für Donnerstag stehen dort nicht (also im Wahlpflichtfach Stundenplan)"). Ursache ist vermutlich, dass INT-002 pro `{sname}/{grade}`-Paar abgefragt wird (siehe `platform/integrations.md` INT-002) und Wahlpflichtmodule organisatorisch oft einem anderen Fachsemester zugeordnet sind als dem der Nutzerin — SCHED-F-270 löst das, indem die Nutzerin gezielt ein zusätzliches Fachsemester abrufen kann. Ein weiterer Beleg (`informatik-pi-ti-ds-ws-24-25`, 2025-02-28) zeigt denselben Bedarf bei Wiederholerinnen: Um ihren Stundenplan zu planen, mussten sie erst selbst herausfinden, wann und wo eine zu wiederholende Veranstaltung stattfindet. SCHED-F-290/300 stellen sicher, dass eine fehlende konfliktfreie Option sichtbar gemeldet wird, statt wie im Beleg unbemerkt zu bleiben; SCHED-F-310 deckt den ebenfalls in der Einleitung dieser Spec beschriebenen Fall ab, dass Studierende eine Kollision bewusst in Kauf nehmen und die Veranstaltung nacharbeiten.
+
+**`SCHED-F-270` — warum manuelle statt automatischer Fachsemester-Zuordnung.** Eine automatische Zuordnung „Wahlpflichtmodul → zuständiges Fachsemester" würde eine zusätzliche, gepflegte Datengrundlage voraussetzen (vergleichbar dem admin-importierten Prüfungsplan, INT-013) — dafür liegt keine Evidenz einer bestehenden, maschinenlesbaren Quelle vor. Die Chat-Belege zeigen, dass Studierende diese Zuordnung selbst über Modulhandbuch bzw. Curricula-PDF des Fachbereichs nachschlagen (`pi-8-semester-fh-informatik`, 2024-01-30: `modulhandbuch.php`; `praktische-informatik-ws-23-24`, 2025-09-15: `Curricula.pdf`) — beide öffentlich ohne Hochschul-Login erreichbar, anders als die Prüfungsplan-Seite (siehe Erläuterung zu SCHED-F-190 bis SCHED-F-220). Für den ersten Umfang übernimmt SCHED-F-270 dieses Verhalten unverändert als manuelle Fachsemester-Auswahl, ohne neue Integration; siehe Abschnitt 13 zur offenen Frage einer komfortableren Zuordnung in einer späteren Version.
+
+**`SCHED-F-330`/`SCHED-F-340` — Zeitfenster als weiche statt harte Einschränkung.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Ein Termin außerhalb des gewünschten Zeitfensters ist unbequem, aber nicht per se unzulässig — anders als eine echte Terminkollision (SCHED-F-290) lässt er sich nicht automatisch als „geht nicht" behandeln. Konsistent mit dem in dieser Spec durchgängig verfolgten Grundsatz „sichtbar statt fälschlich verborgen" (siehe SCHED-F-100, Abschnitt 9) blendet SCHED-F-340 einen Termin außerhalb des Zeitfensters daher nicht aus, sondern kennzeichnet ihn nur; der Optimierungsmodus (SCHED-F-360) berücksichtigt die Abweichung bei der Reihung, siehe unten. Anders als bei SCHED-F-310 (angenommener Konflikt) ist dafür keine gesonderte Bestätigungshandlung nötig, da keine echte Kollision vorliegt.
+
+**`SCHED-F-350`/`SCHED-F-360` — Definition der Optimierungsmodi.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Die drei Modi sind ein Mindestumfang, keine abschließende Liste (weitere Modi bleiben denkbar, siehe Abschnitt 13). Jeder Modus vergleicht ausschließlich bereits nach SCHED-F-290 konfliktfreie Kandidaten-Termine anhand von zwei aus den vorhandenen Zeitangaben ableitbaren Größen — keine neue Integration nötig:
+
+- *Tagesspanne* eines Wochentags: Zeitraum von der frühesten Beginnzeit bis zur spätesten Endzeit aller Termine des bereits übernommenen Plans an diesem Wochentag, unter Einbeziehung des geprüften Kandidaten-Termins.
+- *Nachbarabstand* eines Kandidaten-Termins: die kleinere der beiden Pausen zu dem unmittelbar vorangehenden bzw. nachfolgenden Termin desselben Wochentags im bereits übernommenen Plan; liegt an diesem Wochentag noch kein anderer Termin vor, gilt der Nachbarabstand als maximal.
+
+| Optimierungsmodus | Bevorzugt wird der Kandidaten-Termin mit … |
+|---|---|
+| Minimale Zeit an der Hochschule | der geringsten zusätzlichen bzw. unveränderten Tagesspanne — ein Termin, der sich in eine bereits bestehende Tagesspanne einfügt, schlägt einen Termin an einem sonst freien Tag |
+| Ausgeglichener Tagesablauf | der Tagesspanne, die eine Acht-Stunden-Spanne am nächsten trifft, statt sie deutlich zu über- oder unterschreiten |
+| Mehr Abstand zwischen Lerneinheiten | dem größten Nachbarabstand |
+
+Bei Gleichstand nach diesen Kriterien ist die Reihenfolge nicht weiter festgelegt (Implementierungsfreiheit); ein deterministisches, aber beliebiges Tie-Breaking (z. B. nach Wochentag) genügt.
+
+**`SCHED-F-370` bis `SCHED-F-390` — Planungsauswahl mit Pflicht-Markierung statt Vollkombinatorik.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Denkbar wäre auch ein Modus, der zusätzlich zu den Pflichtkursen mehrere gleichzeitig noch unentschiedene Wahlpflicht-Kandidaten entgegennimmt und alle Kombinationen daraus durchrechnet, um passende Konstellationen auszugeben. Diese Ausweitung wurde bewusst zurückgestellt — Begründung: die Ergebnisdarstellung würde bei mehr als wenigen gleichzeitig offenen Kandidaten schnell unübersichtlich, und der Zusatznutzen gegenüber dem hier gewählten schrittweisen Vorgehen (ein Kandidat nach dem anderen wird entschieden und dann als „Pflicht" markiert, SCHED-F-380) erschien nicht klar genug, um die Komplexität zu rechtfertigen. SCHED-F-370 bis SCHED-F-390 decken dafür genau den in den Nutzergeschichten beschriebenen Fall ab: mehrere Module gleichzeitig im Blick behalten, aber einzeln entscheiden. Eine Vollkombinatorik über mehrere gleichzeitig unentschiedene Kandidaten bleibt eine mögliche spätere Erweiterung, siehe Abschnitt 13.
+
 ## 5. Datenmodell
 
-Termin (offiziell): siehe INT-002-Felder in `platform/integrations.md`, ergänzt um Kennzeichnung `istOffiziell: true` und `gruppenzugehoerig: boolean` (Ergebnis von SCHED-F-060 bis SCHED-F-090).
+Termin (offiziell): siehe INT-002-Felder in `platform/integrations.md`, ergänzt um Kennzeichnung `istOffiziell: true`, `gruppenzugehoerig: boolean` (Ergebnis von SCHED-F-060 bis SCHED-F-090), `abweichendeGruppe: boolean` (SCHED-F-260, Termin einer anderen Gruppe übernommen statt des eigenen), optional `quellFachsemester` (SCHED-F-270, bei zusätzlich abgerufenem Fachsemester ungleich dem eigenen) und `akzeptierterKonflikt: boolean` (SCHED-F-310).
 
 Termin (eigen): Titel, Wochentag, Beginnzeit, Endzeit, `istOffiziell: false`, `istPruefung: boolean` (SCHED-F-190). Kein Bezug zu INT-002-Feldern wie `courseType`, `lecturerName`, `studentSet`.
 
 Prüfungsauswahl (lokal): Referenz auf einen Eintrag des vom Backend importierten Prüfungsplans (INT-013), rein gerätegespeichert (siehe Erläuterung zu SCHED-F-220) — kein serverseitiges Pendant.
 
-Gemeinsame Persistenz aller drei Datenarten: `platform/data-and-storage.md`, DATA-F-010.
+Wahlpflicht-Planungsauswahl (lokal): gewähltes zusätzliches Fachsemester (SCHED-F-270), eine Liste gewählter Wahlpflichtmodule (SCHED-F-280/370), je Eintrag ein `pflicht: boolean`-Flag (SCHED-F-380) sowie der übernommene bzw. vorgeschlagene Termin samt Konfliktstatus und `innerhalbZeitfenster: boolean` (SCHED-F-290/310/340), rein gerätegespeichert — kein serverseitiges Pendant, gleiche Begründung wie bei der Prüfungsauswahl (Erläuterung zu SCHED-F-220, API-F-100). Planungsmodus-Einstellungen (lokal): Zeitfenster (früheste Beginnzeit, späteste Endzeit, SCHED-F-330) und gewählter Optimierungsmodus (SCHED-F-350), ebenfalls rein gerätegespeichert.
+
+Gemeinsame Persistenz aller vier Datenarten: `platform/data-and-storage.md`, DATA-F-010.
 
 ## 6. Externe Schnittstellen
 
-Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-002 (FBWS Termine) für den Terminabruf und den vom Backend (INT-008) importierten Prüfungsplan (INT-013) für die Prüfungsauswahl. Keine Endpunktdetails hier — siehe `platform/integrations.md`.
+Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-002 (FBWS Termine) für den Terminabruf und den vom Backend (INT-008) importierten Prüfungsplan (INT-013) für die Prüfungsauswahl. Für den Planungsmodus (SCHED-F-270) ruft die App INT-002 zusätzlich mit einem von der Nutzerin gewählten, vom eigenen abweichenden `{grade}` desselben Studiengangs ab — technisch derselbe Endpunkt, keine neue Integration. Keine weiteren Endpunktdetails hier — siehe `platform/integrations.md`.
 
 ## 7. UI-Flows & Zustände
 
@@ -154,6 +210,8 @@ Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-0
 | Leer (Gruppenfilterung, siehe SCHED-F-100) | Tag als leer gekennzeichnet, Grund „keine Termine für Gruppe X an diesem Tag" genannt |
 | Fehler | Fehlermeldung mit Wiederholen-Option, zuletzt geladene Termine bleiben sichtbar (siehe `platform/architecture.md` ARCH-F-130) |
 | Offline | Zuletzt geladener Stand wird angezeigt, siehe Abschnitt 8 |
+| Planungsmodus: kein konfliktfreier Termin (SCHED-F-300) | Expliziter Hinweis „keine konfliktfreie Terminoption für dieses Modul"; Möglichkeit zur bewussten Übernahme trotz Konflikt (SCHED-F-310) wird angeboten |
+| Planungsmodus: Termin außerhalb des Zeitfensters (SCHED-F-340) | Termin bleibt wählbar, zusätzlich sichtbar als „außerhalb des bevorzugten Zeitfensters" gekennzeichnet, keine gesonderte Bestätigung nötig |
 
 ## 8. Offline-Verhalten
 
@@ -182,6 +240,12 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 - Eine Änderung an einer ausgewählten Prüfung führt zu einer Benachrichtigung, eine Änderung an einer nicht ausgewählten Prüfung nicht (SCHED-F-220).
 - Eine zeitliche Überschneidung eigener und offizieller Termine ist als solche sichtbar, nicht nur an der Uhrzeit ablesbar (SCHED-F-230).
 - Der iCal-Export enthält je nach getroffener Auswahl ausschließlich die gewählten Terminarten (SCHED-F-240); eine erneute Änderung des Plans erfordert einen erneuten manuellen Export, da keine Synchronisation stattfindet.
+- Eine Nutzerin kann für eine Pflichtveranstaltung den Termin einer anderen Gruppe einsehen und anstelle des eigenen Gruppentermins übernehmen, weiterhin als offizieller Termin erkennbar (SCHED-F-250/260).
+- Für ein gewähltes Wahlpflichtmodul mit mehreren parallelen Terminen zeigt das System korrekt an, welche Termine konfliktfrei sind und welche nicht (SCHED-F-290).
+- Existiert für ein gewähltes Wahlpflichtmodul kein konfliktfreier Termin, erhält die Nutzerin einen expliziten Hinweis statt einer stillschweigend leeren Auswahl, und kann optional bewusst einen Konflikt akzeptieren (SCHED-F-300/310).
+- Termine außerhalb des festgelegten Zeitfensters werden sichtbar gekennzeichnet, aber nicht ausgeblendet (SCHED-F-340).
+- Bei mehreren konfliktfreien Terminen für ein Wahlpflichtmodul steht im jeweils gewählten Optimierungsmodus erkennbar die nach dessen Kriterium (Tagesspanne bzw. Nachbarabstand, siehe Erläuterung zu SCHED-F-350/360) günstigste Option zuerst (SCHED-F-360).
+- Wird ein Wahlpflichtmodul in der Planungsauswahl als „Pflicht" markiert, zählt es bei der Prüfung weiterer, noch nicht markierter Kandidaten als fixer Bestandteil des Plans; zwei gleichzeitig unentschiedene Kandidaten werden dabei nicht gegeneinander geprüft (SCHED-F-390).
 
 ## 12. Bewusst nicht übernommenes Altverhalten
 
@@ -194,3 +258,8 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 - SCHED-F-180 erkennt einen Semesterwechsel durch Abgleich der `grade`-Liste des gewählten Studiengangs aus INT-001 gegen den zuletzt gespeicherten Stand — zuverlässiger als ein festes Kalenderdatum, da Semesterstart-Termine variieren, und ohne zusätzliche manuelle Nutzerangabe.
 - Format der Prüfungsplan-Excel-Datei (INT-013): Spaltenaufbau erst bei Vorliegen einer realen Datei zu klären, siehe `platform/integrations.md` INT-013.
 - Zweiwöchentliche Veranstaltungen: Liefert INT-002 wiederkehrende Termine bereits als separate wöchentliche Einträge, oder fehlt eine Rhythmus-Angabe für eine korrekte Darstellung? Vor Umsetzung mit echten Beispieldaten zu verifizieren, siehe Erläuterung in Abschnitt 4.
+- Liefert INT-002 für ein vom eigenen Fachsemester abweichendes `{grade}` (SCHED-F-270) tatsächlich die benötigten Wahlpflicht-Termine, oder nur die dort regulär vorgesehenen Pflichtveranstaltungen? Mehrere Chat-Belege deuten auf Lücken hin, wenn nur das eigene Fachsemester abgefragt wird (siehe Erläuterung zu SCHED-F-270 bis SCHED-F-320) — vor Umsetzung mit echten Beispieldaten zu verifizieren.
+- Lohnt sich für eine spätere Version eine komfortablere, FSR-gepflegte Zuordnung „Wahlpflichtmodul → typisches Fachsemester" (vergleichbar dem Prüfungsplan-Import, INT-013) anstelle der manuellen Fachsemester-Auswahl aus SCHED-F-270? Für den ersten Umfang bewusst zurückgestellt, da ohne zusätzliche Integration umsetzbar — siehe Erläuterung zu SCHED-F-270.
+- Weitere Optimierungsmodi über die drei Mindestmodi aus SCHED-F-350 hinaus (z. B. „möglichst früh fertig", „bestimmte Wochentage bevorzugt frei") — bewusst als erweiterbare, nicht abschließende Liste formuliert; konkrete weitere Modi bei Bedarf nachzutragen, ohne SCHED-F-350 selbst zu ändern.
+- Vollkombinatorische Analyse mehrerer gleichzeitig unentschiedener Wahlpflicht-Kandidaten gegeneinander (statt der schrittweisen Pflicht-Markierung aus SCHED-F-380) — bewusst zurückgestellt, siehe Erläuterung zu SCHED-F-370 bis SCHED-F-390; mögliche spätere Erweiterung, falls sich die schrittweise Variante in der Praxis als unzureichend erweist.
+- Ob das Zeitfenster (SCHED-F-330) einheitlich für alle Wochentage gilt oder je Wochentag unterschiedlich einstellbar sein sollte — für den ersten Umfang als ein einheitliches Zeitfenster angenommen, mangels gegenteiliger Evidenz aus der Rücksprache mit dem FSR FB4.
