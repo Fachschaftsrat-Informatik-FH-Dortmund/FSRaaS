@@ -136,6 +136,9 @@ Aktiv, unverändert aus der Alt-App übernehmbar.
 **Nutzungshinweis für die Raumsuche**
 Ursprünglich angenommen: Der FBWS biete keinen eigenen Endpunkt für Raumbelegung, weshalb sich diese nur herleiten lasse, indem die Termine aller Studiengang/Semester-Kombinationen (iteriert über INT-001) abgerufen und über `roomId` zusammengeführt werden. Diese Aggregation ist Aufgabe des eigenen Backends (siehe INT-008), nicht der App direkt, um wiederholtes vollständiges Abfragen aller Kombinationen durch jedes Gerät zu vermeiden. **Korrektur (2026-08-24):** Ein raumbezogener FBWS-Endpunkt existiert tatsächlich, siehe INT-009. Die Aggregation über INT-001/INT-002 bleibt dennoch als Fallback relevant, solange die Raumabdeckung von INT-009 unverifiziert ist — siehe dortigen Abschnitt „Bezug zu ARCH-F-040 / API-F-040/API-F-050" und `features/room-finder/spec.md`.
 
+**Nutzungshinweis für den Wahlpflicht-Planungsmodus (SCHED)**
+Für SCHED-F-270 ruft die App diesen Endpunkt zusätzlich mit einem von der Nutzerin gewählten, vom eigenen abweichenden `{grade}` ab, um Wahlpflicht-Termine zu finden, die organisatorisch einem anderen Fachsemester zugeordnet sind als dem eigenen — derselbe Endpunkt, keine neue Integration. Offen (siehe `features/schedule/spec.md` Abschnitt 13): ob ein so abgerufenes `{grade}` tatsächlich die gesuchten Wahlpflicht-Termine liefert oder nur die dort regulär vorgesehenen Pflichtveranstaltungen — vor Umsetzung mit echten Beispieldaten zu verifizieren.
+
 Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/schedule_repository.dart`, Modell `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/schedule_item.dart`
 
 ---
