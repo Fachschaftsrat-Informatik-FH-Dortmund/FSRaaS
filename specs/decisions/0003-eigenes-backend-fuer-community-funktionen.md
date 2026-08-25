@@ -1,7 +1,7 @@
 ---
 nummer: 0003
 titel: Eigenes Backend für Community-Funktionen
-status: vorgeschlagen
+status: angenommen
 datum: 2026-08-24
 betrifft:
   - ../platform/backend-and-api.md
@@ -38,7 +38,8 @@ Das Projekt übernimmt Betrieb, Kosten und Verantwortung für eine zusätzliche 
 
 ## Offene Punkte
 
-- Betreiber (FSR FB4 selbst oder beauftragter Dritter)
-- Technologie
-- Hosting
+- ~~Betreiber~~ — geklärt: FSR FB4 selbst, siehe `../platform/backend-and-api.md` Abschnitt 6.
+- ~~Hosting~~ — geklärt: eigener Hetzner-VPS.
+- ~~Technologie~~ — geklärt: .NET/C#, siehe `../platform/backend-and-api.md` Abschnitt 8.
 - Finanzierung
+- Konkreter Server-Zuschnitt, Zugriffsverwaltung und Backup-Ziel auf dem Hetzner-VPS

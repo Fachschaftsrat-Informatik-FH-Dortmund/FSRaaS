@@ -3,9 +3,9 @@ id: non-functional
 titel: Nicht-funktionale Anforderungen
 praefix: NFR
 status: draft
-version: 0.1.0
+version: 1.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
@@ -26,12 +26,10 @@ Projektweite Qualitätsanforderungen: Leistung, Verfügbarkeit, Ressourcenverbra
 
 ## 2. Plattform-Mindestversionen
 
-| Plattform | Vorschlag | Begründung | Status |
+| Plattform | Wert | Begründung | Status |
 |---|---|---|---|
-| iOS | 15 | Anhaltspunkt: übliches Support-Fenster aktueller Apple-Geräte; keine projektspezifische Verbreitungserhebung unter FB4-Studierenden vorliegend | offen, zu bestätigen |
-| Android | 10 (API 29) | Anhaltspunkt: React-Native-Mindestunterstützung und übliche Verbreitung; keine projektspezifische Verbreitungserhebung vorliegend | offen, zu bestätigen |
-
-Klärung: Erhebung unter Studierenden des FB4 (z. B. Kurzumfrage des FSR) oder Auswertung verfügbarer Store-Statistiken vor Festlegung.
+| iOS | 15 | Übliches Support-Fenster aktueller Apple-Geräte, aktueller React-Native-Standardwert | bestätigt, FSR FB4, 2026-08-25 |
+| Android | 10 (API 29) | React-Native-Mindestunterstützung und übliche Verbreitung, aktueller React-Native-Standardwert | bestätigt, FSR FB4, 2026-08-25 |
 
 ## 3. Leistung
 
@@ -64,7 +62,7 @@ Hintergrundabrufe laufen in festen, sparsamen Intervallen statt fortlaufendem Po
 
 ## 6. Sprache
 
-Deutsch ist die einzige Oberflächensprache; Datums-, Zeit- und Währungsformate folgen der deutschen Konvention. Die Alt-App initialisiert entsprechend die Lokalisierung `de_DE` (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37`). Mehrsprachigkeit ist nicht Teil des aktuellen Umfangs; ob und wann sie nachrüstbar sein muss, ist offen (Abschnitt 8).
+Die App unterstützt Deutsch und Englisch als Oberflächensprachen von Anfang an (Entscheidung FSR FB4, 2026-08-25) — anders als die Alt-App, die ausschließlich `de_DE` initialisiert (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37`). Datums-, Zeit- und Währungsformate folgen weiterhin der deutschen Konvention unabhängig von der gewählten Oberflächensprache, sofern nicht bei Umsetzung anders festgelegt (siehe Abschnitt 10).
 
 ## 7. Wartbarkeit
 
@@ -72,14 +70,14 @@ Jede Verhaltensänderung zieht eine Spec-Änderung nach sich (spec-anchored Vorg
 
 ## 8. Bildschirmausrichtung
 
-Die Alt-App erzwingt Hochformat (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113-115`). Vorschlag: Hochformat bleibt die primäre Ausrichtung, da die Kernfunktionen (Stundenplan, Mensaplan, News) listenbasiert sind. Ob einzelne Ansichten (z. B. Wiki-Tabellen, Raumpläne) Querformat zulassen sollen, entscheidet `ux-and-theming.md`.
+Die Alt-App erzwingt Hochformat (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113-115`). Entschieden (FSR FB4, 2026-08-25): Die Neuentwicklung übernimmt das unverändert — durchgehend Hochformat, ohne Ausnahmen für einzelne Ansichten. Breite Inhalte (z. B. Wiki-Tabellen, Raumpläne) werden stattdessen horizontal scrollbar gestaltet, siehe `ux-and-theming.md`.
 
 ## 9. Anforderungen
 
 | ID | Anforderung | Herkunft |
 |---|---|---|
-| NFR-N-010 | Die Mindestversion für iOS sollte 15 betragen (vorgeschlagen, zu bestätigen). | NEU |
-| NFR-N-020 | Die Mindestversion für Android sollte API 29 (Android 10) betragen (vorgeschlagen, zu bestätigen). | NEU |
+| NFR-N-010 | Die Mindestversion für iOS muss 15 betragen. | NEU |
+| NFR-N-020 | Die Mindestversion für Android muss API 29 (Android 10) betragen. | NEU |
 | NFR-N-030 | Die Startzeit bis zur ersten nutzbaren Ansicht sollte unter 2 Sekunden liegen (vorgeschlagen, zu bestätigen). | NEU |
 | NFR-N-040 | Die Reaktionszeit beim Blättern durch Wochentage oder Datumsseiten sollte unter 200 ms liegen (vorgeschlagen, zu bestätigen). | NEU |
 | NFR-F-050 | Das System muss Inhalte blätterbarer Zeit- oder Datumsseiten bei Bedarf je Seite nachladen und im Zwischenspeicher vorhalten. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart:9 |
@@ -88,16 +86,20 @@ Die Alt-App erzwingt Hochformat (`alte apps/fb4_app-main/fb4_app-main/lib/main.d
 | NFR-N-080 | Falls ein Fremdsystem ausfällt, darf nur der davon abhängige Funktionsbereich beeinträchtigt sein, nicht die gesamte App. | NEU |
 | NFR-N-090 | Das System muss Hintergrundabrufe in festen, sparsamen Intervallen ausführen und darf gültige Zwischenspeicher nicht vorzeitig erneut abrufen. | NEU |
 | NFR-N-100 | Umfangreiche Abrufe (z. B. Wiki-Vorabladen) sollten Rücksicht auf Mobilfunkverbindungen nehmen und deren Datenverbrauch begrenzen. | NEU |
-| NFR-F-110 | Das System muss Deutsch als einzige Oberflächensprache verwenden. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37 |
+| ~~NFR-F-110~~ | ~~Das System muss Deutsch als einzige Oberflächensprache verwenden.~~ — entfallen | Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37 |
+| NFR-F-115 | Das System muss der Nutzerin die Wahl zwischen Deutsch und Englisch als Oberflächensprache ermöglichen. | NEU |
 | NFR-F-120 | Das System muss Datums-, Zeit- und Währungsangaben nach deutscher Konvention formatieren. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37 |
-| NFR-N-130 | Die Architektur sollte künftige Mehrsprachigkeit nicht grundsätzlich ausschließen, auch wenn sie aktuell nicht umgesetzt wird. | NEU |
-| NFR-N-140 | Das System muss so betrieben werden, dass jede Verhaltensänderung mit einer Änderung der zugehörigen Spec einhergeht. | NEU |
-| NFR-N-150 | Die App sollte Hochformat als primäre Bildschirmausrichtung verwenden. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113 |
+| ~~NFR-N-130~~ | ~~Die Architektur sollte künftige Mehrsprachigkeit nicht grundsätzlich ausschließen, auch wenn sie aktuell nicht umgesetzt wird.~~ — entfallen | NEU |
+| NFR-N-140 | Das System muss so betrieben werden, dass jede Verhaltensänderung mit einer Änderung der zugehörigen Spec einhergeht — durch eine automatisierte CI-Pipeline durchgesetzt, nicht durch eine benannte Kontrollperson (Entscheidung FSR FB4, 2026-08-25, siehe `quality-and-testing.md`). | NEU |
+| NFR-N-150 | Die App muss Hochformat als einzige Bildschirmausrichtung verwenden, ohne Ausnahmen für einzelne Ansichten. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113 |
+
+**`NFR-F-110`/`NFR-N-130` (entfallen).** Entscheidung FSR FB4, 2026-08-25: Mehrsprachigkeit (Deutsch + Englisch) von Anfang an statt nur vorsorglich architektonisch offenzuhalten. Ersetzt durch NFR-F-115. `NFR-F-120` bleibt unverändert gültig — deutsche Formatkonvention unabhängig von der Oberflächensprache; ob Englisch eine abweichende Formatierung braucht, ist bei Umsetzung zu bewerten (Abschnitt 10).
+
+**`NFR-N-150`.** Verschärft von „sollte" auf „muss" und um „ohne Ausnahmen" ergänzt — Entscheidung FSR FB4, 2026-08-25, löst die zuvor an `ux-and-theming.md` delegierte Frage nach Querformat-Ausnahmen auf: keine Ausnahmen, breite Inhalte werden horizontal scrollbar gestaltet statt die Ausrichtung zu ändern.
 
 ## 10. Offene Fragen
 
-- Plattform-Mindestversionen (NFR-N-010, NFR-N-020): keine projektspezifische Verbreitungserhebung vorhanden. Klärung durch FSR FB4 vor der ersten Release-Planung.
-- Leistungszielwerte (NFR-N-030, NFR-N-040, NFR-N-060): vorgeschlagen, nicht gemessen. Klärung durch technische Leitung anhand eines frühen Prototyps.
-- Schwellwerte für Datenverbrauch bei Hintergrundabrufen und Prefetching (Abschnitt 5): nicht festgelegt. Klärung im Zuge von `architecture.md`.
-- Zeitpunkt und Bedarf für Mehrsprachigkeit (NFR-N-130): ungeklärt, hängt von künftiger Internationalisierung des FB4 ab. Klärung durch FSR FB4.
-- Ausnahmen von der Hochformat-Vorgabe (NFR-N-150) für einzelne Ansichten: Entscheidung liegt bei `ux-and-theming.md`.
+- Leistungszielwerte (NFR-N-030, NFR-N-040, NFR-N-060) gelten als Arbeitsziele, zu validieren durch technische Leitung anhand eines frühen Prototyps; Anpassung nach Validierung bleibt möglich.
+- Schwellwerte für Datenverbrauch bei Hintergrundabrufen und Prefetching (Abschnitt 5): noch kein Arbeitsziel vorgeschlagen, da abhängig von der Aufrufhäufigkeit einzelner Feature-Specs. Klärung im Zuge von `architecture.md`.
+
+Datums-/Zeit-/Währungsformatierung bleibt unabhängig von der Oberflächensprache bei der deutschen Konvention (NFR-F-120) — Entscheidung: kein zusätzlicher Formatierungsaufwand für Englisch, da die Zielgruppe im deutschen Hochschulkontext deutsche Formate gewohnt ist.

@@ -3,9 +3,9 @@ id: identity-and-moderation
 titel: Identität und Moderation
 praefix: IDENT
 status: draft
-version: 0.1.0
+version: 1.2.0
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from: []
 implemented_in: []
 related:
@@ -14,36 +14,46 @@ related:
   - ../decisions/0004-identitaet-und-anmeldung.md
   - ../features/canteen-ratings/spec.md
   - ../features/event-volunteers/spec.md
+  - ../features/e-key/spec.md
 ---
 
 # Identität und Moderation
 
 ## Zweck
 
-Diese Spec legt fest, wie die App Nutzeridentität für Mensa-Bewertungen und Helfer-Anmeldungen handhabt, welche Rollen es gibt und wie mit gemeldeten Inhalten umgegangen wird. Die datenschutzrechtliche Einordnung steht in `security-and-privacy.md`, nicht hier.
+Diese Spec legt fest, wie die App Nutzeridentität für Mensa-Bewertungen, Helfer-Anmeldungen und die E-Key-Verwaltung handhabt, welche Rollen es gibt und wie mit gemeldeten Inhalten umgegangen wird. Die datenschutzrechtliche Einordnung steht in `security-and-privacy.md`, nicht hier.
 
 ## 1. Zielkonflikt
 
-Der Fachbereich wünscht ausdrücklich eine „einfache Möglichkeit für Studierende, sich als Helfer einzutragen" — jede Anmeldehürde arbeitet dagegen. Gleichzeitig sind Bewertungen ohne jede Identität nicht gegen Mehrfach- und Spam-Abgabe zu schützen, und eine Helferliste ohne verlässliche Zuordnung ist für den FSR wertlos. Diese Spec löst den Konflikt nicht durch eine einheitliche Lösung, sondern durch Abstufung je Funktion (Abschnitt 2).
+Der Fachbereich wünscht ausdrücklich eine „einfache Möglichkeit für Studierende, sich als Helfer einzutragen" — jede Anmeldehürde arbeitet dagegen. Gleichzeitig sind Bewertungen ohne jede Identität nicht gegen Mehrfach- und Spam-Abgabe zu schützen, eine Helferliste ohne verlässliche Zuordnung ist für den FSR wertlos, und die E-Key-Verwaltung (`../features/e-key/spec.md`) braucht ein über Semestergrenzen hinweg wiedererkennbares Konto für die semesterweise Bestätigung. Diese Spec löst den Konflikt nicht durch eine einheitliche Lösung, sondern durch Abstufung je Funktion (Abschnitt 2).
 
-## 2. Optionen
+## 2. Entscheidung (ADR 0004)
 
-| Option | Aufwand | Schutzwirkung | Hürde für Studierende | Datenschutzfolgen |
-|---|---|---|---|---|
-| (a) Hochschul-SSO | hoch | höchste Verlässlichkeit | höchste Hürde | Abhängigkeit von Hochschul-IT; keine eigene Passwortspeicherung |
-| (b) verifizierte Hochschul-Mailadresse | mittel | mittel, belegt Zugehörigkeit | mittlere Hürde | E-Mail-Adresse als personenbezogenes Datum, Verifizierungsverfahren nötig |
-| (c) gerätegebundenes Pseudonym ohne Anmeldung | niedrig | niedrig | niedrigste Hürde | wenig Daten, aber kein Schutz bei Geräteswechsel |
-| (d) abgestuft: Bewertung pseudonym, Helfer-Anmeldung mit Kontaktweg | mittel | proportional zur Funktion | niedrig für Bewertung, mittel für Helfer-Anmeldung | Datenerhebung proportional zur jeweiligen Funktion |
+Entschieden in `../decisions/0004-identitaet-und-anmeldung.md`, FSR FB4, 2026-08-25:
 
-Empfehlung: Option (d). Bewertungen sind niedrigschwellig und massenhaft, eine Anmeldehürde würde die Beteiligung unnötig senken; Helfer-Anmeldungen sind selten und brauchen ohnehin einen Kontaktweg für die Koordination durch den FSR, sodass die dort nötige Hürde keine zusätzliche Kosten verursacht. Die endgültige Entscheidung liegt bei `../decisions/0004-identitaet-und-anmeldung.md` und ist dort noch nicht getroffen.
+| Funktion | Identitätsstufe | Hürde |
+|---|---|---|
+| Alle Lesefunktionen (Stundenplan, Mensaplan, News, Raumsuche, Wiki, Event-Kalender, Notenübersicht), Mensa-Bewertungen lesen | keine — vollständig kontofrei | keine |
+| Helfer-Anmeldung | Name + ein Kontaktweg, kein Konto | niedrig |
+| Mensa-Bewertung verfassen | Konto erforderlich | mittel |
+| E-Key-Verwaltung | Konto erforderlich | mittel |
+
+Bevorzugter Anmeldeweg für das Konto ist Hochschul-SSO (`../platform/integrations.md` INT-012, Status zu verifizieren); bei Nichtverfügbarkeit tritt ein einfaches, vom eigenen Backend verwaltetes Konto als Ersatzoption in Kraft (z. B. E-Mail-Verifizierung), ausdrücklich ohne Passwort-Replay gegen ein Hochschulsystem. Begründung, Alternativen und offene Punkte: siehe ADR 0004.
 
 ## 3. Datensparsamkeit
 
 | ID | Anforderung | Herkunft |
 |---|---|---|
-| IDENT-F-010 | Das System muss für eine Mensa-Bewertung ausschließlich ein Pseudonym als Identitätsmerkmal verlangen. | NEU |
-| IDENT-F-020 | Das System muss für eine Helfer-Anmeldung ausschließlich einen Namen und genau einen Kontaktweg verlangen. | NEU |
-| IDENT-F-030 | Das System muss darauf verzichten, für eine Bewertung oder eine Helfer-Anmeldung Matrikelnummer, Geburtsdatum oder Adresse zu erheben. | NEU |
+| ~~IDENT-F-010~~ | ~~Das System muss für eine Mensa-Bewertung ausschließlich ein Pseudonym als Identitätsmerkmal verlangen.~~ — entfallen | NEU |
+| IDENT-F-012 | Das System muss für das Lesen von Mensa-Bewertungen kein Identitätsmerkmal verlangen. | NEU |
+| IDENT-F-015 | Das System muss für das Verfassen einer Mensa-Bewertung ein Konto verlangen (siehe Abschnitt 2). | NEU |
+| IDENT-F-020 | Das System muss für eine Helfer-Anmeldung ausschließlich einen Namen und genau einen Kontaktweg verlangen, kein Konto. | NEU |
+| IDENT-F-030 | Das System muss darauf verzichten, für eine Helfer-Anmeldung oder für das Bewertungs-Konto Matrikelnummer, Geburtsdatum oder Adresse zu erheben. | NEU |
+| IDENT-F-035 | Das System muss für die E-Key-Verknüpfung ausnahmsweise die Matrikelnummer erheben, ausschließlich zum Abgleich gegen den vom FSR angelegten E-Key-Datensatz (siehe `../features/e-key/spec.md` EKEY-F-030/035). | NEU |
+
+### Erläuterungen
+
+**`IDENT-F-010` (entfallen).** Vor der Entscheidung ADR 0004 (2026-08-25) verlangte diese Anforderung für jede Bewertung ausschließlich ein Pseudonym, auch zum Verfassen. Ersetzt durch IDENT-F-012 (Lesen, kontofrei) und IDENT-F-015 (Schreiben, Konto erforderlich) — die Kontopflicht für den Schreibpfad ist eine inhaltliche Verschärfung gegenüber dem ursprünglichen reinen Pseudonym-Modell, kein reines Umbenennen. Das im Konto hinterlegte Identitätsmerkmal (SSO-Kennung oder E-Mail-Adresse, siehe Abschnitt 2) tritt an die Stelle des bisherigen Pseudonyms als Grundlage für IDENT-F-050 (Einmal-pro-Tag-Sperre); ein öffentlich angezeigtes Pseudonym (Anzeigename) bleibt davon unabhängig bestehen, siehe IDENT-F-120.
 
 ## 4. Rollen
 
@@ -63,7 +73,7 @@ Empfehlung: Option (d). Bewertungen sind niedrigschwellig und massenhaft, eine A
 |---|---|---|
 | IDENT-F-050 | Wenn eine Person für ein Gericht an einem Tag bereits eine Bewertung abgegeben hat, muss das System eine weitere Bewertung derselben Person für dasselbe Gericht am selben Tag ablehnen. | NEU |
 | IDENT-F-060 | Das System muss Muster massenhafter, in kurzer Zeit von derselben Quelle eingehender Bewertungen erkennen und zur Prüfung markieren. | NEU |
-| IDENT-F-070 | Wenn Moderation einen Missbrauchsfall bestätigt, muss das System die Möglichkeit bieten, das zugehörige Pseudonym oder Gerät zu sperren. | NEU |
+| IDENT-F-070 | Wenn Moderation einen Missbrauchsfall bestätigt, muss das System das zugehörige Konto für 30 Tage sperren, mit Widerspruchsmöglichkeit für die betroffene Person. | NEU |
 
 ## 6. Moderation nutzergenerierter Inhalte
 
@@ -84,7 +94,7 @@ Zu IDENT-F-080: Vorprüfung vor Veröffentlichung (Prämoderation) wurde erwogen
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | IDENT-N-020 | Wenn ein Event beendet ist, muss das System die zugehörigen Helfer-Kontaktdaten spätestens nach 30 Tagen löschen. | NEU |
-| IDENT-F-120 | Das System muss Bewertungen nach Löschung des zugehörigen Kontos weiterhin anzeigen, wobei das Pseudonym von der Person entkoppelt bleibt. | NEU |
+| IDENT-F-120 | Das System muss Bewertungen nach Löschung des zugehörigen Kontos weiterhin anzeigen, wobei das angezeigte Pseudonym vom gelöschten Konto entkoppelt bleibt. | NEU |
 | IDENT-F-130 | Wenn eine Nutzerin oder ein Nutzer die Löschung des eigenen Kontos beantragt, muss das System alle personenbezogenen Daten dieser Person löschen, mit Ausnahme bereits entkoppelter Bewertungsinhalte. | NEU |
 
 Zu IDENT-N-020: 30 Tage sind als Frist gewählt, weil der FSR nach einem Event üblicherweise noch Dank, Nachbesprechung oder Abrechnung mit den Helfenden organisiert; danach besteht kein fachlicher Bedarf mehr, Name und Kontaktweg vorzuhalten.
@@ -95,5 +105,4 @@ Die datenschutzrechtliche Einordnung (Rechtsgrundlage, Betroffenenrechte, Auftra
 
 ## 9. Offene Fragen
 
-- Endgültige Entscheidung zwischen den Optionen (a) bis (d) — `../decisions/0004-identitaet-und-anmeldung.md`.
-- Exakte Ausgestaltung der Missbrauchssperre (Dauer, Wiederzulassung) — Klärung bei Umsetzung von IDENT-F-070.
+- Ob Hochschul-SSO als Anmeldeweg technisch/organisatorisch verfügbar ist — `../platform/integrations.md` INT-012, Klärung durch FSR FB4 mit der Hochschul-IT.

@@ -26,7 +26,8 @@ specs/
 ├── product/
 │   ├── vision.md                      Produktvision, Zielgruppen, Abgrenzung zu den Alt-Apps
 │   ├── glossary.md                    Domänenglossar, verbindliche Begriffsdefinitionen
-│   └── legacy-inventory.md            Bestandsaufnahme der Alt-Apps: Funktionsumfang, Quellenlage
+│   ├── legacy-inventory.md            Bestandsaufnahme der Alt-Apps: Funktionsumfang, Quellenlage
+│   └── whatsapp-feedback-inventory.md Auswertung von WhatsApp-Gruppenchats auf Feature-Hinweise
 ├── platform/                          Querschnittsthemen, die mehrere Features betreffen
 │   ├── architecture.md                (ARCH) Systemarchitektur, Modulschnitt, Technologiewahl
 │   ├── backend-and-api.md             (API) eigenes Backend, dessen API-Vertrag
@@ -49,7 +50,8 @@ specs/
 │   ├── wiki/spec.md                   (WIKI)
 │   ├── semester-ticket/spec.md        (TICKET)
 │   ├── grades/spec.md                 (NOTEN)
-│   └── settings/spec.md               (SET)
+│   ├── settings/spec.md               (SET)
+│   └── e-key/spec.md                  (EKEY)
 ├── decisions/                         Architecture Decision Records (ADR), fortlaufend nummeriert
 │   └── 0001-…, 0002-…, …
 └── open-questions.md                  projektweite offene Fragen ohne festen Platz in einer Einzel-Spec
@@ -110,6 +112,7 @@ Präfix je Themenbereich, verbindlich für das gesamte Projekt:
 | TICKET | Semesterticket | `features/semester-ticket/spec.md` |
 | NOTEN | Notenübersicht | `features/grades/spec.md` |
 | SET | Einstellungen | `features/settings/spec.md` |
+| EKEY | E-Key-Verwaltung | `features/e-key/spec.md` |
 
 Sonderfall `INT`: Das Schnittstellenregister nummeriert seine Einträge nicht als funktionale/nicht-funktionale Anforderungen, sondern als einfache Liste von Schnittstellen: `INT-001`, `INT-002`, … (kein `F`/`N`-Teil, keine Zehnerschritte). Der Grund: Ein Registereintrag beschreibt eine Schnittstelle als Ganzes, nicht eine einzelne prüfbare Systemreaktion.
 
@@ -143,8 +146,11 @@ Jede Anforderung endet mit genau einer der folgenden Markierungen:
 | `[NEU]` | Neuentwicklung ohne Vorbild in einer der Alt-Apps. |
 | `[Android: unbekannt]` | Vermutete Funktion der abgelösten Android-App, deren Quellcode nicht vorliegt. Beruht auf Indizien (z. B. Nutzerberichten, Store-Beschreibung, Analogieschluss aus der iOS-App) und ist entsprechend unsicher. |
 | `[Alt: bewusst verworfen]` | Verhalten, das in der Alt-App vorhanden war, aber absichtlich nicht übernommen wird. |
+| `[Recherche: <Quelle>, <Datum>]` | Auf externer Recherche außerhalb des Alt-Codes beruhend — Live-Abfrage eines Systems, eine Website, ein Store-Eintrag o. Ä. `<Quelle>` benennt die Fundstelle (URL, System, `INT-###`), `<Datum>` den Zeitpunkt der Recherche, da sich der Fund seither geändert haben kann. |
 
 Grund für diese Regel: Ein erheblicher Teil der Bestandsanforderungen wurde nicht aus einem bestehenden Lastenheft übernommen, sondern **aus dem Code der alten App rückwärts erschlossen** (Reverse Engineering). Diese Ableitung ist fehleranfällig — Code-Verhalten und beabsichtigtes Verhalten fallen nicht immer zusammen, wie der Datumsfehler in INT-003 zeigt. Die Markierung macht sichtbar, welche Anforderungen auf einer solchen Ableitung beruhen, mit welcher Unsicherheit (Quellcode vorhanden vs. nur vermutet) und wo eine bewusste Abweichung vom Altverhalten vorliegt. Das erlaubt es, Ableitungsfehler gezielt zu prüfen, statt ihnen dieselbe Sicherheit wie einer Neuanforderung zuzuschreiben.
+
+`[Recherche: …]` unterliegt derselben Unsicherheit wie `[Android: unbekannt]`, nur mit anderer Quelle: Sie stammt nicht aus dem Alt-Code, sondern aus einer Beobachtung außerhalb dieses Repositories zu einem bestimmten Zeitpunkt — vor dem Wechsel von `draft` auf `accepted` ist sie durch den regulären Weg (Spike, Rücksprache mit FSR oder Fachbereich) zu bestätigen, nicht als gesichert zu behandeln, nur weil sie konkreter klingt als `[NEU]`.
 
 ## 7. Die drei Anker zwischen Spec und Code
 
@@ -221,9 +227,11 @@ Alle geplanten Spec-Dateien des Projekts. Status ist durchgängig `draft`, solan
 | `features/semester-ticket/spec.md` | TICKET | bestand | draft |
 | `features/grades/spec.md` | NOTEN | bestand | draft |
 | `features/settings/spec.md` | SET | bestand | draft |
+| `features/e-key/spec.md` | EKEY | bestand | draft |
 | `product/vision.md` | – | – | draft |
 | `product/glossary.md` | – | – | draft |
 | `product/legacy-inventory.md` | – | – | draft |
+| `product/whatsapp-feedback-inventory.md` | – | – | draft |
 | `open-questions.md` | – | – | draft |
 | `decisions/0001-react-native-als-plattform.md` | – | – | draft |
 | `decisions/0002-spec-anchored-arbeitsweise.md` | – | – | draft |

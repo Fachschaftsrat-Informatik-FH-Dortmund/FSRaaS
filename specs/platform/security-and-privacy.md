@@ -3,9 +3,9 @@ id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
 status: draft
-version: 0.1.0
+version: 0.4.0
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main_view_model.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
@@ -21,6 +21,9 @@ related:
   - ../features/canteen-ratings/spec.md
   - ../features/event-volunteers/spec.md
   - ../features/settings/spec.md
+  - ../features/e-key/spec.md
+  - ../features/room-finder/spec.md
+  - ../features/schedule/spec.md
 ---
 
 # Sicherheit und Datenschutz
@@ -31,7 +34,7 @@ Die Neuentwicklung wandelt einen reinen Lese-Client in eine Anwendung mit nutzer
 
 | Schutzziel | Konkret zu schützen |
 |---|---|
-| Vertraulichkeit | Zugangsdaten/Sitzungsmerkmale, Semesterticket-Bild, Klarnamen und Kontaktwege aus Helfer-Anmeldungen |
+| Vertraulichkeit | Zugangsdaten/Sitzungsmerkmale, Semesterticket-Bild, Klarnamen und Kontaktwege aus Helfer-Anmeldungen, Konto-Kennungen (SSO/E-Mail) |
 | Integrität | Bewertungen, Stundenplandaten, Helferbedarf-Zusagen — keine unbemerkte Verfälschung oder doppelte Übertragung |
 | Verfügbarkeit je Bereich | Ausfall eines Fremdsystems (siehe `integrations.md`) darf nur den betroffenen Bereich beeinträchtigen, nie die ganze App — siehe `non-functional.md` |
 | Nachvollziehbarkeit ohne Personenbezug | Protokolle erlauben Fehleranalyse, ohne personenbezogene Inhalte offenzulegen |
@@ -53,10 +56,13 @@ Nutzergenerierte Inhalte und personenbezogene Daten sind gegenüber dem Bestand 
 
 | Datenart | Zweck | Rechtsgrundlage | Empfänger | Speicherdauer | Betroffene Feature-Spec |
 |---|---|---|---|---|---|
-| Helfer-Anmeldung (Name, Kontaktweg) | Koordination von Helferbedarf bei FSR-Events | Einwilligung | Eigenes Backend (INT-008), FSR-Eventorganisation | bis Zweckerfüllung des Events, danach Löschung/Anonymisierung — Frist offen, siehe Abschnitt 9 | `features/event-volunteers/spec.md` |
-| Bewertung (Pseudonym, Sternebewertung, optionaler Kommentar) | Community-Bewertung von Mensa-Gerichten | Einwilligung | Eigenes Backend (INT-008), andere Nutzerinnen (Anzeige) | dauerhaft bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` | `features/canteen-ratings/spec.md` |
+| Helfer-Anmeldung (Name, Kontaktweg) | Koordination von Helferbedarf bei FSR-Events | Einwilligung | Eigenes Backend (INT-008), FSR-Eventorganisation | 30 Tage nach Eventende, danach Löschung (`identity-and-moderation.md`, IDENT-N-020) | `features/event-volunteers/spec.md` |
+| Konto (SSO-Kennung oder E-Mail-Adresse, siehe INT-012) | Anmeldung für das Verfassen von Bewertungen und für die E-Key-Verwaltung | Einwilligung | Eigenes Backend (INT-008), ggf. Hochschul-SSO-Dienst | bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` IDENT-F-130 | `platform/identity-and-moderation.md`, `features/canteen-ratings/spec.md`, `features/e-key/spec.md` |
+| Bewertung (Konto-Referenz, angezeigtes Pseudonym, Sternebewertung, optionaler Kommentar) | Community-Bewertung von Mensa-Gerichten | Einwilligung | Eigenes Backend (INT-008), andere Nutzerinnen (Anzeige nur des Pseudonyms) | dauerhaft bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` | `features/canteen-ratings/spec.md` |
 | Push-Kennung (Firebase-Geräte-ID) | Zustellung von Push-Benachrichtigungen | Einwilligung (Opt-in) | Google/Firebase (INT-005) | bis Abmeldung vom Thema bzw. Firebase-Standardfristen | `features/news/spec.md`, `features/settings/spec.md` |
-| Technische Protokolle des Backends (z. B. IP-Adresse, Zeitstempel, aufgerufener Endpunkt) | Betrieb, Fehleranalyse, Missbrauchserkennung | Berechtigtes Interesse | Eigener Backend-Betrieb (INT-008) | kurz, Vorschlag 30 Tage, zu bestätigen | `backend-and-api.md` |
+| Technische Protokolle des Backends (z. B. IP-Adresse, Zeitstempel, aufgerufener Endpunkt) | Betrieb, Fehleranalyse, Missbrauchserkennung | Berechtigtes Interesse | Eigener Backend-Betrieb (INT-008) | 30 Tage (Arbeitsziel, siehe Abschnitt 9) | `backend-and-api.md` |
+| E-Key-Verknüpfung, App-seitig (E-Key-Nummer-Referenz, Konto-Referenz, zwischengespeicherter Status/Berechtigungen, Bestätigungs-Zeitstempel) | Anzeige von Status/Berechtigungen in der App | Einwilligung | Eigenes Backend (INT-008) | Bis Löschung durch Nutzerin (Konto-Löschung, IDENT-F-130) | `features/e-key/spec.md` |
+| E-Key-Stammdaten (E-Key-Nummer, Matrikelnummer, Berechtigungen) | Verwaltung des vom FSR verliehenen physischen Zugangsschlüssels | Einwilligung | Bestehendes E-Key-Verwaltungstool des FSR (INT-014, außerhalb der Datenhoheit dieser App) | Verwaltet durch das bestehende Tool/FSR-Mitglieder, nicht durch diese App | `features/e-key/spec.md` |
 
 ## 4. Datenschutzerklärung
 
@@ -107,6 +113,7 @@ Alle Netzaufrufe laufen über TLS mit ungeprüfter Zertifikatsvalidierung im Pro
 
 ## 9. Offene Fragen
 
-- Speicherdauer und Löschfrist von Helfer-Anmeldungen nach Zweckerfüllung des Events: ungeklärt. Klärung durch FSR FB4 im Zuge von `features/event-volunteers/spec.md`.
-- Aufbewahrungsdauer technischer Backend-Protokolle: vorgeschlagen 30 Tage, ungeprüft. Klärung im Zuge von `backend-and-api.md`.
-- Tatsächlicher Bedarf für Kalender- und Standortzugriff: noch nicht bestätigt. Klärung in `features/events/spec.md` bzw. `features/room-finder/spec.md`.
+- Speicherdauer und Löschfrist von Helfer-Anmeldungen nach Zweckerfüllung des Events: bereits durch `identity-and-moderation.md` (IDENT-N-020, 30 Tage nach Eventende) beantwortet; das Verarbeitungsverzeichnis in Abschnitt 3 wurde entsprechend aktualisiert, keine offene Frage mehr.
+- Aufbewahrungsdauer technischer Backend-Protokolle: 30 Tage als Arbeitsziel, zu validieren im ersten Betrieb.
+- Geklärt (FSR FB4, 2026-08-25): Weder Kalender- noch Standort-Geräteberechtigung wird für den aktuellen Umfang benötigt. Die Raumsuche ermittelt Nähe über eine manuelle Referenzraum-Eingabe und serverseitige Laufwege-Daten statt GPS (`features/room-finder/spec.md` RAUM-F-050/060); der iCal-Export (`features/schedule/spec.md` SCHED-F-170) exportiert nur, ohne Lesezugriff auf den Gerätekalender.
+- Geklärt (FSR FB4, 2026-08-25): Speicherdauer und Löschfrist der E-Key-Stammdaten (E-Key-Nummer, Matrikelnummer, Berechtigungen) liegen in der Verantwortung des bestehenden E-Key-Verwaltungstools (INT-014) und der FSR-Mitglieder, außerhalb der Datenhoheit dieser App. Die App-seitige Verknüpfung (Konto-Referenz) unterliegt der regulären Konto-Löschung (IDENT-F-130).
