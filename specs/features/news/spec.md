@@ -2,12 +2,14 @@
 id: news
 titel: News
 praefix: NEWS
-status: draft
+status: accepted
 prioritaet: kern
-version: 0.2.1
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/news/NewsFragment.java
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/util/NewsParserImpl.java
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/models/news_item.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/screens/news_overview_page.dart
@@ -38,11 +40,13 @@ Die News-Funktion informiert Studierende über drei Klassifizierungen von Meldun
 - FB-Aktuelles: Import aus der Fachbereichsseite `aktuelles-ni` (INT-010), rein lesend, keine FSR-Redaktion.
 - Event-Erinnerungen: automatisch aus `features/events/spec.md` abgeleitet, keine eigene Redaktion.
 - Anpinnen/Ablösen einzelner Meldungen zur dauerhaften lokalen Sichtbarkeit.
+- Suche über die geladenen Meldungen.
+- Nachladen älterer Meldungen über die zuletzt geladene Seite hinaus.
 - Push-Benachrichtigung bei neuen Meldungen, Opt-in (siehe `features/settings/spec.md`).
 
 ### Nicht-Scope
 
-- Zweite News-Quelle „Wirtschaftsfachbereich", wie sie die Android-Alt-App laut Store-Beschreibung anzeigt — ungeklärt, ob echte zweite Quelle oder gemeinsamer Absender, siehe `product/legacy-inventory.md` Abschnitt 4.
+- Zweite News-Quelle „Wirtschaftsfachbereich" (FB9). Am 2026-08-25 als eigenständige Quelle mit eigenem Endpunkt und eigener Auswertung bestätigt (INT-016), bewusst nicht übernommen: Die Zielgruppe der App ist laut `product/vision.md` der Fachbereich Informatik, FB9-Meldungen betreffen nur einen Teil der Studierenden. Bei Bedarf als eigene Klassifizierung nachrüstbar, ohne dass NEWS-F-080 dafür geändert werden müsste.
 - Kommentar- oder Reaktionsfunktion auf Meldungen — nicht Teil des aktuellen Umfangs.
 - Redaktionelle Bearbeitung von FB-Aktuelles-Inhalten durch den FSR — diese Klassifizierung ist reiner Import, siehe INT-010.
 
@@ -70,12 +74,19 @@ Die News-Funktion informiert Studierende über drei Klassifizierungen von Meldun
 | NEWS-F-090 | Das System muss FB-Aktuelles-Meldungen aus INT-010 (Fachbereichsseite `aktuelles-ni`) über das eigene Backend laden. | NEU |
 | NEWS-F-100 | Wenn ein Event aus `features/events/spec.md` innerhalb der konfigurierten Vorlaufzeit beginnt, muss das System dafür eine Meldung der Klassifizierung Event-Erinnerung in der Liste anzeigen. | NEU |
 | NEWS-F-110 | Das System kann das Filtern der Meldungsliste nach einzelnen Klassifizierungen ermöglichen. | NEU |
+| NEWS-F-120 | Das System muss eine Suche über Titel und Text der geladenen Meldungen anbieten. | Alt: bewusst verworfen |
+| NEWS-F-130 | Das System muss bei der Suche Groß- und Kleinschreibung unberücksichtigt lassen. | Alt: bewusst verworfen |
+| NEWS-F-140 | Wenn die Nutzerin über das Ende der geladenen Meldungen hinaus blättert, muss das System ältere Meldungen nachladen. | Recherche: alte apps/android-fb4, model/LoadMoreItem.java, 2026-08-25 |
 
 ### Erläuterungen
 
 **`NEWS-F-020`** — Die Alt-App parst den Zeitstempel mit dem Muster `dd.MM.yyyy - hh:mm:ss` (12-Stunden-Stunde `hh`), obwohl das Rohformat keine AM/PM-Angabe liefert (`news_item.dart:26`, dokumentiert als INT-003 in `platform/integrations.md`). Zeiten ab 13:00 Uhr werden dadurch falsch interpretiert. Für die Neuentwicklung ist 24-Stunden-Parsing (`HH`) verbindlich.
 
 **`NEWS-F-070`** — Die Alt-App verarbeitet eingehende Push-Nachrichten nicht (Handler auskommentiert, siehe INT-005 in `platform/integrations.md`). Deep-Linking zur betreffenden Meldung ist daher Neuentwicklung ohne Alt-Vorbild.
+
+**`NEWS-F-120`/`NEWS-F-130` — Suche.** Beide Alt-Apps bieten eine Suche über die Meldungen; die Android-App sogar getrennt für beide Nachrichtenbereiche. Sie fehlte bis zum 2026-08-25 in dieser Spec, wodurch die Neuentwicklung hinter beiden Alt-Apps zurückgeblieben wäre. Die Herkunftsmarkierung `Alt: bewusst verworfen` bezieht sich auf einen konkreten Mangel der Flutter-Umsetzung, nicht auf die Suche selbst: Dort ist sie eine reine Teilzeichenketten-Suche ohne Normalisierung der Groß-/Kleinschreibung (`news_overview_viewmodel.dart:95-101`, dokumentiert als M-017), sodass eine Suche nach „Klausur" eine Meldung mit „klausur" nicht findet. NEWS-F-130 korrigiert das ausdrücklich. Die Suche arbeitet auf dem geladenen Bestand; ein serverseitiger Suchendpunkt ist nicht vorgesehen, da der Bestand geräteseitig ohnehin vollständig vorliegt.
+
+**`NEWS-F-140` — Nachladen.** Die Quelle liefert Meldungen seitenweise (INT-010, Pfad `/aktuelles-ni/seite/{page}`). Ohne Nachladen endet die Liste beim zuletzt geladenen Stand, was insbesondere bei der Suche zu irreführenden Leerergebnissen führt.
 
 **`NEWS-F-080` bis `NEWS-F-100`** — Aus der Redaktionsweg-Entscheidung des FSR FB4 vom 2026-08-25 (siehe `specs/open-questions.md`, Archiv): drei Klassifizierungen statt eines einzelnen FSR-News-Feeds. `NEWS-F-100` benötigt eine konfigurierte Vorlaufzeit (z. B. 24 Stunden vor Event-Beginn); konkreter Wert und ob er FSR-weit fest oder je Nutzerin einstellbar ist, ist bei Umsetzung festzulegen (siehe Abschnitt 13).
 
@@ -122,10 +133,12 @@ Keine über `platform/non-functional.md` hinausgehenden Anforderungen.
 
 - 12-Stunden-Datumsparsing ohne AM/PM-Angabe im Rohformat — Grund: führt zu falscher Zeitanzeige ab 13:00 Uhr, siehe NEWS-F-020.
 - Anpinnen/Ablösen ausschließlich über langes Drücken erreichbar — Grund: nicht auffindbar ohne Vorwissen, siehe `platform/ux-and-theming.md` UX-F-090.
+- Suche ohne Normalisierung der Groß-/Kleinschreibung — Grund: liefert je nach Schreibweise unvollständige Treffer, siehe NEWS-F-130.
 
 ## 13. Offene Fragen
 
 - Vorlaufzeit für Event-Erinnerungen (NEWS-F-100): 24 Stunden vor Event-Beginn (Arbeitsziel, fester Wert; je-Nutzerin-Einstellbarkeit als mögliche spätere Erweiterung, nicht im ersten Umfang).
 - Technische Machbarkeit des Imports von `aktuelles-ni` (strukturierter Feed vs. Scraping) — `platform/integrations.md` INT-010.
 - Visuelle Unterscheidung der drei Klassifizierungen (NEWS-F-080): Arbeitsziel Icon plus Textlabel je Klassifizierung (nicht Farbe allein, konsistent mit `platform/ux-and-theming.md` UX-F-070) — konkrete Icon-/Farbwahl bei Bildschirmgestaltung.
-- Ob die Android-Alt-App tatsächlich zwei getrennte News-Quellen (IT- und Wirtschaftsfachbereich) konsolidiert oder nur einen gemeinsamen Absender anzeigt: aus dem Store-Text allein nicht zu klären, betrifft aber nicht die Klassifizierung FB-Aktuelles/FSR-News/Event-Erinnerung dieser Spec — `product/legacy-inventory.md` Abschnitt 4.
+- ~~Ob die Android-Alt-App tatsächlich zwei getrennte News-Quellen konsolidiert.~~ Beantwortet am 2026-08-25: Ja, zwei getrennte Quellen mit eigenen Endpunkten und Auswertungen (INT-010 und INT-016). FB9 wird bewusst nicht übernommen, siehe Nicht-Scope.
+- Wie viele Seiten beim Nachladen (NEWS-F-140) höchstens abgerufen werden, bevor die Liste endet — bei Umsetzung anhand des tatsächlichen Bestands festzulegen.

@@ -1,0 +1,137 @@
+[
+  {
+    "name": "Hauptmensa",
+    "id": "Mensa",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=341&limit=100",
+    "enabledDefault": true,
+    "openingTime": [
+      "11:30 - 14:45",
+      "11:30 - 14:45",
+      "11:30 - 14:45",
+      "11:30 - 14:45",
+      "11:30 - 14:00"
+    ],
+    "defaultOrder": 10,
+    "itmcId": "341"
+  },
+  {
+    "name": "Kostbar",
+    "id": "Kostbar",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=456&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "8:00 - 14:30",
+      "8:00 - 14:30",
+      "8:00 - 14:30",
+      "8:00 - 14:30",
+      "8:00 - 14:30"
+    ],
+    "defaultOrder": 20,
+    "itmcId": "456"
+  },
+  {
+    "name": "Mensa Sonnenstrasse",
+    "id": "Sonnen",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=455&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "7:30 - 14:00",
+      "7:30 - 14:00",
+      "7:30 - 14:00",
+      "7:30 - 14:00",
+      "7:30 - 14:00"
+    ],
+    "defaultOrder": 40,
+    "itmcId": "455"
+  },
+  {
+    "name": "Mensa Sued",
+    "id": "Sued",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=342&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "11:30 - 14:15",
+      "11:30 - 14:15",
+      "11:30 - 14:15",
+      "11:30 - 14:15",
+      "11:30 - 14:00"
+    ],
+    "defaultOrder": 50,
+    "itmcId": "342"
+  },
+  {
+    "name": "Max-Ophuels-Platz",
+    "id": "Max",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=453&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "11:30 - 14:15",
+      "11:30 - 14:15",
+      "11:30 - 14:15",
+      "11:30 - 14:15",
+      "11:30 - 14:15"
+    ],
+    "defaultOrder": 60,
+    "itmcId": "453"
+  },
+  {
+    "name": "Archeteria Campus Sued",
+    "id": "Arch",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=452&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "8:00 - 15:00",
+      "8:00 - 15:00",
+      "8:00 - 15:00",
+      "8:00 - 15:00",
+      "8:00 - 14:30"
+    ],
+    "defaultOrder": 80,
+    "itmcId": "452"
+  },
+  {
+    "name": "Mensaforum Soest",
+    "id": "Soest",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=482&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "7:00 - 14:00",
+      "7:00 - 14:00",
+      "7:00 - 14:00",
+      "7:00 - 14:00",
+      "7:00 - 14:00"
+    ],
+    "defaultOrder": 90,
+    "itmcId": "451"
+  },
+  {
+    "name": "Food Fakultaet",
+    "id": "Foodfakultaet",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=474&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "11:30 - 19:30",
+      "11:30 - 19:30",
+      "11:30 - 19:30",
+      "11:30 - 19:30",
+      "11:30 - 18:30"
+    ],
+    "defaultOrder": 100,
+    "itmcId": "474"
+  },
+  {
+    "name": "Galerie",
+    "id": "Galerie",
+    "url": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=451&limit=100",
+    "enabledDefault": false,
+    "openingTime": [
+      "7:30 - 15:00",
+      "7:30 - 15:00",
+      "7:30 - 15:00",
+      "7:30 - 15:00",
+      "7:30 - 15:00"
+    ],
+    "defaultOrder": 120,
+    "itmcId": "451"
+  }
+]

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="toolbarColor">#212121</color>
+    <color name="main_darker">#212121</color>
+
+    <color name="card_default">#424242</color>
+    <color name="card_grey">#565656</color>
+
+    <color name="icon_color_grey">#c1c1c1</color>
+    <color name="icon_color_grey_disabled">#5c5c5c</color>
+
+    <color name="card_native_base_cardwithlist_divider_color">#4F4F4F</color>
+
+    <color name="splash_background_color">#303030</color>
+
+    <color name="menu_item_icon_color">#ffffff</color>
+
+    <color name="empty_view_color">#979DA3</color>
+    <color name="swiperefresh_progress_background">#3d4042</color>
+</resources>

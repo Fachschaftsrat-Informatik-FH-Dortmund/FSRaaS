@@ -2,8 +2,8 @@
 id: identity-and-moderation
 titel: Identität und Moderation
 praefix: IDENT
-status: draft
-version: 1.2.0
+status: accepted
+version: 1.3.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from: []
@@ -38,7 +38,9 @@ Entschieden in `../decisions/0004-identitaet-und-anmeldung.md`, FSR FB4, 2026-08
 | Mensa-Bewertung verfassen | Konto erforderlich | mittel |
 | E-Key-Verwaltung | Konto erforderlich | mittel |
 
-Bevorzugter Anmeldeweg für das Konto ist Hochschul-SSO (`../platform/integrations.md` INT-012, Status zu verifizieren); bei Nichtverfügbarkeit tritt ein einfaches, vom eigenen Backend verwaltetes Konto als Ersatzoption in Kraft (z. B. E-Mail-Verifizierung), ausdrücklich ohne Passwort-Replay gegen ein Hochschulsystem. Begründung, Alternativen und offene Punkte: siehe ADR 0004.
+Zusätzlich kontogebunden ist der Zugang zur Verwaltungs- und Redaktionsoberfläche (`../features/admin/spec.md`), dort über die Rollen aus Abschnitt 4.
+
+Das Konto entsteht über eine eigenbetriebene Authentik-Instanz als einzigen Identitätsanbieter (INT-012), angebunden per OpenID Connect im Systembrowser. Authentik meldet sich seinerseits gegen den Microsoft-Mandanten der FH Dortmund an, sobald die dafür nötige App-Registrierung erteilt ist; bis dahin führt Authentik eigene Konten mit E-Mail-Verifizierung. Für App und Backend ist dieser Unterschied unsichtbar. Passwort-Replay gegen ein Hochschulsystem bleibt in beiden Fällen ausgeschlossen. Entscheidung FSR FB4, 2026-08-25, siehe `../decisions/0010-authentik-als-identitaetsanbieter.md`; Zielkonflikt und Abstufung siehe ADR 0004.
 
 ## 3. Datensparsamkeit
 
@@ -66,6 +68,9 @@ Bevorzugter Anmeldeweg für das Konto ist Hochschul-SSO (`../platform/integratio
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | IDENT-F-040 | Das System muss den Zugriff auf Helferlisten auf die Rolle FSR-Redaktion und die Bearbeitung gemeldeter Inhalte auf die Rolle Moderation beschränken. | NEU |
+| IDENT-F-045 | Das System muss die Rollenzugehörigkeit einer Person aus dem Identitätsanbieter (INT-012) beziehen, statt sie eigenständig zu verwalten. | NEU |
+
+Zu IDENT-F-045: Rollen werden als Gruppen in Authentik geführt und als Claim im Token übertragen. Das Backend prüft diesen Claim, hält aber keine eigene Rollentabelle. Die Zuweisung selbst erfolgt über die Verwaltungsoberfläche (`../features/admin/spec.md` ADMIN-F-070), die auf Authentik wirkt — damit bleibt genau eine Stelle maßgeblich, und ein entzogener Zugang wirkt sofort für alle Anwendungen.
 
 ## 5. Missbrauchsschutz
 
@@ -73,6 +78,7 @@ Bevorzugter Anmeldeweg für das Konto ist Hochschul-SSO (`../platform/integratio
 |---|---|---|
 | IDENT-F-050 | Wenn eine Person für ein Gericht an einem Tag bereits eine Bewertung abgegeben hat, muss das System eine weitere Bewertung derselben Person für dasselbe Gericht am selben Tag ablehnen. | NEU |
 | IDENT-F-060 | Das System muss Muster massenhafter, in kurzer Zeit von derselben Quelle eingehender Bewertungen erkennen und zur Prüfung markieren. | NEU |
+| IDENT-F-065 | Das System muss Muster massenhafter, in kurzer Zeit von derselben Quelle eingehender kontofreier Beiträge erkennen und zur Prüfung markieren. | NEU |
 | IDENT-F-070 | Wenn Moderation einen Missbrauchsfall bestätigt, muss das System das zugehörige Konto für 30 Tage sperren, mit Widerspruchsmöglichkeit für die betroffene Person. | NEU |
 
 ## 6. Moderation nutzergenerierter Inhalte
@@ -105,4 +111,6 @@ Die datenschutzrechtliche Einordnung (Rechtsgrundlage, Betroffenenrechte, Auftra
 
 ## 9. Offene Fragen
 
-- Ob Hochschul-SSO als Anmeldeweg technisch/organisatorisch verfügbar ist — `../platform/integrations.md` INT-012, Klärung durch FSR FB4 mit der Hochschul-IT.
+- Zeitpunkt und Ergebnis der App-Registrierung im Microsoft-Mandanten der FH Dortmund, die Authentik für die Federation benötigt — `../platform/integrations.md` INT-012, Klärung durch FSR FB4 mit der Hochschul-IT. Die Umsetzung ist davon nicht blockiert, da Authentik bis dahin eigene Konten führt.
+- Ob bei aktiver Federation zuvor angelegte eigene Konten migriert oder parallel weiterbetrieben werden — offener Punkt in `../decisions/0010-authentik-als-identitaetsanbieter.md`.
+- Auf welches Merkmal IDENT-F-065 die „Quelle" bei kontofreien Beiträgen stützt (Netzadresse, geräteseitige Kennung oder beides) — bei Umsetzung festzulegen, unter Beachtung von SEC-N-120 und der Aufbewahrungsfrist technischer Protokolle.

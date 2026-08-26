@@ -2,9 +2,9 @@
 id: app-shell
 titel: App-Rahmen & Navigation
 praefix: SHELL
-status: draft
-prioritaet: bestand
-version: 0.2.0
+status: accepted
+prioritaet: kern
+version: 0.3.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -23,7 +23,7 @@ related:
 
 ## 1. Zweck & Nutzen
 
-Bietet die übergeordnete Navigationsstruktur, über die alle Features erreichbar sind. Löst die Randbedingung aus `platform/architecture.md` Abschnitt 3: Die Alt-App zeigte fünf gleichrangige Tabs, die neue App muss deutlich mehr Bereiche (elf Feature-Specs, davon sieben mit eigenem Kernfeature-Einstiegspunkt gemäß ARCH-F-090) aufnehmen, ohne sie alle gleichrangig in einer Tab-Leiste zu häufen.
+Bietet die übergeordnete Navigationsstruktur, über die alle Features erreichbar sind. Löst die Randbedingung aus `platform/architecture.md` Abschnitt 3: Die Alt-App zeigte fünf gleichrangige Tabs, die neue App muss deutlich mehr Bereiche (vierzehn Feature-Specs, davon sieben mit eigenem Kernfeature-Einstiegspunkt gemäß ARCH-F-090) aufnehmen, ohne sie alle gleichrangig in einer Tab-Leiste zu häufen.
 
 ## 2. Scope / Nicht-Scope
 
@@ -55,7 +55,7 @@ Bietet die übergeordnete Navigationsstruktur, über die alle Features erreichba
 
 ### Erläuterungen
 
-**`SHELL-F-010`** — Entscheidung FSR FB4, 2026-08-25: Muster „Tab-Leiste + Mehr-Sammelpunkt" statt Drawer/Seitenmenü oder Hybrid — die FSR-Vorgabe war, keine 1:1-Kopie der alten fünf gleichrangigen Tabs, sondern eine UI-technisch sinnvolle Struktur zu wählen. Bei inzwischen elf Feature-Specs ist eine flache Tab-Leiste nicht mehr tragfähig (siehe `platform/architecture.md` ARCH-N-010); „Tab-Leiste + Mehr" ist das etablierte Muster für genau diesen Fall, hält die täglich genutzten Bereiche (voraussichtlich Stundenplan, Mensaplan, News) einen Klick entfernt und erreicht seltener genutzte Bereiche über einen zusätzlichen Schritt — konform mit SHELL-F-020 (höchstens zwei Interaktionsschritte für Kernfeatures). Konkrete Zuordnung, welche Bereiche in die Tab-Leiste selbst kommen, ist Teil der Bildschirmgestaltung (siehe Abschnitt 13). Die Liste der sieben Kernfeatures übernimmt `platform/architecture.md` ARCH-F-090 unverändert. Zur bewussten Auslassung von Mensa-Bewertungen (RATE) als eigenem Navigationsziel siehe die Anmerkung dort.
+**`SHELL-F-010`** — Entscheidung FSR FB4, 2026-08-25: Muster „Tab-Leiste + Mehr-Sammelpunkt" statt Drawer/Seitenmenü oder Hybrid — die FSR-Vorgabe war, keine 1:1-Kopie der alten fünf gleichrangigen Tabs, sondern eine UI-technisch sinnvolle Struktur zu wählen. Bei inzwischen vierzehn Feature-Specs ist eine flache Tab-Leiste nicht mehr tragfähig (siehe `platform/architecture.md` ARCH-N-010); „Tab-Leiste + Mehr" ist das etablierte Muster für genau diesen Fall, hält die täglich genutzten Bereiche (voraussichtlich Stundenplan, Mensaplan, News) einen Klick entfernt und erreicht seltener genutzte Bereiche über einen zusätzlichen Schritt — konform mit SHELL-F-020 (höchstens zwei Interaktionsschritte für Kernfeatures). Konkrete Zuordnung, welche Bereiche in die Tab-Leiste selbst kommen, ist Teil der Bildschirmgestaltung (siehe Abschnitt 13). Die Liste der sieben Kernfeatures übernimmt `platform/architecture.md` ARCH-F-090 unverändert. Zur bewussten Auslassung von Mensa-Bewertungen (RATE) als eigenem Navigationsziel siehe die Anmerkung dort.
 
 **`SHELL-F-030`** — Die Alt-App ermittelt `shouldShowPrivacyPolicy` korrekt aus Einstellung und Versionsvergleich, überschreibt das Ergebnis aber unmittelbar danach fest auf `false` (`main_view_model.dart:8-22`, dokumentiert in `platform/security-and-privacy.md` SEC-F-010). Das Zustimmungs-Gate der Alt-App ist damit wirkungslos; für die Neuentwicklung ist ein tatsächlich wirksames Gate verbindlich.
 

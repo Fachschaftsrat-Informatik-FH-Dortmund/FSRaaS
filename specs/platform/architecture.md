@@ -2,8 +2,8 @@
 id: architecture
 titel: Architektur
 praefix: ARCH
-status: draft
-version: 0.3.2
+status: accepted
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -17,6 +17,7 @@ related:
   - integrations.md
   - ../features/app-shell/spec.md
   - ../decisions/0001-react-native-als-plattform.md
+  - ../decisions/0008-vertrieb-ueber-drei-app-stores.md
 ---
 
 # Architektur
@@ -34,24 +35,27 @@ Die App besteht aus drei Bausteinen: der React-Native-App, dem eigenen Backend (
 | Stundenplan | App → FBWS (INT-001, INT-002), direkt | rein lesend, keine Aggregation nötig |
 | Notenübersicht | App → HISinOne (INT-006), direkt | rein lesend, personenbezogen je Nutzer |
 | Wiki | App → BookStack (INT-007), direkt | rein lesend, änderungsarm |
-| Push-Abo | App → FCM (INT-005), direkt | Geräte-Abo, kein Nutzerinhalt |
+| Push-Abo | App → UnifiedPush-Distributor bzw. FCM (INT-005, plattformabhängig), direkt | Geräte-Abo, kein Nutzerinhalt |
 | Mensa-Bewertung | App → Backend (INT-008) | Schreibpfad: Persistenz, Identitätsprüfung, Moderation |
 | Helfer-Anmeldung | App → Backend (INT-008) | Schreibpfad: Persistenz, Identitätsprüfung |
-| Raumbelegung | App → Backend (INT-008) | Aggregation über alle Studiengang/Semester-Kombinationen |
+| Raumbelegung | App → Backend (INT-008) → INT-009 | Zwischenspeicher; ein Platzhalter-Aufruf liefert alle Raumtermine, keine Aggregation nötig |
 | News (FSR-News) | App → Backend (INT-008) → INT-003 | Ablösung privater Infrastruktur |
 | News (FB-Aktuelles) | App → Backend (INT-008) → INT-010 | Zwischenspeicher, keine direkte App-Abhängigkeit von der Fachbereichsseite |
-| Mensa-Speiseplan | App → Backend (INT-008) → INT-004 | Ablösung privater Infrastruktur, TLS-Erzwingung |
+| Mensa-Speiseplan | App → Backend (INT-008) → INT-015 | Zwischenspeicher, Ausfallpuffer; Ablösung privater Infrastruktur |
 | Events | App → Backend (INT-008) → INT-011 | Import aus vom FSR gepflegtem ICS-Kalender, keine Backend-Redaktionsoberfläche (Entscheidung FSR FB4, 2026-08-25) |
+| Anmeldung (Konto) | App bzw. Admin-Oberfläche → Authentik (INT-012), direkt | Redirect-Fluss im Systembrowser; die App nimmt nie Zugangsdaten entgegen |
+| Verwaltung und Redaktion | Admin-Oberfläche → Backend (INT-008) | Schreibpfad mit Rollenprüfung, siehe `../features/admin/spec.md` |
 
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | ARCH-F-010 | Das System muss aus den drei Bausteinen App, eigenes Backend und externe Quellsysteme bestehen. | NEU |
 | ARCH-F-020 | Solange eine Ansicht ausschließlich lesend auf Stundenplandaten, Notenübersicht oder Wiki-Inhalte zugreift und keine Aggregation über mehrere Abfragen benötigt, muss die App diese Quelle direkt ansprechen. | NEU |
 | ARCH-F-030 | Wenn eine Mensa-Bewertung oder eine Helfer-Anmeldung abgesendet wird, muss die App diesen Schreibvorgang ausschließlich an das eigene Backend senden. | NEU |
-| ARCH-F-040 | Das System muss die Raumbelegung für die Raumsuche als vorab im Backend aggregierte Daten bereitstellen, nicht durch clientseitige Abfrage aller Studiengang/Semester-Kombinationen. | NEU |
-| ARCH-F-050 | Das System muss News und Mensa-Speisepläne ausschließlich über den Zwischenspeicher des Backends beziehen, nicht durch direkten App-Aufruf von `hemacode.de`. | NEU |
+| ~~ARCH-F-040~~ | ~~Das System muss die Raumbelegung für die Raumsuche als vorab im Backend aggregierte Daten bereitstellen, nicht durch clientseitige Abfrage aller Studiengang/Semester-Kombinationen.~~ — entfallen | NEU |
+| ARCH-F-045 | Das System muss die Raumtermine über den Zwischenspeicher des Backends beziehen, nicht durch direkten App-Aufruf des Hochschulsystems. | NEU |
+| ARCH-F-050 | Das System muss News und Mensa-Speisepläne ausschließlich über den Zwischenspeicher des Backends beziehen, nicht durch direkten App-Aufruf der jeweiligen Quelle. | NEU |
 
-Zu ARCH-F-040: Diese Anforderung ging ursprünglich davon aus, der FBWS biete keinen eigenen Raumbelegungs-Endpunkt. Eine Recherche am 2026-08-24 hat mit `INT-009` (`platform/integrations.md`) einen raumbezogenen FBWS-Endpunkt bestätigt, der Termine direkt nach Raum liefert. Das macht die Backend-Aggregation nicht hinfällig — INT-009 liefert Rohtermine statt einer berechneten Frei/Belegt-Auskunft, und die Abdeckung aller Räume des Fachbereichs ist unverifiziert —, ändert aber die bisherige Begründung dieser Anforderung. Die konkrete technische Wahl (Aggregation aus INT-001/INT-002 wie ursprünglich vorgesehen, direkte Nutzung von INT-009, oder eine Kombination) ist in `features/room-finder/spec.md` zu treffen, nicht hier.
+**ARCH-F-040 (entfallen).** Diese Anforderung ging davon aus, der Hochschuldienst biete keinen eigenen Raumbelegungs-Endpunkt, weshalb die Termine aller Studiengang/Semester-Kombinationen zusammengeführt werden müssten. Die Annahme ist in zwei Schritten widerlegt worden: Am 2026-08-24 wurde mit INT-009 ein raumbezogener Endpunkt gefunden, am 2026-08-25 zeigte die Auswertung des Android-Quellcodes, dass dieser Endpunkt in der Form `Room/*/AllEvents` einen Platzhalter entgegennimmt und **alle** Raumtermine in einem einzigen Aufruf liefert. Die Zusammenführung entfällt damit ersatzlos. Ersetzt durch ARCH-F-045, das nur noch den Bezugsweg über den Zwischenspeicher festlegt — aus denselben Gründen wie bei News und Mensa (Ausfallpuffer, TLS-Erzwingung, keine unmittelbare App-Abhängigkeit vom Hochschulsystem), nicht wegen Aggregationsbedarf. Siehe `backend-and-api.md` API-F-045 und `../features/room-finder/spec.md`.
 
 ## 2. Schichten in der App
 
@@ -76,25 +80,35 @@ Zu ARCH-F-090: Mensa-Bewertungen (RATE) sind hier bewusst nicht als eigenes Kern
 
 ## 4. Offline-first als Architekturprinzip
 
-Ein Teil der Daten muss ohne Netz nutzbar sein, ein Teil zwingend nicht.
+Ein Teil der Daten muss ohne Netz nutzbar sein, ein Teil zwingend nicht. Maßgeblich ist nicht diese Aufzählung, sondern die Regel dahinter: Jeder Lesepfad mit geräteseitigem Zwischenspeicher zeigt offline den zuletzt geladenen Stand; wo das Ergebnis von einer aktuellen serverseitigen Berechnung abhängt, ist der Bereich offline nicht verfügbar. Die Tabelle nennt die Bereiche, die es zum Zeitpunkt der letzten Durchsicht gibt; eine neue Feature-Spec ordnet sich dieser Regel zu, ohne dass ARCH-F-100 dafür geändert werden muss.
 
 | Bereich | Offline verfügbar | Begründung |
 |---|---|---|
 | Stundenplan | ja, zuletzt geladener Stand | lokal persistiert |
-| Semesterticket | ja, zuletzt geladener Stand | ändert sich selten |
+| Semesterticket | ja, jederzeit | rein lokal gespeichert, kein Netzbezug |
 | News | ja, zuletzt geladener Stand | geräteseitig gecachter Backend-Zwischenspeicher |
 | Mensa-Speiseplan | ja, zuletzt geladener Stand | geräteseitig gecachter Backend-Zwischenspeicher |
+| Events | ja, zuletzt geladener Stand | geräteseitig gecachter Backend-Zwischenspeicher, siehe `../features/events/spec.md` |
+| Wiki | ja, zuletzt geladene Seiten | geräteseitiger Zwischenspeicher, siehe `../features/wiki/spec.md` |
+| E-Key-Status | ja, zuletzt geladener Stand | geräteseitiger Zwischenspeicher, siehe `../features/e-key/spec.md` |
+| Mensa-Bewertungen (lesend) | ja, zuletzt geladener Stand | geräteseitiger Zwischenspeicher |
 | Raumsuche | nein | Ergebnis hängt von aktueller Backend-Aggregation ab |
+| Verwaltung und Redaktion | nein | Handlungen hängen von einem serverseitigen Zustand ab, der sich zwischenzeitlich ändern kann, siehe ARCH-F-125 |
 
-Schreibende Vorgänge (Bewertung, Helfer-Anmeldung) dürfen offline nicht verlorengehen.
+Schreibende Vorgänge dürfen offline nicht verlorengehen — mit einer Ausnahme, die ARCH-F-125 benennt.
 
 | ID | Anforderung | Herkunft |
 |---|---|---|
-| ARCH-F-100 | Solange keine Netzwerkverbindung besteht, muss die App den zuletzt geladenen Stundenplan, das zuletzt geladene Semesterticket sowie die zuletzt geladenen Speisepläne und News anzeigen. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:93-152 |
+| ARCH-F-100 | Solange keine Netzwerkverbindung besteht, muss die App für jeden Lesepfad mit geräteseitigem Zwischenspeicher den zuletzt geladenen Stand anzeigen. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:93-152 |
 | ARCH-F-110 | Solange keine Netzwerkverbindung besteht, muss die App die Raumsuche als nicht verfügbar kennzeichnen. | NEU |
-| ARCH-F-120 | Wenn eine Bewertung oder eine Helfer-Anmeldung ohne Netzwerkverbindung ausgelöst wird, muss die App den Vorgang in eine lokale Warteschlange einreihen und bei wiederhergestellter Verbindung automatisch übertragen. | NEU |
+| ARCH-F-120 | Wenn ein Schreibvorgang ohne Netzwerkverbindung ausgelöst wird, muss die App ihn in eine lokale Warteschlange einreihen und bei wiederhergestellter Verbindung automatisch übertragen. | NEU |
+| ARCH-F-125 | Falls ein Schreibvorgang von einem serverseitigen Zustand abhängt, der sich bis zur Übertragung ändern kann, darf die App ihn nicht in die Warteschlange einreihen, sondern muss ihn bei fehlender Verbindung ablehnen. | NEU |
 
-Zu ARCH-F-120: Die Warteschlange darf einen Vorgang bei erneuter Übertragung nicht doppelt wirksam werden lassen (z. B. eine Bewertung nicht doppelt zählen). Das setzt Idempotenz auf Backend-Seite voraus, siehe `backend-and-api.md`, API-F-140.
+Zu ARCH-F-100: Die Formulierung nennt bewusst die Eigenschaft „Lesepfad mit geräteseitigem Zwischenspeicher" statt einer festen Bereichsliste. Die vorige Fassung zählte vier Bereiche abschließend auf; EVENT, WIKI, EKEY und die lesende Ansicht der Mensa-Bewertungen erweiterten diese Liste anschließend in ihren eigenen Specs, wodurch die Anforderung ihrer Umsetzung widersprach. Welche Bereiche welchen Zwischenspeicher mit welcher Gültigkeitsdauer führen, legt `data-and-storage.md` Abschnitt 4 fest, nicht diese Anforderung.
+
+Zu ARCH-F-120: Betroffen sind Mensa-Bewertungen (RATE), Helfer-Anmeldungen (HELFER), Besetzt-Meldungen der Raumsuche (RAUM-F-070) sowie die E-Key-Schreibvorgänge Verknüpfen, Verloren-Melden und semesterweise Bestätigen (EKEY). Die Warteschlange darf einen Vorgang bei erneuter Übertragung nicht doppelt wirksam werden lassen (z. B. eine Bewertung nicht doppelt zählen). Das setzt Idempotenz auf Backend-Seite voraus, siehe `backend-and-api.md`, API-F-140.
+
+Zu ARCH-F-125: Die Ausnahme betrifft Verwaltungs- und Moderationshandlungen (`../features/admin/spec.md` Abschnitt 8) sowie die Kontolöschung (`../features/settings/spec.md` SET-F-090). Gemeinsames Merkmal: Zwischen Auslösung und Übertragung kann sich der Zustand geändert haben — eine Meldung wurde von jemand anderem bearbeitet, ein Kommentar bereits entfernt, eine Rolle bereits entzogen. Eine verzögerte Übertragung würde dann einen fremden, neueren Stand überschreiben. Eine Mensa-Bewertung kennt dieses Problem nicht, weil sie nichts überschreibt, sondern etwas hinzufügt.
 
 ## 5. Fehler- und Ladeverhalten als Querschnitt
 

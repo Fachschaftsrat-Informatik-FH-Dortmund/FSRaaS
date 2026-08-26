@@ -2,9 +2,9 @@
 id: canteen-ratings
 titel: Mensa-Bewertungen
 praefix: RATE
-status: draft
+status: accepted
 prioritaet: kern
-version: 0.3.0
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from: []
@@ -79,7 +79,7 @@ Bewertung: Konto-Referenz (siehe `platform/identity-and-moderation.md`), öffent
 
 ## 6. Externe Schnittstellen
 
-Schreibpfad ausschließlich über das eigene Backend INT-008 (siehe `platform/architecture.md` ARCH-F-030). Konto-Anmeldung nutzt INT-012 (Hochschul-SSO) bzw. dessen Ersatzoption, siehe `platform/integrations.md`. Keine weiteren externen Schnittstellen.
+Schreibpfad ausschließlich über das eigene Backend INT-008 (siehe `platform/architecture.md` ARCH-F-030). Konto-Anmeldung nutzt INT-012 (Authentik), siehe `platform/integrations.md` und `../../decisions/0010-authentik-als-identitaetsanbieter.md`. Keine weiteren externen Schnittstellen.
 
 ## 7. UI-Flows & Zustände
 
@@ -107,7 +107,7 @@ Wenn eine Bewertung ohne Netzwerkverbindung abgesendet wird, reiht die App sie g
 
 | ID | Anforderung | Herkunft |
 |---|---|---|
-| RATE-N-010 | Das System muss die Normalisierung von Gerichtsbezeichnungen (RATE-F-050) automatisiert testen. | Alt: bewusst verworfen |
+| RATE-N-010 | Das System muss die Normalisierung von Gerichtsbezeichnungen (RATE-F-050) automatisiert testen. | NEU |
 
 ## 11. Akzeptanzkriterien
 
@@ -118,10 +118,11 @@ Wenn eine Bewertung ohne Netzwerkverbindung abgesendet wird, reiht die App sie g
 
 ## 12. Bewusst nicht übernommenes Altverhalten
 
-Nicht zutreffend — keine der Alt-Apps bietet Bewertungen.
+Nicht zutreffend — keine der beiden Alt-Apps bietet Bewertungen. Bestätigt für die Android-Alt-App am 2026-08-25 nach Vorliegen ihres Quellcodes.
 
 ## 13. Offene Fragen
 
 - Speicherdauer/Löschverhalten von Bewertungen nach Kontolöschung — bereits in `platform/identity-and-moderation.md` (IDENT-F-120/130) geregelt, hier nur referenziert.
-- Ob Hochschul-SSO als Konto-Anmeldeweg verfügbar ist — `platform/integrations.md` INT-012, betrifft direkt, wie leichtgewichtig das Konto für RATE-F-090 tatsächlich ausfällt.
+- ~~Ob Hochschul-SSO als Konto-Anmeldeweg verfügbar ist.~~ Beantwortet am 2026-08-25: Der Anmeldeweg läuft über eine eigenbetriebene Authentik-Instanz, die Anbindung an die Hochschule ist eine Konfigurationsfrage dort und blockiert die Umsetzung nicht — siehe `../../decisions/0010-authentik-als-identitaetsanbieter.md`.
+- Freitext-Kommentare (RATE-F-020) und Meldeweg (RATE-F-060) sind der zweiten Ausbaustufe zugeordnet, gemeinsam mit der Moderationsoberfläche — ohne sie wären die Moderationspflichten aus `platform/identity-and-moderation.md` (IDENT-F-090 bis F-110, IDENT-N-010) nicht erfüllbar. Siehe `../../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md` und `../../product/roadmap.md`.
 - Standortbezogene Bewertung (dasselbe Gericht unterschiedlich je Mensa-Standort bewertet): vom FSR FB4 am 2026-08-25 als mögliche künftige Erweiterung benannt, aber ausdrücklich nicht in diesem Umfang zu implementieren. Bei künftiger Aufnahme: eigene ID-Vergabe und Datenmodell-Erweiterung (Mensa-Referenz je Bewertung) nötig, kein Nachtrag zu RATE-F-080.

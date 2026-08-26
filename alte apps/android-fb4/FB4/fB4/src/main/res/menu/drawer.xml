@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:id="@+id/grp1" android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/stundenplan"
+            android:checked="false"
+            android:icon="@drawable/ic_event_grey600_24dp"
+            android:title="@string/NavItem_Stundenplan"/>
+
+        <item
+            android:id="@+id/aktuelles"
+            android:checked="false"
+            android:icon="@drawable/newspaper"
+            android:title="@string/NavItem_Aktuelles"/>
+
+        <item
+            android:id="@+id/aktuelles_wirtschaft"
+            android:visible="false"
+            android:checked="false"
+            android:icon="@drawable/newspaper"
+            android:title="@string/NavItem_Aktuelles_Wirtschaft"/>
+
+        <item
+            android:id="@+id/speiseplan"
+            android:checked="false"
+            android:icon="@drawable/ic_restaurant_menu_grey600_24dp"
+            android:title="@string/NavItem_Speiseplan"/>
+
+        <item
+            android:id="@+id/leeren_raum_suchen"
+            android:checked="false"
+            android:icon="@drawable/ic_place_grey600_24dp"
+            android:title="@string/NavItem_Leeren_Raum_Suchen"/>
+
+
+    </group>
+
+    <group android:id="@+id/grp2" android:checkableBehavior="none">
+
+       <!-- <item
+            android:id="@+id/ticket"
+            android:checked="false"
+            android:title="@string/NavItem_Ticket"/>-->
+        <item
+            android:id="@+id/links_downloads"
+            android:checked="false"
+            android:title="@string/NavItem_Links_Downloads"/>
+
+        <item
+            android:id="@+id/feedback"
+            android:checked="false"
+            android:title="@string/NavItem_Feedback"/>
+
+        <item
+            android:id="@+id/einstellungen"
+            android:checked="false"
+            android:title="@string/NavItem_Einstellungen"/>
+
+        <item
+            android:id="@+id/über"
+            android:checked="false"
+            android:title="@string/NavItem_Über"/>
+
+    </group>
+
+</menu>

@@ -2,8 +2,8 @@
 id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
-status: draft
-version: 2.0.0
+status: accepted
+version: 3.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -38,11 +38,14 @@ Vier unabhängige Gründe, jeder für sich hinreichend:
 | Grund | Beschreibung | Ohne Backend |
 |---|---|---|
 | Schreibpfade | Mensa-Bewertungen, Helfer-Anmeldungen und E-Key-Verknüpfungen brauchen serverseitige Persistenz, Identitätsprüfung, Begrenzung der Aufrufrate und Moderation | rein clientseitig nicht realisierbar |
-| Aggregation Raumsuche | Raumbelegung ist nur herleitbar, indem die Termine aller Studiengang/Semester-Kombinationen (INT-001 → INT-002) über `roomId` zusammengeführt werden | Dutzende Anfragen je Suche auf dem Endgerät — nicht alltagstauglich |
-| Ablösung Fremdabhängigkeit | News (INT-003) und Mensa (INT-004) hängen an `fb4app.hemacode.de`, privater Infrastruktur unklarer Trägerschaft; der Mensa-Aufruf ist zusätzlich unverschlüsselt | Ausfallrisiko und fehlendes TLS bleiben in der App bestehen |
-| Redaktion | Events und FSR-News müssen gepflegt werden | keine Pflegemöglichkeit ohne serverseitige Verwaltung |
+| Stammdaten ohne externe Quelle | Mensa-Liste, Raumliste, Links und Downloads, Semestertermine und Ticket-Bildzuschnitt haben kein Quellsystem und müssen gepflegt und ausgeliefert werden | jede Änderung erforderte ein App-Update über drei Vertriebswege |
+| Ablösung Fremdabhängigkeit | News (INT-003) hängt an `fb4app.hemacode.de`, der Prüfungs- und Zeitplan-Verweis des bestehenden Backends an `hoolycraap.de` — beides private Infrastruktur unklarer Trägerschaft, teils unverschlüsselt | Ausfallrisiko und fehlendes TLS bleiben in der App bestehen |
+| Redaktion | FSR-News müssen gepflegt, Prüfungspläne importiert, gemeldete Inhalte moderiert werden | keine Pflegemöglichkeit ohne serverseitige Verwaltung |
+| Entkopplung von HTML-Auswertungen | Die Fachbereichsnachrichten (INT-010) liegen nur als HTML vor und werden per Auswertung erschlossen | eine Layout-Änderung der Fachbereichsseite bräche die App bis zum nächsten Store-Update |
 
 Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` — der Aufruf erfolgt über `http://fb4app.hemacode.de/...`, unverschlüsselt. `news_repository.dart:7` trägt zusätzlich einen Codekommentar, der eine Umgehung der TLS-Vertrauensprüfung nahelegt; im Dart-Code selbst findet sich dafür keine Umsetzung (siehe `integrations.md`, INT-003, Abschnitt „Befund zur Zertifikatsprüfung").
+
+**Entfallener Grund: Aggregation der Raumsuche.** Bis zum 2026-08-25 stand hier als zweiter Grund, Raumbelegung sei nur durch Zusammenführung der Termine aller Studiengang/Semester-Kombinationen herleitbar, was „Dutzende Anfragen je Suche auf dem Endgerät" bedeutet hätte. Diese Annahme ist widerlegt: Der Endpunkt INT-009 nimmt in der Form `Room/*/AllEvents` einen Platzhalter entgegen und liefert alle Raumtermine in einem einzigen Aufruf — die Android-Alt-App nutzt genau das produktiv. Der Aggregationsbedarf entfällt damit ersatzlos. Das Backend behält für die Raumsuche nur die Rolle des Zwischenspeichers, aus denselben Gründen wie bei News und Mensa. Die übrigen vier Gründe tragen die Entscheidung für ein eigenes Backend unverändert, jeder für sich.
 
 ## 2. Aufgabenschnitt
 
@@ -51,11 +54,14 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 | API-F-010 | Das System muss Mensa-Bewertungen serverseitig speichern. | NEU |
 | API-F-020 | Das System muss Helfer-Anmeldungen serverseitig speichern. | NEU |
 | API-F-030 | Wenn eine Bewertung oder eine Helfer-Anmeldung eingereicht wird, muss das Backend die Identität der einreichenden Person serverseitig prüfen. | NEU |
-| API-N-010 | Das System muss die Anzahl eingehender Schreibanfragen je Person und Zeitfenster begrenzen. | NEU |
-| API-F-040 | Das System muss die Termine aller Studiengang/Semester-Kombinationen aus INT-002 periodisch abrufen und über `roomId` zu einer Raumbelegung zusammenführen. | NEU |
-| API-F-050 | Das System muss der App für die Raumsuche einen einzelnen Abfrage-Endpunkt auf der aggregierten Raumbelegung bereitstellen, statt die App alle Kombinationen aus INT-001 einzeln abfragen zu lassen. | NEU |
+| API-N-010 | Das System muss die Anzahl eingehender Schreibanfragen je Konto und Zeitfenster begrenzen. | NEU |
+| API-N-015 | Das System muss die Anzahl eingehender kontofreier Schreibanfragen je Quelle und Zeitfenster begrenzen. | NEU |
+| ~~API-F-040~~ | ~~Das System muss die Termine aller Studiengang/Semester-Kombinationen aus INT-002 periodisch abrufen und über `roomId` zu einer Raumbelegung zusammenführen.~~ — entfallen | NEU |
+| API-F-045 | Das System muss die Raumtermine über den Platzhalter-Aufruf aus INT-009 periodisch abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | Recherche: alte apps/android-fb4, retrofit/TimetableApi.java, 2026-08-25 |
+| ~~API-F-050~~ | ~~Das System muss der App für die Raumsuche einen einzelnen Abfrage-Endpunkt auf der aggregierten Raumbelegung bereitstellen, statt die App alle Kombinationen aus INT-001 einzeln abfragen zu lassen.~~ — entfallen | NEU |
 | API-F-060 | Das System muss News aus INT-003 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
-| API-F-070 | Das System muss Mensa-Speisepläne aus INT-004 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
+| API-F-070 | Das System muss Mensa-Speisepläne aus INT-015 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
+| API-F-075 | Das System muss Öffnungszeiten, Gerichtskategorien und Zusatzstoffverzeichnis aus INT-015 vorab abrufen und der App aus dem eigenen Zwischenspeicher ausliefern. | Recherche: alte apps/android-fb4, retrofit/MenuApi.java, 2026-08-25 |
 | API-N-020 | Das System muss alle Aufrufe zwischen App und Backend ausschließlich über TLS führen. | Alt: lib/areas/canteen/repositories/meals_repository.dart:21 |
 | ~~API-F-080~~ | ~~Das System muss der FSR-Redaktion die Pflege von Events ermöglichen.~~ — entfallen | NEU |
 | API-F-090 | Das System muss der FSR-Redaktion die Pflege von FSR-News ermöglichen. | NEU |
@@ -68,8 +74,19 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 | API-F-200 | Wenn sich ein importierter Prüfungsplan gegenüber dem zuvor gespeicherten Bestand unterscheidet, muss das System eine allgemeine Aktualisierungsmeldung auslösen, ohne dabei personenbezogene Auswahldaten einzelner Nutzerinnen zu verarbeiten. | NEU |
 | API-F-210 | Das System muss Raumbesetzt-Meldungen ohne Konto- oder Personenbezug entgegennehmen und speichern. | NEU |
 | API-F-220 | Das System muss der FSR-Redaktion die Pflege einer Laufwege-Datenstruktur zwischen Räumen ermöglichen. | NEU |
+| API-F-230 | Das System muss die Stammdaten, für die kein externes Quellsystem existiert (Mensa-Liste, Raumliste, Links und Downloads, Semestertermine, Ticket-Bildzuschnitt), serverseitig pflegen und der App ausliefern. | Recherche: alte apps/android-fb4, service/DataService.java, 2026-08-25 |
+| API-F-235 | Falls das Backend beim Ausliefern von Stammdaten nicht erreichbar ist, muss die App mit einem im Anwendungspaket mitgelieferten Ausgangsbestand arbeiten. | Recherche: alte apps/android-fb4, assets/canteens.json, 2026-08-25 |
+| API-F-240 | Das System muss eine Rückfallliste der Studiengänge vorhalten und ausliefern, falls INT-001 nicht erreichbar ist. | Recherche: alte apps/android-fb4, retrofit/TimeTableFallbackApi.java, 2026-08-25 |
+| API-F-205 | Das System muss den Zeitpunkt der letzten Prüfungsplan-Änderung über einen Abfrage-Endpunkt bereitstellen, sodass die App den Abgleich mit ihrer lokalen Auswahl selbst vornehmen kann. | NEU |
+| API-F-250 | Das System muss Rollenzugehörigkeiten aus dem Identitätsanbieter (INT-012) übernehmen, statt eine eigene Rollenverwaltung zu führen. | NEU |
 
-Zu API-F-040/API-F-050: Eine Recherche am 2026-08-24 hat mit `INT-009` (`platform/integrations.md`) einen bisher unbekannten, raumbezogenen FBWS-Endpunkt bestätigt, der Termine direkt nach Raum liefert, ohne Iteration über INT-001/INT-002. Diese beiden Anforderungen bleiben gültig, solange nicht verifiziert ist, dass INT-009 alle Räume des Fachbereichs abdeckt und eine für die Raumsuche ausreichende Datenqualität liefert (er liefert bislang Rohtermine, keine berechnete Frei/Belegt-Auskunft). Die endgültige technische Wahl trifft `features/room-finder/spec.md`.
+**API-F-040 und API-F-050 (entfallen).** Befund vom 2026-08-25 aus dem Android-Quellcode: Der Endpunkt INT-009 nimmt in der Form `Room/*/AllEvents` einen Platzhalter entgegen und liefert alle Raumtermine in einem Aufruf. Die Annahme, Raumbelegung sei nur durch Zusammenführung über alle Studiengang/Semester-Kombinationen herleitbar, ist damit widerlegt. Ersetzt durch API-F-045, das nur noch die Zwischenspeicherung fordert — nicht die Zusammenführung. Siehe auch `architecture.md` ARCH-F-040 und `features/room-finder/spec.md`.
+
+Zu API-N-010/API-N-015: Die vorige Fassung von API-N-010 begrenzte „je Person und Zeitfenster" und ließ damit die kontofreien Schreibpfade ungeschützt — Helfer-Anmeldungen (HELFER-F-020) und Besetzt-Meldungen der Raumsuche (RAUM-F-070) kennen keine Person im Sinne eines Kontos. API-N-015 schließt diese Lücke und stellt auf die Anfragequelle ab statt auf eine Identität.
+
+Zu API-F-205: Löst die zuvor unbestimmte Zustellung des Hinweises aus API-F-200. Ein Abfrage-Endpunkt statt einer zugestellten Meldung hält API-F-100 (kein serverseitiges Speichern persönlicher Auswahl) ohne Ausnahme ein: Das Backend nennt lediglich den Zeitpunkt der letzten Änderung, die App entscheidet anhand ihrer ausschließlich lokal gespeicherten Auswahl, ob das eine Benachrichtigung wert ist (SCHED-F-220). Der Weg funktioniert zudem ohne Push-Infrastruktur.
+
+Zu API-F-230 bis API-F-240: Die Android-Alt-App führt diese Stammdaten bereits ferngepflegt (`service/DataService.java`) und liefert Ausgangsbestände als Teil des Anwendungspakets mit. Das Muster ist übernehmenswert, weil es Änderungen an Mensen, Räumen oder Links ohne App-Update über drei Vertriebswege ermöglicht. Der Befund vom 2026-08-25 zeigt allerdings auch die Kehrseite: Ohne Pflegeoberfläche veraltet dieser Bestand — die dort abgerufenen Semestertermine stammen aus dem Wintersemester 2023/24. Die Pflege gehört deshalb in die Admin-Oberfläche (`../features/admin/spec.md`), nicht in eine Konfigurationsdatei auf dem Server.
 
 Zu API-F-180 bis API-F-200: Herkunft der Anforderungen ist eine Rücksprache mit dem FSR FB4 (2026-08-25) zum offiziellen, auf einer Hochschul-Intranet-Seite als Excel-Datei veröffentlichten Prüfungsplan — Details siehe `platform/integrations.md` INT-013. API-F-200 löst allgemein aus (vergleichbar einer News-Meldung), ohne zu wissen, welche Nutzerin welche Prüfung ausgewählt hat; das bleibt mit API-F-100 (kein serverseitiges Speichern des persönlichen Stundenplans) vereinbar, weil `features/schedule/spec.md` (SCHED-F-220) den Abgleich mit der individuellen, ausschließlich lokal gespeicherten Auswahl auf dem Gerät vornimmt.
 
@@ -90,9 +107,12 @@ Bewusste Begrenzung, keine spätere Ergänzung ohne erneute Abstimmung.
 
 ## 4. Schnittstellenprinzipien
 
+Der vollständige Vertrag steht als versionierte OpenAPI-Beschreibung in `api-contract.yaml` und ist die Quelle der Wahrheit für jeden Aufruf zwischen App beziehungsweise Admin-Oberfläche und Backend (`../decisions/0011-monorepo-und-openapi-vertrag.md`). Typen und Client-Code werden daraus erzeugt; eine Vertragsänderung ist eine Spec-Änderung und unterliegt den Regeln aus `../README.md` Abschnitt 8. Dieser Abschnitt legt nur die Prinzipien fest, denen der Vertrag genügen muss.
+
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | API-N-030 | Das System muss jede Version seiner Schnittstelle eindeutig kennzeichnen. | NEU |
+| API-N-035 | Das System muss jeden Aufruf zwischen App und Backend in `api-contract.yaml` beschreiben, bevor er umgesetzt wird. | NEU |
 | API-N-040 | Das System muss Fehlerantworten in einem einheitlichen, maschinenlesbaren Format mit Fehlercode und einer für Menschen lesbaren Meldung liefern. | NEU |
 | API-F-140 | Wenn eine Bewertung mit einer bereits verarbeiteten Idempotenz-Kennung erneut eingereicht wird, muss das Backend sie als bereits verarbeitet erkennen und nicht doppelt zählen. | NEU |
 | API-N-050 | Das System muss Listenergebnisse paginieren. | NEU |
@@ -109,9 +129,13 @@ Nur Zweck und grobe Felder; ausformulierte Datenmodelle entstehen mit den jeweil
 | Bewertung | Mensa-Bewertung je Gericht | Pseudonym, Gericht-Referenz, Sterne, Kommentar (optional), Zeitstempel |
 | Event | Import aus dem FSR-ICS-Kalender (INT-011) | UID, Titel, Zeitraum, Ort, Beschreibung, Status, Helferbedarf (Verknüpfung) |
 | Helferbedarf / -anmeldung | Personalplanung je Event | Rolle, Schicht, benötigte Anzahl, angemeldete Personen (Name, Kontaktweg) |
-| Raumbelegung | aggregierte Termine je Raum | roomId, Zeitraum, belegt/frei |
+| Raumtermine | Zwischenspeicher der Rohtermine aus INT-009 | roomId, Zeitraum, Bezeichnung des Termins |
+| Raum-Stammdaten | vom FSR gepflegte Raumliste | roomId, Größe (klein/mittel/groß), E-Key-Eignung |
+| Mensa-Stammdaten | vom FSR gepflegte Mensa-Liste | Kennung, ITMC-Kennung, Anzeigename, Öffnungszeiten je Wochentag, Standardauswahl, Anzeigereihenfolge, Speiseplan-URL |
+| Links und Downloads | vom FSR gepflegte Liste externer Verweise | Bezeichnung, URL, Gruppierung, Reihenfolge |
+| Semestertermine | Semesterbeginn, Semesterende, nächster WS-/SS-Start | Datum je Angabe |
 | News-Zwischenspeicher | Kopie von INT-003 (FSR-News) und INT-010 (FB-Aktuelles), je mit Klassifizierung | Titel, Text, Datum, Quelle, Klassifizierung |
-| Speiseplan-Zwischenspeicher | Kopie von INT-004 | Mensa, Datum, Gerichte |
+| Speiseplan-Zwischenspeicher | Kopie von INT-015 | Mensa, Datum, Gerichte, Gerichtskategorien, Zusatzstoffverzeichnis |
 | E-Key-Verknüpfung | Zuordnung Konto ↔ E-Key, Zwischenspeicher für Anzeige (System der Wahrheit: INT-014, extern) | E-Key-Nummer-Referenz, Konto-Referenz, zuletzt gelesener Status/Berechtigungen, letzte/nächste Bestätigung |
 | Prüfungsplan | Import aus INT-013 (Excel-Upload durch Admin/FSR) | Prüfungs-ID, Bezeichnung, Datum/Zeit, Raum, Studiengang-/Prüfungsordnungs-Bezug, Import-Jahr |
 | Laufwege | Distanzen/Nachbarschaften zwischen Räumen für RAUM-F-060 | Raum-Paar, Distanz-/Gewichtsmaß |
@@ -142,10 +166,18 @@ BookStack (INT-007) bleibt ausschließlich Grundlage für WIKI, nicht für News 
 
 ## 8. Technologiewahl
 
-.NET/C# (Entscheidung FSR FB4, 2026-08-25). Konkrete Framework-Bausteine (z. B. ASP.NET Core, Datenbank-Wahl) sowie Details zu Betrieb auf dem Hetzner-VPS siehe `../decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+ASP.NET Core mit PostgreSQL und Entity Framework Core; periodische Aufgaben (Zwischenspeicher-Auffrischung, Importe) als Hosted Services im selben Dienst. Entscheidung FSR FB4, 2026-08-25, siehe `../decisions/0011-monorepo-und-openapi-vertrag.md`. PostgreSQL auch deshalb, weil das bestehende E-Key-Verwaltungstool (INT-014) bereits darauf läuft und die spätere Integration (API-F-175) damit einfacher bleibt. Details zum Betrieb auf dem Hetzner-VPS siehe `../decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
 
-## 9. Offene Fragen
+## 9. Ablösung des bestehenden Backends
 
-- Konkrete Framework-Bausteine und Datenbank-Wahl innerhalb von .NET/C# — `../decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
-- Konkreter Server-Zuschnitt auf dem Hetzner-VPS: Arbeitsziel kleinste für .NET/C#-Betrieb plus Datenbank tragfähige Instanzgröße, Hochskalierung bei Bedarf; Zugriff ausschließlich per SSH-Key für die technische Leitung; tägliches automatisiertes Backup mit mindestens 7 Tagen Aufbewahrung. Endgültig festzuhalten in `../decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
-- Technische Machbarkeit des Imports von `aktuelles-ni` (INT-010, strukturierter Feed vs. Scraping) — `platform/integrations.md` INT-010.
+Unter `https://app.fsrfb4.de` läuft bereits ein Backend, das die Android-Alt-App bedient: ferngepflegte Stammdaten (`/data`), versions- und sprachabhängige Hinweise an die App (`/messages/messages.php`) und eine Rückfallliste der Studiengänge (`/studiengaenge.json`). Vollständige Beschreibung: `integrations.md`, INT-008, Abschnitt „Vorgänger".
+
+Der Dienst ist erreichbar, aber inhaltlich veraltet — die live abgefragten Semestertermine stammen aus dem Wintersemester 2023/24, und der hinterlegte Prüfungsplan-Verweis zeigt auf eine private, unverschlüsselte Domain. Entscheidung FSR FB4, 2026-08-25: Das fachliche Konzept wird übernommen (API-F-230 bis API-F-240), die Umsetzung neu gebaut, der Altdienst nach der Umstellung abgeschaltet. Bis dahin läuft er für die Android-Bestandsnutzung weiter.
+
+Zwei Lehren aus dem Altbestand sind in die Anforderungen eingeflossen: Stammdaten brauchen eine Pflegeoberfläche, sonst veralten sie (`../features/admin/spec.md`), und mitgelieferte Ausgangsbestände verhindern, dass ein Ausfall der Stammdaten die App unbrauchbar macht (API-F-235).
+
+## 10. Offene Fragen
+
+- Konkreter Server-Zuschnitt auf dem Hetzner-VPS: Arbeitsziel kleinste für ASP.NET-Core-Betrieb plus PostgreSQL tragfähige Instanzgröße, Hochskalierung bei Bedarf; Zugriff ausschließlich per SSH-Key für die technische Leitung; tägliches automatisiertes Backup mit mindestens 7 Tagen Aufbewahrung. Endgültig festzuhalten in `../decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+- Fan-out-Mechanismus für die Push-Zustellung (ein UnifiedPush-Aufruf je Android-Endpunkt gegenüber einem Themen-Aufruf für iOS) — offener Punkt aus `../decisions/0008-vertrieb-ueber-drei-app-stores.md`, zu klären mit der zweiten Ausbaustufe.
+- Ob die versions- und sprachabhängigen Hinweise des Altbackends (`/messages`) fachlich übernommen werden oder in NEWS aufgehen — bislang keine Anforderung dazu.

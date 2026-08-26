@@ -1,8 +1,8 @@
 ---
-status: draft
-version: 0.1.0
+status: accepted
+version: 0.3.0
 owner: FSR FB4
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 ---
 
 # Domänenglossar
@@ -43,7 +43,7 @@ Satz von Formulierungsmustern für einzeln prüfbare Anforderungen (ubiquitär, 
 Der Webservice des Fachbereichs Informatik unter `ws.inf.fh-dortmund.de/fbws`. Quelle für Studiengänge (INT-001) und Termine (INT-002). Auftritt: `platform/integrations.md`, `features/schedule/spec.md`, `features/room-finder/spec.md`.
 
 **FCM (Firebase Cloud Messaging)**
-Von Google betriebener Push-Benachrichtigungsdienst. Die Alt-App abonniert darüber das Thema `Aktuelles` für News-Benachrichtigungen. Auftritt: `platform/integrations.md` (INT-005), `features/news/spec.md`, `features/settings/spec.md`.
+Von Google betriebener Push-Benachrichtigungsdienst. Die Alt-App abonniert darüber das Thema `Aktuelles` für News-Benachrichtigungen. Seit `decisions/0008-vertrieb-ueber-drei-app-stores.md` nur noch für iOS vorgesehen (als Bridge zu Apples APNs); Android nutzt stattdessen UnifiedPush. Auftritt: `platform/integrations.md` (INT-005), `features/news/spec.md`, `features/settings/spec.md`.
 
 **FSR**
 Fachschaftsrat Informatik der FH Dortmund. Fachlicher Auftraggeber der App und Redaktion für News, Events und Wiki-Inhalte. Auftritt: projektweit, insbesondere als `owner`-Angabe in Spec-Frontmatter.
@@ -74,6 +74,9 @@ Zeitlich begrenzte technische Untersuchung zur Klärung einer offenen Frage vor 
 
 **studentSet**
 Angabe im FBWS-Termindatensatz (INT-002), für welche Studierendengruppen ein Termin gilt. Entweder ein Einzelwert oder ein Bereich der Form `A1-C9` (Muster `^([A-Z])([0-9]*)-([A-Z])([0-9]*)$`). `*` steht für alle Gruppen. Wird lokal gegen die Gruppenkennung abgeglichen. Auftritt: `features/schedule/spec.md`, `platform/integrations.md` (INT-002).
+
+**UnifiedPush**
+Offenes, dezentrales Push-Protokoll ohne zentralen Betreiber: Die App registriert sich bei einem auf dem Gerät installierten „Distributor" (z. B. ein FCM-basierter Distributor oder das quelloffene ntfy), der die Zustellung übernimmt. Ersetzt seit `decisions/0008-vertrieb-ueber-drei-app-stores.md` FCM als Zustellweg für Android, da F-Droid proprietäre Abhängigkeiten wie Firebase im Build ausschließt. Auftritt: `platform/integrations.md` (INT-005), `platform/non-functional.md`.
 
 **Vermittler-Infrastruktur**
 Die von der Alt-App genutzten Dienste unter `hemacode.de` (INT-003 News, INT-004 Mensa), die selbst keine Primärquelle sind, sondern Daten anderer Systeme (FSR-Redaktion bzw. OpenMensa) weiterreichen. Privat betrieben, ohne bekannten Vertrag oder zugesagte Verfügbarkeit — daher als Risiko in `platform/integrations.md` geführt und Gegenstand von `decisions/0007-datenquellen-mensa-und-news.md`.

@@ -1,0 +1,24 @@
+<resources>
+
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+
+    <dimen name="edittext_filter">16dp</dimen>
+    <dimen name="checkbox_speiseplan">12dp</dimen>
+
+    <dimen name="max_width">320dp</dimen>
+
+    <dimen name="listview_padding">8dp</dimen>
+    <dimen name="listviev_dividerheight">5dp</dimen>
+
+    <dimen name="elevation">4dp</dimen>
+
+    <dimen name="welcomepage_image_width">-2dp</dimen>
+    <dimen name="welcomepage_image_height">-2dp</dimen>
+
+
+    <dimen name="welcomepage_padding_bottom">30dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+
+</resources>

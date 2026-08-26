@@ -1,0 +1,177 @@
+---
+id: admin
+titel: Verwaltung und Redaktion
+praefix: ADMIN
+status: accepted
+prioritaet: kern
+version: 0.1.0
+owner: FSR FB4
+last_reviewed: 2026-08-25
+derived_from: []
+implemented_in: []
+related:
+  - ../../platform/backend-and-api.md
+  - ../../platform/identity-and-moderation.md
+  - ../../platform/security-and-privacy.md
+  - ../../platform/ux-and-theming.md
+  - ../../decisions/0010-authentik-als-identitaetsanbieter.md
+  - ../../decisions/0011-monorepo-und-openapi-vertrag.md
+  - ../../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md
+  - ../news/spec.md
+  - ../room-finder/spec.md
+  - ../canteen-ratings/spec.md
+  - ../event-volunteers/spec.md
+  - ../schedule/spec.md
+---
+
+# Verwaltung und Redaktion
+
+## 1. Zweck & Nutzen
+
+Mehrere Anforderungen des Spec-Bestands setzen voraus, dass FSR-Mitglieder Inhalte pflegen können: FSR-News redigieren (API-F-090), den offiziellen Prüfungsplan hochladen (API-F-180), Laufwege zwischen Räumen pflegen (API-F-220), Helferbedarf je Event anlegen und die Besetzung überblicken (HELFER-F-010, HELFER-F-050) sowie gemeldete Bewertungskommentare prüfen und entfernen (IDENT-F-040, IDENT-F-090 bis F-110). Keine dieser Anforderungen benennt bislang, **wo** diese Pflege stattfindet. Diese Spec schließt die Lücke und beschreibt die Verwaltungsoberfläche als eigenständiges Feature.
+
+Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Arbeit fällt unterwegs an — eine kurze Meldung veröffentlichen, sehen ob eine Schicht besetzt ist —, ein anderer Teil ist Fließarbeit am Rechner, etwa der Prüfungsplan-Import oder die Pflege eines Nachbarschaftsgraphen. Die Oberfläche existiert deshalb in zwei Ausprägungen mit identischem Funktionsumfang: als geschützter Bereich innerhalb der App und als eigenständige Weboberfläche für die Bedienung am PC.
+
+## 2. Scope / Nicht-Scope
+
+### Scope
+
+- Zugangsschutz und Rollenprüfung für alle Verwaltungsfunktionen.
+- Redaktion von FSR-News: anlegen, bearbeiten, veröffentlichen, zurückziehen.
+- Zuweisung der Rollen FSR-Redaktion und Moderation an Konten.
+- Pflege der Laufwege-Datenstruktur zwischen Räumen (Grundlage für RAUM-F-060).
+- Moderation gemeldeter Bewertungskommentare (zweite Ausbaustufe, siehe `../../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md`).
+- Anlegen von Helferbedarf und Übersicht der Besetzung (zweite Ausbaustufe).
+- Import des offiziellen Prüfungsplans (zweite Ausbaustufe).
+- Bereitstellung derselben Funktionen in der App und in einer eigenständigen Weboberfläche.
+
+### Nicht-Scope
+
+- Anlegen und Verwalten der Konten selbst (Registrierung, Passwörter, Anmeldeverfahren) — das leistet Authentik, siehe `../../decisions/0010-authentik-als-identitaetsanbieter.md`. Diese Spec weist lediglich Rollen zu.
+- Redaktion von Events — erfolgt im externen ICS-Kalender (INT-011), siehe `../events/spec.md`.
+- Redaktion von FB-Aktuelles — reiner Import aus INT-010 ohne FSR-Redaktion, siehe `../news/spec.md`.
+- Pflege von E-Key-Datensätzen — bleibt im bestehenden Verwaltungstool des FSR (INT-014), siehe `../e-key/spec.md`.
+- Pflege von Wiki-Inhalten — bleibt in BookStack, siehe `../wiki/spec.md`.
+- Auswertungen und Nutzungsstatistiken — nicht Teil dieses Umfangs.
+
+## 3. Nutzergeschichten
+
+- Als FSR-Mitglied möchte ich eine kurze Meldung unterwegs vom Handy aus veröffentlichen, ohne dafür an einen Rechner zu müssen.
+- Als FSR-Mitglied möchte ich den Prüfungsplan und die Laufwege-Daten am Rechner pflegen, weil beides Fließarbeit mit vielen Einträgen ist.
+- Als FSR-Vorsitz möchte ich einem neuen Mitglied die Redaktionsrolle geben und einem ausgeschiedenen wieder entziehen, ohne dafür jemanden mit Serverzugang zu brauchen.
+- Als Moderation möchte ich gemeldete Kommentare an einer Stelle sehen und entscheiden können, statt sie in der Datenbank zu suchen.
+- Als FSR-Mitglied möchte ich vor dem Veröffentlichen sehen, wie eine Meldung in der App aussehen wird.
+
+## 4. Funktionale Anforderungen
+
+| ID | Anforderung | Herkunft |
+|---|---|---|
+| ADMIN-F-010 | Falls eine Person ohne die Rolle FSR-Redaktion oder Moderation eine Verwaltungsfunktion aufruft, muss das System den Zugriff ablehnen. | NEU |
+| ADMIN-F-020 | Das System muss den Verwaltungsbereich nur Konten mit mindestens einer Verwaltungsrolle überhaupt sichtbar machen. | NEU |
+| ADMIN-F-030 | Das System muss denselben fachlichen Funktionsumfang in der App und in der Weboberfläche bereitstellen. | NEU |
+| ADMIN-F-040 | Das System muss der Rolle FSR-Redaktion das Anlegen, Bearbeiten, Veröffentlichen und Zurückziehen von Meldungen der Klassifizierung „FSR-News" ermöglichen. | NEU |
+| ADMIN-F-050 | Wenn eine Meldung zurückgezogen wird, muss das System sie aus der Meldungsliste der App entfernen und angepinnte Verweise darauf als zurückgezogen kennzeichnen. | NEU |
+| ADMIN-F-060 | Das System muss vor dem Veröffentlichen einer Meldung eine Vorschau in der Darstellung der App anbieten. | NEU |
+| ADMIN-F-070 | Das System muss der Rolle FSR-Redaktion das Zuweisen und Entziehen der Rollen FSR-Redaktion und Moderation für einzelne Konten ermöglichen. | NEU |
+| ADMIN-F-080 | Falls eine Person sich selbst die letzte verbleibende Zuweisung der Rolle FSR-Redaktion entziehen will, muss das System den Vorgang ablehnen. | NEU |
+| ADMIN-F-090 | Das System muss der Rolle FSR-Redaktion das Anlegen, Ändern und Entfernen von Laufwege-Einträgen zwischen zwei Raumkennungen mit zugehörigem Distanzmaß ermöglichen. | NEU |
+| ADMIN-F-100 | Falls ein Laufwege-Eintrag eine Raumkennung nennt, die in den aggregierten Raumdaten nicht vorkommt, muss das System darauf hinweisen und den Eintrag dennoch speichern. | NEU |
+| ADMIN-F-110 | Das System muss jede verändernde Verwaltungshandlung mit Zeitpunkt, handelndem Konto und betroffenem Datensatz protokollieren. | NEU |
+| ADMIN-F-120 | Das System muss der Rolle Moderation eine Liste der gemeldeten Bewertungskommentare mit den Handlungsmöglichkeiten Entfernen und Verwerfen der Meldung bereitstellen. | NEU |
+| ADMIN-F-130 | Das System muss der Rolle Moderation das Sperren eines Kontos gemäß IDENT-F-070 sowie das Bearbeiten eines Widerspruchs gemäß IDENT-F-110 ermöglichen. | NEU |
+| ADMIN-F-140 | Das System muss der Rolle FSR-Redaktion das Anlegen und Ändern von Helferbedarf je Event, gegliedert nach Rolle, Schicht und benötigter Personenzahl, ermöglichen. | NEU |
+| ADMIN-F-150 | Das System muss der Rolle FSR-Redaktion eine Übersicht aller Rollen/Schichten eines Events mit besetzten und offenen Plätzen bereitstellen. | NEU |
+| ADMIN-F-160 | Das System muss der Rolle FSR-Redaktion den Upload einer Prüfungsplan-Datei sowie die Anzeige des Importergebnisses (übernommene Einträge, verworfene Zeilen mit Grund) ermöglichen. | NEU |
+| ADMIN-F-170 | Wenn ein Prüfungsplan-Upload Zeilen enthält, die nicht ausgewertet werden konnten, muss das System den Import dennoch abschließen und die betroffenen Zeilen einzeln benennen. | NEU |
+
+### Erläuterungen
+
+**`ADMIN-F-010` / `ADMIN-F-020` — Rollenquelle.** Die Rollen stammen als Gruppenzugehörigkeit aus Authentik und werden als Claim im Token übertragen (`../../decisions/0010-authentik-als-identitaetsanbieter.md`); das Backend führt keine eigene Rollentabelle. ADMIN-F-070 wirkt deshalb auf Authentik-Gruppen, nicht auf eine backend-eigene Datenstruktur. Die Trennung zwischen ADMIN-F-010 und ADMIN-F-020 ist beabsichtigt: Die serverseitige Ablehnung ist die eigentliche Schutzmaßnahme, das Ausblenden in der Oberfläche eine reine Darstellungsfrage und für sich allein kein Schutz.
+
+**`ADMIN-F-030` — zwei Oberflächen, ein Funktionsumfang.** Die Weboberfläche existiert wegen der Bedienbarkeit am PC (Tastatur, große Tabellen, Dateiauswahl beim Prüfungsplan-Import), nicht wegen abweichender Funktionalität. Beide Ausprägungen sprechen denselben Vertrag (`../../platform/api-contract.yaml`) und denselben Anmeldeweg an. Unterschiede in der Darstellung — etwa eine mehrspaltige Tabelle am PC gegenüber einer Liste auf dem Telefon — sind ausdrücklich zulässig und kein Verstoß gegen diese Anforderung.
+
+**`ADMIN-F-050` — Zurückziehen statt Löschen.** Eine bereits ausgelieferte Meldung kann auf Geräten im Zwischenspeicher liegen (`../../platform/data-and-storage.md` Abschnitt 4) und laut NEWS-F-050 angepinnt sein. Ein stilles Verschwinden würde für angepinnte Meldungen einen Eintrag ohne Inhalt hinterlassen; die Kennzeichnung als zurückgezogen macht den Vorgang stattdessen sichtbar.
+
+**`ADMIN-F-080` — Aussperrschutz.** Ohne diese Regel könnte sich der FSR versehentlich vollständig aus der eigenen Verwaltung aussperren; die Wiederherstellung wäre nur mit Serverzugang möglich und damit an einzelne Personen gebunden — genau das Muster, das `../../decisions/0002-spec-anchored-arbeitsweise.md` als Ursache des Scheiterns der Alt-Apps benennt.
+
+**`ADMIN-F-100` — Hinweis statt Ablehnung.** Die aggregierten Raumdaten sind ein Abbild der FBWS-Termine (INT-002/INT-009) und enthalten nur Räume, in denen tatsächlich Veranstaltungen stattfinden. Ein Verbindungsgang oder ein Treppenhaus taucht dort nie auf, ist für einen Nachbarschaftsgraphen aber sinnvoll. Eine harte Ablehnung würde die Pflege unnötig einschränken; der Hinweis genügt, um Tippfehler zu bemerken.
+
+**`ADMIN-F-110` — Umfang der Protokollierung.** Protokolliert werden Zeitpunkt, Konto und betroffener Datensatz, nicht der Inhalt nutzergenerierter Beiträge — `../../platform/security-and-privacy.md` (SEC-N-120) untersagt personenbezogene Inhalte in Protokollen, und API-N-080 verlangt Datensparsamkeit. Bei einer Moderationsentscheidung wird also festgehalten, dass ein bestimmter Kommentar entfernt wurde, nicht sein Wortlaut.
+
+**`ADMIN-F-120` bis `ADMIN-F-170` — Ausbaustufe.** Diese sechs Anforderungen gehören zur zweiten Ausbaustufe, weil die von ihnen bedienten Funktionen dort liegen: Moderation gemeinsam mit RATE-F-020/060, Helferbedarf gemeinsam mit HELFER, Prüfungsplan gemeinsam mit SCHED-F-190 bis F-220 und der Klärung von INT-013. Zuordnung siehe `../../product/roadmap.md`.
+
+## 5. Datenmodell
+
+Meldungsentwurf (FSR-News): Titel, Text, geplanter Veröffentlichungszeitpunkt, Zustand (Entwurf, veröffentlicht, zurückgezogen), verfassendes Konto. Nach Veröffentlichung entsteht daraus eine Meldung im Sinne von `../news/spec.md` Abschnitt 5, Klassifizierung „FSR-News".
+
+Rollenzuweisung: Konto-Referenz und Rolle. Führendes System ist Authentik; das Backend hält keine eigene Kopie, sondern liest die Zuweisung aus dem Token und schreibt Änderungen über Authentik zurück.
+
+Laufwege-Eintrag: zwei Raumkennungen und ein Distanzmaß (Arbeitsziel Fußweg-Minuten, siehe `../room-finder/spec.md` Abschnitt 13). Grobe Felder bereits in `../../platform/backend-and-api.md` Abschnitt 5 vorgedacht.
+
+Verwaltungsprotokoll: Zeitpunkt, handelndes Konto, Art der Handlung, Referenz auf den betroffenen Datensatz. Kein Inhalt nutzergenerierter Beiträge (siehe Erläuterung zu ADMIN-F-110).
+
+Helferbedarf und Prüfungsplan haben kein eigenes Datenmodell in dieser Spec — sie werden in `../event-volunteers/spec.md` beziehungsweise `../../platform/backend-and-api.md` Abschnitt 5 geführt und hier nur bearbeitet.
+
+## 6. Externe Schnittstellen
+
+Alle Verwaltungsfunktionen laufen über das eigene Backend INT-008; der Vertrag steht in `../../platform/api-contract.yaml`. Anmeldung und Rollenzuweisung nutzen INT-012 (Authentik). Der Prüfungsplan-Upload verarbeitet eine Datei aus INT-013, ruft diese Quelle aber nicht selbst ab — der Download aus dem Hochschul-Intranet bleibt ein manueller Schritt außerhalb des Systems. Keine Endpunktdetails hier — siehe `../../platform/integrations.md`.
+
+## 7. UI-Flows & Zustände
+
+| Zustand | Verhalten |
+|---|---|
+| Nicht angemeldet | Anmeldeaufforderung; der Verwaltungsbereich ist nicht sichtbar (ADMIN-F-020) |
+| Angemeldet ohne Verwaltungsrolle | Verwaltungsbereich bleibt unsichtbar; ein direkt aufgerufener Verwaltungspfad wird abgelehnt (ADMIN-F-010) |
+| Laden | Ladeanzeige beim Abrufen von Entwürfen, Rollen, Laufwegen oder Meldungen |
+| Leer | Je Bereich benannter Leerzustand mit dem nächsten Schritt, etwa „noch keine Entwürfe — neue Meldung anlegen" (`../../platform/ux-and-theming.md` UX-F-110) |
+| Fehler | Fehlermeldung mit Wiederholen-Option; ein nicht gespeicherter Entwurf bleibt erhalten |
+| Offline | Verwaltungsfunktionen sind nicht verfügbar, siehe Abschnitt 8 |
+| Vorschau | Darstellung der Meldung in der Ansicht der App vor dem Veröffentlichen (ADMIN-F-060) |
+| Import läuft | Fortschrittsanzeige beim Prüfungsplan-Upload, danach Ergebnisbericht (ADMIN-F-160/170) |
+
+## 8. Offline-Verhalten
+
+Verwaltungsfunktionen sind ausschließlich online nutzbar und werden ohne Netzzugriff als nicht verfügbar gekennzeichnet. Sie werden ausdrücklich **nicht** in die Offline-Warteschlange aufgenommen (`../../platform/architecture.md` ARCH-F-120): Anders als eine Mensa-Bewertung ist eine Redaktions- oder Moderationshandlung an einen Zustand gebunden, der sich zwischen Auslösung und Übertragung geändert haben kann — eine Meldung wurde inzwischen von jemand anderem bearbeitet, ein Kommentar bereits entfernt, eine Rolle bereits entzogen. Eine verzögert übertragene Handlung würde in diesen Fällen einen fremden, neueren Stand überschreiben.
+
+Ein lokal begonnener, noch nicht abgesendeter Meldungsentwurf bleibt davon unberührt und geht bei Verbindungsverlust nicht verloren.
+
+## 9. Fehlerfälle
+
+| Fall | Reaktion |
+|---|---|
+| Zwei Personen bearbeiten denselben Meldungsentwurf gleichzeitig | Der zweite Speichervorgang wird abgelehnt, mit Hinweis auf die zwischenzeitliche Änderung und Anzeige des neueren Stands |
+| Rollenänderung schlägt fehl, weil Authentik nicht erreichbar ist | Fehlermeldung mit Wiederholen-Option; die bisherige Rollenzuweisung bleibt unverändert |
+| Prüfungsplan-Datei hat ein unerwartetes Format | Import abbrechen, bisherigen Bestand unverändert lassen, erkannte Abweichung benennen |
+| Prüfungsplan-Datei enthält einzelne unlesbare Zeilen | Import abschließen, unlesbare Zeilen einzeln im Ergebnisbericht benennen (ADMIN-F-170) |
+| Laufwege-Eintrag verweist zweimal auf dieselbe Raumkennung | Ablehnen mit Hinweis; ein Weg von einem Raum zu sich selbst hat kein Distanzmaß |
+| Gemeldeter Kommentar wurde von der verfassenden Person bereits gelöscht | Meldung als erledigt kennzeichnen, keine Fehlermeldung |
+
+## 10. Nicht-funktionale Anforderungen
+
+| ID | Anforderung | Herkunft |
+|---|---|---|
+| ADMIN-N-010 | Das System muss die Weboberfläche auf Bildschirmbreiten ab 1024 Pixeln vollständig bedienbar machen, ohne die Hochformat-Vorgabe der App (NFR-N-150) zu berühren. | NEU |
+| ADMIN-N-020 | Das System muss Verwaltungsprotokolle mindestens zwölf Monate vorhalten, damit eine Handlung über einen Wechsel der FSR-Besetzung hinweg nachvollziehbar bleibt. | NEU |
+
+### Erläuterungen
+
+**`ADMIN-N-020`** — Zwölf Monate sind gewählt, weil die FSR-Besetzung jährlich wechselt; eine kürzere Frist würde bedeuten, dass die neue Besetzung Handlungen der vorherigen nicht mehr nachvollziehen kann. Die Frist steht nicht im Widerspruch zu den dreißig Tagen für technische Betriebsprotokolle (`../../platform/security-and-privacy.md` Abschnitt 3): Dort geht es um IP-Adressen und aufgerufene Endpunkte, hier um Verwaltungshandlungen ohne personenbezogene Inhalte.
+
+## 11. Akzeptanzkriterien
+
+- Ein Konto ohne Verwaltungsrolle erhält bei direktem Aufruf eines Verwaltungspfads eine Ablehnung vom Server, nicht nur eine ausgeblendete Schaltfläche (ADMIN-F-010).
+- Dieselbe Meldung lässt sich in der App und in der Weboberfläche anlegen, bearbeiten und veröffentlichen, mit gleichem Ergebnis (ADMIN-F-030/040).
+- Eine veröffentlichte und anschließend zurückgezogene Meldung erscheint nicht mehr in der Meldungsliste; war sie angepinnt, ist sie dort als zurückgezogen erkennbar (ADMIN-F-050).
+- Der Versuch, die letzte verbleibende Zuweisung der Rolle FSR-Redaktion zu entziehen, wird abgelehnt (ADMIN-F-080).
+- Ein Laufwege-Eintrag mit unbekannter Raumkennung wird gespeichert und dabei sichtbar als unbekannt gekennzeichnet (ADMIN-F-100).
+- Jede verändernde Handlung erscheint im Verwaltungsprotokoll mit Zeitpunkt und Konto, ohne den Inhalt nutzergenerierter Beiträge (ADMIN-F-110).
+
+## 12. Bewusst nicht übernommenes Altverhalten
+
+Nicht zutreffend — keine der Alt-Apps bietet Verwaltungs- oder Redaktionsfunktionen. Die Alt-Apps waren reine Lese-Clients (`../../product/vision.md` Abschnitt 2); Inhalte entstanden außerhalb.
+
+## 13. Offene Fragen
+
+- Ob die Weboberfläche eigenständig ausgeliefert oder vom Backend mitgeliefert wird — offener Punkt in `../../decisions/0011-monorepo-und-openapi-vertrag.md`.
+- Ob Meldungsentwürfe eine geplante Veröffentlichung zu einem künftigen Zeitpunkt unterstützen sollen oder nur sofortiges Veröffentlichen; für die erste Ausbaustufe ist das Feld im Datenmodell vorgesehen, eine zeitgesteuerte Auslieferung aber nicht gefordert.
+- Ob das Verwaltungsprotokoll (ADMIN-F-110) in der Oberfläche einsehbar sein soll oder nur serverseitig geführt wird — für die erste Ausbaustufe genügt die serverseitige Führung.

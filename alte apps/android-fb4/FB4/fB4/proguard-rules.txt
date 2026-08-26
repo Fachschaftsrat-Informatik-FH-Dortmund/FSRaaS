@@ -1,0 +1,18 @@
+-dontobfuscate
+-optimizationpasses 5
+-optimizations !code/simplification/arithmetic,!field
+-dontwarn okio.**
+
+# Platform calls Class.forName on types which do not exist on Android to determine platform.
+-dontnote retrofit2.Platform
+# Platform used when running on RoboVM on iOS. Will not be used at runtime.
+-dontnote retrofit2.Platform$IOS$MainThreadExecutor
+# Platform used when running on Java 8 VMs. Will not be used at runtime.
+-dontwarn retrofit2.Platform$Java8
+
+#-keep class de.fsrfb4.fb4.retrofit.timetable.** { *; }
+
+### Regeln für Slf4j
+-dontwarn org.slf4j.LoggerFactory
+-dontwarn org.slf4j.MDC
+-dontwarn org.slf4j.MarkerFactory

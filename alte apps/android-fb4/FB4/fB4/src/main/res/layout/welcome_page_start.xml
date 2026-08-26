@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.redbooth.WelcomePageLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/welcome_page"
+    app:theme="@style/ThemeOverlay.AppCompat.Dark"
+    tools:background="@color/main">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/title_start"
+        android:gravity="center">
+
+        <!-- When using support library for vector drawables this icon doesn't get displayed correctly on API < 23 -->
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="@dimen/welcomepage_image_width"
+            android:layout_height="@dimen/welcomepage_image_height"
+            android:src="@drawable/ic_launcher" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/title_start"
+        style="@style/text_title"
+        android:layout_above="@+id/subtitle_start"
+        android:layout_marginTop="20dp"
+        android:text="@string/willkommenZurNeuenApp" />
+
+    <TextView
+        android:id="@+id/subtitle_start"
+        style="@style/text_subtitle"
+        android:layout_alignParentBottom="true"
+
+        android:text="@string/wischeNachLinksZumEinrichten" />
+
+
+</com.redbooth.WelcomePageLayout>

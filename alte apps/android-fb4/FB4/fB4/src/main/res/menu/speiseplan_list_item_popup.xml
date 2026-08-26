@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/ausblenden"
+        android:title="@string/speiseplan_ausblenden" />
+
+    <item
+        android:id="@+id/pdf"
+        android:title="@string/pdf_ansehen" />
+</menu>

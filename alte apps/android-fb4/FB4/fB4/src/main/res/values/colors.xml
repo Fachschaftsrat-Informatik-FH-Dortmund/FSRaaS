@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="main">#FF6600</color>
+    <color name="main_accent">#FF6600</color>
+    <color name="main_darker">#BD4200</color>
+
+    <color name="toolbarColor">@color/main</color>
+
+    <color name="card_default">#FFFFFF</color>
+    <color name="card_grey">#EBEBEB</color>
+    <color name="card_orange">#FF9D5C</color>
+
+    <color name="text_ausgegraut">#4A4A4A</color>
+    <color name="divider_ausgegraut">#F18D4B</color>
+    <color name="textorangefilter">#593720</color>
+
+    <color name="splash_background_color">#FCFCFF</color>
+
+    <string-array name="default_color_choice_values" translatable="false">
+        <item>#33b5e5</item>
+        <item>#aa66cc</item>
+        <item>#99cc00</item>
+        <item>#ffbb33</item>
+        <item>#ff4444</item>
+        <item>#0099cc</item>
+        <item>#9933cc</item>
+        <item>#669900</item>
+        <item>#ff8800</item>
+        <item>#cc0000</item>
+        <item>#E91E63</item>
+        <item>#795548</item>
+    </string-array>
+
+    <color name="card_native_base_cardwithlist_background_list_color">@color/card_default</color>
+    <color name="card_native_base_cardwithlist_divider_color">#E5E5E5</color>
+
+    <color name="page1">#FFA726</color>
+    <color name="page2">#FB8C00</color>
+    <color name="page3">#F57C00</color>
+    <color name="page4">#E65100</color>
+
+    <color name="black_overlay">#66000000</color>
+
+    <color name="navdrawer_divider_grey">#E5E5E5</color>
+    <color name="layout_background_color">#F5F5F5</color>
+
+    <color name="icon_color_grey">#737373</color>
+    <color name="icon_color_grey_disabled">#D7D7D7</color>
+
+    <color name="menu_item_icon_color">#616161</color>
+
+    <color name="swipetorefresh_green">#0f9d58</color>
+    <color name="swipetorefresh_red">#da4437</color>
+    <color name="swipetorefresh_blue">#3e85f9</color>
+    <color name="swipetorefresh_yellow">#f8b204</color>
+
+    <array name="swipetorefresh_colors">
+        <item>@color/swipetorefresh_blue</item>
+        <item>@color/swipetorefresh_green</item>
+        <item>@color/swipetorefresh_yellow</item>
+        <item>@color/swipetorefresh_red</item>
+    </array>
+
+    <color name="empty_view_color">#64686c</color>
+    <color name="swiperefresh_progress_background">#ffffff</color>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal" >
+    
+    <EditText
+        android:id="@+id/input_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/nachrichtSuchen"
+        android:imeOptions="actionDone"
+        android:inputType="text"
+        android:textAppearance="?android:attr/textAppearanceMediumInverse"
+        android:background="@drawable/textfield_search_activated_mtrl_alpha" >
+
+        <requestFocus />
+        </EditText>
+</LinearLayout>

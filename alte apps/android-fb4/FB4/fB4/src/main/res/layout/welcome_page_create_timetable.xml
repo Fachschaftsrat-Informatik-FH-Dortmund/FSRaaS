@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.redbooth.WelcomePageLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/welcome_page"
+    app:theme="@style/ThemeOverlay.AppCompat.Dark"
+    tools:background="@color/main">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:layout_above="@+id/text_timetable_title">
+        <ImageView
+            android:id="@+id/image_rocket_figure"
+            android:layout_width="@dimen/welcomepage_image_width"
+            android:layout_height="@dimen/welcomepage_image_height"
+            android:src="@drawable/ic_new_event" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/text_timetable_title"
+        style="@style/text_title"
+        android:layout_above="@+id/text_timetable_subtitle"
+        android:text="@string/Stundenplan_erstellen"/>
+
+    <TextView
+        android:id="@+id/text_timetable_subtitle"
+        style="@style/text_subtitle"
+        android:layout_above="@+id/button_create_timetable"
+        android:text="@string/Stundenplan_erstellen_abfrage"/>
+
+    <Button
+        style="?attr/borderlessButtonStyle"
+        android:id="@+id/button_create_timetable"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/Stundenplan_erstellen_kurz"
+        android:layout_marginTop="10dp"/>
+
+</com.redbooth.WelcomePageLayout>

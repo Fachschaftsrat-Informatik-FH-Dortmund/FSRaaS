@@ -4,7 +4,7 @@ titel: Wiki-Anbindung
 praefix: WIKI
 status: draft
 prioritaet: kern
-version: 0.1.1
+version: 0.1.2
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from: []

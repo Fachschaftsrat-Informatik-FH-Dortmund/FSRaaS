@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="welcome_page">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:paddingBottom">@dimen/welcomepage_padding_bottom</item>
+
+        <item name="android:clipToPadding">false</item>
+    </style>
+
+    <style name="text_title_base">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">30dp</item>
+        <item name="android:textColor">#ffffff</item>
+        <item name="android:layout_marginBottom">8dp</item>
+    </style>
+
+    <style name="text_subtitle_base">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">20dp</item>
+        <item name="android:textColor">#ffffff</item>
+        <item name="android:layout_marginBottom">16dp</item>
+        <item name="android:layout_marginLeft">30dp</item>
+        <item name="android:layout_marginRight">30dp</item>
+    </style>
+
+    <style name="text_title" parent="text_title_base" />
+
+    <style name="text_subtitle" parent="text_subtitle_base" />
+
+    <style name="CardStyle">
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">100dp</item>
+        <item name="android:minWidth">200dp</item>
+    </style>
+
+    <style name="SimpleSearchViewStyle">
+        <item name="android:hint">@string/nachrichtSuchen</item>
+        <item name="searchBackground">@color/card_default</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+        <item name="hintColor">?android:attr/textColorSecondary</item>
+        <item name="iconsTint">@color/menu_item_icon_color</item>
+        <item name="iconsAlpha">1</item>
+    </style>
+
+    <style name="Theme.FB4_2.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.FB4_2.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.FB4_2.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+</resources>

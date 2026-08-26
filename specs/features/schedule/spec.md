@@ -2,12 +2,15 @@
 id: schedule
 titel: Stundenplan
 praefix: SCHED
-status: draft
+status: accepted
 prioritaet: kern
-version: 0.6.0
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/dialog/CalendarExportDialog.java
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/util/GroupLetterUtil.java
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/schedule_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/course_info_repository.dart
@@ -96,11 +99,12 @@ Für Studierende mit Wahlpflichtfächern kommt eine zweite Herausforderung hinzu
 | SCHED-F-090 | Wenn eine Bereichsgrenze in `studentSet` keine Zahl trägt (z. B. `A-C9`), dann muss das System diese Grenze als offen behandeln und jede Zahl auf dem jeweiligen Grenzbuchstaben einschließen. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:225,235 |
 
 Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehalten, weil ein reiner Zeichenkettenvergleich bei mehrstelligen Zahlen falsche Ergebnisse liefert (`"10"` wäre als Zeichenkette kleiner als `"9"`, da `'1' < '9'`). `quality-and-testing.md` (QA-F-030) verlangt automatisierte Tests genau für diesen Fall.
-| SCHED-F-100 | Falls kein Termin zur angegebenen Gruppenkennung an einem Wochentag passt, muss das System diesen Tag als leer kennzeichnen und den Grund (Gruppenfilterung) nennen. | NEU |
+| SCHED-F-100 | Falls bei aktivem Ausblenden gruppenfremder Termine an einem Wochentag kein Termin verbleibt, muss das System diesen Tag als leer kennzeichnen und die Gruppenfilterung als Grund nennen. | NEU |
 | SCHED-F-110 | Das System muss der Nutzerin das Anlegen eigener, nicht-offizieller Termine mit Titel, Wochentag, Beginn- und Endzeit ermöglichen. | Alt: lib/areas/schedule/screens/add_custom_schedule_item_page.dart |
 | SCHED-F-120 | Das System muss eigene Termine dauerhaft von offiziellen FBWS-Terminen unterscheidbar kennzeichnen. | Alt: bewusst verworfen |
 | SCHED-F-130 | Das System muss der Nutzerin das Bearbeiten und Löschen eigener Termine über einen sichtbaren Bedienweg ermöglichen, nicht ausschließlich über eine verdeckte Geste. | Alt: bewusst verworfen |
-| SCHED-F-140 | Wenn die Nutzerin eine Gruppenkennung angibt, dann muss das System nur Termine anzeigen, deren `studentSet` diese Kennung einschließt. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:209 |
+| SCHED-F-140 | Wenn die Nutzerin eine Gruppenkennung angibt, dann muss das System Termine, deren `studentSet` diese Kennung nicht einschließt, als gruppenfremd gekennzeichnet darstellen, statt sie zu entfernen. | Alt: lib/areas/schedule/widgets/schedule_card.dart:50-54 |
+| SCHED-F-145 | Das System muss der Nutzerin einen Schalter bereitstellen, mit dem gruppenfremde Termine ausgeblendet und wieder eingeblendet werden können. | NEU |
 | SCHED-F-150 | Wenn die Einstellung „beim Öffnen zum aktuellen Wochentag springen" aktiv ist, dann muss das System beim Öffnen des Stundenplans den aktuellen Wochentag anzeigen. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:124-134 |
 | SCHED-F-160 | Falls der aktuelle Tag ein Wochenendtag ist, muss das System beim automatischen Sprung zum aktuellen Wochentag stattdessen den vorangegangenen Freitag anzeigen. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:132 |
 | SCHED-F-170 | Das System muss den dargestellten Stundenplan als iCal-Datei (.ics) exportierbar machen, als einmaligen, lokal erzeugten Export ohne serverseitige Beteiligung. | Recherche: WhatsApp-Chat informatik-pi-ti-ds-ws-24-25, 2026-08-25 |
@@ -110,7 +114,15 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 | SCHED-F-210 | Wenn ein Termin eine Prüfung ist — eigen als Prüfung gekennzeichnet oder aus dem Prüfungsplan ausgewählt —, muss das System ihn visuell gesondert von regulären Terminen kennzeichnen. | NEU |
 | SCHED-F-220 | Wenn das Backend eine Aktualisierung des offiziellen Prüfungsplans meldet und mindestens einer der lokal ausgewählten Prüfungstermine der Nutzerin davon betroffen ist, muss das System die Nutzerin darüber informieren. | NEU |
 | SCHED-F-230 | Wenn sich ein eigener Termin zeitlich mit einem offiziellen Termin überschneidet, muss das System beide Termine mit einem sichtbaren Konflikthinweis darstellen. | NEU |
-| SCHED-F-240 | Das System muss der Nutzerin vor dem iCal-Export die separate Auswahl ermöglichen, ob offizielle Termine, eigene Termine und Prüfungstermine jeweils enthalten sind. | NEU |
+| SCHED-F-175 | Das System muss der Nutzerin das Übertragen der ausgewählten Termine in einen von ihr gewählten Gerätekalender ermöglichen, mit Angabe eines Zeitraums. | Recherche: alte apps/android-fb4, dialog/CalendarExportDialog.java, 2026-08-25 |
+| SCHED-F-177 | Falls die Berechtigung für den Gerätekalender nicht erteilt wird, muss das System den Datei-Export (SCHED-F-170) als Rückfallweg anbieten. | NEU |
+| SCHED-F-240 | Das System muss der Nutzerin vor jedem Export die separate Auswahl ermöglichen, ob offizielle Termine, eigene Termine und Prüfungstermine jeweils enthalten sind. | NEU |
+| SCHED-F-245 | Das System muss beim Anlegen des offiziellen Stundenplans die Auswahl ermöglichen, welche der abgerufenen Termine übernommen werden. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:58-90 |
+| SCHED-F-247 | Das System muss der Nutzerin das Ändern der Farbe eines einzelnen Termins über einen sichtbaren Bedienweg ermöglichen. | Alt: lib/areas/schedule/widgets/schedule_list.dart:59-136 |
+| SCHED-F-248 | Das System muss zu jedem offiziellen Termin Veranstaltungsart, Zeitraum, Bezeichnung, Gruppenangabe, lehrende Person und Raum anzeigen. | Alt: lib/areas/schedule/widgets/schedule_card.dart:69-121 |
+| SCHED-F-249 | Das System muss beim Anlegen eines eigenen Termins zusätzlich zu Titel, Wochentag und Zeiten die optionale Angabe von Raum und lehrender Person ermöglichen. | Alt: lib/areas/schedule/screens/add_custom_schedule_item_page.dart |
+| SCHED-F-252 | Das System muss die Termine eines Wochentags aufsteigend nach Beginnzeit sortiert darstellen. | Alt: lib/areas/schedule/models/schedule_item.dart:80-82 |
+| SCHED-F-254 | Falls die Studiengangsliste aus INT-001 nicht abrufbar ist, muss das System die vom Backend vorgehaltene Rückfallliste verwenden. | Recherche: alte apps/android-fb4, retrofit/TimeTableFallbackApi.java, 2026-08-25 |
 | SCHED-F-250 | Das System muss der Nutzerin ermöglichen, für eine einzelne offizielle Veranstaltung die Termine anderer Gruppen einzusehen, unabhängig von der eigenen Gruppenkennung. | Recherche: WhatsApp-Chat fh-informatik-22-23 / informatik-pi-ti-ds-ws-24-25 / praktische-informatik-ws-23-24, 2026-08-25 |
 | SCHED-F-260 | Das System muss der Nutzerin ermöglichen, einen nach SCHED-F-250 eingesehenen Termin einer anderen Gruppe anstelle des eigenen Gruppentermins in den persönlichen Stundenplan zu übernehmen; ein so übernommener Termin bleibt als offizieller Termin gekennzeichnet. | Recherche: WhatsApp-Chat informatik-pi-ti-ds-ws-24-25, 2026-08-25 |
 | SCHED-F-270 | Das System muss der Nutzerin ermöglichen, zusätzlich zum eigenen Fachsemester ein weiteres Fachsemester desselben Studiengangs auszuwählen, um dessen Termine für die Wahlpflicht-Planung abzurufen. | Recherche: WhatsApp-Chat pi-8-semester-fh-informatik, 2026-08-25 |
@@ -139,7 +151,17 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 
 **`SCHED-F-170`/`SCHED-F-180`** — Aus der automatisierten WhatsApp-Chat-Auswertung (`product/whatsapp-feedback-inventory.md`, Abschnitt 4 „Themenübersicht"): Studis weichen teils auf ICS-Import in eine externe Kalender-App aus, wenn ihnen die App-eigene Ansicht nicht reicht; mehrfach dokumentierte Verwirrung entsteht, wenn sich die Gruppenkennung mit dem Semesterwechsel ändert, die App aber weiter den alten Stand zeigt.
 
-**`SCHED-F-170`/`SCHED-F-240` (Export-Ausgestaltung, entschieden).** Rücksprache FSR FB4, 2026-08-25: Studis sollen den in der App zusammengestellten Stundenplan in ein Kalenderprogramm ihrer Wahl integrieren können; die technisch versierte Zielgruppe wünscht dabei maximale Konfigurationsfreiheit. Abgewogen wurden ein einmaliger, lokal erzeugter Datei-Export (kein Server-Zugriff nötig, bleibt aber nicht automatisch aktuell) gegenüber einem abonnierbaren Kalender-Link (bleibt synchron, bräuchte aber einen serverseitigen Endpunkt und damit eine gezielte Ausnahme von API-F-100). Entscheidung: ausschließlich der einmalige Datei-Export — API-F-100 bleibt ohne Ausnahme bestehen. Konfigurierbar ist die Auswahl der enthaltenen Terminarten (SCHED-F-240); Zeitraum-Filterung und Erinnerungs-Konfiguration sind bewusst nicht Teil dieses Umfangs.
+**`SCHED-F-170`/`SCHED-F-175`/`SCHED-F-240` (Export-Ausgestaltung, entschieden).** Rücksprache FSR FB4, 2026-08-25: Studis sollen den in der App zusammengestellten Stundenplan in ein Kalenderprogramm ihrer Wahl integrieren können. Abgewogen wurden ein einmaliger Datei-Export (kein Server-Zugriff nötig, bleibt aber nicht automatisch aktuell) gegenüber einem abonnierbaren Kalender-Link (bleibt synchron, bräuchte aber einen serverseitigen Endpunkt und damit eine Ausnahme von API-F-100). Der abonnierbare Link bleibt ausgeschlossen, API-F-100 gilt ohne Ausnahme.
+
+**Ergänzung vom selben Tag, nach Auswertung des Android-Quellcodes:** Die Android-Alt-App schreibt Termine unmittelbar in einen von der Nutzerin gewählten Gerätekalender, mit Auswahl des Zielkalenders und eines Zeitraums (`dialog/CalendarExportDialog.java`). Das ist bequemer als ein Datei-Export, den die Nutzerin anschließend selbst importieren muss, und damit der zu übertreffende Stand. Entscheidung FSR FB4, 2026-08-25: Beides wird angeboten — der Schreibzugriff als Hauptweg (SCHED-F-175), der Datei-Export als Rückfallweg für den Fall verweigerter Berechtigung oder eines Kalenders außerhalb des Geräts (SCHED-F-177). Die dafür nötige Kalenderberechtigung ist ausschließlich schreibend und wird erst bei tatsächlicher Nutzung angefragt; die zuvor gegenteilige Festlegung in `platform/security-and-privacy.md` Abschnitt 9 wurde entsprechend korrigiert. Konfigurierbar ist in beiden Wegen die Auswahl der enthaltenen Terminarten (SCHED-F-240).
+
+**`SCHED-F-140`/`SCHED-F-145` — kennzeichnen statt entfernen.** Die vorige Fassung von SCHED-F-140 forderte, gruppenfremde Termine gar nicht anzuzeigen. Das stand im Widerspruch zu drei anderen Festlegungen: `platform/ux-and-theming.md` UX-F-080 verlangt, gruppenfremde Termine zusätzlich zur Farbe durch Text oder Symbol zu kennzeichnen — was voraussetzt, dass sie sichtbar sind; das Datenmodell in Abschnitt 5 führt eigens ein Merkmal `gruppenzugehoerig`; und beide Alt-Apps zeigen solche Termine abgeblendet statt sie zu entfernen (Flutter: `schedule_card.dart:50-54`, dokumentiert als L-017). Entscheidung FSR FB4, 2026-08-25: Kennzeichnen ist das Sollverhalten, das Ausblenden wird als Schalter angeboten (SCHED-F-145). Das deckt zugleich den in SCHED-F-250 beschriebenen Bedarf mit ab, Termine anderer Gruppen einzusehen.
+
+**`SCHED-F-245` — Auswahl beim Anlegen.** Beide Alt-Apps lassen die Nutzerin beim Anlegen des offiziellen Stundenplans auswählen, welche der abgerufenen Termine tatsächlich übernommen werden; die Android-App filtert die Auswahlliste dabei nach Gruppenbuchstabe (`activities/timetable/AddEventsActivity.java`). Das ist mehr als Bequemlichkeit: Wahlpflichtveranstaltungen und Termine, an denen eine Person nicht teilnimmt, gehören nicht in ihren Plan, und ohne Auswahl beim Anlegen bliebe nur das nachträgliche Einzellöschen.
+
+**`SCHED-F-247` — Farbwahl.** `platform/ux-and-theming.md` setzt in UX-F-040 (Textfarbe aus der Hintergrundfarbe ableiten), UX-N-010 (Mindestkontrast) und UX-F-090 (sichtbarer Bedienweg für Gestenaktionen) durchgehend voraus, dass Termine eine wählbare Farbe haben — eine Anforderung dafür fehlte bis zum 2026-08-25 jedoch in dieser Spec. SCHED-F-247 schließt die Lücke.
+
+**`SCHED-F-254` — Rückfallliste.** Die Android-Alt-App hält eine vom eigenen Backend ausgelieferte Studiengangsliste vor, falls das Hochschulsystem nicht erreichbar ist (`retrofit/TimeTableFallbackApi.java`). Da die Studiengangsauswahl der Einstieg in den gesamten Stundenplan ist, macht ein Ausfall an dieser Stelle sonst das Anlegen unmöglich — auch für Nutzerinnen, die ihren Plan längst haben, aber ihn ändern wollen. Entspricht API-F-240.
 
 **`SCHED-F-010`** vs. `platform/architecture.md` Abschnitt 3 — die fünf-Tage-Ansicht bleibt für den Stundenplan selbst bestehen, unabhängig von der übergeordneten Navigationsstruktur (SHELL).
 
@@ -160,7 +182,11 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 | D2 | A1-C9 | nein | Buchstabe D liegt außerhalb des Bereichs A bis C (SCHED-F-080). |
 | A5 | A-C9 | ja | Anfangszahl leer, Grenze gilt als offen; bei Buchstabe A zählt jede Zahl (SCHED-F-090). |
 | C1 | A1-C | ja | Endzahl leer, Grenze gilt als offen; bei Buchstabe C zählt jede Zahl (SCHED-F-090). |
-| C8 | A1B2 | ja, mit Protokolleintrag | `studentSet` entspricht weder Einzelwert- noch Bereichsmuster; sicherer Rückfall auf „sichtbar" statt fälschlich verborgen (SCHED-F-140, siehe Abschnitt 9 „Fehlerfälle"). |
+| C8 | A1B2 | ja, mit Protokolleintrag | `studentSet` entspricht weder Einzelwert- noch Bereichsmuster; sicherer Rückfall auf „gruppenzugehörig" statt fälschlich als fremd markiert (siehe Abschnitt 9 „Fehlerfälle"). |
+
+Die Spalte „zugehörig" beantwortet die Frage, ob ein Termin als zur eigenen Gruppe gehörend gilt. Sie entscheidet nicht über die Sichtbarkeit: Gruppenfremde Termine bleiben nach SCHED-F-140 sichtbar und werden gekennzeichnet; ausgeblendet werden sie nur, wenn die Nutzerin den Schalter aus SCHED-F-145 aktiviert.
+
+**Wildcard-Befund aus der Android-Alt-App.** Deren Gruppenabgleich (`util/GroupLetterUtil.java`) behandelt den Wert `*` nicht gesondert: Er trifft die Bedingung für Einzelwerte nur, wenn die Gruppenkennung selbst mit `*` beginnt, und fällt andernfalls auf „nicht zugehörig" durch. Ein Termin, der ausdrücklich für alle Gruppen gilt, würde damit bei gesetzter Gruppenkennung als gruppenfremd markiert — das Gegenteil des Gemeinten. SCHED-F-060 legt das korrekte Verhalten fest; die Herkunftsmarkierung bleibt `NEU`, weil keine der beiden Alt-Apps ein Vorbild dafür liefert. Geführt als N-007 in `../../product/legacy-inventory.md`.
 
 **`SCHED-F-250`/`SCHED-F-260` — Gruppenwechsel als beobachtetes Verhalten.** Aus der Chat-Auswertung (u. a. `pi-8-semester-fh-informatik`, 2022-12-14 und 2023-01-09; `praktische-informatik-ws-23-24`, 2023-09-21): Studierende weichen bereits informell auf andere Gruppen aus — bei eigener Krankheit, verpasstem Termin oder auf ausdrücklichen Wunsch („Will wer Gruppen wechseln?"). Ein Beleg aus `informatik-pi-ti-ds-ws-24-25` (2024-09-30) zeigt den bestehenden Workaround: Studierende tragen den Termin einer fremden Gruppe manuell als eigenen, nicht-offiziellen Termin ein (SCHED-F-110), um eine freie Lücke im eigenen Plan zu füllen. Da INT-002 mit `studentSet=*` ohnehin bereits alle Gruppentermine liefert (siehe `platform/integrations.md` INT-002) und clientseitig lediglich auf die eigene Gruppenkennung gefiltert wird (SCHED-F-140), ist dafür keine zusätzliche Integration nötig — SCHED-F-250/260 machen diesen bereits gelebten Workaround zu einem regulären, als offiziell erkennbaren Bedienweg, statt ihn über eine Nachbildung als „eigener Termin" laufen zu lassen. Ein weiterer Beleg (`fh-informatik-22-23`, 2022-12-14) nennt ausdrücklich das Risiko, dass insbesondere Termine gegen Wochenende hin „meistens sehr voll" sind — die App selbst kann diese Auslastung nicht anzeigen (INT-002 liefert keine Kapazitätsfelder, siehe Nicht-Scope), das Risiko bleibt daher der Nutzerin überlassen.
 
@@ -207,7 +233,7 @@ Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-0
 |---|---|
 | Laden | Ladeanzeige während des INT-002-Abrufs, bestehende lokale Termine bleiben währenddessen sichtbar |
 | Leer (kein Studiengang gewählt) | Hinweis auf die Studiengangsauswahl als nächsten Schritt |
-| Leer (Gruppenfilterung, siehe SCHED-F-100) | Tag als leer gekennzeichnet, Grund „keine Termine für Gruppe X an diesem Tag" genannt |
+| Leer (Gruppenfilterung aktiv, siehe SCHED-F-100) | Tag als leer gekennzeichnet, Grund „keine Termine für Gruppe X an diesem Tag" genannt, mit Hinweis auf den Schalter aus SCHED-F-145 |
 | Fehler | Fehlermeldung mit Wiederholen-Option, zuletzt geladene Termine bleiben sichtbar (siehe `platform/architecture.md` ARCH-F-130) |
 | Offline | Zuletzt geladener Stand wird angezeigt, siehe Abschnitt 8 |
 | Planungsmodus: kein konfliktfreier Termin (SCHED-F-300) | Expliziter Hinweis „keine konfliktfreie Terminoption für dieses Modul"; Möglichkeit zur bewussten Übernahme trotz Konflikt (SCHED-F-310) wird angeboten |
@@ -222,7 +248,9 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 | Fall | Reaktion |
 |---|---|
 | INT-001 liefert keinen zur vorherigen Auswahl passenden Studiengang mehr (z. B. nach Umbenennung) | Hinweis anzeigen, erneute Auswahl anbieten |
-| INT-002 liefert ein `studentSet`, das keinem der Muster aus Abschnitt 4 entspricht | Termin ohne Gruppenfilterung anzeigen (sicherer Rückfall: sichtbar statt fälschlich verborgen), Vorfall protokollieren (SEC-F-060) |
+| INT-002 liefert ein `studentSet`, das keinem der Muster aus Abschnitt 4 entspricht | Termin als gruppenzugehörig behandeln (sicherer Rückfall: sichtbar statt fälschlich als fremd markiert), Vorfall protokollieren (SEC-F-060) |
+| Kalenderberechtigung wird verweigert | Datei-Export als Rückfallweg anbieten (SCHED-F-177), keine wiederholte Nachfrage |
+| INT-001 nicht erreichbar | Rückfallliste des Backends verwenden (SCHED-F-254), Alter der Liste sichtbar machen |
 | Eigener Termin überschneidet sich zeitlich mit einem offiziellen Termin | Beide Termine anzeigen, zusätzlich sichtbarer Konflikthinweis (SCHED-F-230), keine automatische Konfliktauflösung |
 
 ## 10. Nicht-funktionale Anforderungen
@@ -239,7 +267,10 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 - Eine aus dem Prüfungsplan ausgewählte Prüfung sowie eine eigen eingetragene Prüfung sind beide eindeutig als Prüfung erkennbar (SCHED-F-210).
 - Eine Änderung an einer ausgewählten Prüfung führt zu einer Benachrichtigung, eine Änderung an einer nicht ausgewählten Prüfung nicht (SCHED-F-220).
 - Eine zeitliche Überschneidung eigener und offizieller Termine ist als solche sichtbar, nicht nur an der Uhrzeit ablesbar (SCHED-F-230).
-- Der iCal-Export enthält je nach getroffener Auswahl ausschließlich die gewählten Terminarten (SCHED-F-240); eine erneute Änderung des Plans erfordert einen erneuten manuellen Export, da keine Synchronisation stattfindet.
+- Der Export enthält je nach getroffener Auswahl ausschließlich die gewählten Terminarten (SCHED-F-240); eine erneute Änderung des Plans erfordert einen erneuten manuellen Export beziehungsweise eine erneute Übertragung, da keine Synchronisation stattfindet.
+- Termine lassen sich in einen von der Nutzerin gewählten Gerätekalender übertragen; bei verweigerter Berechtigung steht der Datei-Export zur Verfügung (SCHED-F-175/177).
+- Gruppenfremde Termine sind standardmäßig sichtbar und als solche erkennbar; der Schalter blendet sie aus und wieder ein (SCHED-F-140/145).
+- Beim Anlegen des offiziellen Stundenplans lässt sich auswählen, welche Termine übernommen werden (SCHED-F-245).
 - Eine Nutzerin kann für eine Pflichtveranstaltung den Termin einer anderen Gruppe einsehen und anstelle des eigenen Gruppentermins übernehmen, weiterhin als offizieller Termin erkennbar (SCHED-F-250/260).
 - Für ein gewähltes Wahlpflichtmodul mit mehreren parallelen Terminen zeigt das System korrekt an, welche Termine konfliktfrei sind und welche nicht (SCHED-F-290).
 - Existiert für ein gewähltes Wahlpflichtmodul kein konfliktfreier Termin, erhält die Nutzerin einen expliziten Hinweis statt einer stillschweigend leeren Auswahl, und kann optional bewusst einen Konflikt akzeptieren (SCHED-F-300/310).
@@ -252,6 +283,8 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 - Fehlerhafter Gruppenabgleich bei Einzelwert-`studentSet` (Zahl-statt-Buchstabe-Vergleich) — Grund: Vergleich schlägt praktisch immer fehl, siehe Erläuterung zu SCHED-F-070.
 - Ändern/Entfernen eigener Termine ausschließlich über langes Drücken erreichbar — Grund: nicht auffindbar ohne Vorwissen, siehe `platform/ux-and-theming.md` UX-F-090.
 - Bei unerwarteter lokaler Datenmenge wird der gesamte Stundenplan kommentarlos gelöscht und neu angelegt — Grund: Datenverlust ohne Rückfrage, siehe `platform/data-and-storage.md` DATA-F-020.
+- Gruppenfremde Termine allein durch abgeschwächte Farbe markieren, ohne Text oder Symbol — Grund: für Menschen mit Farbsinnstörung nicht unterscheidbar, siehe `platform/ux-and-theming.md` UX-F-080.
+- Wildcard-`studentSet` als gruppenfremd behandeln — Grund: kehrt die Bedeutung um, siehe Wildcard-Befund in Abschnitt 4.
 
 ## 13. Offene Fragen
 

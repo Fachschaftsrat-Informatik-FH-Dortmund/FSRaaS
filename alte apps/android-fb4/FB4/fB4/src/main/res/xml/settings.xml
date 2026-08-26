@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/stundenplan">
+
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_hide_empty_pages"
+            android:key="@string/preference_key_hide_empty_pages"
+            android:summary="@string/Pref_Stdp_Ausblenden_Sum"
+            android:title="@string/Pref_Stdp_Ausblenden_Title">
+        </CheckBoxPreference>
+
+        <Preference
+            android:key="@string/preference_key_delete_timetable"
+            android:summary="@string/stundenplanLöschen_beschreibung"
+            android:title="@string/stundenplanLöschen">
+        </Preference>
+
+        <Preference
+            android:key="@string/preference_key_backup_timetable"
+            android:summary="@string/stundenplanSichern_beschreibung"
+            android:title="@string/stundenplanSichern">
+        </Preference>
+
+        <Preference
+            android:key="@string/preference_key_restore_timetable"
+            android:summary="@string/stundenplanWiederherstellen_beschreibung"
+            android:title="@string/stundenplanWiederherstellen">
+        </Preference>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/speiseplan">
+        <Preference
+            android:key="@string/preference_key_menus"
+            android:summary="@string/speisepläne_beschreibung"
+            android:title="@string/speisepläne">
+        </Preference>
+
+        <Preference
+            android:key="@string/preference_key_menus_sort"
+            android:summary="@string/speisepläneSortieren_beschreibung"
+            android:title="@string/speisepläneSortieren">
+        </Preference>
+
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_menu_gray"
+            android:key="@string/preference_key_menu_gray"
+            android:summary="@string/geschlRestaurantsMarkieren_beschreibung"
+            android:title="@string/geschlRestaurantsMarkieren">
+        </CheckBoxPreference>
+
+        <ListPreference
+            android:defaultValue="@string/preference_default_menu_price"
+            android:dialogTitle="@string/showPricesFor"
+            android:entries="@array/menu_price_items"
+            android:entryValues="@array/menu_price_values"
+            android:key="@string/preference_key_menu_price"
+            android:persistent="true"
+            android:summary="%s"
+            android:title="@string/showPricesFor"/>
+    </PreferenceCategory>
+
+    <!--<PreferenceCategory android:title="@string/NavItem_Ticket">
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_ticket_brightness"
+            android:key="@string/preference_key_ticket_brightness"
+            android:title="@string/helligkeit_erhoehen">
+        </CheckBoxPreference>
+
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_ticket_zoom"
+            android:key="@string/preference_key_ticket_zoom"
+            android:title="@string/ticket_zoom">
+        </CheckBoxPreference>
+
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_update_ticket"
+            android:key="@string/preference_key_update_ticket"
+            android:title="@string/update_ticket"
+            android:summary="@string/update_ticket_long">
+        </CheckBoxPreference>
+
+        <Preference
+            android:key="@string/preference_key_ticket_download"
+            android:title="@string/ticket_aus_his_herunterladen">
+        </Preference>
+
+        <Preference
+            android:key="@string/preference_key_choose_ticket"
+            android:title="@string/choose_ticket">
+        </Preference>
+    </PreferenceCategory>-->
+
+    <PreferenceCategory android:title="@string/sonstiges">
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_news_notifications"
+            android:key="@string/preference_key_news_notifications"
+            android:persistent="true"
+            android:summary="@string/Pref_Notif_Sum"
+            android:title="@string/Pref_Notif_Title">
+        </CheckBoxPreference>
+
+        <ListPreference
+            android:defaultValue="@string/preference_default_launch_screen"
+            android:dialogTitle="@string/Pref_Start_Title"
+            android:entries="@array/start_items"
+            android:entryValues="@array/start_values"
+            android:key="@string/preference_key_launch_screen"
+            android:persistent="true"
+            android:summary="@string/Pref_Start_Sum"
+            android:title="@string/Pref_Start_Title"/>
+
+        <ListPreference
+            android:defaultValue="@string/preference_default_theme"
+            android:dialogTitle="@string/thema_wählen"
+            android:entries="@array/theme_items"
+            android:entryValues="@array/theme_values"
+            android:key="@string/preference_key_theme"
+            android:persistent="true"
+            android:title="@string/thema_wählen"/>
+
+        <CheckBoxPreference
+            android:defaultValue="@bool/preference_default_send_crash_reports"
+            android:key="@string/preference_key_send_crash_reports"
+            android:summary="@string/fehlerberichtSenden_beschreibung"
+            android:title="@string/fehlerberichtSenden">
+        </CheckBoxPreference>
+    </PreferenceCategory>
+
+</PreferenceScreen>
