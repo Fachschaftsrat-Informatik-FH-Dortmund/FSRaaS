@@ -8,6 +8,10 @@ nummer: 000N
 titel: <Klarname der Entscheidung>
 status: vorgeschlagen     # vorgeschlagen | angenommen | abgelöst | verworfen
 datum: JJJJ-MM-TT
+# zuletzt_ergaenzt: JJJJ-MM-TT   # nur setzen, wenn ein bereits angenommenes ADR nachträglich um
+                                 # einen neuen Befund ergänzt wird (siehe ADR 0005, 0007) — die
+                                 # Ergänzung selbst steht dann als datierter Absatz im Fließtext,
+                                 # vor "## Offene Punkte", nach demselben Muster wie dort.
 betrifft:                 # relative Pfade zu den Specs, die diese Entscheidung berührt
   -
 ---

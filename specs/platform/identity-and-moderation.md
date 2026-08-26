@@ -3,15 +3,16 @@ id: identity-and-moderation
 titel: Identität und Moderation
 praefix: IDENT
 status: accepted
-version: 1.3.0
+version: 1.4.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from: []
 implemented_in: []
 related:
   - security-and-privacy.md
   - backend-and-api.md
   - ../decisions/0004-identitaet-und-anmeldung.md
+  - ../decisions/0010-authentik-als-identitaetsanbieter.md
   - ../features/canteen-ratings/spec.md
   - ../features/event-volunteers/spec.md
   - ../features/e-key/spec.md
@@ -80,6 +81,13 @@ Zu IDENT-F-045: Rollen werden als Gruppen in Authentik geführt und als Claim im
 | IDENT-F-060 | Das System muss Muster massenhafter, in kurzer Zeit von derselben Quelle eingehender Bewertungen erkennen und zur Prüfung markieren. | NEU |
 | IDENT-F-065 | Das System muss Muster massenhafter, in kurzer Zeit von derselben Quelle eingehender kontofreier Beiträge erkennen und zur Prüfung markieren. | NEU |
 | IDENT-F-070 | Wenn Moderation einen Missbrauchsfall bestätigt, muss das System das zugehörige Konto für 30 Tage sperren, mit Widerspruchsmöglichkeit für die betroffene Person. | NEU |
+| IDENT-F-140 | Wenn sich eine Nutzerin abmeldet, muss das System zusätzlich zum lokalen Entfernen der Zugangsdaten eine serverseitige Abmeldung (RP-Initiated Logout) beim Identitätsanbieter auslösen, die die Sitzung dort invalidiert. | NEU |
+| IDENT-N-030 | Das System muss kurzlebige Zugriffstoken mit Refresh-Token-Erneuerung verwenden, statt ein Zugriffstoken unverändert bis zu seinem Ablauf vorzuhalten. | NEU |
+| IDENT-F-150 | Solange die FH-Föderation für Authentik nicht aktiv ist, muss das System Kontoregistrierungen zusätzlich zur Anfragequelle (IP-Adresse) begrenzen, um eine Umgehung von API-N-010 durch Mehrfachregistrierung zu erschweren. | NEU |
+
+Zu IDENT-F-140/IDENT-N-030: Ohne serverseitige Invalidierung bliebe ein entwendetes Token nach „Abmelden" clientseitig weiter gültig. Ergänzt `data-and-storage.md` DATA-F-130 (lokales Entfernen), das für sich allein nicht ausreicht.
+
+Zu IDENT-F-150: Betrifft insbesondere die für die erste Ausbaustufe vorgesehene Missbrauchserkennung bei Bewertungen (IDENT-F-060) — ein kontobezogenes Ratenlimit (`backend-and-api.md` API-N-010) ist wirkungslos, solange ein Konto durch bloße E-Mail-Verifizierung günstig neu angelegt werden kann.
 
 ## 6. Moderation nutzergenerierter Inhalte
 

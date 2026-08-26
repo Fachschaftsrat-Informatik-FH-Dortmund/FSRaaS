@@ -4,11 +4,12 @@ titel: Stundenplan
 praefix: SCHED
 status: accepted
 prioritaet: kern
-version: 1.0.0
+version: 1.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/dialog/CalendarExportDialog.java
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/service/DataService.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/util/GroupLetterUtil.java
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
@@ -89,7 +90,7 @@ Für Studierende mit Wahlpflichtfächern kommt eine zweite Herausforderung hinzu
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | SCHED-F-010 | Das System muss den Stundenplan in den fünf Wochentagen Montag bis Freitag darstellen. | Alt: lib/main_page.dart |
-| SCHED-F-020 | Das System muss der Nutzerin die Auswahl eines Studiengangs aus INT-001 und eines Fachsemesters aus dessen `grades`-Liste ermöglichen. | Alt: lib/areas/schedule/screens/add_official_schedule_page.dart |
+| SCHED-F-020 | Das System muss der Nutzerin die Auswahl eines Studiengangs und eines zugehörigen Fachsemesters aus INT-001 ermöglichen. | Alt: lib/areas/schedule/screens/add_official_schedule_page.dart |
 | SCHED-F-030 | Wenn Studiengang und Fachsemester gewählt sind, muss das System die zugehörigen Termine über INT-002 abrufen und den fünf Wochentagen zuordnen. | Alt: lib/areas/schedule/repositories/schedule_repository.dart |
 | SCHED-F-040 | Das System muss der Nutzerin die Eingabe einer Gruppenkennung nach dem Muster `^[A-Z][0-9]+$` ermöglichen. | Alt: lib/areas/schedule/models/selected_course_info.dart |
 | SCHED-F-050 | Solange keine Gruppenkennung angegeben ist, muss das System alle abgerufenen Termine unabhängig von ihrem `studentSet` anzeigen. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:210 |
@@ -115,6 +116,7 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 | SCHED-F-220 | Wenn das Backend eine Aktualisierung des offiziellen Prüfungsplans meldet und mindestens einer der lokal ausgewählten Prüfungstermine der Nutzerin davon betroffen ist, muss das System die Nutzerin darüber informieren. | NEU |
 | SCHED-F-230 | Wenn sich ein eigener Termin zeitlich mit einem offiziellen Termin überschneidet, muss das System beide Termine mit einem sichtbaren Konflikthinweis darstellen. | NEU |
 | SCHED-F-175 | Das System muss der Nutzerin das Übertragen der ausgewählten Termine in einen von ihr gewählten Gerätekalender ermöglichen, mit Angabe eines Zeitraums. | Recherche: alte apps/android-fb4, dialog/CalendarExportDialog.java, 2026-08-25 |
+| SCHED-F-176 | Das System sollte den beim Kalenderexport vorgeschlagenen Zeitraum auf das serverseitig gepflegte aktuelle Semester (Beginn und Ende) vorbelegen. | Recherche: alte apps/android-fb4, dialog/CalendarExportDialog.java:204,215, 2026-08-26 |
 | SCHED-F-177 | Falls die Berechtigung für den Gerätekalender nicht erteilt wird, muss das System den Datei-Export (SCHED-F-170) als Rückfallweg anbieten. | NEU |
 | SCHED-F-240 | Das System muss der Nutzerin vor jedem Export die separate Auswahl ermöglichen, ob offizielle Termine, eigene Termine und Prüfungstermine jeweils enthalten sind. | NEU |
 | SCHED-F-245 | Das System muss beim Anlegen des offiziellen Stundenplans die Auswahl ermöglichen, welche der abgerufenen Termine übernommen werden. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:58-90 |
@@ -143,7 +145,7 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 
 **`SCHED-F-070`** — Die Alt-App vergleicht an dieser Stelle fehlerhaft den Zahlenteil der Gruppenkennung (`info.groupNumber`) mit dem ersten Zeichen des `studentSet`-Werts (`schedule_overview_viewmodel.dart:216`, `info.groupNumber.codeUnitAt(0) == item.studentSet.codeUnitAt(0)`), obwohl ein Buchstabenvergleich (`groupLetter`) gemeint war. Dadurch schlägt der Abgleich bei Einzelwert-`studentSet` in der Alt-App praktisch immer fehl, sofern nicht zufällig Zahl- und Buchstabenzeichen denselben Codepoint teilen. Für die Neuentwicklung ist SCHED-F-070 das korrigierte Sollverhalten (Buchstabenvergleich), nicht das beobachtete Altverhalten — daher die Markierung `Alt: bewusst verworfen` statt eines Quellverweises.
 
-**`SCHED-F-190` bis `SCHED-F-220`** — Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Der Fachbereich veröffentlicht während der Vorlesungszeit einen offiziellen Prüfungsplan als Excel-Datei auf einer Intranet-Seite (`https://intranet.fh-dortmund.de/hochschule/organisation/fachbereiche/informatik/pruefungen/pruefungsplaene`). Da diese Seite einen Hochschul-Login voraussetzt, den weder App noch Backend besitzen (siehe `product/vision.md` Nicht-Ziel 1, `platform/security-and-privacy.md` zum Verzicht auf Passwort-Replay), ist der Import zweistufig: Ein FSR-Mitglied/Admin lädt die Datei manuell herunter und in das eigene Backend hoch (`platform/backend-and-api.md` API-F-180, `platform/integrations.md` INT-013); danach wählen Studierende selbst die für sie relevanten Prüfungen aus dem importierten Bestand aus (SCHED-F-200). Nicht jede Prüfung des Fachbereichs interessiert jede Nutzerin — nur die eigenen und ggf. Nachholprüfungen.
+**`SCHED-F-190` bis `SCHED-F-220`** — Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Der Fachbereich veröffentlicht während der Vorlesungszeit einen offiziellen Prüfungsplan als Excel-Datei auf einer Intranet-Seite (siehe `platform/integrations.md` INT-013). Da diese Seite einen Hochschul-Login voraussetzt, den weder App noch Backend besitzen (siehe `product/vision.md` Nicht-Ziel 1, `platform/security-and-privacy.md` zum Verzicht auf Passwort-Replay), ist der Import zweistufig: Ein FSR-Mitglied/Admin lädt die Datei manuell herunter und in das eigene Backend hoch (`platform/backend-and-api.md` API-F-180, `platform/integrations.md` INT-013); danach wählen Studierende selbst die für sie relevanten Prüfungen aus dem importierten Bestand aus (SCHED-F-200). Nicht jede Prüfung des Fachbereichs interessiert jede Nutzerin — nur die eigenen und ggf. Nachholprüfungen.
 
 **`SCHED-F-220`** — Verträgt sich mit API-F-100 (kein serverseitiges Speichern des persönlichen Stundenplans): Das Backend kennt nicht, welche Prüfungen eine einzelne Nutzerin ausgewählt hat, sondern löst bei jeder Aktualisierung des offiziellen Prüfungsplan-Bestands einen allgemeinen Hinweis aus (vergleichbar einer News-Meldung). Die App gleicht diesen Hinweis lokal gegen die eigene, ausschließlich gerätegespeicherte Auswahl ab und zeigt die Benachrichtigung nur, wenn tatsächlich ein ausgewählter Termin betroffen ist.
 
@@ -154,6 +156,8 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 **`SCHED-F-170`/`SCHED-F-175`/`SCHED-F-240` (Export-Ausgestaltung, entschieden).** Rücksprache FSR FB4, 2026-08-25: Studis sollen den in der App zusammengestellten Stundenplan in ein Kalenderprogramm ihrer Wahl integrieren können. Abgewogen wurden ein einmaliger Datei-Export (kein Server-Zugriff nötig, bleibt aber nicht automatisch aktuell) gegenüber einem abonnierbaren Kalender-Link (bleibt synchron, bräuchte aber einen serverseitigen Endpunkt und damit eine Ausnahme von API-F-100). Der abonnierbare Link bleibt ausgeschlossen, API-F-100 gilt ohne Ausnahme.
 
 **Ergänzung vom selben Tag, nach Auswertung des Android-Quellcodes:** Die Android-Alt-App schreibt Termine unmittelbar in einen von der Nutzerin gewählten Gerätekalender, mit Auswahl des Zielkalenders und eines Zeitraums (`dialog/CalendarExportDialog.java`). Das ist bequemer als ein Datei-Export, den die Nutzerin anschließend selbst importieren muss, und damit der zu übertreffende Stand. Entscheidung FSR FB4, 2026-08-25: Beides wird angeboten — der Schreibzugriff als Hauptweg (SCHED-F-175), der Datei-Export als Rückfallweg für den Fall verweigerter Berechtigung oder eines Kalenders außerhalb des Geräts (SCHED-F-177). Die dafür nötige Kalenderberechtigung ist ausschließlich schreibend und wird erst bei tatsächlicher Nutzung angefragt; die zuvor gegenteilige Festlegung in `platform/security-and-privacy.md` Abschnitt 9 wurde entsprechend korrigiert. Konfigurierbar ist in beiden Wegen die Auswahl der enthaltenen Terminarten (SCHED-F-240).
+
+**`SCHED-F-176` — Vorbelegter Zeitraum.** Die Android-Alt-App belegt die Von-/Bis-Felder des Kalenderexport-Dialogs mit den ferngepflegten Semesterterminen vor (`dialog/CalendarExportDialog.java:204,215`, Werte aus `service/DataService.java`; dieselbe Ressource „Semestertermine" wie in `platform/backend-and-api.md` API-F-230). Die Felder bleiben danach frei änderbar — die Vorbelegung erspart nur die in aller Regel gewünschte manuelle Eingabe des laufenden Semesters.
 
 **`SCHED-F-140`/`SCHED-F-145` — kennzeichnen statt entfernen.** Die vorige Fassung von SCHED-F-140 forderte, gruppenfremde Termine gar nicht anzuzeigen. Das stand im Widerspruch zu drei anderen Festlegungen: `platform/ux-and-theming.md` UX-F-080 verlangt, gruppenfremde Termine zusätzlich zur Farbe durch Text oder Symbol zu kennzeichnen — was voraussetzt, dass sie sichtbar sind; das Datenmodell in Abschnitt 5 führt eigens ein Merkmal `gruppenzugehoerig`; und beide Alt-Apps zeigen solche Termine abgeblendet statt sie zu entfernen (Flutter: `schedule_card.dart:50-54`, dokumentiert als L-017). Entscheidung FSR FB4, 2026-08-25: Kennzeichnen ist das Sollverhalten, das Ausblenden wird als Schalter angeboten (SCHED-F-145). Das deckt zugleich den in SCHED-F-250 beschriebenen Bedarf mit ab, Termine anderer Gruppen einzusehen.
 

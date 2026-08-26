@@ -3,9 +3,9 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: accepted
-version: 0.3.0
+version: 0.4.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/config/themes/color_consts.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
@@ -69,6 +69,7 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 | UX-F-130 | Das System muss Fehlermeldungen über alle Ansichten hinweg einheitlich gestalten. | NEU |
 | UX-F-140 | Das System muss Ladeanzeigen über alle Ansichten hinweg einheitlich gestalten. | NEU |
 | UX-F-150 | Sofern eine fachliche Bedeutung wiederkehrend durch ein Symbol dargestellt wird (z. B. Essen, Vegetarisch), muss das System dafür ein einheitliches Symbolsystem verwenden. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/utils/ui/icons/fb4app_icons.dart:31 |
+| UX-F-160 | Das System muss für jede Ansicht mit direkt abrufbaren entfernten Daten eine manuelle Aktualisierungsgeste oder eine gleichwertige, sichtbare Aktualisieren-Aktion bereitstellen. | NEU |
 
 ### Nicht-funktionale Anforderungen (UX-N)
 
@@ -87,6 +88,8 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 
 **Zu Plattformtreue (entschieden).** Eigenständige, plattformübergreifende Gestaltung statt getrennter nativer Gestaltungssprachen je Plattform — Entscheidung FSR FB4, 2026-08-25, wie empfohlen. Begründung: Die Alt-App bildet ohnehin nur die iOS-Sprache nach, unabhängig von der Zielplattform — es gibt also kein etabliertes Android-Vorbild, das fortgeführt werden müsste. Eine einheitliche Gestaltung senkt zudem den Pflegeaufwand für ein kleines, ehrenamtlich getragenes Projekt und stärkt die Wiedererkennbarkeit der FSR-Marke unabhängig vom Gerät.
 
+**Zu UX-F-160 (Aktualisierungsgeste).** Die Flutter-Alt-App bot Pull-to-Refresh (`product/legacy-inventory.md`, L-034); für die Neuentwicklung war dafür bislang keine Anforderung mehr formuliert, obwohl mehrere Ansichten (NEWS, MENSA, EVENT) direkt abrufbare entfernte Daten zeigen. Ergänzt das bisher nur im Fehlerzustand vorgesehene „Wiederholen" (siehe jeweilige Feature-Spec, Abschnitt 7) um eine reguläre, jederzeit verfügbare Aktualisierungsmöglichkeit.
+
 **Zu UX-F-150 (Symbolsystem, entschieden).** Bestehende Open-Source-Icon-Bibliothek statt eigener Schriftart oder eigenem SVG-Set — Entscheidung FSR FB4, 2026-08-25. Konkrete Bibliothek (z. B. Lucide, Material Symbols, Phosphor) wählt die technische Leitung bei Umsetzung; Kriterium ist lediglich Verfügbarkeit unter offener Lizenz und Abdeckung der benötigten fachlichen Symbole (Essen, Vegetarisch u. a.).
 
 ## Bewusst nicht übernommenes Altverhalten
@@ -100,4 +103,4 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 
 ## Offene Fragen
 
-- Entschieden (FSR FB4, 2026-08-25): keine Ausnahmen von der Hochformat-Vorgabe (`platform/non-functional.md` NFR-N-150) — breite Inhalte wie Wiki-Tabellen (WIKI) oder Raumpläne (RAUM) werden horizontal scrollbar gestaltet. Offen bleibt nur die konkrete Umsetzung des horizontalen Scrollens je betroffener Ansicht, Klärung im Zuge der jeweiligen Bildschirmgestaltung.
+- Entschieden (FSR FB4, 2026-08-25, ergänzt 2026-08-26): Für gewöhnliche Smartphones keine Ausnahmen von der Hochformat-Vorgabe (`platform/non-functional.md` NFR-N-150) — breite Inhalte wie Wiki-Tabellen (WIKI) oder Raumpläne (RAUM) werden horizontal scrollbar gestaltet. Auf Bildschirmen ab 1024 px Breite (Tablets, Faltgeräte) ist seit der Ergänzung zu NFR-N-150 adaptives Layout zulässig; ob und wie davon Gebrauch gemacht wird, klärt sich im Zuge der jeweiligen Bildschirmgestaltung. Offen bleibt außerdem die konkrete Umsetzung des horizontalen Scrollens je betroffener Ansicht auf Smartphones.

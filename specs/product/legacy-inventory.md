@@ -2,9 +2,9 @@
 id: legacy-inventory
 titel: Funktionsinventar der Alt-Apps
 status: accepted
-version: 1.0.0
+version: 1.1.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib
   - alte apps/android-fb4/FB4/fB4/src/main
@@ -210,6 +210,9 @@ Pfade relativ ab `alte apps/android-fb4/FB4/fB4/src/main/`. Die Spalte „Flutte
 | AND-033 | Einstellungen | Einstellungsbildschirm einschließlich Push-Themen und Zugangsdatenverwaltung | `java/…/fragments/UserSettingFragment.java`, `activities/PreferenceActivity.java` | SET | L-078–L-085 |
 | AND-034 | Betrieb | Fehler- und Absturzberichte sowie Nutzungsereignisse an einen Drittanbieterdienst | `java/…/util/FirebaseAnalyticsEvents.java`, Crashlytics-Aufrufe in `service/DataService.java` | SEC | – |
 | AND-035 | Betrieb | Zusätzliche Trust-Anchor für Hochschulzertifikate, ohne die Prüfung abzuschalten | `java/…/util/AdditionalKeyStoresSSLSocketFactory.java`, `assets/fh.cer`, `assets/dst.cer` | SEC | – |
+| AND-036 | Einstellungen | „Feedback" im Seitenmenü öffnet den Mail-Client mit vorausgefüllter Empfängeradresse `app@fsrfb4.de`, Betreff und App-Version/API-Level im Text | `java/…/activities/MainActivity.java:340-342,555-578` | SET | L-074 |
+
+**Zu AND-036, Abgrenzung vom Backend-Befund.** Das im ehemaligen Backend `app.fsrfb4.de` vorhandene Formular `feedback/feedback.php` (Felder `Name`, `Feedback`, `Api`, `VersionCode`, Ablage in Tabelle `app_feedback`) ist ein eigener, technisch funktionsfähiger Weg, wird aber von keiner der beiden Alt-Apps aufgerufen — beide senden Feedback ausschließlich per Mail-Intent (AND-036, L-074). Der Endpunkt ist damit verwaistes Altbestandteil ohne Client, siehe `../platform/integrations.md` INT-008.
 
 ### 4.3 Beantwortung der vormals offenen Fragen
 
@@ -262,7 +265,7 @@ Grundlage der späteren Vollständigkeitsprüfung: wie viele Inventarzeilen jede
 | MENSA | 10 | 5 | Android ergänzt Öffnungszeiten (AND-018), eigene Reihenfolge (AND-020) und zweisprachige Schlüsselverzeichnisse (AND-019) |
 | TICKET | 12 | 5 | Android ergänzt automatischen Download (AND-027, für die Neuentwicklung ausgeschlossen) und ferngepflegten Bildzuschnitt (AND-030) |
 | NOTEN | 10 | 0 | Nur in der Flutter-App vorhanden; die Android-App nutzt den Portalzugang ausschließlich für das Ticket |
-| SET | 6 | 2 | Android führt Links und Downloads ferngepflegt statt fest hinterlegt (AND-032) |
+| SET | 6 | 3 | Android führt Links und Downloads ferngepflegt statt fest hinterlegt (AND-032); Feedback per Mail-Intent (AND-036) bestätigt L-074 unverändert |
 | RAUM | 0 | 3 | **Korrektur 2026-08-25:** zuvor als „ohne Entsprechung in den Alt-Apps" geführt. Die Android-App enthält eine vollwertige Raumsuche (AND-014 bis AND-016) einschließlich Raumgröße und E-Key-Eignung |
 | RATE | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
 | EVENT | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |

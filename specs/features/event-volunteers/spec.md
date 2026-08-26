@@ -103,3 +103,4 @@ Nicht zutreffend — keine der Alt-Apps bietet Helfer-Anmeldung.
 ## 13. Offene Fragen
 
 - Push-Zustellung bei Event-Absage (HELFER-F-060) ohne kontogebundene Geräte-Kennung: Arbeitsziel, das Push-Geräte-Token direkt bei der Helfer-Anmeldung zu erfassen und mit der Anmeldung zu verknüpfen (statt eines Themen-Abonnements wie bei News) — konkrete Umsetzung bei Aufbau der Push-Infrastruktur.
+- Warteliste für bereits volle Rolle/Schicht-Kombinationen (HELFER-F-030): Aktuell führt eine volle Kombination nur zur Ablehnung ohne Nachrück-Mechanismus. Empfehlenswerte Erweiterung aus der Spec-Prüfung vom 2026-08-26 für eine spätere Version — kein Bedarf mit fester ID in diesem Umfang, da HELFER ohnehin Teil der zweiten Ausbaustufe ist.

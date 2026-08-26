@@ -18,9 +18,8 @@ Der Grund steht in `specs/decisions/0002-spec-anchored-arbeitsweise.md`: Beide V
 
 ```
 specs/          Quelle der Wahrheit — hier zuerst lesen und zuerst ändern
-app/            React Native (Expo), iOS und Android
+app/            React Native (Expo), iOS, Android und PC-Verwaltungsoberfläche (Web-Export, ADR 0018)
 backend/        ASP.NET Core, PostgreSQL, Entity Framework Core
-admin-web/      React, Verwaltungsoberfläche für die Bedienung am PC
 tools/          Prüfskripte für den Spec-Bestand, Codeerzeugung aus dem Vertrag
 alte apps/      Quellcode beider Alt-Apps — Lesequelle, nie Vorlage zum Kopieren
 resources/      Reale Beispieldateien (Prüfungspläne)

@@ -3,9 +3,9 @@ id: non-functional
 titel: Nicht-funktionale Anforderungen
 praefix: NFR
 status: accepted
-version: 1.3.0
+version: 2.0.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
@@ -105,6 +105,7 @@ Die App wird über drei Vertriebswege veröffentlicht: Apple App Store, Google P
 | NFR-N-150 | Die App muss Hochformat als einzige Bildschirmausrichtung verwenden, ohne Ausnahmen für einzelne Ansichten. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113 |
 | NFR-N-160 | Der App-Quellcode muss vollständig unter der MIT-Lizenz veröffentlicht werden. | NEU |
 | NFR-N-170 | Der Android-Build darf keine proprietären Abhängigkeiten enthalten, die eine Aufnahme in den F-Droid-Hauptindex verhindern, insbesondere keine Firebase- oder Google-Play-Services-Bibliotheken. | Recherche: f-droid.org/en/docs/Inclusion_Policy, 2026-08-25 |
+| NFR-N-240 | Der iOS-Build darf ausschließlich das Firebase-Messaging-Modul einbinden, kein Firebase Analytics oder Crashlytics. | NEU |
 | NFR-F-180 | Das System muss auf allen drei Vertriebswegen denselben fachlichen Funktionsumfang bereitstellen, mit Ausnahme rein technischer, plattformbedingter Unterschiede (z. B. gewählter UnifiedPush-Distributor gemäß INT-005). | NEU |
 | NFR-N-190 | Der Android-Build muss die von Google Play jeweils zum Veröffentlichungszeitpunkt geforderte Mindest-Ziel-API-Stufe einhalten. | Recherche: developer.android.com/google/play/requirements/target-sdk, 2026-08-25 |
 | NFR-N-200 | Das System muss vor der ersten Google-Play-Produktivfreigabe einen geschlossenen Test mit mindestens 12 durchgängig teilnehmenden Testenden über mindestens 14 zusammenhängende Tage durchlaufen, sofern das verwendete Google-Play-Entwicklerkonto dieser Auflage unterliegt. | Recherche: support.google.com/googleplay/android-developer/answer/14151465, 2026-08-25 |
@@ -114,7 +115,9 @@ Die App wird über drei Vertriebswege veröffentlicht: Apple App Store, Google P
 
 **`NFR-F-110`/`NFR-N-130` (entfallen).** Entscheidung FSR FB4, 2026-08-25: Mehrsprachigkeit (Deutsch + Englisch) von Anfang an statt nur vorsorglich architektonisch offenzuhalten. Ersetzt durch NFR-F-115. `NFR-F-120` bleibt unverändert gültig — deutsche Formatkonvention unabhängig von der Oberflächensprache; ob Englisch eine abweichende Formatierung braucht, ist bei Umsetzung zu bewerten (Abschnitt 11).
 
-**`NFR-N-150`.** Verschärft von „sollte" auf „muss" und um „ohne Ausnahmen" ergänzt — Entscheidung FSR FB4, 2026-08-25, löst die zuvor an `ux-and-theming.md` delegierte Frage nach Querformat-Ausnahmen auf: keine Ausnahmen, breite Inhalte werden horizontal scrollbar gestaltet statt die Ausrichtung zu ändern.
+**`NFR-N-150`.** Verschärft von „sollte" auf „muss" ergänzt — Entscheidung FSR FB4, 2026-08-25, löst die zuvor an `ux-and-theming.md` delegierte Frage nach Querformat-Ausnahmen auf: breite Inhalte werden horizontal scrollbar gestaltet statt die Ausrichtung zu ändern. **Ergänzung 2026-08-26:** Die ursprüngliche Formulierung „ohne Ausnahmen" berücksichtigte Tablets und Faltgeräte (z. B. Split View, Stage Manager) nicht gesondert. Auf großen Bildschirmen ab 1024 px Breite — derselbe Schwellwert wie in `../features/admin/spec.md` ADMIN-N-010 — gilt die Ausrichtung nicht als erzwungen; adaptives Layout ist dort zulässig. Für gewöhnliche Smartphones ändert sich nichts.
+
+**`NFR-N-240`.** Standard-Firebase-Setups aktivieren Google Analytics for Firebase/Crashlytics standardmäßig mit, sobald das SDK eingebunden wird. Ohne diese ausdrückliche Einschränkung würde die auf Android konsequent verfolgte Datensparsamkeits-Linie (NFR-N-170) auf iOS unbemerkt unterlaufen — SEC-F-125 (kein Absturzbericht an Dritte) gilt für iOS genauso wie für Android.
 
 ## 11. Offene Fragen
 

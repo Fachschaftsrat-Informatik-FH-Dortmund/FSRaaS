@@ -3,9 +3,9 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.0.0
+version: 1.1.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/
@@ -369,43 +369,45 @@ Quelle (Altverfahren): `alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/servic
 
 ## INT-007 — BookStack (FSR-Wiki)
 
-**Status: zu verifizieren.**
+**Status: Kernzugriff bestätigt, Berechtigungsmodell offen.**
 
 **Zweck**
 Anzeige von FSR-Wiki-Inhalten (z. B. Prüfungsordnungen, Leitfäden, FAQ) in der App.
 
 **Aufruf**
-Nach Kenntnisstand bietet BookStack eine REST-API mit tokenbasierter Authentifizierung. **Dieser Kenntnisstand ist nicht verifiziert** und darf nicht als gesicherte Tatsache behandelt werden, bis der Spike ihn bestätigt.
+Bestätigt durch Live-Testabruf (2026-08-26): BookStack bietet eine REST-API unter `https://wiki.fsrfb4.de/api/`. Genutzte Endpunkte im Test: `/shelves`, `/books`, `/books/{id}`, `/pages`, `/pages/{id}`, alle liefern JSON. Antwortheader nennen ein Rate-Limit von 180 Anfragen pro Zeitfenster (`X-RateLimit-Limit`/`X-RateLimit-Remaining`).
 
 **Antwortstruktur**
-Nach Kenntnisstand gliedert BookStack Inhalte in Shelf › Book › Chapter › Page; Seiteninhalte sind sowohl als HTML als auch als Markdown abrufbar. **Ebenfalls unverifiziert.**
+Bestätigt: Shelf › Book › Chapter › Page. Ein Buch liefert unter `contents` eine gemischte Liste aus Kapiteln und direkt zugeordneten Seiten (Feld `type`: `"page"` oder `"chapter"`); Kapitel enthalten ihrerseits `pages`. Seiteninhalt liegt im Feld `html` (bei den geprüften, mit dem WYSIWYG-Editor erstellten Seiten befüllt) bzw. `markdown` (bei den geprüften Seiten leer, da `editor: "wysiwyg"`, nicht `"markdown"`). Für die App ist `html` deshalb die verlässlichere Quelle, nicht `markdown` wie zuvor angenommen.
 
 **Authentifizierung**
-Nach Kenntnisstand Token-ID und Token-Secret im `Authorization`-Header. **Unverifiziert**, insbesondere ob und wie der FSR bereits API-Token bereitstellt.
+Bestätigt: Token-ID und Token-Secret im `Authorization`-Header nach dem Muster `Authorization: Token <id>:<secret>`; ohne gültigen Token antwortet die API mit `401`. Ein Token existiert (bereitgestellt vom FSR, Token-Name `fsraas-backend`, Stand 2026-08-26) — läuft vorerst testweise über ein persönliches Nutzerkonto im Wiki, nicht über ein Dienstkonto. Für den produktiven Einsatz ist ein eigenes BookStack-Konto mit auf lesenden Zugriff beschränkten Berechtigungen vorzusehen, statt dauerhaft über ein persönliches Konto zu laufen. Das Token-Secret selbst wird nicht in den Specs geführt.
 
 **Eigentümer/Betreiber**
-FSR Informatik (Betrieb der BookStack-Instanz). Genaue URL und Erreichbarkeit sind im Spike zu klären.
+FSR Informatik. Instanz erreichbar unter `https://wiki.fsrfb4.de`, TLS bestätigt.
 
 **Verfügbarkeit**
-Unbekannt.
+Bestätigt erreichbar (2026-08-26). Umfang zum Prüfzeitpunkt: 2 Regale, 12 Bücher, 87 Seiten.
 
 **Cache-Regel (Vorschlag)**
-Wiki-Inhalte sind änderungsarm; Vorschlag nach Verifikation der API: Seiten geräteseitig mit Ablaufzeit von einem Tag cachen, mit manueller Aktualisierungsmöglichkeit.
+Wiki-Inhalte sind änderungsarm; Seiten geräteseitig mit Ablaufzeit von einem Tag cachen, mit manueller Aktualisierungsmöglichkeit.
 
 **Risiko**
-Mittel bis hoch, solange unverifiziert: Ohne bestätigten API-Zugang ist unklar, ob eine native Anbindung überhaupt möglich ist oder auf eine eingebettete Webansicht ausgewichen werden muss.
+Mittel: Der API-Zugang selbst ist bestätigt, die Berechtigungsabgrenzung dagegen nicht. Der geprüfte Token liefert uneingeschränkt alle Bücher zurück, einschließlich des Buchs „Intern" (BookStack-Beschreibung: „Diese Infos sind nicht öffentlich"). Ohne ein auf freigegebene Inhalte beschränktes Konto oder eine serverseitige Positivliste würde die App interne FSR-Inhalte an Studierende ausliefern.
 
 **Ersatzoption**
-Eingebettete Webansicht (WebView) der BookStack-Instanz als Rückfalloption, falls kein tragfähiger API-Zugang verfügbar ist.
+Eingebettete Webansicht (WebView) der BookStack-Instanz als Rückfalloption, falls der native Weg aus Berechtigungsgründen nicht tragfähig ist.
 
 **Status**
-Zu verifizieren. Der Spike muss klären: URL und Erreichbarkeit der Instanz, Verfügbarkeit von API-Token, welche Inhalte für Studierende freigegeben sind, Umfang des Bestands, tatsächliche API-Version und -Fähigkeiten. Siehe `decisions/0005-wiki-bookstack-anbindung.md`.
+Kernzugriff bestätigt (URL, Authentifizierung, Antwortstruktur, HTML-Inhalt). Offen bleibt, mit welchem Berechtigungsmodell freigegebene von internen Inhalten getrennt werden — siehe `decisions/0005-wiki-bookstack-anbindung.md`.
+
+Quelle: Live-Testabruf gegen `https://wiki.fsrfb4.de/api/` mit vom FSR bereitgestelltem Token, 2026-08-26.
 
 ---
 
 ## INT-008 — Eigenes Backend
 
-**Status: Betreiber geklärt, technische Ausgestaltung offen.**
+**Status: Betreiber geklärt, Vertrag in `api-contract.yaml` spezifiziert.**
 
 **Zweck**
 Trägt die Community- und Aggregationsfunktionen, für die es keine geeignete externe Schnittstelle gibt oder für die eine externe Abhängigkeit vermieden werden soll:
@@ -424,7 +426,7 @@ Trägt die Community- und Aggregationsfunktionen, für die es keine geeignete ex
 Siehe `platform/api-contract.yaml`.
 
 **Vorgänger: `app.fsrfb4.de` (abzulösen)**
-Der FSR betreibt bereits ein Backend unter `https://app.fsrfb4.de`, das die Android-Alt-App bedient. Es ist am 2026-08-25 erreichbar und liefert drei Ressourcen:
+Der FSR betreibt bereits ein Backend unter `https://app.fsrfb4.de`, das die Android-Alt-App bedient. Es ist am 2026-08-25 erreichbar und liefert drei von der App genutzte Ressourcen. **Ergänzung 2026-08-26:** Der Quellcode dieses Backends (`alte apps/app.fsrfb4.de/`) liegt inzwischen ebenfalls vor — ein schlankes PHP-System ohne Framework, MySQL als Datenhaltung. Er bestätigt und verfeinert den zuvor nur live erprobten Befund:
 
 | Aufruf | Zweck |
 |---|---|
@@ -434,19 +436,27 @@ Der FSR betreibt bereits ein Backend unter `https://app.fsrfb4.de`, das die Andr
 
 Beobachtete Schlüssel unter `/data`: `semester_beginning`, `semester_end`, `ws_start`, `ss_start`, `examplan`, `timeplan`, `ticket_rect_coordinates`, `canteens`, `rooms`, `links`, `file_downloads`, `news_url`.
 
+**Lese-/Schreibtrennung bei `/data` (Quellcode-Befund).** `data/index.php` (Lesepfad, von der App aufgerufen) und `data/admin/data.php` (Schreibpfad) sind zwei getrennte Skripte gegen dieselbe MySQL-Tabelle `app_data` (Spalten `datakey`/`Value`, `INSERT … ON DUPLICATE KEY UPDATE`). Der Schreibpfad liegt hinter HTTP-Basic-Auth (`.htaccess`/`.htpasswd`) und wird über ein einfaches HTML-Formular bedient, das je Aufruf genau ein Schlüssel-Wert-Paar setzt — keine Übersicht, keine Validierung, keine Historie. Das ist die technische Ursache des veralteten Bestands (siehe unten) und stützt konkret, warum `../features/admin/spec.md` eine echte Pflegeoberfläche statt eines Formulars vorsieht.
+
+**Feinstruktur von `/messages/messages.php` (Quellcode-Befund).** Ein Hinweis ist reichhaltiger als ein einzelner Datensatz: `ID`, zweisprachiger `Titel`/`Text` (Spaltenpaare `_de`/`_en`), bis zu zwei Buttons mit je eigenem zweisprachigem Text und einer serverseitig hinterlegten Aktion (`Button1Action`/`Button2Action` — Bedeutung aus dem PHP-Code allein nicht ableitbar, vermutlich ein clientseitig interpretierter Aktionscode), eine `Dauerhaft`-Kennzeichnung sowie Gültigkeit über Bereiche von Android-API-Level (`Min_API`/`Max_API`) und `VersionCode` (`Min_VersionCode`/`Max_VersionCode`), gefiltert auf `Aktiv = TRUE`. Das ist eine gezielte Handlungsaufforderung (z. B. „bitte aktualisieren", mit Link/Aktion), kein Nachrichtentext — relevant für die offene Frage in `specs/open-questions.md`, ob dieser Mechanismus eigenständig fortgeführt oder in NEWS aufgelöst wird.
+
+**Verwaiste Endpunkte (Quellcode-Befund, nicht zuvor bekannt).** `feedback/feedback.php` nimmt POST-Daten (`Name`, `Feedback`, `Api`, `VersionCode`) entgegen und legt sie in der Tabelle `app_feedback` ab, die serverseitig zusätzlich `Nr` (fortlaufend, Primärschlüssel) und `Zeit` (Zeitstempel) führt. Zwei weitere, per HTTP-Basic-Auth geschützte Skripte lesen diesen Bestand lesend aus: `feedback/admin/api.php` (JSON, alle Spalten) und `feedback/admin/index.php` (dieselben Daten als HTML-Tabelle, ohne Lösch- oder Bearbeitungsfunktion — reine Anzeige). Beide Alt-Apps rufen `feedback.php` jedoch **nicht** auf — Android wie Flutter öffnen für „Feedback" stattdessen den Mail-Client (`product/legacy-inventory.md`, AND-036/L-074). Der gesamte Feedback-Pfad ist damit ohne Client und braucht in der Neuentwicklung keine Entsprechung.
+
+**Vollständigkeitsprüfung 2026-08-26.** Der abgelegte Codestand von `app.fsrfb4.de` enthält, außerhalb der vendorierten Drittbibliothek `*/admin/passwd/` (Login-Oberfläche der Admin-Bereiche, Fremdcode), genau sechs PHP-Dateien — alle oben genannt, keine weiteren: `data/index.php`, `data/admin/data.php`, `messages/messages.php`, `feedback/feedback.php`, `feedback/admin/api.php`, `feedback/admin/index.php`. Die `.htaccess`-Dateien beider Admin-Verzeichnisse erzwingen HTTPS und HTTP-Basic-Auth, enthalten aber keine Rewrite-Regeln auf weitere, hier nicht erfasste Routen.
+
 **Der Datenbestand ist veraltet:** Die live abgefragte Antwort vom 2026-08-25 liefert `semester_beginning: 25.09.2023` und `semester_end: 19.01.2024` — Werte aus dem Wintersemester 2023/24. Der Dienst läuft, wird aber nicht mehr gepflegt.
 
 Entscheidung FSR FB4, 2026-08-25: Das fachliche Konzept der ferngepflegten Stammdaten wird übernommen, die technische Umsetzung neu gebaut. Die Pflege wandert in die Admin-Oberfläche (`../features/admin/spec.md`), die Auslieferung in den OpenAPI-Vertrag. `app.fsrfb4.de` wird nach der Umstellung abgeschaltet; die dort verlinkte private Domain `hoolycraap.de` entfällt damit ebenfalls.
 
-Der Rückfallmechanismus `studiengaenge.json` ist übernehmenswert: Er macht die Studiengangsauswahl unabhängig von der Erreichbarkeit des Hochschulsystems und gehört als Muster in den Zwischenspeicher-Anteil des neuen Backends.
+Der Rückfallmechanismus `studiengaenge.json` ist übernehmenswert: Er macht die Studiengangsauswahl unabhängig von der Erreichbarkeit des Hochschulsystems und gehört als Muster in den Zwischenspeicher-Anteil des neuen Backends. Anmerkung 2026-08-26: Im abgelegten Quellcode-Stand von `app.fsrfb4.de` ist keine `studiengaenge.json` als statische Datei auffindbar — möglicherweise, weil die vorliegende Ablage nicht jede statische Asset-Datei enthält. Live-Erreichbarkeit war am 2026-08-25 nicht Gegenstand der Prüfung; vor Umsetzung von API-F-240 kurz zu bestätigen, dass der Rückfallbestand tatsächlich noch existiert.
 
-Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java`, `service/DataService.java`, `retrofit/DataUpdateApi.java`, `retrofit/ServerMessageApi.java`, `retrofit/TimeTableFallbackApi.java`; live abgefragt am 2026-08-25
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java`, `service/DataService.java`, `retrofit/DataUpdateApi.java`, `retrofit/ServerMessageApi.java`, `retrofit/TimeTableFallbackApi.java`; live abgefragt am 2026-08-25; Backend-Quellcode vollständig ausgewertet 2026-08-26: `alte apps/app.fsrfb4.de/data/index.php`, `data/admin/data.php`, `messages/messages.php`, `feedback/feedback.php`, `feedback/admin/api.php`, `feedback/admin/index.php`
 
 **Authentifizierung**
-Zu definieren, siehe `platform/identity-and-moderation.md` (IDENT) und `platform/backend-and-api.md` (API).
+Über INT-012 (Authentik, OpenID Connect) — siehe dort für den Ablauf; dieser Eintrag verweist nur, um Endpunktdetails nicht zu duplizieren.
 
 **Eigentümer/Betreiber**
-FSR FB4 selbst, auf einem eigenen Hetzner-VPS. Entschieden 2026-08-25; Details (konkreter Server-Zuschnitt, Zugriffsverwaltung, Backup-Ziel) im Rahmen von `decisions/0003-eigenes-backend-fuer-community-funktionen.md` festzuhalten.
+FSR FB4 selbst, auf einem eigenen Hetzner-VPS. Zugriffsverwaltung und Backup-Ziel: `decisions/0017-zugriff-und-datensicherung-vps.md`.
 
 **Verfügbarkeit**
 Betriebsverantwortung liegt beim FSR FB4 selbst, nicht bei einem Dritten. Konkrete Verfügbarkeitszusage (SLA gegenüber den Nutzenden) noch zu definieren.
@@ -461,7 +471,7 @@ Liegt im eigenen Verantwortungsbereich (Betrieb, Kapazität, Sicherheit), anders
 Nicht zutreffend — dies ist selbst die Ersatzoption für INT-003/INT-004 und die einzige Option für RATE/EVENT/HELFER.
 
 **Status**
-Betreiber geklärt (FSR FB4, Hetzner-VPS, siehe „Eigentümer/Betreiber" oben). Technische Ausgestaltung (Aufruf, Antwortstruktur, Authentifizierung) weiterhin zu definieren. Siehe `platform/backend-and-api.md` und `decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+Betreiber geklärt (FSR FB4, Hetzner-VPS, siehe „Eigentümer/Betreiber" oben). Aufruf und Antwortstruktur stehen im OpenAPI-Vertrag (`platform/api-contract.yaml`), Authentifizierung über INT-012. Siehe `platform/backend-and-api.md` und `decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
 
 ---
 
@@ -866,6 +876,44 @@ Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/HisA
 
 ---
 
+## INT-018 — GlitchTip (Fehlertelemetrie)
+
+**Status: geplant, siehe `decisions/0014-selbstbetriebene-fehlertelemetrie.md`.**
+
+**Zweck**
+Selbstbetriebene Sammlung von App- und Backend-Fehlerberichten, damit das FSR-Team von Produktionsfehlern erfährt, ohne auf zufällige Nutzermeldungen angewiesen zu sein.
+
+**Aufruf**
+Sentry-kompatibles Ereignis-Protokoll (DSN-basiert), über die offiziellen SDKs `@sentry/react-native` (App) bzw. ein `Sentry`-NuGet-Paket mit Serilog (Backend). Genaue Endpunkt-URL entsteht bei Einrichtung der Instanz.
+
+**Antwortstruktur**
+Nicht zutreffend für die Richtung App/Backend → GlitchTip (reiner Schreibpfad); Auswertung erfolgt über die GlitchTip-eigene Oberfläche, nicht über die App.
+
+**Authentifizierung**
+Projektgebundener DSN-Schlüssel je Client (App, Backend), analog dem Sentry-Protokoll.
+
+**Eigentümer/Betreiber**
+FSR FB4 selbst, auf demselben Hetzner-VPS wie INT-008/INT-012.
+
+**Verfügbarkeit**
+Eigener Verantwortungsbereich, wie INT-008/INT-012. Ein Ausfall der Instanz verhindert nur die Fehlerübermittlung, beeinträchtigt keine fachliche Funktion der App.
+
+**Cache-Regel (Vorschlag)**
+Nicht zutreffend — kein abrufbarer Datenbestand für die App.
+
+**Risiko**
+Gering. Zusätzlicher selbstbetriebener Dienst mit Update-/Sicherungspflicht (wie Authentik), aber ohne fachliche Abhängigkeit einer App-Funktion davon.
+
+**Ersatzoption**
+Sentry SaaS — verworfen, siehe `decisions/0014-selbstbetriebene-fehlertelemetrie.md` (wäre ein Drittanbieter im Sinne von SEC-F-125).
+
+**Status**
+Geplant. Einrichtung Teil von Schritt 0 der Roadmap.
+
+Quelle: `decisions/0014-selbstbetriebene-fehlertelemetrie.md`
+
+---
+
 ## Übersicht
 
 | ID | System | Status | Risiko | Abhängige Feature-Specs |
@@ -876,7 +924,7 @@ Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/HisA
 | INT-004 | Mensa-Speisepläne (hemacode.de) | **abgelöst durch INT-015** | – | – |
 | INT-005 | Push-Benachrichtigungen (Android: UnifiedPush, iOS: FCM) | aktiv | mittel | NEWS, SET |
 | INT-006 | HISinOne (Notenübersicht) | offen | offen / hoch am Altverfahren | NOTEN |
-| INT-007 | BookStack (FSR-Wiki) | zu verifizieren | mittel bis hoch | WIKI |
+| INT-007 | BookStack (FSR-Wiki) | Kernzugriff bestätigt, Berechtigungsmodell offen | mittel | WIKI |
 | INT-008 | Eigenes Backend | Betreiber geklärt (FSR FB4, Hetzner-VPS), Vorgänger `app.fsrfb4.de` abzulösen | eigener Verantwortungsbereich | RATE, EVENT, HELFER, NEWS, MENSA, RAUM, EKEY, ADMIN |
 | INT-009 | FBWS Raumplan (Wildcard `Room/*/AllEvents`) | bestätigt, produktiv erprobt | mittel | RAUM |
 | INT-010 | Fachbereichs-Aktuelles (aktuelles-ni) | geklärt: HTML-Auswertung | mittel | NEWS |
@@ -887,3 +935,4 @@ Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/HisA
 | INT-015 | Mensa-API des ITMC (TU Dortmund) | bestätigt, live erprobt | gering bis mittel | MENSA, RATE |
 | INT-016 | Nachrichten des Fachbereichs Wirtschaft (FB9) | bestätigt, nicht im Umfang | mittel | – |
 | INT-017 | HIS-Portal (Semesterticket-Bezug) | Verfahren bekannt, Nutzung ausgeschlossen | hoch | TICKET |
+| INT-018 | GlitchTip (Fehlertelemetrie) | geplant | gering | – |

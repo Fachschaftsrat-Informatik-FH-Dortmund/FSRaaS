@@ -3,9 +3,9 @@ id: quality-and-testing
 titel: Qualität und Test
 praefix: QA
 status: accepted
-version: 0.3.0
+version: 0.4.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/selected_course_info.dart
@@ -44,6 +44,8 @@ Die Wirkung gilt in beide Richtungen: Eine Anforderung ohne zugehörigen Test is
 | Funktionale Anforderung mit „sollte" oder „kann" | automatisierter Test empfohlen, kein Zwang |
 | Gestaltung, Barrierefreiheit | Prüfprotokoll (datiert, mit Prüfer) statt Test zulässig |
 | Leistungswerte (Abschnitt 3 in `non-functional.md`) | Prüfprotokoll oder Messung statt Test zulässig, sofern Messmethode dokumentiert ist |
+| Nicht-funktionale Anforderung mit „muss" außerhalb der obigen Fälle | automatisierter Test bevorzugt; datiertes Prüfprotokoll zulässig, wenn die betreffende Spec eine Begründung nennt, warum Automatisierung unverhältnismäßig wäre (QA-F-015) |
+| Architektur-Constraint (z. B. Modulschnitt, Wiederverwendungsvorgabe) | Lint-Regel oder statische Analyse statt Verhaltenstest (QA-N-115) |
 
 ## 4. Teststufen
 
@@ -94,6 +96,7 @@ Kontrolle dieser Regeln sowie der Spec-Code-Kopplung aus `README.md` Abschnitt 7
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | QA-F-010 | Jede funktionale Anforderung mit „muss" muss durch mindestens einen automatisierten Test nachgewiesen werden, dessen Name die Anforderungs-ID enthält. | NEU |
+| QA-F-015 | Jede nicht-funktionale Anforderung mit „muss", die keinem der Sonderfälle aus Abschnitt 3 zugeordnet ist, muss durch mindestens einen automatisierten Test nachgewiesen werden oder, mit einer in der jeweiligen Spec dokumentierten Begründung, durch ein datiertes Prüfprotokoll. | NEU |
 | QA-F-020 | Anforderungen zu Gestaltung, Barrierefreiheit oder Leistungswerten dürfen statt durch einen automatisierten Test durch ein datiertes Prüfprotokoll nachgewiesen werden. | NEU |
 | QA-F-030 | Die Gruppenzuordnungslogik im Stundenplan muss mit den in Abschnitt 5 genannten Beispielszenarien automatisiert getestet werden. | NEU |
 | QA-F-040 | Die Umwandlung der FBWS-Zeitfelder in das Format `HHmm` mit führenden Nullen muss automatisiert getestet werden. | NEU |
@@ -104,9 +107,28 @@ Kontrolle dieser Regeln sowie der Spec-Code-Kopplung aus `README.md` Abschnitt 7
 | QA-N-090 | Jede Anforderung muss genau eine Herkunftsmarkierung tragen. | NEU |
 | QA-N-100 | Jede Spec-Datei muss alle für ihren Typ vorgesehenen Frontmatter-Pflichtfelder enthalten. | NEU |
 | QA-N-110 | Jeder Verweis auf eine andere Spec oder Anforderungs-ID muss auf ein tatsächlich existierendes Ziel zeigen. | NEU |
+| QA-N-115 | Ein Architektur-Constraint, das sich nicht sinnvoll als Verhaltenstest prüfen lässt, darf stattdessen durch eine Lint-Regel oder statische Analyse nachgewiesen werden. | NEU |
 | QA-F-120 | Bevor eine Anforderung als umgesetzt gilt, muss die Prüfliste aus Abschnitt 7 vollständig erfüllt sein. | NEU |
+| QA-N-120 | Das System muss Abhängigkeiten aus dem npm- und dem NuGet-Ökosystem fortlaufend automatisiert auf bekannte Schwachstellen prüfen. | NEU |
+| QA-F-130 | Wenn ein Pull Request eine Abhängigkeit mit bekannter Schwachstelle ab Schweregrad hoch einführt, muss die CI-Pipeline den Merge blockieren. | NEU |
+| QA-N-140 | Das System muss den Quellcode bei jedem Pull Request automatisiert auf verbreitete Sicherheitsmuster sowie auf versehentlich eingecheckte Geheimnisse prüfen. | NEU |
+| QA-N-150 | Das System sollte zu jedem veröffentlichten Stand eine Softwarestückliste erzeugen und als Release-Artefakt bereitstellen. | NEU |
 
-## 10. Offene Fragen
+Zu QA-F-015: Schließt die Lücke, dass QA-F-010 den automatisierten Testzwang wörtlich nur an funktionale Anforderungen bindet, während ein erheblicher Teil der sicherheits- und betriebsrelevanten „-N-"-Anforderungen im gesamten Spec-Bestand keinem der drei Sonderfälle aus Abschnitt 3 zuzuordnen ist.
+
+## 10. Dependency- und Security-Scanning
+
+Ergänzt die CI-Durchsetzung aus Abschnitt 8 um automatisiertes Scannen von Abhängigkeiten und Quellcode — reines Ausführungsdetail der dort bereits beschlossenen Philosophie, keine neue Architekturentscheidung mit echten Grundsatzalternativen. Ausschließlich kostenlose, GitHub-native Bausteine, da das Repository ohnehin öffentlich und MIT-lizenziert ist (kein zusätzliches Konto/Token für ein wechselndes Ehrenamtsteam).
+
+| Werkzeug | Zweck | Wirkung bei Verstoß |
+|---|---|---|
+| Dependabot (`.github/dependabot.yml`, npm + NuGet) | Alerts und automatische Update-Pull-Requests für bekannte Schwachstellen (QA-N-120) | Hintergrundmechanismus, blockiert nichts direkt |
+| CI-Audit-Gate (`npm audit --audit-level=high`, `dotnet list package --vulnerable --include-transitive`) | Verhindert, dass eine PR eine neu bekannte Schwachstelle einführt | blockiert den Merge (QA-F-130) |
+| CodeQL | Statische Sicherheitsanalyse (SAST, QA-N-140) | Ergebnisse als PR-Check |
+| GitHub Secret Scanning + Push Protection | Verhindert versehentlich eingecheckte Geheimnisse (QA-N-140) | blockiert den Push bzw. meldet den Fund |
+| GitHub Dependency Graph (SPDX-Export) | Softwarestückliste (SBOM) je veröffentlichtem Stand (QA-N-150) | Release-Artefakt |
+
+## 11. Offene Fragen
 
 - Konkretes Testframework für die Vertragstests/Schemaänderungs-Erkennung aus Abschnitt 6 (z. B. xUnit/NUnit-basierter Snapshot-Vergleich der dokumentierten INT-001-INT-004-Antwortstrukturen, da diese Hochschulsysteme keine eigenen Vertragstest-Endpunkte anbieten) — konkrete Bibliothek bei Umsetzung im .NET/C#-Ökosystem (`backend-and-api.md` Abschnitt 8) zu wählen.
 

@@ -4,9 +4,9 @@ titel: Verwaltung und Redaktion
 praefix: ADMIN
 status: accepted
 prioritaet: kern
-version: 0.1.0
+version: 0.2.1
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from: []
 implemented_in: []
 related:
@@ -17,6 +17,7 @@ related:
   - ../../decisions/0010-authentik-als-identitaetsanbieter.md
   - ../../decisions/0011-monorepo-und-openapi-vertrag.md
   - ../../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md
+  - ../../decisions/0018-verwaltungsoberflaeche-react-native-web.md
   - ../news/spec.md
   - ../room-finder/spec.md
   - ../canteen-ratings/spec.md
@@ -30,7 +31,7 @@ related:
 
 Mehrere Anforderungen des Spec-Bestands setzen voraus, dass FSR-Mitglieder Inhalte pflegen können: FSR-News redigieren (API-F-090), den offiziellen Prüfungsplan hochladen (API-F-180), Laufwege zwischen Räumen pflegen (API-F-220), Helferbedarf je Event anlegen und die Besetzung überblicken (HELFER-F-010, HELFER-F-050) sowie gemeldete Bewertungskommentare prüfen und entfernen (IDENT-F-040, IDENT-F-090 bis F-110). Keine dieser Anforderungen benennt bislang, **wo** diese Pflege stattfindet. Diese Spec schließt die Lücke und beschreibt die Verwaltungsoberfläche als eigenständiges Feature.
 
-Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Arbeit fällt unterwegs an — eine kurze Meldung veröffentlichen, sehen ob eine Schicht besetzt ist —, ein anderer Teil ist Fließarbeit am Rechner, etwa der Prüfungsplan-Import oder die Pflege eines Nachbarschaftsgraphen. Die Oberfläche existiert deshalb in zwei Ausprägungen mit identischem Funktionsumfang: als geschützter Bereich innerhalb der App und als eigenständige Weboberfläche für die Bedienung am PC.
+Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Arbeit fällt unterwegs an — eine kurze Meldung veröffentlichen, sehen ob eine Schicht besetzt ist —, ein anderer Teil ist Fließarbeit am Rechner, etwa der Prüfungsplan-Import oder die Pflege eines Nachbarschaftsgraphen. Die Oberfläche muss deshalb mit identischem Funktionsumfang sowohl als geschützter Bereich innerhalb der App als auch komfortabel am PC bedienbar sein — als **eine** Codebasis mit zwei responsiven Layouts (React Native Web, `../../decisions/0018-verwaltungsoberflaeche-react-native-web.md`), nicht als zwei getrennte Implementierungen.
 
 ## 2. Scope / Nicht-Scope
 
@@ -88,7 +89,7 @@ Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Ar
 
 **`ADMIN-F-010` / `ADMIN-F-020` — Rollenquelle.** Die Rollen stammen als Gruppenzugehörigkeit aus Authentik und werden als Claim im Token übertragen (`../../decisions/0010-authentik-als-identitaetsanbieter.md`); das Backend führt keine eigene Rollentabelle. ADMIN-F-070 wirkt deshalb auf Authentik-Gruppen, nicht auf eine backend-eigene Datenstruktur. Die Trennung zwischen ADMIN-F-010 und ADMIN-F-020 ist beabsichtigt: Die serverseitige Ablehnung ist die eigentliche Schutzmaßnahme, das Ausblenden in der Oberfläche eine reine Darstellungsfrage und für sich allein kein Schutz.
 
-**`ADMIN-F-030` — zwei Oberflächen, ein Funktionsumfang.** Die Weboberfläche existiert wegen der Bedienbarkeit am PC (Tastatur, große Tabellen, Dateiauswahl beim Prüfungsplan-Import), nicht wegen abweichender Funktionalität. Beide Ausprägungen sprechen denselben Vertrag (`../../platform/api-contract.yaml`) und denselben Anmeldeweg an. Unterschiede in der Darstellung — etwa eine mehrspaltige Tabelle am PC gegenüber einer Liste auf dem Telefon — sind ausdrücklich zulässig und kein Verstoß gegen diese Anforderung.
+**`ADMIN-F-030` — eine Codebasis, zwei Layouts.** Die PC-taugliche Ansicht existiert wegen der Bedienbarkeit am PC (Tastatur, große Tabellen, Dateiauswahl beim Prüfungsplan-Import), nicht wegen abweichender Funktionalität. Seit `../../decisions/0018-verwaltungsoberflaeche-react-native-web.md` ist das keine zweite Implementierung mehr, sondern dieselbe React-Native-Codebasis wie die App, per Web-Export ausgeliefert — beide sprechen denselben Vertrag (`../../platform/api-contract.yaml`) und denselben Anmeldeweg an, und teilen sich dieselben Komponenten. Unterschiede in der Darstellung — etwa eine mehrspaltige Tabelle am PC gegenüber einer Liste auf dem Telefon — sind ausdrücklich zulässig und kein Verstoß gegen diese Anforderung; ein Auseinanderlaufen des Funktionsumfangs selbst ist durch die gemeinsame Codebasis strukturell erschwert, nicht nur durch Disziplin vermieden.
 
 **`ADMIN-F-050` — Zurückziehen statt Löschen.** Eine bereits ausgelieferte Meldung kann auf Geräten im Zwischenspeicher liegen (`../../platform/data-and-storage.md` Abschnitt 4) und laut NEWS-F-050 angepinnt sein. Ein stilles Verschwinden würde für angepinnte Meldungen einen Eintrag ohne Inhalt hinterlassen; die Kennzeichnung als zurückgezogen macht den Vorgang stattdessen sichtbar.
 
@@ -172,6 +173,7 @@ Nicht zutreffend — keine der Alt-Apps bietet Verwaltungs- oder Redaktionsfunkt
 
 ## 13. Offene Fragen
 
-- Ob die Weboberfläche eigenständig ausgeliefert oder vom Backend mitgeliefert wird — offener Punkt in `../../decisions/0011-monorepo-und-openapi-vertrag.md`.
+- Ob der Web-Export vom Backend mitausgeliefert oder separat als statische Seite gehostet wird — offener Punkt in `../../decisions/0018-verwaltungsoberflaeche-react-native-web.md`.
+- ~~Ergebnis des in ADR 0018 vorgesehenen Prototyps~~ Erfolgreich durchgeführt und bestätigt am 2026-08-26, siehe dort.
 - Ob Meldungsentwürfe eine geplante Veröffentlichung zu einem künftigen Zeitpunkt unterstützen sollen oder nur sofortiges Veröffentlichen; für die erste Ausbaustufe ist das Feld im Datenmodell vorgesehen, eine zeitgesteuerte Auslieferung aber nicht gefordert.
 - Ob das Verwaltungsprotokoll (ADMIN-F-110) in der Oberfläche einsehbar sein soll oder nur serverseitig geführt wird — für die erste Ausbaustufe genügt die serverseitige Führung.

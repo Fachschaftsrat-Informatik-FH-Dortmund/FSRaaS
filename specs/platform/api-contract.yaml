@@ -12,7 +12,11 @@ openapi: 3.1.0
 
 info:
   title: FB4-App Backend
-  version: 0.1.0
+  # Dokumentversion dieser Datei nach specs/README.md Abschnitt 8 (Spec-Versionierung) —
+  # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
+  # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
+  # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
+  version: 0.2.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -297,6 +301,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Meldungsentwurf" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
     post:
@@ -314,6 +319,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Meldungsentwurf" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
 
@@ -341,6 +347,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Meldungsentwurf" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         "412":
           description: Zwischenzeitlich geändert; neuerer Stand im Rumpf
@@ -362,6 +369,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Meldung" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
     delete:
@@ -375,6 +383,7 @@ paths:
       responses:
         "204":
           description: Zurückgezogen
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
 
@@ -488,6 +497,7 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "204": { description: Gelöscht }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
 
@@ -507,6 +517,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Rollenzuweisung" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
     put:
@@ -527,6 +538,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Rollenzuweisung" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         "409":
           description: Letzte Zuweisung der Rolle FSR-Redaktion (ADMIN-F-080)
@@ -539,15 +551,22 @@ paths:
     get:
       tags: [verwaltung]
       summary: Laufwege zwischen Räumen
-      description: Erfüllt API-F-220 und ADMIN-F-090; Grundlage für RAUM-F-060.
+      description: |
+        Erfüllt API-F-220 und ADMIN-F-090; Grundlage für RAUM-F-060. Der Kopf `ETag`
+        trägt den Stand der Gesamtliste für die optimistische Nebenläufigkeitskontrolle
+        beim Ersetzen (siehe PUT unten).
       responses:
         "200":
           description: Laufwege
+          headers:
+            ETag:
+              schema: { type: string }
           content:
             application/json:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Laufweg" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
     put:
@@ -555,7 +574,14 @@ paths:
       summary: Laufwege ersetzen
       description: |
         Erfüllt ADMIN-F-090. Einträge mit unbekannter Raumkennung werden gespeichert
-        und im Ergebnis als unbekannt gekennzeichnet (ADMIN-F-100).
+        und im Ergebnis als unbekannt gekennzeichnet (ADMIN-F-100). Der Kopf `If-Match`
+        schützt vor dem Überschreiben einer zwischenzeitlichen Änderung durch eine
+        andere Person, analog `/meldungen/entwuerfe/{entwurfId}`.
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
       requestBody:
         required: true
         content:
@@ -566,6 +592,9 @@ paths:
       responses:
         "200":
           description: Laufwege gesetzt, mit Hinweisen auf unbekannte Raumkennungen
+          headers:
+            ETag:
+              schema: { type: string }
           content:
             application/json:
               schema:
@@ -578,7 +607,13 @@ paths:
                   unbekannteRaeume:
                     type: array
                     items: { type: string }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
+        "412":
+          description: Zwischenzeitlich geändert; neuerer Stand über GET erneut abrufen
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         default: { $ref: "#/components/responses/Fehler" }
 
 components:
@@ -642,6 +677,11 @@ components:
   responses:
     Fehler:
       description: Fehler in einheitlichem Format (API-N-040)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Fehler" }
+    Unauthentifiziert:
+      description: Fehlende oder ungültige Authentifizierung
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Fehler" }

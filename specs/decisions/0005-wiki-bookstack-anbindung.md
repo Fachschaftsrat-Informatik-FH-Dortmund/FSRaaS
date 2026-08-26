@@ -34,11 +34,16 @@ Option (b) verbindet den größten Nutzenzuwachs (native Navigation, Suche, Offl
 
 `features/wiki/spec.md` bleibt bis zum Ergebnis des Spikes im Status `draft`. Der Registereintrag INT-007 wird nach dem Spike aktualisiert und die als unverifiziert markierten Angaben werden entweder bestätigt oder korrigiert. Diese Entscheidung wird nach dem Spike überprüft und ggf. angepasst.
 
+**Ergänzung 2026-08-26 — Spike-Ergebnis.** Ein Live-Testabruf gegen `https://wiki.fsrfb4.de/api/` mit einem vom FSR bereitgestellten Token bestätigt den in `platform/integrations.md` INT-007 zuvor unverifizierten Kenntnisstand: Instanz erreichbar, Token-Authentifizierung funktioniert, Struktur Shelf › Book › Chapter › Page bestätigt, Inhalte als HTML abrufbar. Die Bedingung für die Empfehlung von Option (b) aus diesem ADR — „sofern der Spike einen tragfähigen API-Zugang bestätigt" — ist damit technisch erfüllt.
+
+Nicht erfüllt ist sie vollständig: Der geprüfte Token liefert uneingeschränkt alle Bücher zurück, auch das als „nicht öffentlich" gekennzeichnete Buch „Intern". BookStack trennt an dieser Stelle nicht selbst zwischen öffentlich und FSR-intern — die Trennung müsste über ein eigenes, rechtebeschränktes Konto oder eine serverseitige Positivliste hergestellt werden. Solange das nicht geklärt ist, bleibt die endgültige Festlegung auf Option (b) offen; siehe „Offene Punkte".
+
 ## Offene Punkte
 
-- Ist die BookStack-Instanz von außen erreichbar?
-- Existieren Zugangstoken, oder lassen sie sich einrichten?
-- Welche Inhalte sind für Studierende freigegeben, welche bleiben FSR-intern?
-- Wie groß ist der Bestand, und wie oft ändert er sich?
-- Welche Version der Wiki-Software läuft, und was kann deren Schnittstelle tatsächlich?
-- Wer im FSR verantwortet den Betrieb der Instanz?
+- ~~Ist die BookStack-Instanz von außen erreichbar?~~ Ja, bestätigt 2026-08-26 (`https://wiki.fsrfb4.de`).
+- ~~Existieren Zugangstoken, oder lassen sie sich einrichten?~~ Ja, ein Token existiert (Stand 2026-08-26) — läuft testweise über ein persönliches Nutzerkonto, nicht über ein Dienstkonto.
+- Welche Inhalte sind für Studierende freigegeben, welche bleiben FSR-intern? **Weiterhin offen und jetzt konkret**: mindestens das Buch „Intern" muss ausgeschlossen werden; eine API-seitige Trennung ist nicht erkennbar.
+- Wie groß ist der Bestand, und wie oft ändert er sich? Bestand bekannt (2 Regale, 12 Bücher, 87 Seiten, Stand 2026-08-26); Änderungshäufigkeit weiterhin nicht systematisch erfasst.
+- Welche Version der Wiki-Software läuft, und was kann deren Schnittstelle tatsächlich? Version aus der Antwort nicht direkt ablesbar; nur lesende Endpunkte (`GET`) wurden geprüft.
+- Wer im FSR verantwortet den Betrieb der Instanz? Weiterhin offen.
+- **Neu:** Soll für den produktiven Betrieb ein eigenes, rechtebeschränktes BookStack-Dienstkonto eingerichtet werden, statt dauerhaft über das jetzige, an ein persönliches Konto gebundene Test-Token zu laufen?

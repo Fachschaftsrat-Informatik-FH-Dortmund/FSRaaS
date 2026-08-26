@@ -4,9 +4,9 @@ titel: E-Key-Verwaltung
 praefix: EKEY
 status: draft
 prioritaet: bestand
-version: 1.0.0
+version: 2.0.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from: []
 implemented_in: []
 related:
@@ -90,11 +90,11 @@ System der Wahrheit für E-Key-Nummer, Matrikelnummer, Berechtigungen und deren 
 | Verknüpft, gesperrt | Status „gesperrt" mit Grund (verloren gemeldet oder Bestätigung ausgeblieben) |
 | Bestätigung fällig | Banner/Hinweis vor Ablauf der Bestätigungsfrist |
 | Fehler | Fehlermeldung mit Wiederholen-Option beim Laden des Status |
-| Offline | Zuletzt geladener Status bleibt sichtbar mit Alters-Hinweis; Verknüpfen, Verloren-Melden und Bestätigen sind Schreibpfade und landen in der Offline-Warteschlange, siehe Abschnitt 8 |
+| Offline | Zuletzt geladener Status bleibt sichtbar mit Alters-Hinweis; Verknüpfen wird sofort abgelehnt, Verloren-Melden und Bestätigen sind Schreibpfade und landen in der Offline-Warteschlange, siehe Abschnitt 8 |
 
 ## 8. Offline-Verhalten
 
-Die Statusanzeige (EKEY-F-040) ist ein Lesepfad mit zuletzt geladenem Stand, offline verfügbar wie andere Lesepfade. Verknüpfen (EKEY-F-030), Verloren-Melden (EKEY-F-050) und die semesterweise Bestätigung (EKEY-F-070) sind Schreibpfade und werden gemäß `platform/architecture.md` (ARCH-F-120) und `platform/data-and-storage.md` (DATA-F-100) in die lokale Offline-Warteschlange eingereiht, analog `features/canteen-ratings/spec.md` Abschnitt 8.
+Die Statusanzeige (EKEY-F-040) ist ein Lesepfad mit zuletzt geladenem Stand, offline verfügbar wie andere Lesepfade. Verloren-Melden (EKEY-F-050) und die semesterweise Bestätigung (EKEY-F-070) sind Schreibpfade und werden gemäß `platform/architecture.md` (ARCH-F-120) und `platform/data-and-storage.md` (DATA-F-100) in die lokale Offline-Warteschlange eingereiht, analog `features/canteen-ratings/spec.md` Abschnitt 8. Das Verknüpfen (EKEY-F-030) ist davon ausgenommen: Eine eingegebene E-Key-Nummer kann zwischenzeitlich bereits mit einem anderen Konto verknüpft worden sein (siehe Abschnitt 9), weshalb die App diesen Vorgang bei fehlender Verbindung gemäß `platform/architecture.md` (ARCH-F-125) ablehnen muss, statt ihn einzureihen.
 
 ## 9. Fehlerfälle
 
@@ -126,4 +126,4 @@ Nicht zutreffend — keine der Alt-Apps bietet E-Key-Verwaltung.
 - Technische Integrationsart mit dem bestehenden E-Key-Verwaltungstool (INT-014): direkter Zugriff auf dessen Postgres-Datenbank oder eine vom Tool bereitgestellte Schnittstelle? Direkter Datenbankzugriff zweier unabhängiger Anwendungen ohne vermittelnde API birgt das Risiko, dass Schema-Änderungen im bestehenden Tool das neue Backend unbemerkt brechen — Klärung durch technische Leitung vor Umsetzung, siehe `platform/integrations.md` INT-014.
 - Genauer Kalendertermin/-zeitraum der semesterweisen Bestätigung (EKEY-F-070/080) — fester Zeitpunkt je Semester ist entschieden (FSR FB4, 2026-08-25), konkretes Datum sowie Vorlaufzeit der Erinnerung legt der FSR operativ je Semester fest.
 - Ob Hochschul-SSO als Konto-Anmeldeweg verfügbar ist — `platform/integrations.md` INT-012. Die Kontopflicht selbst ist entschieden (`decisions/0004-identitaet-und-anmeldung.md`), offen ist nur noch, ob SSO oder die Ersatzoption (eigenes Konto, z. B. E-Mail-Verifizierung) zum Einsatz kommt.
-- QR-Code-gestützte Vorausfüllung des Ausgabeformulars: bewusst zurückgestellt (Entscheidung FSR FB4, 2026-08-25), keine Anforderung in diesem Umfang. Wäre ohnehin am bestehenden E-Key-Verwaltungstool zu verorten, nicht an dieser Spec, sollte sie künftig aufgenommen werden.
+- QR-Code-gestützte Vorausfüllung des Ausgabeformulars: bewusst zurückgestellt (Entscheidung FSR FB4, 2026-08-25), keine Anforderung in diesem Umfang. Wäre ohnehin am bestehenden E-Key-Verwaltungstool zu verorten, nicht an dieser Spec, sollte sie künftig aufgenommen werden. Empfehlung aus der Spec-Prüfung vom 2026-08-26: Bei Umsetzung von EKEY erneut prüfen, ob diese Option gegenüber der aktuellen Zwei-Zahlen-Eingabe (EKEY-F-030) vorgezogen werden sollte — das Erraten zweier mäßig geheimer Zahlen ist strukturell schwächer als ein bei Ausgabe gescannter Code. Keine Änderung der aktuellen Anforderung, nur eine Entscheidungsgrundlage für den FSR bei Umsetzung.

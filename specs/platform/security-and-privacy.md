@@ -3,9 +3,9 @@ id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
 status: accepted
-version: 1.0.0
+version: 1.1.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main_view_model.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
@@ -83,6 +83,10 @@ Nutzergenerierte Inhalte und personenbezogene Daten sind gegenüber dem Bestand 
 | Technische Protokolle des Backends (z. B. IP-Adresse, Zeitstempel, aufgerufener Endpunkt) | Betrieb, Fehleranalyse, Missbrauchserkennung | Berechtigtes Interesse | Eigener Backend-Betrieb (INT-008) | 30 Tage (Arbeitsziel, siehe Abschnitt 9) | `backend-and-api.md` |
 | E-Key-Verknüpfung, App-seitig (E-Key-Nummer-Referenz, Konto-Referenz, zwischengespeicherter Status/Berechtigungen, Bestätigungs-Zeitstempel) | Anzeige von Status/Berechtigungen in der App | Einwilligung | Eigenes Backend (INT-008) | Bis Löschung durch Nutzerin (Konto-Löschung, IDENT-F-130) | `features/e-key/spec.md` |
 | E-Key-Stammdaten (E-Key-Nummer, Matrikelnummer, Berechtigungen) | Verwaltung des vom FSR verliehenen physischen Zugangsschlüssels | Einwilligung | Bestehendes E-Key-Verwaltungstool des FSR (INT-014, außerhalb der Datenhoheit dieser App) | Verwaltet durch das bestehende Tool/FSR-Mitglieder, nicht durch diese App | `features/e-key/spec.md` |
+| E-Key-Verifizierung (eingegebene Matrikelnummer und E-Key-Nummer, nur zum Abgleich) | Prüfung einer eingegebenen Kombination gegen das bestehende E-Key-Verwaltungstool (`identity-and-moderation.md` IDENT-F-035) | Einwilligung | Eigenes Backend (INT-008, verarbeitet, aber nicht gespeichert), bestehendes E-Key-Verwaltungstool (INT-014) | Nicht gespeichert — ausschließlich transiente Verarbeitung während des Abgleichs | `features/e-key/spec.md` |
+| Fehlerbericht (Gerätemodell, Betriebssystemversion, Absturz-Stacktrace, App-/Backend-Version) | Fehleranalyse durch das FSR-Team | Einwilligung (Opt-in) | Selbstbetriebene Fehlertelemetrie-Instanz (INT-018) | 30 Tage (Arbeitsziel, analog technische Protokolle) | `platform/backend-and-api.md`, `decisions/0014-selbstbetriebene-fehlertelemetrie.md` |
+
+**Auftragsverarbeitung.** Hetzner (Hosting von INT-008/INT-012/INT-018) und, für die iOS-Push-Bridge, Google/Firebase (INT-005) verarbeiten personenbezogene Daten im Auftrag bzw. als Empfänger. Für Hetzner ist vor Produktivbetrieb ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO) abzuschließen; für die iOS-Push-Bridge ist zu prüfen, ob Googles Standardvertragsbedingungen dafür ausreichen. Organisatorische Nachverfolgung: `product/roadmap.md` Abschnitt 5.
 
 ## 4. Datenschutzerklärung
 
@@ -129,8 +133,20 @@ Alle Netzaufrufe laufen über TLS mit ungeprüfter Zertifikatsvalidierung im Pro
 | SEC-N-100 | Das System muss TLS-Zertifikate der aufgerufenen Server ohne Ausnahme validieren; eine Deaktivierung der Zertifikatsprüfung ist im Produktivbuild ausgeschlossen. | NEU |
 | SEC-N-105 | Sofern ein Hochschulsystem ein Zertifikat verwendet, dem die Systemvertrauensliste nicht folgt, muss das System dessen Aussteller als zusätzlichen Vertrauensanker aufnehmen, statt die Prüfung abzuschalten oder abzuschwächen. | Recherche: alte apps/android-fb4, util/AdditionalKeyStoresSSLSocketFactory.java, 2026-08-25 |
 | SEC-F-125 | Das System muss darauf verzichten, Absturzberichte oder Nutzungsereignisse an Dritte zu übermitteln. | Alt: bewusst verworfen |
+| SEC-F-130 | Sofern eine Nutzerin der Übermittlung von Fehlerberichten zugestimmt hat (Opt-in), darf das System technische Fehlerdaten an die selbstbetriebene Fehlertelemetrie-Instanz übermitteln; ohne Zustimmung unterbleibt jede Übermittlung. | NEU |
 | SEC-N-110 | Das System muss Geheimnisse (API-Token, Schlüssel) über einen gesicherten Build- oder Laufzeitmechanismus bereitstellen, niemals im Klartext im Quellcode. | NEU |
 | SEC-N-120 | Das System muss Protokolle so gestalten, dass sie keine personenbezogenen Inhalte enthalten. | NEU |
+| SEC-F-140 | Wenn eine Nutzerin Auskunft über ihre beim Verantwortlichen gespeicherten personenbezogenen Daten verlangt, muss das System diese Auskunft innerhalb eines Monats bereitstellen. | NEU |
+| SEC-F-150 | Wenn eine Nutzerin die Berichtigung unzutreffender, sie betreffender personenbezogener Daten verlangt, muss das System die Berichtigung vornehmen. | NEU |
+| SEC-F-160 | Wenn eine Nutzerin die Übertragung ihrer bereitgestellten personenbezogenen Daten in einem gängigen, maschinenlesbaren Format verlangt, muss das System diese Daten in einem solchen Format bereitstellen. | NEU |
+| SEC-F-170 | Wenn eine Nutzerin der Verarbeitung ihrer auf berechtigtem Interesse beruhenden personenbezogenen Daten widerspricht, muss das System die Verarbeitung prüfen und, sofern keine vorrangigen Gründe entgegenstehen, einstellen. | NEU |
+| SEC-F-180 | Das System muss nutzergenerierten Freitext (z. B. Bewertungskommentare, Meldungstexte) bei der Anzeige so codieren, dass er nicht als aktiver Inhalt ausgeführt werden kann. | NEU |
+
+Zu SEC-F-130: Siehe `../decisions/0014-selbstbetriebene-fehlertelemetrie.md`.
+
+Zu SEC-F-140 bis SEC-F-170: Konkretisieren die in `identity-and-moderation.md` Abschnitt 8 bereits referenzierten, bislang aber nirgends ausgeführten Betroffenenrechte (Auskunft Art. 15, Berichtigung Art. 16, Portabilität Art. 20, Widerspruch Art. 21 DSGVO). Das Löschrecht (Art. 17) ist bereits über `identity-and-moderation.md` IDENT-F-130 abgedeckt.
+
+Zu SEC-F-180: Betrifft insbesondere die Anzeige in der Verwaltungsoberfläche (ADMIN), die laut `../decisions/0018-verwaltungsoberflaeche-react-native-web.md` ein Browser-Rendering-Kontext ist.
 
 ## 8. Bewusst nicht übernommenes Altverhalten
 

@@ -2,9 +2,9 @@
 id: roadmap
 titel: Ausbaustufen und Umsetzungsreihenfolge
 status: accepted
-version: 0.1.0
+version: 0.1.2
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 related:
   - ../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md
   - ../decisions/0011-monorepo-und-openapi-vertrag.md
@@ -24,7 +24,7 @@ Randbedingung, die den Zuschnitt bestimmt: Die Umsetzung erfolgt nebenher durch 
 
 | Zurückgestellt | Blockiert durch | Verweis |
 |---|---|---|
-| Wiki-Anbindung (WIKI) | Zugang zur BookStack-Instanz unverifiziert | INT-007, ADR 0005 |
+| Wiki-Anbindung (WIKI) | API-Zugang seit 2026-08-26 bestätigt, Berechtigungsmodell für interne Inhalte offen; Zuordnung zur zweiten Ausbaustufe bleibt bis zur Klärung unverändert | INT-007, ADR 0005 |
 | Notenübersicht (NOTEN) | Kein offizieller Zugang zu HISinOne bekannt | INT-006, ADR 0006 |
 | E-Key-Verwaltung (EKEY) | Integrationsart mit dem bestehenden Verwaltungstool offen | INT-014 |
 | Event-Kalender (EVENT), Helfer-Anmeldung (HELFER) | Freigabe-URL des ICS-Kalenders offen; HELFER hängt an EVENT | INT-011 |
@@ -77,6 +77,8 @@ Zu Schritt 0: Die vier Prüfskripte aus `../platform/quality-and-testing.md` Abs
 
 Zu Schritt 3 vor Schritt 4: Der Mensaplan braucht die Mensa-Liste aus den Stammdaten, die Raumsuche die Raumliste. Die Verwaltungsoberfläche kommt deshalb vor den Features, die von ihr abhängen — nicht als Kür am Ende.
 
+Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — MENSA-F-090 (Lieblingsgerichte) braucht denselben normalisierten Gerichtsschlüssel als Bindeglied, siehe `../features/canteen/spec.md` MENSA-F-090.
+
 Zu Schritt 10: Die Testauflage bei Google Play (NFR-N-200: zwölf Testende über vierzehn zusammenhängende Tage) erzeugt allein zwei Wochen Vorlauf und ist bereits während Schritt 8 anzustoßen, nicht erst in Schritt 10.
 
 ## 5. Parallel laufende Klärungen
@@ -87,10 +89,11 @@ Diese Punkte sind nicht Teil der Umsetzungsreihenfolge, sondern laufen unabhäng
 |---|---|---|---|
 | App-Registrierung im Microsoft-Mandanten der FH | FSR FB4 mit Hochschul-IT | Freigabe durch die Hochschule | Anmeldung mit Hochschulkonto statt eigenem Konto |
 | Zugang zu HISinOne für Drittanwendungen | FSR FB4 mit Hochschul-IT | Existenz eines offiziellen Zugangs | NOTEN, ggf. Ticket-Bezug |
-| BookStack-Instanz: Erreichbarkeit, Token, freigegebene Inhalte | FSR FB4 | Eigener Betrieb, keine Fremdabhängigkeit | WIKI |
+| BookStack-Instanz: freigegebene Inhalte / Berechtigungsmodell (Erreichbarkeit und Token seit 2026-08-26 bestätigt) | FSR FB4 | Eigener Betrieb, keine Fremdabhängigkeit | WIKI |
 | Integrationsart mit dem E-Key-Verwaltungstool | Technische Leitung | Schnittstelle oder Datenbankzugriff | EKEY |
 | Freigabe-URL des FSR-Kalenders | FSR FB4 | Eigene Konfiguration | EVENT, HELFER |
 | Auswertung der Fachbereichsseite `aktuelles-ni` | Technische Leitung | Aktueller Seitenaufbau | NEWS-F-090 |
+| AVV mit Hetzner (Hosting) und ggf. Google (iOS-Push-Bridge) abschließen | FSR FB4 | Vertragsabschluss vor Produktivbetrieb mit personenbezogenen Daten | Rechtssicherer Betrieb ab Schritt 3 |
 | Prüfungsplan-Format über mehrere Jahrgänge | Technische Leitung | Dateien liegen unter `resources/` vor | SCHED-F-190 bis F-220 |
 
 Drei davon liegen vollständig im eigenen Einflussbereich (BookStack, Kalender-URL, Prüfungsplan-Format) und können jederzeit erledigt werden. Vier hängen von Dritten ab und werden früh angestoßen, damit die Wartezeit parallel zur ersten Ausbaustufe verstreicht statt danach.

@@ -3,6 +3,7 @@ nummer: 0011
 titel: Monorepo mit OpenAPI-Vertrag als Schnittstellenquelle
 status: angenommen
 datum: 2026-08-25
+zuletzt_ergaenzt: 2026-08-26
 betrifft:
   - ../platform/backend-and-api.md
   - ../platform/integrations.md
@@ -27,7 +28,7 @@ Erschwerend kommt hinzu, dass drei Auslieferungseinheiten zu bedienen sind: die 
 
 ## Entscheidung
 
-Dieses Repository wird zum Monorepo für den gesamten Bestand: `specs/` bleibt, hinzu kommen `app/` (React Native), `backend/` (ASP.NET Core), `admin-web/` (React für die PC-Bedienung) und `tools/` (Prüfskripte, Generatoren).
+Dieses Repository wird zum Monorepo für den gesamten Bestand: `specs/` bleibt, hinzu kommen `app/` (React Native, einschließlich der als Web-Export ausgelieferten PC-Verwaltungsoberfläche, siehe `0018-verwaltungsoberflaeche-react-native-web.md`), `backend/` (ASP.NET Core) und `tools/` (Prüfskripte, Generatoren). Ein eigenständiges `admin-web/`-Verzeichnis entfällt seit ADR 0018.
 
 Der Schnittstellenvertrag entsteht **spec-first** als versionierte OpenAPI-Beschreibung unter `specs/platform/api-contract.yaml`. Sie ist die Quelle der Wahrheit für jeden Aufruf zwischen App beziehungsweise Admin-Oberfläche und Backend; `platform/integrations.md` INT-008 verweist darauf, statt Endpunkte zu wiederholen. Typen und Client-Code für App, Admin-Oberfläche und Backend werden daraus erzeugt, nicht von Hand geschrieben.
 
@@ -55,10 +56,10 @@ Für das Backend gilt: ASP.NET Core mit PostgreSQL und Entity Framework Core, pe
 - Die vier Prüfskripte aus `platform/quality-and-testing.md` Abschnitt 8 entstehen unter `tools/spec-check/` und laufen in der CI bei jedem Pull Request.
 - `LICENSE` (MIT, NFR-N-160) liegt im Wurzelverzeichnis und gilt für den gesamten Bestand.
 - Das F-Droid-Recipe zeigt per `subdir` auf `app/android` (bereits in `0008-vertrieb-ueber-drei-app-stores.md` vorgesehen).
-- Die Admin-Oberfläche teilt sich mit der App den aus dem Vertrag erzeugten Client und den Anmeldefluss gegen Authentik (`0010-authentik-als-identitaetsanbieter.md`), unterscheidet sich aber in der Darstellung.
+- Die Admin-Oberfläche teilt sich mit der App seit `0018-verwaltungsoberflaeche-react-native-web.md` nicht nur den aus dem Vertrag erzeugten Client und den Anmeldefluss gegen Authentik (`0010-authentik-als-identitaetsanbieter.md`), sondern dieselbe Codebasis und Komponenten — unterschiedlich ist nur das responsive Layout, nicht die Implementierung.
 
 ## Offene Punkte
 
 - Werkzeug für die Codeerzeugung aus dem Vertrag je Zielsprache (TypeScript für App und Admin-Oberfläche, C# für das Backend) — bei Einrichtung der Pipeline zu wählen.
-- Ob die Admin-Weboberfläche eigenständig ausgeliefert oder vom Backend mitgeliefert wird.
+- ~~Ob die Admin-Weboberfläche eigenständig ausgeliefert oder vom Backend mitgeliefert wird.~~ Die Codebasis-Frage ist mit ADR 0018 geklärt (eine Codebasis mit `app/`); die Hosting-Frage des Web-Exports bleibt dort als offener Punkt bestehen.
 - Aufteilung der CI in Pipelines je Vertriebsweg (App Store, Play Store, F-Droid) und deren Auslöser.
