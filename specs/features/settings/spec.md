@@ -2,12 +2,14 @@
 id: settings
 titel: Einstellungen
 praefix: SET
-status: draft
+status: accepted
 prioritaet: bestand
-version: 0.1.1
+version: 0.2.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/LinksDownloadsFragment.java
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/UserSettingFragment.java
   - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/core/settings/settings_service.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/settings_page.dart
@@ -37,6 +39,9 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 - Mensa-Auswahl (siehe `features/canteen/spec.md`).
 - Datenschutzerklärung, Einwilligungsstatus, „Alle lokalen Daten löschen".
 - Lizenzhinweise (Open-Source-Bibliotheken).
+- Wahl der Oberflächensprache.
+- Liste externer Links und Downloads.
+- Angaben zur App (Version, FSR-Kontakt, Rückmeldeweg).
 
 ### Nicht-Scope
 
@@ -61,6 +66,20 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 | SET-F-070 | Das System muss eine Aktion „Alle lokalen Daten löschen" mit vorheriger Bestätigung bereitstellen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/settings_page.dart:37 |
 | SET-F-080 | Das System muss eine Übersicht der verwendeten Open-Source-Bibliotheken mit Lizenzhinweisen bereitstellen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/licenses_page.dart |
 | SET-F-090 | Das System muss einen Einstiegspunkt zur Löschung des eigenen Kontos und aller serverseitig gespeicherten personenbezogenen Daten bereitstellen. | NEU |
+| SET-F-100 | Das System muss der Nutzerin die Wahl der Oberflächensprache zwischen Deutsch und Englisch ermöglichen. | NEU |
+| SET-F-110 | Solange die Nutzerin keine Sprache gewählt hat, muss das System die Sprache der Systemeinstellung verwenden. | NEU |
+| SET-F-120 | Das System muss eine Liste externer Links und Downloads anzeigen, die serverseitig gepflegt wird. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/links_downloads_page.dart |
+| SET-F-130 | Das System muss die Anzeigeversion und die Build-Nummer der laufenden App anzeigen, aus dem Build gelesen. | Alt: bewusst verworfen |
+| SET-F-140 | Das System muss einen Rückmeldeweg an den FSR bereitstellen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/more_list_page.dart:47 |
+| SET-F-150 | Das System muss der Nutzerin das Festlegen der Reihenfolge der angezeigten Mensen ermöglichen (siehe `features/canteen/spec.md` MENSA-F-025). | Recherche: alte apps/android-fb4, activities/MenuSortActivity.java, 2026-08-25 |
+
+### Erläuterungen
+
+**`SET-F-100`/`SET-F-110`** — `platform/non-functional.md` NFR-F-115 fordert die Wahl zwischen Deutsch und Englisch, benannte bis zum 2026-08-25 aber keine Stelle, an der sie getroffen wird. Beide Alt-Apps liefern hier Vorbilder in unterschiedlicher Ausprägung: Die Flutter-App ist einsprachig, die Android-App bereits zweisprachig über Systemressourcen (`res/values`, `res/values-de`), allerdings ohne eigene Umschaltmöglichkeit — sie folgt der Systemsprache. SET-F-110 übernimmt dieses Verhalten als Voreinstellung, SET-F-100 ergänzt die ausdrückliche Wahl für Nutzerinnen, die eine andere Sprache bevorzugen als ihr Gerät. Datums-, Zeit- und Währungsformate bleiben davon unberührt (NFR-F-120).
+
+**`SET-F-120`** — Die Flutter-Alt-App führt zehn fest im Quellcode hinterlegte Links (L-073); die Android-Alt-App bezieht dieselbe Liste ferngepflegt vom Backend (`fragments/LinksDownloadsFragment.java`, Schlüssel `links` und `file_downloads`). Die ferngepflegte Variante wird übernommen, damit ein geänderter Link nicht ein App-Update über drei Vertriebswege erfordert. Pflege über `../admin/spec.md`, Auslieferung über API-F-230. Dies löst zugleich den in `../../product/legacy-inventory.md` Abschnitt 5 vermerkten Nachtrag zur Links-Liste ein.
+
+**`SET-F-130`** — Die Flutter-Alt-App zeigt eine fest einprogrammierte Versionsnummer (`more_list_page.dart:157`, dokumentiert als M-006), die dadurch von der tatsächlich installierten Version abweichen kann. Da `platform/non-functional.md` NFR-N-230 verlangt, dass ein Fehlerbericht eindeutig einer Quellcode-Version zuordenbar ist, muss die angezeigte Version aus dem Build stammen.
 
 ## 5. Datenmodell
 
@@ -94,13 +113,18 @@ Keine über `platform/non-functional.md` hinausgehenden Anforderungen.
 
 ## 11. Akzeptanzkriterien
 
-- Alle acht aus der Alt-App übernommenen Einstellungen sind vorhanden und wirken sich unmittelbar aus.
+- Die fünf als Einstellung bedienbaren Schlüssel der Flutter-Alt-App (Push bei News, Mensa-Auswahl, Sprung zum aktuellen Wochentag, Helligkeit in der Ticketansicht, Datenschutz-Einwilligung) sind vorhanden und wirken sich unmittelbar aus. Die übrigen drei der acht in `platform/data-and-storage.md` Abschnitt 3 gelisteten Schlüssel sind bewusst keine Einstellungen: Angepinnte Meldungen entstehen in NEWS, der Schnellzugriff auf das Ticket in SHELL/TICKET.
+- Die gewählte Oberflächensprache wirkt sich ohne Neustart der App aus (SET-F-100).
+- Die angezeigte Version stimmt mit der installierten Build-Nummer überein (SET-F-130).
 - „Alle lokalen Daten löschen" entfernt tatsächlich alle in `platform/data-and-storage.md` Abschnitt 2 gelisteten Datenklassen.
 
 ## 12. Bewusst nicht übernommenes Altverhalten
 
-Keines über die bereits in `platform/security-and-privacy.md` (SEC-F-010, wirkungsloses Datenschutz-Gate) dokumentierten Befunde hinaus — hier nur als Einstiegspunkt (SET-F-060) betroffen, nicht als eigener Befund.
+- Fest einprogrammierte Versionsangabe im Über-Dialog — Grund: kann von der installierten Version abweichen und macht Fehlerberichte unzuverlässig, siehe SET-F-130.
+- Fest im Quellcode hinterlegte Links-Liste — Grund: jede Änderung erforderte ein App-Update über drei Vertriebswege, siehe SET-F-120.
+- Wirkungsloses Datenschutz-Gate (SEC-F-010) — hier nur als Einstiegspunkt (SET-F-060) betroffen, nicht als eigener Befund.
 
 ## 13. Offene Fragen
 
+- Ob ein zusätzlicher Schalter für Lieblingsgericht-Benachrichtigungen nötig ist (offene Frage aus `../canteen/spec.md` Abschnitt 13) — für den ersten Umfang genügt das Markieren und Entmarkieren einzelner Gerichte als Ein- und Ausschalter.
 - Technische Orchestrierung der Kontolöschung (SET-F-090) über mehrere Backend-Ressourcen hinweg (Bewertungen, E-Key, Push-Kennung) — das Ergebnis ist bereits generisch festgelegt (`platform/identity-and-moderation.md` IDENT-F-130: alle personenbezogenen Daten der Person löschen, entkoppelte Bewertungsinhalte ausgenommen), offen ist nur die Umsetzung im Backend, keine Scope-Frage mehr.

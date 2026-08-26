@@ -26,7 +26,7 @@ specs/
 ├── product/
 │   ├── vision.md                      Produktvision, Zielgruppen, Abgrenzung zu den Alt-Apps
 │   ├── glossary.md                    Domänenglossar, verbindliche Begriffsdefinitionen
-│   ├── legacy-inventory.md            Bestandsaufnahme der Alt-Apps: Funktionsumfang, Quellenlage
+│   ├── legacy-inventory.md            Bestandsaufnahme beider Alt-Apps: Funktionsumfang, Mängel
 │   └── whatsapp-feedback-inventory.md Auswertung von WhatsApp-Gruppenchats auf Feature-Hinweise
 ├── platform/                          Querschnittsthemen, die mehrere Features betreffen
 │   ├── architecture.md                (ARCH) Systemarchitektur, Modulschnitt, Technologiewahl
@@ -36,6 +36,7 @@ specs/
 │   ├── integrations.md                (INT) Schnittstellenregister — siehe Abschnitt „Die wichtigste Datei"
 │   ├── security-and-privacy.md        (SEC) Sicherheits- und Datenschutzanforderungen
 │   ├── ux-and-theming.md              (UX) Gestaltung, Barrierefreiheit, Corporate Design
+│   ├── api-contract.yaml              OpenAPI-Vertrag des eigenen Backends, Anhang zu INT-008
 │   ├── non-functional.md              (NFR) Leistungs-, Verfügbarkeits- und Kompatibilitätsanforderungen
 │   └── quality-and-testing.md         (QA) Teststrategie, Qualitätssicherung, Release-Kriterien
 ├── features/                          eine Spec je fachlichem Feature
@@ -52,6 +53,7 @@ specs/
 │   ├── grades/spec.md                 (NOTEN)
 │   ├── settings/spec.md               (SET)
 │   └── e-key/spec.md                  (EKEY)
+│   └── roadmap.md                     Zuordnung der Anforderungen zu den Ausbaustufen
 ├── decisions/                         Architecture Decision Records (ADR), fortlaufend nummeriert
 │   └── 0001-…, 0002-…, …
 └── open-questions.md                  projektweite offene Fragen ohne festen Platz in einer Einzel-Spec
@@ -85,6 +87,7 @@ Regeln:
 
 - `###` ist dreistellig und wird in **Zehnerschritten ab `010`** vergeben (`010`, `020`, `030`, …), damit später zwischen zwei bestehenden Anforderungen eine neue eingeschoben werden kann (`015` zwischen `010` und `020`), ohne andere IDs zu verändern.
 - IDs werden **nie neu vergeben oder umnummeriert** — auch nicht, wenn eine Anforderung entfällt. Eine einmal vergebene ID bleibt für immer für genau diese Anforderung reserviert.
+- Die Zählung läuft **je Teil getrennt**: `-F-` und `-N-` beginnen beide bei `010` und laufen unabhängig voneinander. Im Bestand gibt es Abweichungen davon — in `SEC`, `NFR`, `DATA` und `QA` wurden `-N-`-Nummern historisch in dieselbe Folge eingereiht wie die `-F-`-Nummern (etwa `SEC-N-030` zwischen `SEC-F-020` und `SEC-F-040`). Diese Abweichungen bleiben bestehen, weil IDs nicht umnummeriert werden; neue Anforderungen folgen der getrennten Zählung.
 - Entfällt eine Anforderung, wird sie nicht gelöscht, sondern erhält den Status `entfallen` mit Begründung, in der Spec-Datei sichtbar stehend.
 
 Präfix je Themenbereich, verbindlich für das gesamte Projekt:
@@ -113,6 +116,7 @@ Präfix je Themenbereich, verbindlich für das gesamte Projekt:
 | NOTEN | Notenübersicht | `features/grades/spec.md` |
 | SET | Einstellungen | `features/settings/spec.md` |
 | EKEY | E-Key-Verwaltung | `features/e-key/spec.md` |
+| ADMIN | Verwaltung & Redaktion | `features/admin/spec.md` |
 
 Sonderfall `INT`: Das Schnittstellenregister nummeriert seine Einträge nicht als funktionale/nicht-funktionale Anforderungen, sondern als einfache Liste von Schnittstellen: `INT-001`, `INT-002`, … (kein `F`/`N`-Teil, keine Zehnerschritte). Der Grund: Ein Registereintrag beschreibt eine Schnittstelle als Ganzes, nicht eine einzelne prüfbare Systemreaktion.
 
@@ -123,10 +127,10 @@ Jede Anforderung folgt einem der folgenden Muster (EARS — Easy Approach to Req
 | Muster | Form | Beispiel |
 |---|---|---|
 | Ubiquitär (immer gültig) | Das System muss `<Reaktion>`. | MENSA-F-010 — Das System muss den Speiseplan des aktuellen Tages für die zuletzt gewählte Mensa anzeigen. |
-| Ereignisgesteuert | Wenn `<Auslöser>`, dann muss das System `<Reaktion>`. | SCHED-F-140 — Wenn die Nutzerin eine Gruppenkennung angibt, dann muss das System nur Termine anzeigen, deren `studentSet` diese Kennung einschließt. |
+| Ereignisgesteuert | Wenn `<Auslöser>`, dann muss das System `<Reaktion>`. | NEWS-F-070 — Wenn eine Push-Benachrichtigung zu einer Meldung angetippt wird, muss das System direkt zur betreffenden Meldung navigieren. |
 | Zustandsabhängig | Solange `<Zustand>`, muss das System `<Reaktion>`. | MENSA-F-050 — Solange keine Netzwerkverbindung besteht, muss das System den zuletzt geladenen Speiseplan anzeigen. |
 | Unerwünschte Bedingung / Fehlerfall | Falls `<Bedingung>`, muss das System `<Reaktion>`. | NEWS-F-030 — Falls der News-Dienst nicht erreichbar ist, muss das System eine Fehlermeldung mit Wiederholen-Option anzeigen. |
-| Optionales Verhalten | Sofern `<Merkmal vorhanden>`, muss das System `<Reaktion>`. | WIKI-F-060 — Sofern ein API-Token für das Wiki hinterlegt ist, muss das System Wiki-Seiten direkt in der App anzeigen. |
+| Optionales Verhalten | Sofern `<Merkmal vorhanden>`, muss das System `<Reaktion>`. | WIKI-F-010 — Sofern ein API-Token für das Wiki hinterlegt ist, muss das System Wiki-Seiten direkt in der App anzeigen. |
 
 Verbindlichkeit der Modalverben:
 
@@ -191,57 +195,67 @@ Beispiel einer Anforderungstabelle:
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | SCHED-F-010 | Das System muss den Stundenplan in den fünf Wochentagen Montag bis Freitag darstellen. | Alt: lib/main_page.dart |
-| SCHED-F-140 | Wenn die Nutzerin eine Gruppenkennung angibt, dann muss das System nur Termine anzeigen, deren `studentSet` diese Kennung einschließt. | Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:209 |
-| SCHED-F-150 | Falls kein Termin zur angegebenen Gruppenkennung passt, muss das System den Tag als leer kennzeichnen und den Grund nennen. | NEU |
+| SCHED-F-060 | Wenn `studentSet` eines Termins den Wert `*` trägt, dann muss das System diesen Termin für jede angegebene Gruppenkennung anzeigen. | NEU |
+| SCHED-F-100 | Falls bei aktivem Ausblenden gruppenfremder Termine an einem Wochentag kein Termin verbleibt, muss das System diesen Tag als leer kennzeichnen und die Gruppenfilterung als Grund nennen. | NEU |
 
 In der Tabellenspalte `Herkunft` stehen die Markierungen aus Abschnitt 6 **ohne** eckige Klammern.
 
-Aus der Zeilenform folgt eine nützliche Eigenschaft: Eine Anforderung ist über ihre ID mit einer einzigen Textsuche vollständig auffindbar — `grep -rn "SCHED-F-140" specs/` liefert Anforderung und Herkunft in einer Zeile, ohne dass die gesamte Spec gelesen werden muss. Ein zusätzlicher Anforderungsindex entfällt deshalb bewusst; er wäre eine Dublette und würde veralten.
+Aus der Zeilenform folgt eine nützliche Eigenschaft: Eine Anforderung ist über ihre ID mit einer einzigen Textsuche vollständig auffindbar — `grep -rn "SCHED-F-080" specs/` liefert Anforderung und Herkunft in einer Zeile, ohne dass die gesamte Spec gelesen werden muss. Ein zusätzlicher Anforderungsindex entfällt deshalb bewusst; er wäre eine Dublette und würde veralten.
 
 Ziel ist Dichte, nicht Kürze um jeden Preis. Jede fachliche Aussage bleibt erhalten — sie steht nur knapper und strukturierter da.
 
 ## 10. Index aller Specs
 
-Alle geplanten Spec-Dateien des Projekts. Status ist durchgängig `draft`, solange noch kein Inhalt geschrieben wurde. Priorität nur für Feature-Specs: **kern** = für den Ablösungs-Umfang der Alt-Apps essentiell, **bestand** = übernommen, aber nachrangig gegenüber den Kern-Features. Querschnitts-Specs (`platform/`) sowie Produkt- und Prozessdokumente tragen keine Priorität (`–`).
+Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = für den Ablösungs-Umfang der Alt-Apps essentiell, **bestand** = übernommen, aber nachrangig. Querschnitts-Specs (`platform/`) sowie Produkt- und Prozessdokumente tragen keine Priorität (`–`).
 
-| Datei | Präfix | Priorität | Status |
-|---|---|---|---|
-| `platform/architecture.md` | ARCH | – | draft |
-| `platform/backend-and-api.md` | API | – | draft |
-| `platform/identity-and-moderation.md` | IDENT | – | draft |
-| `platform/data-and-storage.md` | DATA | – | draft |
-| `platform/integrations.md` | INT | – | draft |
-| `platform/security-and-privacy.md` | SEC | – | draft |
-| `platform/ux-and-theming.md` | UX | – | draft |
-| `platform/non-functional.md` | NFR | – | draft |
-| `platform/quality-and-testing.md` | QA | – | draft |
-| `features/app-shell/spec.md` | SHELL | bestand | draft |
-| `features/room-finder/spec.md` | RAUM | kern | draft |
-| `features/schedule/spec.md` | SCHED | kern | draft |
-| `features/canteen/spec.md` | MENSA | kern | draft |
-| `features/canteen-ratings/spec.md` | RATE | kern | draft |
-| `features/news/spec.md` | NEWS | kern | draft |
-| `features/events/spec.md` | EVENT | kern | draft |
-| `features/event-volunteers/spec.md` | HELFER | kern | draft |
-| `features/wiki/spec.md` | WIKI | kern | draft |
-| `features/semester-ticket/spec.md` | TICKET | bestand | draft |
-| `features/grades/spec.md` | NOTEN | bestand | draft |
-| `features/settings/spec.md` | SET | bestand | draft |
-| `features/e-key/spec.md` | EKEY | bestand | draft |
-| `product/vision.md` | – | – | draft |
-| `product/glossary.md` | – | – | draft |
-| `product/legacy-inventory.md` | – | – | draft |
-| `product/whatsapp-feedback-inventory.md` | – | – | draft |
-| `open-questions.md` | – | – | draft |
-| `decisions/0001-react-native-als-plattform.md` | – | – | draft |
-| `decisions/0002-spec-anchored-arbeitsweise.md` | – | – | draft |
-| `decisions/0003-eigenes-backend-fuer-community-funktionen.md` | – | – | draft |
-| `decisions/0004-identitaet-und-anmeldung.md` | – | – | draft |
-| `decisions/0005-wiki-bookstack-anbindung.md` | – | – | draft |
-| `decisions/0006-abloesung-ods-durch-hisinone.md` | – | – | draft |
-| `decisions/0007-datenquellen-mensa-und-news.md` | – | – | draft |
+| Datei | Präfix | Priorität | Ausbaustufe | Status |
+|---|---|---|---|---|
+| `platform/architecture.md` | ARCH | – | – | accepted |
+| `platform/backend-and-api.md` | API | – | – | accepted |
+| `platform/api-contract.yaml` | – | – | – | accepted |
+| `platform/identity-and-moderation.md` | IDENT | – | – | accepted |
+| `platform/data-and-storage.md` | DATA | – | – | accepted |
+| `platform/integrations.md` | INT | – | – | accepted |
+| `platform/security-and-privacy.md` | SEC | – | – | accepted |
+| `platform/ux-and-theming.md` | UX | – | – | accepted |
+| `platform/non-functional.md` | NFR | – | – | accepted |
+| `platform/quality-and-testing.md` | QA | – | – | accepted |
+| `features/app-shell/spec.md` | SHELL | kern | 1 | accepted |
+| `features/room-finder/spec.md` | RAUM | kern | 1 | accepted |
+| `features/schedule/spec.md` | SCHED | kern | 1 (ohne Prüfungsplan) | accepted |
+| `features/canteen/spec.md` | MENSA | kern | 1 | accepted |
+| `features/canteen-ratings/spec.md` | RATE | kern | 1 (ohne Freitext) | accepted |
+| `features/news/spec.md` | NEWS | kern | 1 (ohne Push) | accepted |
+| `features/admin/spec.md` | ADMIN | kern | 1 (Teilumfang) | accepted |
+| `features/settings/spec.md` | SET | bestand | 1 | accepted |
+| `features/semester-ticket/spec.md` | TICKET | bestand | 1 | accepted |
+| `features/events/spec.md` | EVENT | kern | 2 | draft |
+| `features/event-volunteers/spec.md` | HELFER | kern | 2 | draft |
+| `features/wiki/spec.md` | WIKI | kern | 2 | draft |
+| `features/grades/spec.md` | NOTEN | bestand | 2 | draft |
+| `features/e-key/spec.md` | EKEY | bestand | 2 | draft |
+| `product/vision.md` | – | – | – | accepted |
+| `product/glossary.md` | – | – | – | accepted |
+| `product/legacy-inventory.md` | – | – | – | accepted |
+| `product/whatsapp-feedback-inventory.md` | – | – | – | draft |
+| `product/roadmap.md` | – | – | – | accepted |
+| `open-questions.md` | – | – | – | draft |
+| `decisions/0001-react-native-als-plattform.md` | – | – | – | angenommen |
+| `decisions/0002-spec-anchored-arbeitsweise.md` | – | – | – | angenommen |
+| `decisions/0003-eigenes-backend-fuer-community-funktionen.md` | – | – | – | angenommen |
+| `decisions/0004-identitaet-und-anmeldung.md` | – | – | – | angenommen |
+| `decisions/0005-wiki-bookstack-anbindung.md` | – | – | – | vorgeschlagen |
+| `decisions/0006-abloesung-ods-durch-hisinone.md` | – | – | – | vorgeschlagen |
+| `decisions/0007-datenquellen-mensa-und-news.md` | – | – | – | vorgeschlagen |
+| `decisions/0008-vertrieb-ueber-drei-app-stores.md` | – | – | – | angenommen |
+| `decisions/0009-expo-werkzeugkasten.md` | – | – | – | angenommen |
+| `decisions/0010-authentik-als-identitaetsanbieter.md` | – | – | – | angenommen |
+| `decisions/0011-monorepo-und-openapi-vertrag.md` | – | – | – | angenommen |
+| `decisions/0012-zuschnitt-der-ersten-ausbaustufe.md` | – | – | – | angenommen |
 
-Anmerkung zu den ADRs: Nummern und Titel sind durch die Projektplanung festgelegt. `0003`, `0005` und `0006` sind zusätzlich im Schnittstellenregister (`platform/integrations.md`, Einträge INT-008, INT-007, INT-006) referenziert. Alle sieben ADR sind noch nicht geschrieben; sie entstehen im Zuge der Querschnitts-Specs.
+Die Spalte „Ausbaustufe" verweist auf `product/roadmap.md`; dort steht die Zuordnung je Anforderung, nicht nur je Datei. Specs der ersten Ausbaustufe stehen auf `accepted`, weil ihre Umsetzung geplant oder begonnen ist (Abschnitt 3); die übrigen bleiben `draft`, bis die jeweils blockierende Klärung vorliegt.
+
+Anmerkung zu den ADRs: Nummern und Titel der ADR `0001`–`0007` sind durch die ursprüngliche Projektplanung festgelegt. `0003`, `0005` und `0006` sind zusätzlich im Schnittstellenregister (`platform/integrations.md`, Einträge INT-008, INT-007, INT-006) referenziert. `0008` bis `0012` sind im laufenden Spec-Prozess neu hinzugekommen (Store-Vertrieb, Werkzeugkasten, Identitätsanbieter, Monorepo und Schnittstellenvertrag, Zuschnitt der Ausbaustufen) — die ADR-Liste wächst bei Bedarf über die ursprünglich geplanten sieben Einträge hinaus.
 
 ## 11. Eine neue Spec anlegen
 

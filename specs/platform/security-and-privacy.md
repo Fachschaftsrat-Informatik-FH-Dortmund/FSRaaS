@@ -2,8 +2,8 @@
 id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
-status: draft
-version: 0.4.0
+status: accepted
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -39,7 +39,22 @@ Die Neuentwicklung wandelt einen reinen Lese-Client in eine Anwendung mit nutzer
 | Verfügbarkeit je Bereich | Ausfall eines Fremdsystems (siehe `integrations.md`) darf nur den betroffenen Bereich beeinträchtigen, nie die ganze App — siehe `non-functional.md` |
 | Nachvollziehbarkeit ohne Personenbezug | Protokolle erlauben Fehleranalyse, ohne personenbezogene Inhalte offenzulegen |
 
-## 2. Befunde aus der Alt-App, die nicht wiederholt werden dürfen
+## 2. Befunde aus den Alt-Apps, die nicht wiederholt werden dürfen
+
+### 2.1 Befunde aus der Android-Alt-App (2026-08-25)
+
+Die Android-Alt-App ist im Funktionsumfang der zu übertreffende Stand (`../product/legacy-inventory.md` Abschnitt 4), enthält sicherheitlich aber vier Befunde, die nicht übernommen werden. Vollständige Mängelliste dort unter 4.5.
+
+| Befund | Quelle | Konsequenz für die Neuentwicklung |
+|---|---|---|
+| Hochschul-Zugangsdaten werden geräteseitig vorgehalten und von einem Hintergrund-Worker wiederholt erneut gesendet, um das Semesterticket zu beziehen | `alte apps/android-fb4/…/util/UserCredentialsHelper.java`, `worker/TicketDownloadWorker.java` | Passwort-Replay bleibt ausgeschlossen, siehe SEC-F-040 und INT-017; der automatische Ticket-Bezug entfällt zugunsten des manuellen Imports |
+| Der Stundenplandienst wird über `http://` aufgerufen, obwohl `https://` funktioniert (live geprüft 2026-08-25) | `alte apps/android-fb4/…/module/NetworkModule.java` | TLS ausnahmslos, siehe SEC-N-030 |
+| Das Ticket-PDF liegt unverschlüsselt im externen App-Verzeichnis | `alte apps/android-fb4/…/util/TicketUtil.java` | Verschlüsselte Ablage im App-eigenen Bereich, siehe DATA-F-040 und DATA-F-170 |
+| Absturzberichte und Nutzungsereignisse gehen an einen Drittanbieterdienst | `alte apps/android-fb4/…/util/FirebaseAnalyticsEvents.java` | Nicht übernehmen, siehe SEC-F-125; zusätzlich unvereinbar mit NFR-N-170 |
+
+Ein Befund ist ausdrücklich **positiv** und wird übernommen: Die Android-Alt-App löst das Problem ungültiger Hochschulzertifikate, indem sie deren Aussteller als zusätzlichen Vertrauensanker mitliefert (`util/AdditionalKeyStoresSSLSocketFactory.java`, `assets/fh.cer`), statt die Prüfung abzuschalten. Damit ist zugleich der bislang unbestätigte Befund M-013 aus der Flutter-App geklärt: Das Zertifikatsproblem der FH ist real, hat aber eine Lösung, die die Prüfung intakt lässt. Aufgenommen als SEC-N-105.
+
+### 2.2 Befunde aus der Flutter-Alt-App
 
 | Befund | Quelle | Konsequenz für die Neuentwicklung |
 |---|---|---|
@@ -59,7 +74,12 @@ Nutzergenerierte Inhalte und personenbezogene Daten sind gegenüber dem Bestand 
 | Helfer-Anmeldung (Name, Kontaktweg) | Koordination von Helferbedarf bei FSR-Events | Einwilligung | Eigenes Backend (INT-008), FSR-Eventorganisation | 30 Tage nach Eventende, danach Löschung (`identity-and-moderation.md`, IDENT-N-020) | `features/event-volunteers/spec.md` |
 | Konto (SSO-Kennung oder E-Mail-Adresse, siehe INT-012) | Anmeldung für das Verfassen von Bewertungen und für die E-Key-Verwaltung | Einwilligung | Eigenes Backend (INT-008), ggf. Hochschul-SSO-Dienst | bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` IDENT-F-130 | `platform/identity-and-moderation.md`, `features/canteen-ratings/spec.md`, `features/e-key/spec.md` |
 | Bewertung (Konto-Referenz, angezeigtes Pseudonym, Sternebewertung, optionaler Kommentar) | Community-Bewertung von Mensa-Gerichten | Einwilligung | Eigenes Backend (INT-008), andere Nutzerinnen (Anzeige nur des Pseudonyms) | dauerhaft bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` | `features/canteen-ratings/spec.md` |
-| Push-Kennung (Firebase-Geräte-ID) | Zustellung von Push-Benachrichtigungen | Einwilligung (Opt-in) | Google/Firebase (INT-005) | bis Abmeldung vom Thema bzw. Firebase-Standardfristen | `features/news/spec.md`, `features/settings/spec.md` |
+| Push-Kennung, iOS (Firebase-Geräte-ID) | Zustellung von Push-Benachrichtigungen | Einwilligung (Opt-in) | Google/Firebase als Bridge zu Apple/APNs (INT-005) | bis Abmeldung vom Thema bzw. Firebase-Standardfristen | `features/news/spec.md`, `features/settings/spec.md` |
+| Push-Endpunkt, Android (UnifiedPush-Endpunkt-URL) | Zustellung von Push-Benachrichtigungen | Einwilligung (Opt-in) | Eigenes Backend (INT-008) sowie der von der Nutzerin gewählte Distributor (INT-005) | bis Abmeldung, danach Löschung des Endpunkts | `features/news/spec.md`, `features/settings/spec.md` |
+| Push-Kennung bei Helfer-Anmeldung | Benachrichtigung angemeldeter Helfender bei Absage eines Events (HELFER-F-060) | Einwilligung | Eigenes Backend (INT-008), Zustellweg wie oben | mit der zugehörigen Anmeldung, spätestens 30 Tage nach Eventende | `features/event-volunteers/spec.md` |
+| Konto- und Rollenverwaltung (Kennung, E-Mail-Adresse, Gruppenzugehörigkeit) | Anmeldung und Rollenprüfung für Bewertungen, E-Key und Verwaltung | Einwilligung | Eigenbetriebene Authentik-Instanz (INT-012); bei aktiver Federation zusätzlich der Microsoft-Mandant der FH Dortmund | bis Löschung durch Nutzerin, siehe IDENT-F-130 | `platform/identity-and-moderation.md`, `features/admin/spec.md` |
+| Verwaltungsprotokoll (Zeitpunkt, handelndes Konto, betroffener Datensatz) | Nachvollziehbarkeit von Redaktions- und Moderationshandlungen über den Wechsel der FSR-Besetzung hinweg | Berechtigtes Interesse | Eigenes Backend (INT-008), Zugriff auf Rolle FSR-Redaktion beschränkt | 12 Monate (ADMIN-N-020) | `features/admin/spec.md` |
+| Zugriff auf den Gerätekalender (Schreibzugriff) | Übertragen ausgewählter Stundenplan-Termine in einen von der Nutzerin gewählten Kalender | Einwilligung | Verbleibt auf dem Gerät, keine Übermittlung an das Backend oder Dritte | nicht zutreffend, kein Datenbestand beim Verantwortlichen | `features/schedule/spec.md` |
 | Technische Protokolle des Backends (z. B. IP-Adresse, Zeitstempel, aufgerufener Endpunkt) | Betrieb, Fehleranalyse, Missbrauchserkennung | Berechtigtes Interesse | Eigener Backend-Betrieb (INT-008) | 30 Tage (Arbeitsziel, siehe Abschnitt 9) | `backend-and-api.md` |
 | E-Key-Verknüpfung, App-seitig (E-Key-Nummer-Referenz, Konto-Referenz, zwischengespeicherter Status/Berechtigungen, Bestätigungs-Zeitstempel) | Anzeige von Status/Berechtigungen in der App | Einwilligung | Eigenes Backend (INT-008) | Bis Löschung durch Nutzerin (Konto-Löschung, IDENT-F-130) | `features/e-key/spec.md` |
 | E-Key-Stammdaten (E-Key-Nummer, Matrikelnummer, Berechtigungen) | Verwaltung des vom FSR verliehenen physischen Zugangsschlüssels | Einwilligung | Bestehendes E-Key-Verwaltungstool des FSR (INT-014, außerhalb der Datenhoheit dieser App) | Verwaltet durch das bestehende Tool/FSR-Mitglieder, nicht durch diese App | `features/e-key/spec.md` |
@@ -80,7 +100,14 @@ Die Erklärung der Alt-App liegt unter `alte apps/fb4_app-main/fb4_app-main/asse
 
 ## 5. Berechtigungen auf dem Gerät
 
-Die Alt-App forderte Zugriff auf Dateiauswahl (Semesterticket-Import aus PDF, `alte apps/fb4_app-main/fb4_app-main/lib/areas/ticket/viewmodels/ticket_overview_viewmodel.dart:59`) und Benachrichtigungen (INT-005). Neu hinzu kommen möglicherweise Kalenderzugriff (Events) und Standort (Raumsuche, nur falls tatsächlich benötigt) — beide als offener Bedarf zu bestätigen in den jeweiligen Feature-Specs.
+| Berechtigung | Wofür | Anforderung |
+|---|---|---|
+| Dateiauswahl | Import des Semesterticket-PDFs (TICKET-F-010) | vorhanden in beiden Alt-Apps |
+| Benachrichtigungen | Lieblingsgericht-Hinweis (MENSA-F-100, rein lokal) sowie Push (INT-005, zweite Ausbaustufe) | Opt-in |
+| Kalender, ausschließlich schreibend | Übertragen ausgewählter Stundenplan-Termine in einen gewählten Gerätekalender (SCHED-F-175) | Opt-in, erst bei tatsächlicher Nutzung anzufragen (SEC-F-080) |
+| Standort | – | wird nicht benötigt und nicht angefragt; die Raumsuche arbeitet mit manueller Referenzraum-Eingabe (RAUM-F-050) |
+
+**Korrektur vom 2026-08-25 zum Kalenderzugriff.** Abschnitt 9 hielt am selben Tag fest, es werde keine Kalenderberechtigung benötigt, weil der iCal-Export nur eine Datei erzeuge. Die anschließende Auswertung des Android-Quellcodes zeigt, dass die Android-Alt-App Termine direkt in einen von der Nutzerin gewählten Gerätekalender schreibt (`READ_CALENDAR`/`WRITE_CALENDAR`, `dialog/CalendarExportDialog.java`) und damit über den zuvor angenommenen Umfang hinausgeht. Entscheidung FSR FB4, 2026-08-25: Der Schreibzugriff wird aufgenommen, der Datei-Export bleibt als Rückfallweg bestehen. Lesezugriff auf bestehende Kalendereinträge bleibt ausgeschlossen — die Berechtigung wird ausschließlich zum Anlegen eigener Einträge und zum Auflisten der verfügbaren Zielkalender genutzt, nicht zum Auswerten fremder Termine.
 
 ## 6. Transportsicherheit, Geheimnisse, Protokollierung
 
@@ -100,6 +127,8 @@ Alle Netzaufrufe laufen über TLS mit ungeprüfter Zertifikatsvalidierung im Pro
 | SEC-F-080 | Das System muss jede Systemberechtigung erst im Moment ihres tatsächlichen Bedarfs mit einer für die Nutzerin verständlichen Begründung anfragen. | NEU |
 | SEC-F-090 | Falls eine optionale Systemberechtigung nicht erteilt wird, muss das System ohne diese Berechtigung nutzbar bleiben, mit eingeschränkter Funktionalität nur im betroffenen Bereich. | NEU |
 | SEC-N-100 | Das System muss TLS-Zertifikate der aufgerufenen Server ohne Ausnahme validieren; eine Deaktivierung der Zertifikatsprüfung ist im Produktivbuild ausgeschlossen. | NEU |
+| SEC-N-105 | Sofern ein Hochschulsystem ein Zertifikat verwendet, dem die Systemvertrauensliste nicht folgt, muss das System dessen Aussteller als zusätzlichen Vertrauensanker aufnehmen, statt die Prüfung abzuschalten oder abzuschwächen. | Recherche: alte apps/android-fb4, util/AdditionalKeyStoresSSLSocketFactory.java, 2026-08-25 |
+| SEC-F-125 | Das System muss darauf verzichten, Absturzberichte oder Nutzungsereignisse an Dritte zu übermitteln. | Alt: bewusst verworfen |
 | SEC-N-110 | Das System muss Geheimnisse (API-Token, Schlüssel) über einen gesicherten Build- oder Laufzeitmechanismus bereitstellen, niemals im Klartext im Quellcode. | NEU |
 | SEC-N-120 | Das System muss Protokolle so gestalten, dass sie keine personenbezogenen Inhalte enthalten. | NEU |
 
@@ -115,5 +144,5 @@ Alle Netzaufrufe laufen über TLS mit ungeprüfter Zertifikatsvalidierung im Pro
 
 - Speicherdauer und Löschfrist von Helfer-Anmeldungen nach Zweckerfüllung des Events: bereits durch `identity-and-moderation.md` (IDENT-N-020, 30 Tage nach Eventende) beantwortet; das Verarbeitungsverzeichnis in Abschnitt 3 wurde entsprechend aktualisiert, keine offene Frage mehr.
 - Aufbewahrungsdauer technischer Backend-Protokolle: 30 Tage als Arbeitsziel, zu validieren im ersten Betrieb.
-- Geklärt (FSR FB4, 2026-08-25): Weder Kalender- noch Standort-Geräteberechtigung wird für den aktuellen Umfang benötigt. Die Raumsuche ermittelt Nähe über eine manuelle Referenzraum-Eingabe und serverseitige Laufwege-Daten statt GPS (`features/room-finder/spec.md` RAUM-F-050/060); der iCal-Export (`features/schedule/spec.md` SCHED-F-170) exportiert nur, ohne Lesezugriff auf den Gerätekalender.
+- ~~Geklärt (FSR FB4, 2026-08-25): Weder Kalender- noch Standort-Geräteberechtigung wird für den aktuellen Umfang benötigt.~~ **Teilweise revidiert am selben Tag** nach Auswertung des Android-Quellcodes: Für den Standort gilt die Aussage unverändert — die Raumsuche ermittelt Nähe über eine manuelle Referenzraum-Eingabe und serverseitige Laufwege-Daten statt GPS (`features/room-finder/spec.md` RAUM-F-050/060). Für den Kalender gilt sie nicht mehr: Schreibzugriff wird aufgenommen, siehe Abschnitt 5 und `features/schedule/spec.md` SCHED-F-175.
 - Geklärt (FSR FB4, 2026-08-25): Speicherdauer und Löschfrist der E-Key-Stammdaten (E-Key-Nummer, Matrikelnummer, Berechtigungen) liegen in der Verantwortung des bestehenden E-Key-Verwaltungstools (INT-014) und der FSR-Mitglieder, außerhalb der Datenhoheit dieser App. Die App-seitige Verknüpfung (Konto-Referenz) unterliegt der regulären Konto-Löschung (IDENT-F-130).

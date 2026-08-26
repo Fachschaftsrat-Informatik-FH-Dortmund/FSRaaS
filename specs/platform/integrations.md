@@ -2,11 +2,17 @@
 id: integrations
 titel: Schnittstellenregister
 praefix: INT
-status: draft
-version: 0.7.0
+status: accepted
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/
+  - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/service/DataService.java
+  - alte apps/android-fb4/FB4/fB4/src/main/assets/canteens.json
+  - alte apps/android-fb4/FB4/fB4/src/main/assets/rooms.json
+  - resources/pplan.xlsx
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/course_info_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/schedule_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
@@ -27,6 +33,7 @@ related:
   - ../features/event-volunteers/spec.md
   - backend-and-api.md
   - security-and-privacy.md
+  - ../decisions/0008-vertrieb-ueber-drei-app-stores.md
 ---
 
 # Schnittstellenregister
@@ -48,9 +55,13 @@ Liefert die Liste der Studiengänge des Fachbereichs mit ihren Fachsemestern (`g
 
 **Aufruf**
 ```
-GET https://ws.inf.fh-dortmund.de/fbws/current/rest/CourseOfStudy/?Accept=application/json
+GET https://ws.inf.fh-dortmund.de/timetable/current/rest/CourseOfStudy/?Accept=application/json
 ```
 Keine Parameter außer dem festen Query-String `Accept=application/json`.
+
+**Pfadkorrektur (2026-08-25).** Bis zur Auswertung des Android-Quellcodes war hier der Pfad `/fbws/current/rest/...` dokumentiert, wie ihn die Flutter-Alt-App verwendet. Die Android-Alt-App ruft dieselben Ressourcen unter `/timetable/current/rest/...` ab (`retrofit/TimetableApi.java`) — derselbe Pfad, unter dem auch INT-009 liegt. Eine Live-Abfrage am 2026-08-25 bestätigt, dass `/timetable/`-Pfad **über HTTPS** mit Status 200 antwortet. INT-001, INT-002 und INT-009 sind damit drei Ressourcen **eines** Dienstes unter einem gemeinsamen Pfadpräfix, nicht zwei getrennte Systeme. Für die Neuentwicklung gilt einheitlich `/timetable/`; der `/fbws/`-Pfad wird nicht weiterverwendet.
+
+Hinweis zum Transport: Die Android-Alt-App spricht diesen Dienst über `http://` an (`module/NetworkModule.java`, `baseUrl("http://ws.inf.fh-dortmund.de/")`). Die Live-Abfrage am 2026-08-25 zeigt, dass `https://` einwandfrei funktioniert — der unverschlüsselte Aufruf ist somit kein technischer Zwang, sondern ein Altlastenbefund. Für die Neuentwicklung gilt SEC-N-030 ohne Ausnahme.
 
 **Antwortstruktur**
 Die Antwort ist ein JSON-**Objekt** (Map von Schlüssel auf Studiengangsdatensatz), keine Liste. Auszuwerten sind die Werte dieser Map. Einträge, bei denen `grades` `null` ist, werden verworfen (so verfährt bereits die Alt-App).
@@ -93,8 +104,9 @@ Liefert die Veranstaltungstermine eines Studiengang/Semester-Paars. Grundlage f�
 
 **Aufruf**
 ```
-GET https://ws.inf.fh-dortmund.de/fbws/current/rest/CourseOfStudy/{sname}/{grade}/Events?Accept=application/json&studentSet=*
+GET https://ws.inf.fh-dortmund.de/timetable/current/rest/CourseOfStudy/{sname}/{grade}/Events?Accept=application/json&studentSet=*
 ```
+(Pfadkorrektur `/fbws/` → `/timetable/` wie bei INT-001, siehe dort.)
 `{sname}` ist der Kurzname aus INT-001, `{grade}` das Fachsemester. `studentSet=*` fordert Termine aller Gruppen an; die Filterung auf eine einzelne Gruppenkennung erfolgt clientseitig (siehe `product/glossary.md`, Begriff `studentSet`).
 
 **Antwortstruktur**
@@ -133,8 +145,10 @@ Keine bekannte Alternativquelle.
 **Status**
 Aktiv, unverändert aus der Alt-App übernehmbar.
 
-**Nutzungshinweis für die Raumsuche**
-Ursprünglich angenommen: Der FBWS biete keinen eigenen Endpunkt für Raumbelegung, weshalb sich diese nur herleiten lasse, indem die Termine aller Studiengang/Semester-Kombinationen (iteriert über INT-001) abgerufen und über `roomId` zusammengeführt werden. Diese Aggregation ist Aufgabe des eigenen Backends (siehe INT-008), nicht der App direkt, um wiederholtes vollständiges Abfragen aller Kombinationen durch jedes Gerät zu vermeiden. **Korrektur (2026-08-24):** Ein raumbezogener FBWS-Endpunkt existiert tatsächlich, siehe INT-009. Die Aggregation über INT-001/INT-002 bleibt dennoch als Fallback relevant, solange die Raumabdeckung von INT-009 unverifiziert ist — siehe dortigen Abschnitt „Bezug zu ARCH-F-040 / API-F-040/API-F-050" und `features/room-finder/spec.md`.
+**Nutzungshinweis für die Raumsuche — überholt**
+Ursprünglich angenommen: Der FBWS biete keinen eigenen Endpunkt für Raumbelegung, weshalb sich diese nur durch Zusammenführung der Termine aller Studiengang/Semester-Kombinationen über `roomId` herleiten lasse. Diese Annahme ist in zwei Schritten widerlegt worden — am 2026-08-24 durch die Entdeckung des raumbezogenen Endpunkts INT-009, und am 2026-08-25 endgültig durch dessen Wildcard-Form (`Room/*/AllEvents`), die alle Raumtermine in einem einzigen Aufruf liefert und in der Android-Alt-App produktiv im Einsatz ist.
+
+Für die Raumsuche wird dieser Endpunkt **nicht** mehr verwendet. Maßgeblich ist INT-009; siehe dort und `features/room-finder/spec.md`.
 
 **Nutzungshinweis für den Wahlpflicht-Planungsmodus (SCHED)**
 Für SCHED-F-270 ruft die App diesen Endpunkt zusätzlich mit einem von der Nutzerin gewählten, vom eigenen abweichenden `{grade}` ab, um Wahlpflicht-Termine zu finden, die organisatorisch einem anderen Fachsemester zugeordnet sind als dem eigenen — derselbe Endpunkt, keine neue Integration. Offen (siehe `features/schedule/spec.md` Abschnitt 13): ob ein so abgerufenes `{grade}` tatsächlich die gesuchten Wahlpflicht-Termine liefert oder nur die dort regulär vorgesehenen Pflichtveranstaltungen — vor Umsetzung mit echten Beispieldaten zu verifizieren.
@@ -236,10 +250,10 @@ Je Mensa und Tag geräteseitig bis Tagesende cachen; Speisepläne ändern sich i
 **Hoch, aus zwei Gründen:** erstens dieselbe private, vertragslose Infrastruktur wie INT-003; zweitens erfolgt der Aufruf **unverschlüsselt über `http://`**. Zugangsdaten werden hier zwar nicht übertragen, wohl aber die vollständige Anfrage samt Standort- und Mensa-Wahl, einsehbar für jeden Netzwerkteilnehmer auf dem Übertragungsweg. **Die Neuentwicklung muss TLS erzwingen (`https://`)**, unabhängig davon, ob weiterhin über einen Vermittler oder direkt auf OpenMensa zugegriffen wird.
 
 **Ersatzoption**
-Direkter Zugriff auf OpenMensa oder Zwischenspeicherung über das eigene Backend (INT-008).
+**INT-015** (Mensa-API des ITMC der TU Dortmund). Die zuvor hier genannten Optionen „direkter Zugriff auf OpenMensa" bzw. „Zwischenspeicherung über das eigene Backend" sind durch den Befund vom 2026-08-25 überholt: Die Android-Alt-App nutzt bereits eine offizielle, TLS-gesicherte und deutlich reichhaltigere Quelle.
 
 **Status**
-Aktiv, aber mit hohem Ablöserisiko; siehe `decisions/0007-datenquellen-mensa-und-news.md`.
+**Abgelöst durch INT-015** (Entscheidung FSR FB4, 2026-08-25). Dieser Eintrag bleibt als Beschreibung des von der Flutter-Alt-App genutzten Wegs bestehen und wird von der Neuentwicklung nicht verwendet. Begründung: INT-015 liefert dieselben Inhalte über HTTPS, ohne private Vermittler-Infrastruktur, zusätzlich mit Öffnungszeiten und zweisprachigen Bezeichnungen — womit alle drei in `decisions/0007-datenquellen-mensa-und-news.md` genannten Probleme (unklare Trägerschaft, fehlendes TLS, Vermittler statt Primärquelle) auf einmal entfallen.
 
 Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart`, Modell `alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/models/meal.dart`
 
@@ -251,31 +265,38 @@ Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meal
 Benachrichtigt Nutzerinnen und Nutzer über neue News-Meldungen, sofern aktiviert.
 
 **Aufruf**
-Kein klassischer Request/Response-Aufruf, sondern Themen-Abonnement über Firebase Cloud Messaging (FCM): `subscribeToTopic("Aktuelles")` bei Aktivierung, `unsubscribeFromTopic("Aktuelles")` bei Deaktivierung. Auslösend ist ausschließlich eine Einstellung in der App (Opt-in); es gibt kein serverseitig erzwungenes Abonnement.
+Nach Plattform unterschieden (Entscheidung FSR FB4, 2026-08-25, `../decisions/0008-vertrieb-ueber-drei-app-stores.md`):
+
+| Plattform | Zustellweg | Registrierung/Abmeldung |
+|---|---|---|
+| Android | UnifiedPush: Registrierung bei einem auf dem Gerät installierten Distributor — einem FCM-basierten Distributor auf Geräten mit Google Play Services, einem quelloffenen Distributor (z. B. ntfy) auf reinen F-Droid-/GrapheneOS-Geräten | App registriert bei Aktivierung einen UnifiedPush-Endpunkt beim Backend, meldet ihn bei Deaktivierung wieder ab |
+| iOS | Firebase Cloud Messaging (FCM) als Bridge zu Apples APNs, unverändert gegenüber dem ursprünglichen Plan | `subscribeToTopic("Aktuelles")` bei Aktivierung, `unsubscribeFromTopic("Aktuelles")` bei Deaktivierung |
+
+Grund für die Unterscheidung: F-Droid existiert ausschließlich für Android und schließt proprietäre Abhängigkeiten wie FCM im Build aus; iOS ist von F-Droid nicht betroffen, und Apple lässt für Hintergrund-Push ohnehin ausschließlich APNs zu, zu dem FCM auf iOS technisch nur als Bridge dient. Auslösend ist in beiden Fällen ausschließlich eine Einstellung in der App (Opt-in); es gibt kein serverseitig erzwungenes Abonnement.
 
 **Antwortstruktur**
-Nicht abschließend bekannt: Die Alt-App verarbeitet eingehende Nachrichten nicht (der zugehörige Handler ist im Quellcode auskommentiert). Für die Neuentwicklung ist die Nutzlaststruktur einer eingehenden Nachricht (z. B. Verweis auf die zugehörige News-Meldung für Deep-Linking) neu zu definieren.
+Nicht abschließend bekannt: Die Alt-App verarbeitet eingehende Nachrichten nicht (der zugehörige Handler ist im Quellcode auskommentiert). Für die Neuentwicklung ist die Nutzlaststruktur einer eingehenden Nachricht (z. B. Verweis auf die zugehörige News-Meldung für Deep-Linking) für beide Zustellwege neu zu definieren.
 
 **Authentifizierung**
-Geräteregistrierung über Firebase (projektgebunden über `google-services.json`/Firebase-Projektkonfiguration), keine Nutzerauthentifizierung.
+Android: je registriertem UnifiedPush-Endpunkt eine vom Backend vergebene Endpunkt-Kennung, keine Firebase-Projektbindung. iOS: Geräteregistrierung über Firebase (projektgebunden über `google-services.json`/Firebase-Projektkonfiguration). In beiden Fällen keine Nutzerauthentifizierung.
 
 **Eigentümer/Betreiber**
-Google (Firebase Cloud Messaging).
+Android: kein einzelner zentraler Betreiber mehr — abhängig vom auf dem Gerät installierten Distributor (Google bei einem FCM-Distributor, unabhängige Betreiber bei z. B. ntfy, potenziell der FSR FB4 selbst bei einem später selbstgehosteten Distributor). iOS: weiterhin Google (Firebase Cloud Messaging) als Bridge zu Apple (APNs).
 
 **Verfügbarkeit**
-Google-SLA für Firebase, nicht projektspezifisch geprüft.
+Android: abhängig vom gewählten Distributor, nicht projektspezifisch geprüft. iOS: Google-SLA für Firebase sowie Apples APNs-Verfügbarkeit, nicht projektspezifisch geprüft.
 
 **Cache-Regel (Vorschlag)**
 Nicht zutreffend (kein abrufbarer Datenbestand).
 
 **Risiko**
-Abhängigkeit von einem außerhalb der FH Dortmund betriebenen Drittanbieterdienst. Datenschutzrechtlich relevant: Google vergibt eine pseudonyme Geräte-ID zur Zustellung; dies ist bereits in der Datenschutzerklärung der Alt-App beschrieben und für die Neuentwicklung erneut zu bewerten (siehe `platform/security-and-privacy.md`, SEC).
+iOS bleibt wie bisher von einem außerhalb der FH Dortmund betriebenen Drittanbieterdienst abhängig; Google vergibt dabei eine pseudonyme Geräte-ID zur Zustellung, bereits in der Datenschutzerklärung der Alt-App beschrieben und für die Neuentwicklung erneut zu bewerten (siehe `platform/security-and-privacy.md`, SEC). Android ist durch UnifiedPush weniger einseitig von Google abhängig, setzt aber voraus, dass auf dem Gerät ein Distributor installiert ist — ohne installierten Distributor ist auf Android kein Push möglich (Rückfalloption siehe unten).
 
 **Ersatzoption**
-Keine im Alt-Code erkennbare Alternative geprüft. Bei Verzicht: In-App-Benachrichtigung ohne Push als Rückfalloption.
+Keine im Alt-Code erkennbare Alternative geprüft. Bei Verzicht oder fehlendem Android-Distributor: In-App-Benachrichtigung ohne Push als Rückfalloption.
 
 **Status**
-Aktiv, Opt-in-Verhalten wird für die Neuentwicklung beibehalten; spezifiziert in `features/settings/spec.md` und `features/news/spec.md`, datenschutzrechtliche Einordnung in `platform/security-and-privacy.md`.
+Aktiv, Opt-in-Verhalten wird für die Neuentwicklung beibehalten; spezifiziert in `features/settings/spec.md` und `features/news/spec.md`, datenschutzrechtliche Einordnung in `platform/security-and-privacy.md`. Der Fan-out-Mechanismus im Backend (ein UnifiedPush-Aufruf je Android-Endpunkt statt eines einzelnen FCM-Themen-Aufrufs) ist in `platform/backend-and-api.md` noch nicht spezifiziert, siehe Offene Punkte in ADR 0008.
 
 Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/utils/plugins/push_notification_manager.dart`
 
@@ -283,7 +304,9 @@ Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/utils/plugins/push_notification
 
 ## INT-006 — HISinOne (Notenübersicht)
 
-**Status: offen.** Zugangsweg, Protokoll und Berechtigungen für HISinOne sind unbekannt und müssen in einem Spike geklärt werden. Siehe `decisions/0006-abloesung-ods-durch-hisinone.md`.
+**Status: offen.** Ein *offizieller* Zugangsweg für Drittanwendungen ist weiterhin unbekannt und muss in einem Spike geklärt werden. Siehe `decisions/0006-abloesung-ods-durch-hisinone.md`.
+
+**Befund 2026-08-25 (Android-Alt-App).** HISinOne läuft unter `https://portal.fh-dortmund.de/qisserver/`. Die Android-Alt-App meldet sich dort per Formular-Login mit den Feldern `asdf`/`fdsa` an — dieselbe Mechanik, die die Flutter-Alt-App gegen ODS verwendete, nur gegen das Nachfolgesystem und mit geräteseitig verschlüsselt gespeicherten Zugangsdaten. Sie nutzt diesen Zugang allerdings **nicht** für die Notenübersicht, sondern ausschließlich für den Semesterticket-Bezug; Details dazu in INT-017. Für die Notenübersicht ändert der Befund nichts: Ein Formular-Login mit Passwort-Replay ist für die Neuentwicklung ausgeschlossen (SEC-F-040), unabhängig davon, gegen welches System er läuft. Der Spike bleibt damit vollständig offen — er muss klären, ob das Portal einen tokenbasierten Zugang anbietet, nicht ob ein Formular-Login technisch möglich wäre.
 
 **Zweck**
 Anzeige der individuellen Prüfungsergebnisse (Notenübersicht) der Studierenden. In HISinOne noch zu klären; nachfolgend zum Vergleich das **abgelöste** ODS-Verfahren, damit erkennbar ist, was ersetzt wird.
@@ -390,14 +413,34 @@ Trägt die Community- und Aggregationsfunktionen, für die es keine geeignete ex
 - Entgegennahme und Auslieferung der Mensa-Bewertungen (RATE).
 - Verwaltung der Events und Helfer-Anmeldungen (EVENT, HELFER).
 - Vermittlung der E-Key-Verknüpfungen (EKEY) an das bestehende E-Key-Verwaltungstool des FSR (INT-014) — keine eigene E-Key-Datenhaltung, siehe dort.
-- Periodische Aggregation der Raumbelegung aus INT-002 (siehe Nutzungshinweis dort).
-- Vorgelagerter Zwischenspeicher für INT-003 und INT-004 zur Ablösung der Abhängigkeit von `hemacode.de`.
+- Periodischer Abruf und Zwischenspeicherung der Raumtermine aus INT-009 (Wildcard-Form). **Keine** Zusammenführung über Studiengang/Semester-Kombinationen mehr — siehe Nutzungshinweis bei INT-009.
+- Vorgelagerter Zwischenspeicher für INT-003, INT-010 und INT-015 zur Ablösung der Abhängigkeit von `hemacode.de` und zur Entkopplung der App von HTML-Auswertungen.
+- Pflege und Auslieferung der Stammdaten, die keine externe Quelle hat: Mensa-Liste (Kennung, ITMC-Kennung, Anzeigename, Öffnungszeiten, Standardauswahl, Reihenfolge), Raumliste (Kennung, Größe, E-Key-Eignung), Links- und Downloads-Liste, Semestertermine und Ticket-Bildzuschnitt.
 
 **Aufruf**
-Zu definieren, siehe `platform/backend-and-api.md` (API).
+`platform/api-contract.yaml` — versionierte OpenAPI-Beschreibung, Quelle der Wahrheit für jeden Aufruf zwischen App beziehungsweise Admin-Oberfläche und Backend (`../decisions/0011-monorepo-und-openapi-vertrag.md`). Aufgabenschnitt und Prinzipien: `platform/backend-and-api.md`.
 
 **Antwortstruktur**
-Zu definieren, siehe `platform/backend-and-api.md` (API).
+Siehe `platform/api-contract.yaml`.
+
+**Vorgänger: `app.fsrfb4.de` (abzulösen)**
+Der FSR betreibt bereits ein Backend unter `https://app.fsrfb4.de`, das die Android-Alt-App bedient. Es ist am 2026-08-25 erreichbar und liefert drei Ressourcen:
+
+| Aufruf | Zweck |
+|---|---|
+| `GET /data`, `POST /data` (Feld `Key`) | Ferngepflegte Stammdaten als Liste von Schlüssel-Wert-Paaren |
+| `POST /messages/messages.php` (Felder `Sprache`, `API`, `VersionCode`) | Serverseitige Hinweise an die App, abhängig von Sprache und App-Version |
+| `GET /studiengaenge.json` | Rückfallliste der Studiengänge, falls INT-001 nicht erreichbar ist |
+
+Beobachtete Schlüssel unter `/data`: `semester_beginning`, `semester_end`, `ws_start`, `ss_start`, `examplan`, `timeplan`, `ticket_rect_coordinates`, `canteens`, `rooms`, `links`, `file_downloads`, `news_url`.
+
+**Der Datenbestand ist veraltet:** Die live abgefragte Antwort vom 2026-08-25 liefert `semester_beginning: 25.09.2023` und `semester_end: 19.01.2024` — Werte aus dem Wintersemester 2023/24. Der Dienst läuft, wird aber nicht mehr gepflegt.
+
+Entscheidung FSR FB4, 2026-08-25: Das fachliche Konzept der ferngepflegten Stammdaten wird übernommen, die technische Umsetzung neu gebaut. Die Pflege wandert in die Admin-Oberfläche (`../features/admin/spec.md`), die Auslieferung in den OpenAPI-Vertrag. `app.fsrfb4.de` wird nach der Umstellung abgeschaltet; die dort verlinkte private Domain `hoolycraap.de` entfällt damit ebenfalls.
+
+Der Rückfallmechanismus `studiengaenge.json` ist übernehmenswert: Er macht die Studiengangsauswahl unabhängig von der Erreichbarkeit des Hochschulsystems und gehört als Muster in den Zwischenspeicher-Anteil des neuen Backends.
+
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java`, `service/DataService.java`, `retrofit/DataUpdateApi.java`, `retrofit/ServerMessageApi.java`, `retrofit/TimeTableFallbackApi.java`; live abgefragt am 2026-08-25
 
 **Authentifizierung**
 Zu definieren, siehe `platform/identity-and-moderation.md` (IDENT) und `platform/backend-and-api.md` (API).
@@ -430,8 +473,11 @@ Liefert die Termine eines einzelnen Raums direkt, ohne Umweg über die Iteration
 **Aufruf**
 ```
 GET https://ws.inf.fh-dortmund.de/timetable/current/rest/Room/{roomId}/AllEvents?Accept=application/json
+GET https://ws.inf.fh-dortmund.de/timetable/current/rest/Room/*/AllEvents?Accept=application/json
 ```
 `{roomId}` ist die Raumkennung im selben Format wie das Feld `roomId` aus INT-002 (z. B. `A.E.01`). Live erprobt am Beispiel `A.E.01`.
+
+**Wildcard-Form (Befund 2026-08-25).** Anstelle einer einzelnen Raumkennung ist `*` zulässig; der Endpunkt liefert dann die Termine **aller** Räume in einer einzigen Antwort. Die Android-Alt-App nutzt genau diese Form produktiv für ihre Raumsuche (`retrofit/TimetableApi.java`, Methode `getAllEvents()`; ausgewertet in `service/RoomService.java`). Damit ist die zuvor unter „Risiko" vermerkte Unsicherheit über die Raumabdeckung gegenstandslos: Es ist keine Iteration über bekannte Raumkennungen nötig, und es entsteht keine Lücke durch unbekannte Räume.
 
 **Antwortstruktur**
 Die Antwort ist eine JSON-Liste. Datensätze enthalten deutlich mehr Felder als der Termindatensatz aus INT-002:
@@ -468,36 +514,40 @@ Nicht dokumentiert, kein bekanntes SLA.
 Wie INT-002: kurze Ablaufzeit (Vorschlag: ein Tag), da Terminänderungen kurzfristig möglich sind.
 
 **Risiko**
-Wie INT-001/INT-002 (dieselbe FBWS-Infrastruktur, keine erkennbare Versionierung). Zusätzlich unklar, ob der Endpunkt alle Räume des Fachbereichs abdeckt oder nur eine Teilmenge — vor Umsetzung an mehreren Raumkennungen zu verifizieren.
+Wie INT-001/INT-002 (dieselbe Infrastruktur unter demselben Pfadpräfix, keine erkennbare Versionierung). Die zuvor hier vermerkte Unsicherheit über die Raumabdeckung entfällt durch den Wildcard-Befund (siehe „Aufruf"). Verbleibendes Risiko: Der Endpunkt liefert Rohtermine, keine berechnete Frei/Belegt-Auskunft — diese Ableitung erfolgt weiterhin im eigenen Code (`features/room-finder/spec.md`).
 
 **Ersatzoption**
-INT-001 + INT-002, über `roomId` serverseitig zusammengeführt (bisher angenommener Weg, weiterhin gültig als Fallback oder falls dieser Endpunkt nicht alle Räume abdeckt).
+INT-001 + INT-002, über `roomId` zusammengeführt. Nach dem Wildcard-Befund nur noch als Notbehelf relevant, falls der Wildcard-Aufruf wegfällt — nicht mehr als regulär vorgesehener Weg.
 
 **Status**
-Neu recherchiert, nicht im Alt-App-Code verwendet. Vor Umsetzung von `features/room-finder/spec.md` zu verifizieren: Abdeckt der Endpunkt alle Räume des Fachbereichs, und liefert er echte Frei/Belegt-Information oder nur Rohtermine (letzteres bestätigt durch die live abgefragte Antwort).
+Bestätigt und produktiv erprobt. Der Wildcard-Aufruf ist der vorgesehene Weg für die Raumsuche; er liefert Rohtermine, aus denen die Frei/Belegt-Auskunft im eigenen Code abgeleitet wird.
 
 **Bezug zu ARCH-F-040 / API-F-040/API-F-050**
-Diese beiden Anforderungen gehen davon aus, der FBWS biete keinen eigenen Raumbelegungs-Endpunkt. INT-009 widerlegt das teilweise: Ein raumbezogener Endpunkt existiert bereits. Das macht die Backend-Aggregation nicht zwingend überflüssig (INT-009 liefert Rohtermine, keine berechnete Frei/Belegt-Auskunft, und die Abdeckung aller Räume ist unverifiziert), ändert aber die Begründung in `architecture.md` und `backend-and-api.md` — siehe dortige Anmerkungen zu ARCH-F-040 bzw. API-F-040/050.
+Diese Anforderungen gingen davon aus, Raumbelegung sei nur durch Zusammenführung der Termine aller Studiengang/Semester-Kombinationen herleitbar, und begründeten damit einen wesentlichen Teil des eigenen Backends. Der Wildcard-Befund vom 2026-08-25 widerlegt diese Annahme vollständig: Ein einziger Aufruf liefert alle Raumtermine. Entscheidung FSR FB4, 2026-08-25: Die Zusammenführung entfällt ersatzlos; das Backend ruft den Wildcard-Endpunkt periodisch ab und hält das Ergebnis als Zwischenspeicher vor — aus denselben Gründen wie bei News und Mensa (Ausfallpuffer, TLS-Erzwingung, keine unmittelbare App-Abhängigkeit vom Hochschulsystem), nicht wegen Aggregationsbedarf. ARCH-F-040 und API-F-040/API-F-050 sind entsprechend angepasst.
 
-Quelle: live abgefragt am 2026-08-24, `https://ws.inf.fh-dortmund.de/timetable/current/rest/Room/A.E.01/AllEvents?Accept=application/json`
+Quelle: live abgefragt am 2026-08-24, `https://ws.inf.fh-dortmund.de/timetable/current/rest/Room/A.E.01/AllEvents?Accept=application/json`; Wildcard-Form aus `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/TimetableApi.java`, 2026-08-25
 
 ---
 
 ## INT-010 — Fachbereichs-Aktuelles (aktuelles-ni)
 
-**Status: zu verifizieren.**
+**Status: geklärt (2026-08-25).** Die zuvor offene Frage „strukturierter Feed oder Scraping" ist durch die Auswertung des Android-Quellcodes beantwortet: Es gibt keinen strukturierten Feed, die Quelle wird per HTML-Auswertung erschlossen — und zwar bereits produktiv.
 
 **Zweck**
 Liefert die Fachbereichs-Nachrichtenseite `aktuelles-ni` (Prüfungsinfos, Raumänderungen, Stellenausschreibungen, Fundsachen) als Quelle für die Klassifizierung „FB-Aktuelles" in NEWS. Entscheidung FSR FB4, 2026-08-25: `aktuelles-ni` wird als zusätzliche News-Quelle integriert, siehe `features/news/spec.md`.
 
 **Aufruf**
-Nicht verifiziert, ob die Fachbereichsseite einen strukturierten Feed (RSS/Atom, JSON) anbietet oder nur als HTML-Seite vorliegt. Bei fehlendem strukturierten Feed ist serverseitiges Scraping durch das eigene Backend (INT-008) die einzige Option — vor Umsetzung zu prüfen.
+```
+GET https://www.inf.fh-dortmund.de/aktuelles-ni/seite
+GET https://www.inf.fh-dortmund.de/aktuelles-ni/seite/{page}
+```
+`{page}` ist eine fortlaufende Seitenzahl für ältere Meldungen. Beide Formen liefern HTML, keinen strukturierten Feed.
 
 **Antwortstruktur**
-Unbekannt, abhängig vom Ergebnis der Aufruf-Prüfung.
+HTML. Die Android-Alt-App wertet sie mit Jsoup aus (`util/NewsParserImpl.java`): Vor dem Parsen wird `<p class='title'>` durch `<div><p class='title'>` ersetzt, um die flach ausgelieferten Meldungen in abgrenzbare Blöcke zu zerlegen — ein Hinweis darauf, dass die Seite Meldungen nicht als eigenständige Container ausliefert, sondern als fortlaufende Absatzfolge. Genaue Feldzuordnung siehe dortige Auswertung; für die Neuentwicklung ist sie am aktuellen Seitenaufbau zu überprüfen, da sie sich seit der letzten Android-Version geändert haben kann.
 
 **Authentifizierung**
-Nach Kenntnisstand keine, da öffentlich zugängliche Fachbereichsseite. Unverifiziert.
+Keine — öffentlich zugängliche Fachbereichsseite. Bestätigt durch den produktiven Einsatz in der Android-Alt-App ohne jede Anmeldung.
 
 **Eigentümer/Betreiber**
 Fachbereich Informatik, FH Dortmund — nicht der FSR. Der FSR liest diese Quelle lediglich, hat keine Redaktionshoheit über „FB-Aktuelles"-Inhalte.
@@ -509,13 +559,15 @@ Unbekannt, kein bekanntes SLA.
 Wie INT-003 (News-Feed): kurzfristig serverseitig cachen (Vorschlag: 15 Minuten bis 1 Stunde), da Inhalte wie Raumänderungen kurzfristig relevant sein können.
 
 **Risiko**
-Mittel bis hoch, solange unverifiziert: Falls kein strukturierter Feed existiert, macht Scraping die Anbindung anfällig für Layout-Änderungen der Fachbereichsseite außerhalb der Kontrolle des FSR.
+Mittel. Da kein strukturierter Feed existiert, bleibt die Anbindung dauerhaft anfällig für Layout-Änderungen der Fachbereichsseite, die außerhalb der Kontrolle des FSR liegen. Das ist kein hypothetisches Risiko, sondern die bestätigte Betriebsrealität der Android-Alt-App. Konsequenz für die Neuentwicklung: Die Auswertung gehört ins Backend (INT-008), nicht in die App — eine Anpassung an ein geändertes Seitenlayout ist dann eine Server-Änderung statt eines App-Updates, das über drei Vertriebswege ausgerollt werden müsste. Zusätzlich ist die Auswertung so zu gestalten, dass sie bei unerwartetem Aufbau erkennbar fehlschlägt statt leere oder verstümmelte Meldungen zu liefern (`quality-and-testing.md` QA-N-070).
 
 **Ersatzoption**
-Keine bekannte Alternativquelle für dieselben Inhalte. Bei fehlender technischer Machbarkeit: Verzicht auf „FB-Aktuelles" als eigene Klassifizierung, stattdessen weiterhin externer Link (Status quo vor dieser Entscheidung).
+Keine bekannte Alternativquelle für dieselben Inhalte. Bei Ausfall: zuletzt erfolgreich ausgewerteter Stand weiter ausliefern, mit Alters-Hinweis.
 
 **Status**
-Zu verifizieren, vor Umsetzung von NEWS-F-090 (`features/news/spec.md`): Existiert ein strukturierter Feed, welche Aktualisierungsfrequenz hat die Quelle, ist Scraping rechtlich/technisch zumutbar.
+Geklärt. Aufruf und Auswertungsweg sind aus dem Android-Quellcode bekannt und produktiv erprobt. Vor Umsetzung von NEWS-F-090 bleibt lediglich die Feldzuordnung am aktuellen Seitenaufbau zu überprüfen.
+
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/NewsApi.java`, `util/NewsParserImpl.java`, `module/NetworkModule.java`, 2026-08-25
 
 ---
 
@@ -555,39 +607,43 @@ Kalenderdienst geklärt (Google Calendar, 2026-08-25), Matching-Schlüssel für 
 
 ---
 
-## INT-012 — Hochschul-SSO
+## INT-012 — Authentik (Identitätsanbieter)
 
-**Status: zu verifizieren.**
+**Status: Anbieter entschieden, Federation zur FH ausstehend.** Entscheidung FSR FB4, 2026-08-25, siehe `decisions/0010-authentik-als-identitaetsanbieter.md`.
 
 **Zweck**
-Bevorzugter Anmeldeweg für das Konto, das für das Verfassen von Mensa-Bewertungen (RATE) und für die E-Key-Verwaltung (EKEY) benötigt wird — siehe `decisions/0004-identitaet-und-anmeldung.md`. Ziel: Studierende authentifizieren sich über den offiziellen Hochschul-Anmeldeweg, ohne dass die App eigene Zugangsdaten verwaltet.
+Einziger Identitätsanbieter für App, Admin-Oberfläche und Backend. Trägt das Konto, das für das Verfassen von Mensa-Bewertungen (RATE), die E-Key-Verwaltung (EKEY) und den Zugang zur Verwaltung (ADMIN) benötigt wird, und liefert zugleich die Rollenzugehörigkeit (FSR-Redaktion, Moderation) als Claim.
 
 **Aufruf**
-Unbekannt, ob die FH Dortmund einen für Drittanwendungen wie diese App nutzbaren SSO-Dienst betreibt (z. B. OAuth2/OIDC, SAML). Nicht zu verwechseln mit dem ODS-Verfahren aus INT-006 (Formular-Login mit Passwort-Replay) — ein solches Verfahren ist für die Neuentwicklung ausdrücklich ausgeschlossen (siehe `platform/security-and-privacy.md`).
+OpenID Connect, Authorization-Code-Fluss mit PKCE, Redirect über den Systembrowser. Die Instanz läuft eigenbetrieben auf demselben Hetzner-VPS wie INT-008; konkrete Issuer-URL, Client-Kennungen und Scopes werden bei Einrichtung festgelegt.
+
+Die Anbindung an die Hochschule erfolgt **nicht** aus der App, sondern als Upstream-Federation innerhalb von Authentik gegen den Microsoft-Mandanten der FH Dortmund (App-Registrierung dort zu beantragen). Für App und Backend ist dieser Upstream unsichtbar.
+
+Ausdrücklich ausgeschlossen bleibt jede Nachbildung eines Formular-Logins gegen ein Hochschulsystem, wie sie beide Alt-Apps praktizieren (INT-006 für die Notenübersicht, dieselbe Mechanik in der Android-Alt-App für den Ticket-Download) — siehe `platform/security-and-privacy.md` SEC-F-040.
 
 **Antwortstruktur**
-Unbekannt, abhängig vom bereitgestellten Protokoll.
+Standardkonform: ID-Token und Access-Token als JWT, Nutzerangaben über den Userinfo-Endpunkt. Rollen als Gruppen-Claim.
 
 **Authentifizierung**
-Erwartet: Standardprotokoll (OAuth2/OIDC oder SAML) mit Redirect-Flow über den Browser/eine System-WebView, keine Zugangsdaten im Klartext gegenüber der App.
+Gegenüber Authentik: das gewählte Anmeldeverfahren der Instanz. Solange die FH-Federation nicht steht, sind das eigene Authentik-Konten mit E-Mail-Verifizierung; danach die Weiterleitung an den FH-Mandanten. Der Wechsel ist eine Konfigurationsänderung in Authentik und berührt weder App noch Backend.
 
 **Eigentümer/Betreiber**
-FH Dortmund (Hochschulrechenzentrum). Ansprechpartner und Verfügbarkeit eines für Drittanwendungen nutzbaren SSO-Diensts sind zu klären.
+FSR FB4 selbst (Authentik-Instanz). Der Upstream-Mandant liegt bei der FH Dortmund.
 
 **Verfügbarkeit**
-Unbekannt.
+Eigener Verantwortungsbereich, wie INT-008. Ein Ausfall betrifft alle kontogebundenen Funktionen gleichzeitig; kontofreie Lesefunktionen bleiben unberührt (IDENT-F-012), womit die Bereichsisolation aus NFR-N-080 gewahrt bleibt.
 
 **Cache-Regel (Vorschlag)**
-Nicht zutreffend (Authentifizierungsvorgang, kein abrufbarer Datenbestand).
+Nicht zutreffend für den Anmeldevorgang selbst. Ausgestellte Token werden bis zum Ablauf im gesicherten Systemspeicher gehalten (DATA-F-120).
 
 **Risiko**
-Hoch, solange unverifiziert: Ohne bestätigten SSO-Zugang ist die Hybrid-Identitätslösung aus `decisions/0004-identitaet-und-anmeldung.md` auf die Ersatzoption (eigenes, einfaches Konto) angewiesen.
+Gering bis mittel. Der zuvor hier vermerkte Blockade-Charakter entfällt: Die Umsetzung hängt nicht mehr an einer Freigabe der Hochschul-IT, weil eigene Konten bis dahin tragen. Verbleibendes Risiko ist der Eigenbetrieb einer weiteren sicherheitskritischen Komponente (Aktualisierung, Sicherung, Verfügbarkeit).
 
 **Ersatzoption**
-Eigenes, vom Backend (INT-008) verwaltetes Konto, z. B. mit E-Mail-Verifizierung, ohne Bezug zu einem Hochschulsystem. Ausgestaltung offen, siehe `decisions/0004-identitaet-und-anmeldung.md` (Offene Punkte).
+Nicht zutreffend — Authentik ist selbst die Ersatzoption für den zuvor angenommenen, ungeklärten Hochschul-SSO-Weg.
 
 **Status**
-Zu verifizieren: Existiert ein für diese App nutzbarer SSO-Dienst der FH Dortmund, welches Protokoll, wer ist Ansprechpartner. Klärung durch FSR FB4 in Rücksprache mit der Hochschul-IT, vor Festlegung des endgültigen Anmeldewegs für RATE/EKEY.
+Anbieter entschieden. Offen: Zeitpunkt und Ergebnis der App-Registrierung im FH-Microsoft-Mandanten sowie die Frage, welche Claims der Upstream liefert. Beides blockiert die Umsetzung nicht.
 
 ---
 
@@ -602,7 +658,19 @@ Liefert den offiziellen Prüfungsplan (Termine, keine Ergebnisse) des Fachbereic
 Der Fachbereich veröffentlicht den Prüfungsplan als Excel-Datei zu einem variablen Zeitpunkt während der Vorlesungszeit auf einer Intranet-Seite: `https://intranet.fh-dortmund.de/hochschule/organisation/fachbereiche/informatik/pruefungen/pruefungsplaene`. Diese Seite setzt einen Hochschul-Login voraus, den weder App noch Backend besitzen (siehe `product/vision.md` Nicht-Ziel 1, `platform/security-and-privacy.md` zum ausgeschlossenen Passwort-Replay). Der Zugriff ist deshalb **kein automatisierter API-Aufruf**, sondern ein zweistufiger, halbautomatischer Vorgang: Ein FSR-Mitglied oder Admin lädt die Datei manuell aus dem Intranet herunter und lädt sie anschließend in das eigene Backend hoch (`platform/backend-and-api.md` API-F-180), das die Datei parst und weiterverarbeitet.
 
 **Antwortstruktur**
-Excel-Datei. Genauer Spaltenaufbau unbekannt, bis eine reale Datei zur Analyse vorliegt.
+Excel-Datei, ein Arbeitsblatt `PP`. Fünf reale Dateien der Jahrgänge WiSe 2023/24 bis SoSe 2026 liegen unter `resources/` vor und wurden am 2026-08-25 grob ausgewertet. Der Aufbau ist deutlich komplexer als eine flache Terminliste:
+
+| Bereich | Inhalt |
+|---|---|
+| Kopfzeilen | Semesterbezeichnung, `Stand:`-Datum, Prüfungszeitraum, Farblegende (`Veranstaltung im WS` / `im SS` / `in WS und SS` / `keine Veranstaltung (mehr)`) |
+| Zeilenachse | je Prüfung eine Zeile: `Anmeldezeitraum`, `WT` (Wochentag), `Datum`, `Zeit`, `Raum` (mehrzeilig, mehrere Räume je Prüfung), `Num.`, `Name`, `Prüfer/in` |
+| Spaltenachse ab Spalte I | Matrix aus Studiengang × Vertiefung × Prüfungsordnung (z. B. `B INF` / `PI`,`TI`,`DS` / PO `19`; `B MI` / PO `19`) |
+| Zellwerte der Matrix | Fachsemester als Zahl oder Wahlkategorie als Kürzel (beobachtet: `1`, `2`, `4`, `5`, `W`, `Fo`, `Pr`) |
+| Trennzeilen | Zeilen mit Datum, aber ohne Prüfungsangaben, die Tagesabschnitte gliedern |
+
+Drei Eigenschaften erschweren den Import und sind vor der Umsetzung zu berücksichtigen: Die Kopfzeilen-Position schwankt zwischen den Jahrgängen (Beginn in Zeile 1 oder 2, `Stand:` mal in Zeile 1, mal in Zeile 2), die Spaltenzahl variiert (beobachtet 33 bis 44), und die Farblegende deutet darauf hin, dass **Zellhintergrundfarben Bedeutung tragen** — ein Import, der nur Zellwerte liest, verliert diese Information.
+
+Fachlich wertvoll ist die Matrix: Sie liefert genau die Zuordnung Prüfung → (Studiengang, Vertiefung, Prüfungsordnung, Fachsemester), mit der sich die Auswahl in SCHED-F-200 auf die für eine Nutzerin überhaupt in Frage kommenden Prüfungen vorfiltern lässt, statt ihr alle Prüfungen des Fachbereichs vorzulegen.
 
 **Authentifizierung**
 Hochschul-Intranet-Login für den manuellen Download durch den Admin — betrifft nur diesen manuellen Schritt, nicht die App oder das Backend. Der Upload ins eigene Backend läuft über dessen reguläre Admin-Authentifizierung.
@@ -623,7 +691,11 @@ Mittel: Kein technisches Zugriffsrisiko, da die App/das Backend keine Hochschul-
 Keine bekannte automatisierte Alternative.
 
 **Status**
-Zu definieren: genaues Excel-Format erst bei Vorliegen einer realen Datei zu klären. Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen, FSR FB4, 2026-08-25.
+Struktur grob erfasst (siehe „Antwortstruktur"). Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen, FSR FB4, 2026-08-25. Eine feldgenaue Festlegung erfolgt bewusst erst bei Umsetzung der Prüfungsplan-Funktion in der zweiten Ausbaustufe (`../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md`), da die Jahrgangsvarianz eine Auswertung mehrerer Dateien nebeneinander erfordert.
+
+**Nebenbefund (2026-08-25).** Die Android-Alt-App importiert den Prüfungsplan nicht, sondern verlinkt ihn nur: Das bestehende Backend liefert unter dem Schlüssel `examplan` eine URL (aktuell `http://hoolycraap.de/fh/pruefungsplan.pdf` — eine private Domain, unverschlüsselt), analog `timeplan` für den Zeitplan. Der geplante Import ist damit eine echte Neuerung gegenüber dem Stand beider Alt-Apps, und die Ablösung von `hoolycraap.de` gehört zu denselben Fremdabhängigkeiten wie `hemacode.de` (`../decisions/0007-datenquellen-mensa-und-news.md`).
+
+Quelle: `resources/pplan.xlsx`, `resources/pplan(1).xlsx` bis `resources/pplan(4).xlsx`, ausgewertet 2026-08-25
 
 ---
 
@@ -663,21 +735,155 @@ Zu definieren: Aufruf-/Integrationsart (API vs. direkter DB-Zugriff), Antwortstr
 
 ---
 
+## INT-015 — Mensa-API des ITMC (TU Dortmund)
+
+**Status: bestätigt, live erprobt.** Ersetzt INT-004 als Speiseplan-Quelle.
+
+**Zweck**
+Liefert Speisepläne, Öffnungszeiten, Gerichtskategorien und Zusatzstoff-/Allergenschlüssel der Mensen des Studierendenwerks Dortmund. Grundlage für MENSA und, über die normalisierten Gerichtsbezeichnungen, für RATE.
+
+**Aufruf**
+```
+GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}/{date}
+GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}
+GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}/openings/all
+GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/types
+GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/additives
+```
+`{id}` ist die ITMC-Mensakennung (Feld `itmcId` der Mensa-Stammdaten, z. B. `341` für die Hauptmensa), `{date}` ein Datum. Die zweite Form liefert alle vorliegenden Tage einer Mensa als Abbildung von Datum auf Gerichtsliste.
+
+**Antwortstruktur**
+Speiseplan als JSON-Liste von Gerichten je Tag; `types` und `additives` liefern die Schlüsselverzeichnisse für Gerichtskategorien und Zusatzstoffe. **Bezeichnungen sind zweisprachig** als Objekt mit den Schlüsseln `de` und `en` abgelegt — live bestätigt am 2026-08-25, Beispiel: `{"id":"N","name":{"de":"Vegan","en":"Vegan"}}`. Damit trägt diese Quelle die Zweisprachigkeit aus NFR-F-115 ohne eigene Übersetzungsarbeit. Genaue Feldnamen der Gerichtsdatensätze sind bei Umsetzung anhand einer Live-Antwort zu dokumentieren; die Android-Alt-App bildet sie auf `MenuDto`, `MenuInformationDto` und `OpeningsDto` ab.
+
+**Authentifizierung**
+Keine.
+
+**Eigentümer/Betreiber**
+ITMC (IT und Medien Centrum) der TU Dortmund. Offizieller Hochschulbetrieb, keine private Infrastruktur.
+
+**Verfügbarkeit**
+Nicht vertraglich zugesagt, aber institutionell betrieben und produktiv von der Android-Alt-App genutzt. Live-Abfrage am 2026-08-25: Status 200 in rund 0,2 Sekunden.
+
+**Cache-Regel (Vorschlag)**
+Speiseplan je Mensa und Tag bis Tagesende (wie zuvor INT-004). Öffnungszeiten, Gerichtskategorien und Zusatzstoffverzeichnis ändern sich selten — Vorschlag: ein Tag, serverseitig im Backend (INT-008) vorgehalten.
+
+**Risiko**
+Gering bis mittel. Deutlich niedriger als INT-004: offizieller Hochschulbetreiber statt privater Vermittler, TLS statt Klartext, Primärquelle statt Weiterreichung. Verbleibend: keine erkennbare Versionszusage über `v3` hinaus, kein SLA.
+
+**Ersatzoption**
+OpenMensa als offenes Verzeichnisprojekt oder die Speiseplanseiten des Studierendenwerks (`stwdo.de`, in den Mensa-Stammdaten je Mensa als `url` hinterlegt).
+
+**Zugehörige Stammdaten**
+Die Zuordnung von Mensa-Kennung zu ITMC-Kennung, Anzeigename, Öffnungszeiten, Standardauswahl und Anzeigereihenfolge ist **nicht** Teil dieser Schnittstelle, sondern wird vom eigenen Backend gepflegt (siehe INT-008 und `features/admin/spec.md`). Die Android-Alt-App führt dafür neun Mensen mit den Feldern `name`, `id`, `itmcId`, `url`, `pdfUrl`, `enabledDefault`, `openingTime` (fünf Werktagseinträge) und `defaultOrder`.
+
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java`, `module/NetworkModule.java`, `assets/canteens.json`; live abgefragt am 2026-08-25
+
+---
+
+## INT-016 — Nachrichten des Fachbereichs Wirtschaft (FB9)
+
+**Status: bestätigt, produktiv in der Android-Alt-App.**
+
+**Zweck**
+Liefert Studien-Nachrichten des Fachbereichs Wirtschaft (FB9). Beantwortet die bislang offene Frage aus `product/legacy-inventory.md` Abschnitt 4, ob die Android-Alt-App tatsächlich zwei getrennte News-Quellen führt: Sie tut es — mit eigenem Endpunkt, eigenem Parser (`NewsEconomyParserImpl`), eigenem Datenmodell und eigener Ansicht.
+
+**Aufruf**
+```
+GET https://www.inf.fh-dortmund.de/de/fb/9/studiengaenge/400/aktuelles_stud.php
+```
+
+**Antwortstruktur**
+HTML, wie INT-010. Eigene Auswertung, da der Seitenaufbau von `aktuelles-ni` abweicht.
+
+**Authentifizierung**
+Keine.
+
+**Eigentümer/Betreiber**
+FH Dortmund, Fachbereich Wirtschaft (FB9) — weder FSR FB4 noch Fachbereich Informatik.
+
+**Verfügbarkeit**
+Nicht dokumentiert, kein SLA.
+
+**Cache-Regel (Vorschlag)**
+Wie INT-010.
+
+**Risiko**
+Mittel, aus denselben Gründen wie INT-010 (HTML-Auswertung ohne strukturierten Feed). Zusätzlich fachlich: Die Zielgruppe der App ist laut `product/vision.md` der Fachbereich Informatik; FB9-Nachrichten betreffen nur den Teil der Studierenden in Verbund- und Wirtschaftsinformatik-Studiengängen.
+
+**Ersatzoption**
+Verzicht auf diese Quelle, ersatzweise externer Link.
+
+**Status**
+Bestätigt. Ob die Quelle in die Neuentwicklung übernommen wird, entscheidet `features/news/spec.md` — sie ist im aktuellen Umfang nicht vorgesehen (siehe dort, Nicht-Scope), der Befund ist hier festgehalten, damit die Entscheidung auf Tatsachen statt auf Vermutung beruht.
+
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/NewsApi.java`, `util/NewsEconomyParserImpl.java`, `fragments/news/NewsEconomyFragment.java`, 2026-08-25
+
+---
+
+## INT-017 — HIS-Portal der FH Dortmund (Semesterticket-Bezug)
+
+**Status: Verfahren bekannt, Nutzung ausgeschlossen.**
+
+**Zweck**
+Bezugsweg für das NRW-Semesterticket als PDF. Die Android-Alt-App lädt das Ticket darüber automatisch herunter — die Funktion, die `features/semester-ticket/spec.md` Abschnitt 13 als priorisierten Spike führt. Dieser Eintrag dokumentiert das Verfahren, damit die Entscheidung dagegen nachvollziehbar bleibt.
+
+**Aufruf**
+```
+POST https://portal.fh-dortmund.de/qisserver/rds?state=user&type=1&category=auth.login
+GET  https://portal.fh-dortmund.de/qisserver/pages/fhdo/cm/stu/fhService/start.xhtml?_flowId=fhService-flow
+POST https://portal.fh-dortmund.de/qisserver/pages/fhdo/cm/stu/fhService/start.xhtml?_flowId=fhService-flow&_flowExecutionKey=e1s1
+GET  https://portal.fh-dortmund.de/qisserver/rds?state=user&type=3&category=auth.logout
+```
+Anmeldung über die Formularfelder `asdf` (Benutzername) und `fdsa` (Passwort), Sitzung über Cookies. Der Ticket-Bezug läuft anschließend über einen mehrstufigen Formularablauf, dessen Felder aus der vorher geladenen Seite ausgelesen werden.
+
+**Antwortstruktur**
+HTML für Anmeldung und Formularablauf, PDF für den eigentlichen Download.
+
+**Authentifizierung**
+Benutzername und Passwort des Hochschulkontos, im Formular übertragen. Die Android-Alt-App speichert beide geräteseitig über den Android-Keystore verschlüsselt (`util/UserCredentialsHelper.java`, `util/Cryptography.java`) und sendet sie über einen Hintergrund-Worker (`worker/TicketDownloadWorker.java`) wiederholt erneut.
+
+**Eigentümer/Betreiber**
+FH Dortmund. Dasselbe Portal beherbergt auch HISinOne (INT-006) — beide liegen unter `/qisserver/`.
+
+**Verfügbarkeit**
+Nicht dokumentiert.
+
+**Cache-Regel (Vorschlag)**
+Nicht zutreffend.
+
+**Risiko**
+**Hoch, und zwar unabhängig von der technischen Umsetzung.** Das Verfahren erfordert, dass die App das Hochschulpasswort entgegennimmt, dauerhaft vorhält und wiederholt erneut sendet — genau das Muster, das `platform/security-and-privacy.md` (SEC-F-040) und `platform/backend-and-api.md` (API-F-110) ausschließen. Die geräteseitige Verschlüsselung mildert das Risiko, beseitigt es aber nicht: Ein Passwort, das die App entschlüsseln kann, um es zu senden, ist ein Passwort, das die App im Klartext verarbeitet. Hinzu kommt die Bindung an einen undokumentierten Formularablauf mit fest verdrahtetem `_flowExecutionKey`, der bei jeder Portal-Aktualisierung brechen kann.
+
+**Ersatzoption**
+Manueller Import des Ticket-PDFs durch die Nutzerin (TICKET-F-010), wie in beiden Alt-Apps ebenfalls vorhanden.
+
+**Status**
+**Für die Neuentwicklung ausgeschlossen** (Entscheidung FSR FB4, 2026-08-25). Zunächst ist mit der Authentik-Federation (INT-012) zu prüfen, ob sich das Ticket über einen offiziellen, tokenbasierten Weg beziehen lässt; bis dahin bleibt es beim manuellen Import. Der Komfortverlust gegenüber dem Stand der Android-Alt-App wird bewusst in Kauf genommen und ist in `features/semester-ticket/spec.md` dokumentiert.
+
+**Nebenbefund zum Ticket-Zuschnitt.** Die Koordinaten für den Bildausschnitt des Tickets liegen in der Android-Alt-App nicht im Quellcode, sondern kommen als Fernkonfiguration vom bestehenden Backend (`ticket_rect_coordinates`, live abgefragt am 2026-08-25: `[161, 148, 555, 350]`). Das löst den in `product/legacy-inventory.md` als M-010 geführten Mangel der Flutter-Alt-App und ist als Muster übernehmenswert, unabhängig davon, wie das PDF ins Gerät gelangt.
+
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/HisApi.java`, `util/TicketUtil.java`, `util/UserCredentialsHelper.java`, `worker/TicketDownloadWorker.java`, `module/NetworkModule.java`, 2026-08-25
+
+---
+
 ## Übersicht
 
 | ID | System | Status | Risiko | Abhängige Feature-Specs |
 |---|---|---|---|---|
-| INT-001 | FBWS Studiengänge | aktiv | mittel | SCHED, RAUM |
-| INT-002 | FBWS Termine | aktiv | mittel | SCHED, RAUM |
+| INT-001 | FBWS Studiengänge (`/timetable/`) | aktiv | mittel | SCHED, RAUM |
+| INT-002 | FBWS Termine (`/timetable/`) | aktiv | mittel | SCHED, RAUM |
 | INT-003 | News-Feed (hemacode.de) | aktiv, Ablöserisiko | hoch | NEWS |
-| INT-004 | Mensa-Speisepläne (hemacode.de) | aktiv, Ablöserisiko | hoch | MENSA, RATE |
-| INT-005 | Push-Benachrichtigungen (FCM) | aktiv | mittel | NEWS, SET |
+| INT-004 | Mensa-Speisepläne (hemacode.de) | **abgelöst durch INT-015** | – | – |
+| INT-005 | Push-Benachrichtigungen (Android: UnifiedPush, iOS: FCM) | aktiv | mittel | NEWS, SET |
 | INT-006 | HISinOne (Notenübersicht) | offen | offen / hoch am Altverfahren | NOTEN |
 | INT-007 | BookStack (FSR-Wiki) | zu verifizieren | mittel bis hoch | WIKI |
-| INT-008 | Eigenes Backend | Betreiber geklärt (FSR FB4, Hetzner-VPS), Ausgestaltung offen | eigener Verantwortungsbereich | RATE, EVENT, HELFER, NEWS, MENSA, RAUM, EKEY |
-| INT-009 | FBWS Raumplan | neu recherchiert, zu verifizieren | mittel | RAUM |
-| INT-010 | Fachbereichs-Aktuelles (aktuelles-ni) | zu verifizieren | mittel bis hoch | NEWS |
+| INT-008 | Eigenes Backend | Betreiber geklärt (FSR FB4, Hetzner-VPS), Vorgänger `app.fsrfb4.de` abzulösen | eigener Verantwortungsbereich | RATE, EVENT, HELFER, NEWS, MENSA, RAUM, EKEY, ADMIN |
+| INT-009 | FBWS Raumplan (Wildcard `Room/*/AllEvents`) | bestätigt, produktiv erprobt | mittel | RAUM |
+| INT-010 | Fachbereichs-Aktuelles (aktuelles-ni) | geklärt: HTML-Auswertung | mittel | NEWS |
 | INT-011 | FSR-Event-Kalender (ICS) | Dienst geklärt (Google Calendar) | gering bis mittel | EVENT |
-| INT-012 | Hochschul-SSO | zu verifizieren | hoch, solange unverifiziert | RATE, EKEY |
-| INT-013 | Prüfungsplan (Intranet-Excel) | zu definieren | mittel | SCHED |
+| INT-012 | Authentik (Identitätsanbieter) | Anbieter entschieden, FH-Federation ausstehend | gering bis mittel | RATE, EKEY, ADMIN |
+| INT-013 | Prüfungsplan (Intranet-Excel) | Struktur grob erfasst | mittel | SCHED |
 | INT-014 | E-Key-Verwaltungstool (Postgres) | zu definieren | mittel bis hoch | EKEY |
+| INT-015 | Mensa-API des ITMC (TU Dortmund) | bestätigt, live erprobt | gering bis mittel | MENSA, RATE |
+| INT-016 | Nachrichten des Fachbereichs Wirtschaft (FB9) | bestätigt, nicht im Umfang | mittel | – |
+| INT-017 | HIS-Portal (Semesterticket-Bezug) | Verfahren bekannt, Nutzung ausgeschlossen | hoch | TICKET |

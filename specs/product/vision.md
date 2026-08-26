@@ -1,6 +1,6 @@
 ---
-status: draft
-version: 0.1.0
+status: accepted
+version: 0.2.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 ---
@@ -15,7 +15,7 @@ Primäre Zielgruppe der App sind die Studierenden aller Studiengänge des Fachbe
 
 ## 2. Warum ein Neuaufbau
 
-Zwei Alt-Apps bedienen die Zielgruppe heute unzureichend: eine Flutter/iOS-App mit vorliegendem Quellcode (`alte apps/fb4_app-main/`, Funktionsumfang laut eigenem README u. a. „noch in Arbeit") und eine separate Android-App (`de.fsrfb4.fb4`, Quellcode nicht verfügbar). Beide sind reine Lese-Clients ohne Community-Funktionen, ohne Raumsuche und ohne Event-/Helfer-Verwaltung. Details zu beiden: `product/legacy-inventory.md`.
+Zwei Alt-Apps bedienen die Zielgruppe heute unzureichend: eine Flutter/iOS-App mit vorliegendem Quellcode (`alte apps/fb4_app-main/`, Funktionsumfang laut eigenem README u. a. „noch in Arbeit") und eine separate Android-App (`de.fsrfb4.fb4`, `alte apps/android-fb4/`). Für beide liegt inzwischen der Quellcode vor. Beide sind reine Lese-Clients ohne Community-Funktionen und ohne Event-/Helfer-Verwaltung; eine Raumsuche enthält die Android-App entgegen der ursprünglichen Annahme sehr wohl — sie ist dort die fachlich bedeutendste Zusatzfunktion und gilt als der zu übertreffende Stand. Details zu beiden: `product/legacy-inventory.md`.
 
 Der Neuaufbau als einzelne React-Native-App (`decisions/0001-react-native-als-plattform.md`) löst diese Fragmentierung auf und erweitert den Funktionsumfang um Community- und Redaktionsfunktionen, die ein eigenes Backend erfordern (`decisions/0003-eigenes-backend-fuer-community-funktionen.md`). Die Entwicklung folgt einer spec-anchored Arbeitsweise (`decisions/0002-spec-anchored-arbeitsweise.md`), damit fachliches Wissen den jährlichen Wechsel der FSR-Besetzung übersteht — ein Problem, das bei der quellcodelosen Android-Alt-App bereits eingetreten ist.
 

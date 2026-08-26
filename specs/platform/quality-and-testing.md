@@ -2,8 +2,8 @@
 id: quality-and-testing
 titel: Qualität und Test
 praefix: QA
-status: draft
-version: 0.2.1
+status: accepted
+version: 0.3.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:

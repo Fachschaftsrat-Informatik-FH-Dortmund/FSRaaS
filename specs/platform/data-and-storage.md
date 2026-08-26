@@ -2,8 +2,8 @@
 id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
-status: draft
-version: 0.1.1
+status: accepted
+version: 0.2.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
@@ -43,7 +43,10 @@ Dieses Dokument legt fest, welche Datenklassen die App verarbeitet, wo sie liege
 | Einstellungen | lokal, Gerät | nein | dauerhaft | „Alle lokalen Daten löschen"; Deinstallation | überwiegend nein |
 | Angepinnte News | lokal, Gerät | nein | dauerhaft, bis entpinnt | manuell entpinnen; „Alle lokalen Daten löschen" | nein |
 | Zwischengespeicherte Fremddaten (Speisepläne, News, Raumbelegung, Wiki-Inhalte) | lokal, Gerät | nein | begrenzt, siehe Abschnitt 4 | automatischer Ablauf; „Alle lokalen Daten löschen" | nein |
-| Offline-Warteschlange (Bewertungen, Helfer-Anmeldungen) | lokal, Gerät | nein, außer personenbezogene Helfer-Angaben: ja | bis Übertragung oder Verfall, siehe Abschnitt 5 | automatisch nach Übertragung; Verfall; „Alle lokalen Daten löschen" | ja bei Helfer-Anmeldungen |
+| Lieblingsgerichte | lokal, Gerät | nein | dauerhaft, bis Markierung aufgehoben | Markierung aufheben; „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben), siehe `../features/canteen/spec.md` MENSA-F-090 |
+| Prüfungsauswahl und Wahlpflicht-Planungsauswahl | lokal, Gerät | nein | dauerhaft, bis geändert | Bearbeitung im Stundenplan; „Alle lokalen Daten löschen" | ja (Studienverlauf) |
+| Ferngepflegte Stammdaten (Mensen, Räume, Links, Semestertermine) | lokal, Gerät | nein | bis zur nächsten Aktualisierung; Ausgangsbestand aus dem Anwendungspaket als Rückfall | automatischer Ersatz bei Aktualisierung; „Alle lokalen Daten löschen" | nein |
+| Offline-Warteschlange (Bewertungen, Helfer-Anmeldungen, Besetzt-Meldungen, E-Key-Schreibvorgänge) | lokal, Gerät | nein, außer personenbezogene Helfer- und E-Key-Angaben: ja | bis Übertragung oder Verfall, siehe Abschnitt 5 | automatisch nach Übertragung; Verfall; „Alle lokalen Daten löschen" | ja bei Helfer-Anmeldungen und E-Key-Verknüpfung |
 | Zugangsdaten bzw. Sitzungsmerkmal | lokal, Gerät, gesicherter Systemspeicher | ja, verpflichtend | bis Abmeldung oder Sitzungsablauf | Abmeldung; „Alle lokalen Daten löschen" | ja |
 
 ## 3. Verhalten der Alt-App
@@ -74,16 +77,20 @@ Fachliche Bedeutung der acht Einstellungsschlüssel aus `app_constants.dart`, f�
 
 | Datenart | Gültigkeitsdauer | Quelle der Regel |
 |---|---|---|
-| Speisepläne | bis Tagesende | INT-004, Cache-Regel-Vorschlag |
-| News | 15 Minuten | INT-003, Cache-Regel-Vorschlag |
-| Raumbelegung | ein Tag (vorgeschlagen, zu bestätigen mit Backend-Betrieb) | INT-002/INT-008, serverseitige Aggregation |
+| Speisepläne | bis Tagesende | INT-015, Cache-Regel-Vorschlag |
+| Öffnungszeiten, Gerichtskategorien, Zusatzstoffverzeichnis | ein Tag | INT-015, ändern sich selten |
+| News | 15 Minuten | INT-003/INT-010, Cache-Regel-Vorschlag |
+| Raumtermine | 15 Minuten | INT-009 über INT-008, gekoppelt an das Abrufintervall des Backends |
+| Ferngepflegte Stammdaten (Mensen, Räume, Links, Semestertermine) | ein Tag, mit Ausgangsbestand aus dem Anwendungspaket als Rückfall | INT-008, API-F-230/API-F-235 |
+| Events | ein Tag | INT-011 über INT-008 |
+| E-Key-Status | 15 Minuten | INT-014 über INT-008 |
 | Wiki-Inhalte | ein Tag, mit manueller Aktualisierung | INT-007, Cache-Regel-Vorschlag, unter Vorbehalt der Spike-Verifikation |
 
 Solange kein Netzzugriff besteht und der Zwischenspeicher einer Datenart abgelaufen ist, zeigt die App die zuletzt geladenen Daten mit einem sichtbaren Hinweis auf ihr Alter statt einer Leeransicht. Obergrenze für den gesamten Zwischenspeicher: 50 MB je Gerät (Arbeitsziel, siehe Abschnitt 9).
 
 ## 5. Offline-Warteschlange für Schreibvorgänge
 
-Betrifft Mensa-Bewertungen (RATE) und Helfer-Anmeldungen (HELFER). Reihenfolge: Übertragung in Entstehungsreihenfolge (FIFO). Wiederholversuche: mit steigendem Abstand (Backoff), Obergrenze zu bestätigen im Zuge von `backend-and-api.md`. Verfallsfrist: ein Eintrag, der auch nach der maximalen Anzahl Versuche nicht übertragen werden konnte, verfällt nach 7 Tagen (vorgeschlagen, zu bestätigen) und wird der Nutzerin zur manuellen Entscheidung vorgelegt. Sichtbarkeit: die Warteschlange und ihr Status sind für die Nutzerin einsehbar, nicht nur im Hintergrund. Wiederholungen dürfen keine doppelten Wirkungen erzeugen — die Idempotenz von Schreibvorgängen ist Anforderung von `backend-and-api.md` (API), nicht dieses Dokuments.
+Betrifft Mensa-Bewertungen (RATE), Helfer-Anmeldungen (HELFER), Besetzt-Meldungen der Raumsuche (RAUM-F-070) und die E-Key-Schreibvorgänge Verknüpfen, Verloren-Melden und semesterweise Bestätigen (EKEY). Ausdrücklich **nicht** betroffen sind Verwaltungs- und Moderationshandlungen sowie die Kontolöschung — sie hängen von einem serverseitigen Zustand ab, der sich bis zur Übertragung ändern kann, und werden bei fehlender Verbindung abgelehnt statt eingereiht (`architecture.md` ARCH-F-125). Reihenfolge: Übertragung in Entstehungsreihenfolge (FIFO). Wiederholversuche: mit steigendem Abstand (Backoff), Obergrenze zu bestätigen im Zuge von `backend-and-api.md`. Verfallsfrist: ein Eintrag, der auch nach der maximalen Anzahl Versuche nicht übertragen werden konnte, verfällt nach 7 Tagen (vorgeschlagen, zu bestätigen) und wird der Nutzerin zur manuellen Entscheidung vorgelegt. Sichtbarkeit: die Warteschlange und ihr Status sind für die Nutzerin einsehbar, nicht nur im Hintergrund. Wiederholungen dürfen keine doppelten Wirkungen erzeugen — die Idempotenz von Schreibvorgängen ist Anforderung von `backend-and-api.md` (API), nicht dieses Dokuments.
 
 ## 6. Migration
 

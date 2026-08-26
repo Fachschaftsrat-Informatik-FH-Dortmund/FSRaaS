@@ -1,12 +1,13 @@
 ---
 id: legacy-inventory
 titel: Funktionsinventar der Alt-Apps
-status: draft
-version: 0.2.1
+status: accepted
+version: 1.0.0
 owner: FSR FB4
 last_reviewed: 2026-08-25
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib
+  - alte apps/android-fb4/FB4/fB4/src/main
 related:
   - vision.md
   - glossary.md
@@ -18,11 +19,15 @@ related:
 
 ## 1. Zweck und Vorgehen
 
-Dieses Inventar erfasst den Funktionsumfang der beiden abzulösenden Apps auf Ebene einzelner Nutzerfunktionen, nicht auf Ebene von Bildschirmen. Für die iOS/Flutter-App wurde der vollständige Quellcode unter `alte apps/fb4_app-main/fb4_app-main/lib/` (rund 6.700 Zeilen Dart) gelesen und jede erkennbare Funktion einzeln erfasst (Abschnitt 2); begleitend wurden bekannte Code-Mängel am Quellcode nachvollzogen (Abschnitt 3). Für die native Android-App liegt kein Quellcode vor; ihr Funktionsumfang ist aus Code nicht rekonstruierbar, sondern nur über externe Quellen wie den Play-Store-Eintrag zu erschließen (Abschnitt 4). Beide Ableitungsarten sind fehleranfällig — Code-Verhalten und beabsichtigtes Verhalten fallen nicht immer zusammen, eine Store-Beschreibung beschreibt nicht zwingend das tatsächliche Verhalten (siehe `README.md` Abschnitt 6) —, weshalb jede Zeile eine Fundstelle trägt. Dieses Dokument ist die Referenz für die spätere Prüfung, ob jede Bestandsfunktion in einer Feature-Spec abgedeckt oder bewusst verworfen wurde (Abschnitt 5).
+Dieses Inventar erfasst den Funktionsumfang der beiden abzulösenden Apps auf Ebene einzelner Nutzerfunktionen, nicht auf Ebene von Bildschirmen. Für beide liegt inzwischen der vollständige Quellcode vor: die iOS/Flutter-App unter `alte apps/fb4_app-main/fb4_app-main/lib/` (rund 6.700 Zeilen Dart, Abschnitt 2, Mängel in Abschnitt 3) und die Android-App unter `alte apps/android-fb4/` (128 Java-Dateien, Version 1.4.11, Abschnitt 4). Jede Zeile trägt eine Fundstelle, weil Code-Verhalten und beabsichtigtes Verhalten nicht immer zusammenfallen (siehe `../README.md` Abschnitt 6). Dieses Dokument ist die Referenz für die Prüfung, ob jede Bestandsfunktion in einer Feature-Spec abgedeckt oder bewusst verworfen wurde (Abschnitt 5).
+
+**Änderung vom 2026-08-25.** Der Android-Quellcode wurde vom FSR FB4 nachgereicht. Bis dahin führte Abschnitt 4 ein „Lückenregister" mit acht offenen Fragen, das den Funktionsumfang der Android-App aus der Play-Store-Beschreibung erschloss. Diese Erschließung war in wesentlichen Punkten unvollständig — sie übersah unter anderem die Raumsuche, die daraufhin im gesamten Spec-Bestand fälschlich als Neuentwicklung ohne Vorbild geführt wurde. Abschnitt 4 ist deshalb vollständig durch ein echtes Funktionsinventar ersetzt; Abschnitt 5 unterscheidet nun nach Herkunft aus beiden Apps.
 
 ## 2. Funktionsinventar iOS/Flutter
 
-Pfade sind relativ ab `lib/` angegeben. Endpunktdetails der genutzten Schnittstellen stehen ausschließlich in `platform/integrations.md` (INT-001 bis INT-005) und werden hier nicht wiederholt. Die Spalte `Android` ist durchgängig `unbekannt`, siehe Abschnitt 4 — das gilt unverändert für jede Zeile dieser Tabelle, auch wenn Abschnitt 4 inzwischen einzelne Android-Funktionen aus externer Quelle benennt: Ob eine konkrete iOS-Funktion unter Android identisch, abweichend oder gar nicht vorhanden war, bleibt pro Zeile ungeklärt.
+Pfade sind relativ ab `lib/` angegeben. Endpunktdetails der genutzten Schnittstellen stehen ausschließlich in `platform/integrations.md` und werden hier nicht wiederholt.
+
+Die Spalte `Android` trägt in jeder Zeile weiterhin `unbekannt`. Das ist seit dem Vorliegen des Android-Quellcodes (2026-08-25) bewusst so belassen: Abschnitt 4 führt inzwischen ein eigenständiges Funktionsinventar der Android-App mit eigenen `AND-###`-Nummern, statt sie zeilenweise gegen die iOS-Funktionen zu spiegeln. Eine Gegenüberstellung Zeile für Zeile wäre irreführend, weil beide Apps unterschiedliche Zuschnitte haben — die Android-App fasst manches zusammen, was hier getrennt steht, und enthält Funktionen ohne iOS-Entsprechung. Wo eine Zuordnung besteht, nennt sie die Spalte „Flutter" in Abschnitt 4.2.
 
 | Nr | Bereich | Funktion | Quelle | Zielspec | Android |
 |---|---|---|---|---|---|
@@ -146,56 +151,122 @@ Alle vorgegebenen Befunde wurden am Quellcode nachvollzogen und bestätigt; M-00
 
 **M-016** — Beide Teilfehler sind gravierender als ein bloßer Schönheitsfehler: Fehler (b) bewirkt, dass bei Terminen mit Einzelwert-`studentSet` (kein Bereich) praktisch jeder Termin fälschlich als „nicht eigene Gruppe" markiert wird, da Ziffer und Buchstabe nie übereinstimmen können. `features/schedule/spec.md` spezifiziert deshalb das beabsichtigte Verhalten eigenständig, mit einer Beispieltabelle, statt den Alt-Code als Vorlage zu nehmen.
 
-## 4. Android-Lückenregister
+## 4. Funktionsinventar Android
 
-Für die Android-Alt-App liegt kein Quellcode vor; ihr Verhalten ist nicht aus Code ableitbar. Jede Zeile in Abschnitt 2 trägt deshalb weiterhin durchgängig `unbekannt` in der Spalte `Android` — das bleibt der tatsächliche Kenntnisstand zur iOS-Funktionsliste. Ergänzend dazu liegt jedoch eine Recherche der öffentlichen Play-Store-Beschreibung vor, die eigenständige Funde liefert, welche in Abschnitt 2 keine Entsprechung haben. Beide Quellenarten bleiben klar getrennt: Ableitung aus Store-Text ist keine Bestätigung von Code-Verhalten, sondern eine andere, schwächere Evidenzstufe (Markierung `Recherche: …, 2026-08-24` bzw. bei Übernahme in Feature-Specs `[Android: unbekannt]`).
+**Stand 2026-08-25: Der Quellcode liegt vor.** Bis zu diesem Datum führte dieser Abschnitt ein „Lückenregister" mit acht offenen Fragen (A-001 bis A-008), weil das Verhalten der Android-App nur aus der Play-Store-Beschreibung erschlossen werden konnte. Der FSR FB4 hat den Quellcode am 2026-08-25 bereitgestellt (`alte apps/android-fb4/`, Version 1.4.11, `versionCode` 58, 128 Java-Dateien). Die Vermutungen sind damit durch Befunde ersetzt.
 
-### 4.1 Play-Store-Befund
+**Einordnung: Diese App ist der zu übertreffende Stand** (Vorgabe FSR FB4, 2026-08-25). Sie ist nicht die schwächere der beiden Alt-Apps, sondern die stärkere — sie enthält mehrere Funktionen, die die Flutter-App nicht hat und die der Spec-Bestand bis zu diesem Datum als Neuentwicklung führte. Wo eine Anforderung der Neuentwicklung hinter dieser App zurückbleibt, ist das eine bewusste Entscheidung mit Begründung, kein Versehen.
 
-Die Android-App ist identifiziert: Paket `de.fsrfb4.fb4`, Titel „FH Dortmund FB4", Entwickler Fachschaftsrat Informatik, Version 1.4.10, 5.000+ Installationen, ausschließlich für Android. Quelle: [FH Dortmund FB4 – Google Play](https://play.google.com/store/apps/details?id=de.fsrfb4.fb4), Recherche 2026-08-24 — öffentliche Store-Beschreibung, kein Quellcode-Zugriff.
+### 4.1 Technischer Rahmen
 
-| Funktion laut Store-Beschreibung | Vergleich zur Flutter/iOS-App | Herkunft |
+| Merkmal | Wert |
+|---|---|
+| Paket, Version | `de.fsrfb4.fb4`, 1.4.11 (`versionCode` 58) |
+| Plattformfenster | `minSdkVersion` 26 (Android 8), `targetSdkVersion` 35, Java 17 |
+| Bausteine | Hilt (Abhängigkeitsverwaltung), Room und Realm (lokale Datenhaltung, Migration von Realm nach Room vorhanden), Retrofit/OkHttp, Jsoup, WorkManager, Firebase (Messaging, Crashlytics, Analytics) |
+| Berechtigungen | `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_CALENDAR`, `WRITE_CALENDAR`, `POST_NOTIFICATIONS` |
+| Sprachen | Zweisprachig: `res/values` (Englisch) und `res/values-de` (Deutsch) |
+| Erscheinungsbild | `res/values-night` vorhanden, also Dunkelmodus unterstützt |
+| Zertifikate | Bündelt `fh.cer` und `dst.cer` als zusätzliche Trust-Anchor (`util/AdditionalKeyStoresSSLSocketFactory.java`) |
+
+### 4.2 Funktionsinventar
+
+Pfade relativ ab `alte apps/android-fb4/FB4/fB4/src/main/`. Die Spalte „Flutter" hält fest, ob die Funktion dort eine Entsprechung hat (L-Nummer) oder nicht. Endpunktdetails stehen ausschließlich in `../platform/integrations.md`.
+
+| Nr | Bereich | Funktion | Quelle | Zielspec | Flutter |
+|---|---|---|---|---|---|
+| AND-001 | App-Rahmen | Startbildschirm mit Willkommensablauf beim Erststart, einschließlich Push-Anmeldung | `java/…/activities/WelcomePageActivity.java` | SHELL | teilweise, L-002 |
+| AND-002 | App-Rahmen | Splash-Bildschirm mit Vorabladen der Stammdaten | `java/…/SplashActivity.java` | SHELL | – |
+| AND-003 | App-Rahmen | Serverseitige Hinweise an die App, abhängig von Sprache und App-Version | `java/…/retrofit/ServerMessageApi.java`, `model/ServerMessage.java` | SHELL | – |
+| AND-004 | App-Rahmen | Ferngepflegte Stammdaten mit lokalem Zwischenspeicher und Hintergrund-Aktualisierung | `java/…/service/DataService.java`, `worker/DataUpdateWorker.java` | ADMIN, API | – |
+| AND-005 | App-Rahmen | Mitgelieferte Rückfalldaten (`canteens.json`, `rooms.json`), falls die Fernkonfiguration fehlt | `assets/canteens.json`, `assets/rooms.json` | MENSA, RAUM | – |
+| AND-006 | App-Rahmen | Zweisprachige Oberfläche Deutsch/Englisch | `res/values`, `res/values-de` | NFR | – |
+| AND-007 | App-Rahmen | Dunkelmodus über Systemressourcen | `res/values-night` | UX | teilweise, L-003 |
+| AND-008 | Stundenplan | Studiengangs- und Semesterauswahl mit Rückfallliste, falls das Hochschulsystem nicht erreichbar ist | `java/…/retrofit/TimeTableFallbackApi.java` | SCHED | teilweise, L-011/L-012 |
+| AND-009 | Stundenplan | Auswahl der zu übernehmenden Termine beim Anlegen, gefiltert nach Gruppenbuchstabe | `java/…/activities/timetable/AddEventsActivity.java`, `fragments/timetable/filter/LetterFilter.java` | SCHED | L-018–L-020 |
+| AND-010 | Stundenplan | Gruppenzuordnung über Einzelwert und Bereichsnotation | `java/…/util/GroupLetterUtil.java` | SCHED | L-016 |
+| AND-011 | Stundenplan | Eigene Termine anlegen und bearbeiten | `java/…/activities/timetable/CustomEventActivity.java`, `EditEventActivity.java` | SCHED | L-021–L-025 |
+| AND-012 | Stundenplan | **Export in einen wählbaren Gerätekalender** mit Auswahl von Zielkalender und Zeitraum | `java/…/dialog/CalendarExportDialog.java` | SCHED | – |
+| AND-013 | Stundenplan | Semestertermine (Beginn, Ende, nächster WS-/SS-Start) aus der Fernkonfiguration | `java/…/service/DataService.java` | SCHED | – |
+| AND-014 | Raumsuche | **Suche nach freien Räumen zu einem Zeitraum**, mit Angabe, bis wann der Raum frei ist | `java/…/fragments/roomsearch/RoomSearchFragment.java`, `service/RoomService.java` | RAUM | – |
+| AND-015 | Raumsuche | Kuratierte Raumliste mit Raumgröße (klein/mittel/groß) und **E-Key-Eignung je Raum** | `assets/rooms.json`, `model/Room.java` | RAUM, EKEY | – |
+| AND-016 | Raumsuche | Ermittlung der Belegung aus einem einzigen Aufruf über alle Räume | `java/…/retrofit/TimetableApi.java`, Methode `getAllEvents()` | RAUM | – |
+| AND-017 | Mensa | Speiseplan aus der offiziellen ITMC-Schnittstelle, tagesweise und wochenweise | `java/…/retrofit/MenuApi.java` | MENSA | L-046 |
+| AND-018 | Mensa | **Öffnungszeiten je Mensa und Wochentag** | `java/…/model/OpeningsDto.java`, `assets/canteens.json` | MENSA | – |
+| AND-019 | Mensa | Gerichtskategorien und Zusatzstoffverzeichnis als eigene Schlüsselverzeichnisse, zweisprachig | `java/…/model/MenuInformationDto.java` | MENSA | teilweise, L-052 |
+| AND-020 | Mensa | **Eigene Reihenfolge der angezeigten Mensen** | `java/…/activities/MenuSortActivity.java` | MENSA, SET | – |
+| AND-021 | Mensa | Detailansicht je Gericht | `java/…/activities/DishDetailsActivity.java` | MENSA | L-051 |
+| AND-022 | News | Fachbereichsnachrichten aus `aktuelles-ni` mit Blättern über ältere Seiten | `java/…/retrofit/NewsApi.java`, `util/NewsParserImpl.java` | NEWS | – |
+| AND-023 | News | **Zweite Nachrichtenquelle: Fachbereich Wirtschaft (FB9)**, eigener Parser und eigene Ansicht | `java/…/fragments/news/NewsEconomyFragment.java`, `util/NewsEconomyParserImpl.java` | NEWS | – |
+| AND-024 | News | **Suche in beiden Nachrichtenbereichen** | `java/…/fragments/news/NewsFragment.java`, `NewsEconomyFragment.java` | NEWS | L-040/L-041 |
+| AND-025 | News | Lokale Datenhaltung der Meldungen mit Nachladen älterer Einträge | `java/…/room/NewsDao.java`, `RoomNews.java`, `model/LoadMoreItem.java` | NEWS | – |
+| AND-026 | News | Push-Benachrichtigung zum Thema `Aktuelles`, in den Einstellungen abschaltbar | `java/…/firebase/DefaultFirebaseMessagingService.java`, `fragments/UserSettingFragment.java` | NEWS, SET | L-085 |
+| AND-027 | Semesterticket | **Automatischer Download des NRW-Tickets** aus dem Hochschulportal | `java/…/activities/ticket/TicketDownloadActivity.java`, `worker/TicketDownloadWorker.java`, `retrofit/HisApi.java` | TICKET | – |
+| AND-028 | Semesterticket | Anmeldung am Hochschulportal mit geräteseitig verschlüsselt gespeicherten Zugangsdaten | `java/…/fragments/ticket/LoginFragment.java`, `util/UserCredentialsHelper.java`, `util/Cryptography.java` | TICKET | vergleichbar L-065–L-069 |
+| AND-029 | Semesterticket | Push-Benachrichtigung zum Thema `Ticket` bei Verfügbarkeit eines neuen Tickets | `java/…/firebase/DefaultFirebaseMessagingService.java` | TICKET | – |
+| AND-030 | Semesterticket | **Bildausschnitt des Tickets aus der Fernkonfiguration** statt fest im Quellcode | `java/…/util/TicketUtil.java`, Schlüssel `ticket_rect_coordinates` | TICKET | L-055, dort als Mangel M-010 |
+| AND-031 | Semesterticket | Manueller Import als Rückfallweg, PDF-Anzeige und Zoom | `java/…/activities/ticket/PdfViewerActivity.java`, `TicketViewActivity.java`, `view/ZoomableImageView.java` | TICKET | L-054, L-058/L-059 |
+| AND-032 | Einstellungen | Ferngepflegte Links- und Downloads-Liste statt fest hinterlegter Einträge | `java/…/fragments/LinksDownloadsFragment.java`, `service/LinkService.java`, `model/Link.java` | SET, ADMIN | L-073, dort fest hinterlegt |
+| AND-033 | Einstellungen | Einstellungsbildschirm einschließlich Push-Themen und Zugangsdatenverwaltung | `java/…/fragments/UserSettingFragment.java`, `activities/PreferenceActivity.java` | SET | L-078–L-085 |
+| AND-034 | Betrieb | Fehler- und Absturzberichte sowie Nutzungsereignisse an einen Drittanbieterdienst | `java/…/util/FirebaseAnalyticsEvents.java`, Crashlytics-Aufrufe in `service/DataService.java` | SEC | – |
+| AND-035 | Betrieb | Zusätzliche Trust-Anchor für Hochschulzertifikate, ohne die Prüfung abzuschalten | `java/…/util/AdditionalKeyStoresSSLSocketFactory.java`, `assets/fh.cer`, `assets/dst.cer` | SEC | – |
+
+### 4.3 Beantwortung der vormals offenen Fragen
+
+| Nr | Frage | Antwort aus dem Quellcode |
 |---|---|---|
-| Offizielle FB4-Stundenpläne, filterbar nach Gruppenbuchstabe | Entspricht L-011–L-020 | Recherche: Play Store, 2026-08-24 |
-| Eigene/offizielle Termine hinzufügen und bearbeiten | Entspricht L-021–L-025 | Recherche: Play Store, 2026-08-24 |
-| Stundenplan-Teilen per NFC | Kein Pendant unter L-001–L-032 — neuer Fund ohne iOS-Entsprechung | Recherche: Play Store, 2026-08-24 |
-| News aus IT- und Wirtschaftsfachbereich | Flutter-App liest nur einen Feed (INT-003); ob zwei echte Quellen oder ein gemeinsamer Absender, ist ungeklärt | Recherche: Play Store, 2026-08-24 |
-| Mensa-Speisepläne und Öffnungszeiten der Mensen des Studierendenwerks | Entspricht L-046–L-053, Öffnungszeiten ohne iOS-Entsprechung | Recherche: Play Store, 2026-08-24 |
-| Links zu ILIAS, ODS, SmartAssign | ODS entspricht L-073; „SmartAssign" wird als einfacher externer Link geführt (Entscheidung FSR FB4, 2026-08-25, siehe `specs/open-questions.md` Archiv), kein eigener `INT-###`-Eintrag nötig | Recherche: Play Store, 2026-08-24 |
-| NRW-Ticket-Download | Entspricht sinngemäß L-054 (PDF-Import), abweichender Beschaffungsweg | Recherche: Play Store, 2026-08-24 |
+| A-001 | Welche Funktionen gab es nur unter Android? | Raumsuche (AND-014 bis AND-016), Kalender-Export in den Gerätekalender (AND-012), automatischer Ticket-Download (AND-027), Mensa-Öffnungszeiten (AND-018), eigene Mensa-Reihenfolge (AND-020), zweite Nachrichtenquelle (AND-023), ferngepflegte Stammdaten (AND-004), Zweisprachigkeit (AND-006) |
+| A-002 | Wich der Funktionsumfang von der iOS-Version ab? | Ja, erheblich — die Android-App ist der größere Funktionsumfang. Umgekehrt fehlen ihr die Betriebssystem-Schnellzugriffe (L-004; `ShortCutActivity` ist im Manifest auskommentiert) und das Anpinnen von Meldungen (L-042–L-044) |
+| A-003 | Gab es Homescreen-Widgets? | Nein. Kein `AppWidgetProvider`, keine Widget-Deklaration im Manifest |
+| A-004 | Wie wurde das Semesterticket gehandhabt? | Automatischer Download aus dem Hochschulportal (AND-027) mit manuellem Import als Rückfallweg (AND-031); Bildausschnitt aus der Fernkonfiguration (AND-030) |
+| A-005 | War die Notenübersicht enthalten? | Nein. Der Portalzugang existiert, wird aber ausschließlich für den Ticket-Bezug genutzt; es gibt keine Notenansicht |
+| A-006 | Gab es Push-Benachrichtigungen? | Ja, zwei Themen: `Aktuelles` für Meldungen und `Ticket` für neue Semestertickets |
+| A-007 | Wie viele aktive Nutzende? | Aus dem Quellcode nicht ableitbar; bleibt offen. Die Play-Console- und Firebase-Zugänge lägen beim FSR |
+| A-008 | Welche Berechtigungen wurden abgefragt? | `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_CALENDAR`, `WRITE_CALENDAR`, `POST_NOTIFICATIONS` |
 
-**Zweitfund, Klärung zurückgestellt:** Ein zweiter Play-Store-Eintrag „Official FB4-App FHDo" (Paket `fh.dortmund.imslFB4`) wurde bei derselben Recherche gefunden. Das genaue Verhältnis zu `de.fsrfb4.fb4` — Vorgängerversion, Parallelentwicklung eines anderen Fachbereichs oder Fehltreffer — ist weiterhin ungeklärt; der FSR FB4 hat die Klärung am 2026-08-25 als für den Rollout unerheblich zurückgestellt (siehe `specs/open-questions.md`, Archiv). Für die Nutzerkommunikation beim Launch werden beide Store-Einträge unabhängig vom genauen Verhältnis als abgelöst gekennzeichnet.
+**NFC-Teilen (Play-Store-Befund, siehe 4.4) ist in Version 1.4.11 nicht mehr vorhanden** — es gibt weder eine NFC-Berechtigung noch entsprechenden Quellcode. Die Funktion wurde offenbar in einer früheren Version entfernt. Für die Neuentwicklung besteht damit kein Übernahmebedarf.
 
-### 4.2 Offene Klärungspunkte
+### 4.4 Play-Store-Befund (Recherche vom 2026-08-24)
 
-Die folgende Tabelle hält fest, was durch den Play-Store-Befund (4.1) beantwortet ist und was offen bleibt. Store-Text ersetzt keine Verhaltensprüfung — auch beantwortete Zeilen bleiben bis zu einer Bestätigung durch frühere Entwickler oder Screenshots von Nutzenden mit Vorbehalt zu lesen.
+Der zuvor allein maßgebliche Befund bleibt zur Einordnung erhalten. Die Android-App ist identifiziert: Paket `de.fsrfb4.fb4`, Titel „FH Dortmund FB4", Entwickler Fachschaftsrat Informatik, 5.000+ Installationen, ausschließlich für Android. Quelle: [FH Dortmund FB4 – Google Play](https://play.google.com/store/apps/details?id=de.fsrfb4.fb4), Recherche 2026-08-24.
 
-| Nr | Offene Frage | Stand nach 4.1 | Klärungsweg | Verantwortlich |
-|---|---|---|---|---|
-| A-001 | Welche Funktionen gab es nur unter Android, die dieses Inventar dadurch nicht erfasst? | Teilweise beantwortet: NFC-Teilen, Mensa-Öffnungszeiten, SmartAssign-Link (4.1). Vollständigkeit nicht gesichert. | Vergleich Store-Beschreibungen; Befragung von Studierenden/FSR mit Android-Erfahrung | FSR FB4 |
-| A-002 | Wich der Funktionsumfang zwischen Android- und iOS-Version ab? | Teilweise beantwortet, siehe Tabelle 4.1. | Screenshots von Nutzenden | FSR FB4 |
-| A-003 | Gab es Homescreen-Widgets? | Weiterhin offen — Store-Beschreibung nennt keine. | Screenshots von Nutzenden | FSR FB4 |
-| A-004 | Wie wurde das Semesterticket unter Android gehandhabt? | Teilweise beantwortet: „NRW-Ticket-Download" statt manuellem PDF-Import (4.1). Genauer Ablauf offen. | Screenshots von Nutzenden; Befragung | FSR FB4 |
-| A-005 | War die Notenübersicht (ODS) in der Android-App enthalten? | Teilweise beantwortet: ODS-Link vorhanden (4.1). Natives Anzeigen oder reiner Link unklar. | Nachfrage bei früheren Entwicklern | FSR FB4 |
-| A-006 | Gab es Push-Benachrichtigungen unter Android? | Weiterhin offen — Store-Beschreibung äußert sich nicht dazu. | Nachfrage bei früheren Entwicklern | FSR FB4 |
-| A-007 | Wie viele aktive Nutzende hatte die Android-App im Verhältnis zur iOS-App? | Teilweise beantwortet: 5.000+ Installationen laut Play Store (4.1) — Installationen sind kein Maß für aktive Nutzung. | Nachfrage bei früheren Entwicklern (Play-Console/Firebase-Zugang) | FSR FB4 |
-| A-008 | Welche Berechtigungen fragte die Android-App ab? | Weiterhin offen. | Screenshots von Nutzenden | FSR FB4 |
+Der Vergleich mit dem Quellcode zeigt, dass die Store-Beschreibung in zwei Punkten irreführend war: Sie nennt NFC-Teilen, das nicht mehr existiert, und sie verschweigt die Raumsuche, die die fachlich bedeutendste Zusatzfunktion ist. Das bestätigt die Regel aus `../README.md` Abschnitt 6, Store-Text als schwächere Evidenzstufe zu behandeln.
+
+**Zweitfund, Klärung zurückgestellt:** Ein zweiter Play-Store-Eintrag „Official FB4-App FHDo" (Paket `fh.dortmund.imslFB4`) wurde bei derselben Recherche gefunden. Das Verhältnis zu `de.fsrfb4.fb4` bleibt ungeklärt; der FSR FB4 hat die Klärung am 2026-08-25 als für den Rollout unerheblich zurückgestellt. Für die Nutzerkommunikation beim Launch werden beide Store-Einträge als abgelöst gekennzeichnet.
+
+### 4.5 Mängel der Android-App
+
+Nach demselben Muster wie Abschnitt 3 für die Flutter-App. Diese Befunde dürfen in der Neuentwicklung nicht wiederholt werden.
+
+| Nr | Befund | Quelle | Konsequenz für die Neuentwicklung |
+|---|---|---|---|
+| N-001 | Der Stundenplandienst wird unverschlüsselt über `http://` aufgerufen, obwohl `https://` funktioniert (live geprüft 2026-08-25) | `module/NetworkModule.java` | TLS ausnahmslos, siehe SEC-N-030 |
+| N-002 | Hochschul-Zugangsdaten werden geräteseitig vorgehalten und von einem Hintergrund-Worker wiederholt erneut gesendet | `util/UserCredentialsHelper.java`, `worker/TicketDownloadWorker.java` | Kein Passwort-Replay, siehe SEC-F-040 und INT-017 |
+| N-003 | Das Ticket-PDF liegt unverschlüsselt im externen App-Verzeichnis | `util/TicketUtil.java` | Verschlüsselte Ablage, siehe DATA-F-040 — derselbe Mangel wie M-009 bei der Flutter-App |
+| N-004 | Die Endezeit eines freien Raums fällt ohne weiteren Termin auf einen fest eingetragenen Wert von 21:30 Uhr zurück, im Quellcode als offener Punkt markiert | `service/RoomService.java` | Gebäudeöffnungszeiten als pflegbare Angabe führen, nicht als Konstante |
+| N-005 | Die Fernkonfiguration verweist für Prüfungs- und Zeitplan auf die private Domain `hoolycraap.de`, unverschlüsselt | live abgefragt 2026-08-25, Schlüssel `examplan`, `timeplan` | Zweite Fremdabhängigkeit neben `hemacode.de`, mit abzulösen, siehe INT-008 |
+| N-006 | Der Datenbestand der Fernkonfiguration ist seit dem Wintersemester 2023/24 nicht mehr gepflegt | live abgefragt 2026-08-25, Schlüssel `semester_end` = `19.01.2024` | Pflege muss über eine Oberfläche möglich sein, die der FSR ohne Serverzugang bedienen kann, siehe `../features/admin/spec.md` |
+| N-007 | Ein Wildcard-Gruppenwert `*` im Feld `studentSet` wird bei gesetzter Gruppenkennung nicht als „gilt für alle" erkannt, sondern führt zum Ausschluss des Termins | `util/GroupLetterUtil.java` | Wildcard ausdrücklich behandeln, siehe SCHED-F-060 |
+| N-008 | Absturzberichte und Nutzungsereignisse gehen an einen Drittanbieterdienst | `util/FirebaseAnalyticsEvents.java`, Crashlytics-Aufrufe | Mit F-Droid unvereinbar (NFR-N-170) und im Verarbeitungsverzeichnis nicht vorgesehen; nicht übernehmen |
+| N-009 | Die Zeitüberschreitung für Netzaufrufe liegt bei 30 Sekunden | `FB4.java`, `callTimeout(30, TimeUnit.SECONDS)` | Deutlich kürzer ansetzen, siehe NFR-F-070 |
 
 ## 5. Abdeckungsübersicht
 
-Grundlage der späteren Vollständigkeitsprüfung: wie viele Inventarzeilen jede Feature-Spec abzudecken hat. Zielspec-Werte ohne Alt-App-Entsprechung (RAUM, RATE, EVENT, HELFER, WIKI) sind vollständig neu und tragen deshalb keine Herkunftsmarkierung `Alt:` in den jeweiligen Feature-Specs. Die Android-Zusatzfunde aus 4.1 (NFC-Teilen, Mensa-Öffnungszeiten, SmartAssign, zweite News-Quelle) haben keine eigene Zielspec-Zuordnung, solange die zugehörigen Fragen in `specs/open-questions.md` offen sind.
+Grundlage der späteren Vollständigkeitsprüfung: wie viele Inventarzeilen jede Feature-Spec abzudecken hat, getrennt nach Herkunft aus der Flutter-App (`L-###`, Abschnitt 2) und der Android-App (`AND-###`, Abschnitt 4.2). Nur wo **beide** Spalten `0` zeigen, ist ein Feature tatsächlich ohne Vorbild und trägt in seiner Spec durchgängig die Herkunftsmarkierung `NEU`.
 
-| Zielspec | Anzahl Inventarzeilen | Anmerkung |
-|---|---|---|
-| SHELL | 5 | App-Rahmen, Navigation, Startverhalten. |
-| SCHED | 29 | 27 aus dem Stundenplan-Bereich, 2 aus Einstellungen (L-078, L-080). |
-| NEWS | 13 | Vollständig aus dem News-Bereich; zweite Quelle laut 4.1 noch nicht eingearbeitet. |
-| MENSA | 10 | 8 aus dem Mensa-Bereich, 2 aus Einstellungen (L-082, L-083); Öffnungszeiten laut 4.1 noch nicht eingearbeitet. |
-| TICKET | 12 | 10 aus dem Semesterticket-Bereich, 2 aus Einstellungen (L-079, L-081). |
-| NOTEN | 10 | 9 aus dem Noten-Bereich, 1 aus Einstellungen (L-084). |
-| SET | 6 | Verbleibende, nicht bereichsspezifische Einstellungen (Links/Downloads, Feedback, Über, Lizenzen, Datenschutz-Ansicht, Push-Opt-in); SmartAssign führt SET als einfacher externer Link (Entscheidung FSR FB4, 2026-08-25), formale Anforderung für die Links/Downloads-Liste in `features/settings/spec.md` noch nachzutragen. |
-| RAUM | 0 | Keine Entsprechung in den Alt-Apps; vollständig neu, basiert auf Aggregation aus INT-002 bzw. INT-009. |
-| RATE | 0 | Keine Entsprechung in den Alt-Apps; vollständig neu. |
-| EVENT | 0 | Keine Entsprechung in den Alt-Apps; vollständig neu. |
-| HELFER | 0 | Keine Entsprechung in den Alt-Apps; vollständig neu. |
-| WIKI | 0 | Keine Entsprechung in den Alt-Apps; vollständig neu. |
+| Zielspec | Flutter (L) | Android (AND) | Anmerkung |
+|---|---|---|---|
+| SHELL | 5 | 5 | Rahmen und Startverhalten; Android ergänzt Willkommensablauf, Splash, serverseitige Hinweise, Fernkonfiguration, Zweisprachigkeit |
+| SCHED | 29 | 7 | Android ergänzt Kalender-Export ins Gerät (AND-012), Rückfallliste der Studiengänge (AND-008) und Semestertermine (AND-013) |
+| NEWS | 13 | 5 | Android ergänzt zweite Quelle (AND-023), Blättern über ältere Seiten (AND-022) und lokale Datenhaltung (AND-025); Anpinnen fehlt dort |
+| MENSA | 10 | 5 | Android ergänzt Öffnungszeiten (AND-018), eigene Reihenfolge (AND-020) und zweisprachige Schlüsselverzeichnisse (AND-019) |
+| TICKET | 12 | 5 | Android ergänzt automatischen Download (AND-027, für die Neuentwicklung ausgeschlossen) und ferngepflegten Bildzuschnitt (AND-030) |
+| NOTEN | 10 | 0 | Nur in der Flutter-App vorhanden; die Android-App nutzt den Portalzugang ausschließlich für das Ticket |
+| SET | 6 | 2 | Android führt Links und Downloads ferngepflegt statt fest hinterlegt (AND-032) |
+| RAUM | 0 | 3 | **Korrektur 2026-08-25:** zuvor als „ohne Entsprechung in den Alt-Apps" geführt. Die Android-App enthält eine vollwertige Raumsuche (AND-014 bis AND-016) einschließlich Raumgröße und E-Key-Eignung |
+| RATE | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
+| EVENT | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
+| HELFER | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
+| WIKI | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
+| EKEY | 0 | 1 | Die E-Key-Eignung je Raum (AND-015) ist der einzige Berührungspunkt; die Verwaltung selbst ist ohne Vorbild |
+| ADMIN | 0 | 1 | Die Fernkonfiguration (AND-004) ist der fachliche Vorläufer der Stammdatenpflege; eine Oberfläche dafür gibt es in keiner Alt-App |
