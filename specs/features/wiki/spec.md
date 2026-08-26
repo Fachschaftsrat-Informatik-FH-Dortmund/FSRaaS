@@ -4,9 +4,9 @@ titel: Wiki-Anbindung
 praefix: WIKI
 status: draft
 prioritaet: kern
-version: 0.1.2
+version: 0.2.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from: []
 implemented_in: []
 related:
@@ -51,18 +51,21 @@ Zeigt Inhalte des vom FSR betriebenen BookStack-Wikis (`wiki.fsrfb4.de`) in der 
 | WIKI-F-030 | Das System muss Wiki-Inhalte entlang der Hierarchie Shelf (Regal) › Book (Buch) › Chapter (Kapitel) › Page (Seite) navigierbar machen. | NEU |
 | WIKI-F-040 | Das System muss eine Volltextsuche über die angezeigten Wiki-Inhalte anbieten. | NEU |
 | WIKI-F-050 | Das System muss der Nutzerin einen direkten Einstiegspunkt zum Erstiheft-Inhalt bereitstellen, unabhängig von dessen Position in der Kategorienstruktur. | Recherche: wiki.fsrfb4.de, 2026-08-24 |
+| WIKI-F-060 | Das System darf ausschließlich für Studierende freigegebene BookStack-Bücher anzeigen; als intern gekennzeichnete Bücher (z. B. „Intern") müssen ausgeschlossen bleiben. | Recherche: Live-Testabruf wiki.fsrfb4.de, 2026-08-26 |
 
 ### Erläuterungen
 
-**`WIKI-F-010`/`WIKI-F-020`** — Beide Anforderungen sind bedingt, weil INT-007 (`platform/integrations.md`) als „zu verifizieren" geführt wird: Ob BookStack tatsächlich API-Token bereitstellt und welche Inhalte für Studierende freigegeben sind, klärt der in `decisions/0005-wiki-bookstack-anbindung.md` vorgesehene Spike.
+**`WIKI-F-010`/`WIKI-F-020`** — Der Live-Testabruf vom 2026-08-26 bestätigt, dass BookStack tatsächlich API-Token bereitstellt und die App darüber lesend zugreifen kann (siehe `platform/integrations.md` INT-007). Bedingt bleiben die Anforderungen dennoch: Der geprüfte Token liefert derzeit auch interne Inhalte zurück, siehe `WIKI-F-060` und `decisions/0005-wiki-bookstack-anbindung.md`.
+
+**`WIKI-F-060`** — Beim Testabruf lieferte der bereitgestellte Token uneingeschränkt alle 12 Bücher zurück, einschließlich des in BookStack selbst als „nicht öffentlich" beschriebenen Buchs „Intern". BookStack unterscheidet an der geprüften Schnittstelle nicht selbst zwischen öffentlich und FSR-intern; die Trennung muss die App-Seite (Konto mit eingeschränkten Rechten oder serverseitige Positivliste) herstellen, bevor WIKI umgesetzt wird.
 
 ## 5. Datenmodell
 
-Orientiert an der bei der Recherche (2026-08-24) unter `wiki.fsrfb4.de` festgestellten Kategorienstruktur, zu bestätigen im Zuge des INT-007-Spikes: Studium, IT, HoPo (Hochschulpolitik), Erstiheft, E-Key, Dezernate, Rechtliches, Bester Standort, Organisatorisches, Events. Diese Kategorien sind BookStack-„Bücher"; genaue Feldstruktur (Shelf/Book/Chapter/Page) liefert INT-007 nach Verifikation.
+Bestätigt durch Live-Testabruf (2026-08-26, 12 Bücher): Studium, IT, HoPo, Erstiheft, E-Key, Dezernate, Rechtliches, Bester Standort, Organisatorisches, Events, Willkommen, Intern. Die ersten zehn entsprechen der bei der Recherche (2026-08-24) festgestellten Struktur; „Willkommen" und „Intern" kamen beim Testabruf hinzu — „Intern" ist laut BookStack-Beschreibung nicht für Studierende bestimmt und fällt unter `WIKI-F-060`. Diese Kategorien sind BookStack-„Bücher"; Feldstruktur Shelf/Book/Chapter/Page siehe `platform/integrations.md` INT-007.
 
 ## 6. Externe Schnittstellen
 
-Nutzt INT-007 (BookStack). Status „zu verifizieren" — siehe `platform/integrations.md`. Keine Endpunktdetails hier.
+Nutzt INT-007 (BookStack). Status „Kernzugriff bestätigt, Berechtigungsmodell offen" — siehe `platform/integrations.md`. Keine Endpunktdetails hier.
 
 ## 7. UI-Flows & Zustände
 
@@ -99,4 +102,5 @@ Nicht zutreffend — keine der Alt-Apps bietet eine Wiki-Anbindung.
 
 ## 13. Offene Fragen
 
-- Ergebnis des INT-007-Spikes (URL, API-Token-Verfügbarkeit, freigegebene Inhalte) — `decisions/0005-wiki-bookstack-anbindung.md`.
+- Wie wird technisch sichergestellt, dass als intern gekennzeichnete Bücher (`WIKI-F-060`) nicht an Studierende ausgeliefert werden — eigenes rechtebeschränktes BookStack-Konto oder serverseitige Positivliste? — `decisions/0005-wiki-bookstack-anbindung.md`.
+- Endgültige Festlegung auf Option (b) aus `decisions/0005-wiki-bookstack-anbindung.md`, abhängig von der Klärung des Berechtigungsmodells.

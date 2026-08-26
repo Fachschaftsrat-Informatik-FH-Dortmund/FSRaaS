@@ -4,9 +4,9 @@ titel: Raumsuche
 praefix: RAUM
 status: accepted
 prioritaet: kern
-version: 1.0.0
+version: 1.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/service/RoomService.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/roomsearch/RoomSearchFragment.java
@@ -77,8 +77,11 @@ Zwei Annahmen sind damit ebenfalls hinfällig geworden. Erstens war unklar, ob e
 | RAUM-F-110 | Das System muss zu jedem Raum kennzeichnen, ob er mit einem E-Key zugänglich ist. | Recherche: alte apps/android-fb4, assets/rooms.json, 2026-08-25 |
 | RAUM-F-120 | Das System muss die Raumsuche auf die vom FSR gepflegte Raumliste beschränken, statt jeden im Terminbestand vorkommenden Raum anzubieten. | Recherche: alte apps/android-fb4, service/RoomService.java, 2026-08-25 |
 | RAUM-F-130 | Falls für einen freien Raum kein nachfolgender Termin vorliegt, muss das System als Endzeitpunkt die gepflegte Gebäudeschließzeit verwenden, nicht einen fest im Quellcode hinterlegten Wert. | Alt: bewusst verworfen |
+| RAUM-F-140 | Solange die meldende Person dieselbe Gerätesitzung verwendet, muss das System ihr das Zurückziehen einer von ihr abgegebenen, noch aktiven Besetzt-Meldung ermöglichen. | NEU |
 
 ### Erläuterungen
+
+**`RAUM-F-140`** — Analog zum Widerruf bei HELFER-F-040 und RATE-F-070: Eine fehlerhafte Meldung blieb bislang bis zum Verfall (90 Minuten, Abschnitt 13) unverändert wirksam. Die Zuordnung „von ihr abgegeben" bleibt geräteseitig (z. B. eine lokal gespeicherte Kennung der eigenen zuletzt gesendeten Meldungen), nicht serverseitig personenbezogen — RAUM-F-070 und API-F-210 bleiben ohne Konto- oder Personenbezug unverändert gültig. Konkreter Mechanismus (z. B. clientseitig erzeugte Meldungs-Kennung, die für einen Widerruf erneut vorgelegt wird) ist Sache des Vertrags bei Umsetzung von Schritt 6.
 
 **`RAUM-F-050`/`RAUM-F-060`** — Entscheidung FSR FB4, 2026-08-25: Statt Geräte-Standortzugriff (GPS) gibt die Nutzerin manuell den Raum an, vor dem sie steht; das Backend ermittelt daraus über eine vom FSR gepflegte Laufwege-Datenstruktur (Distanzen/Nachbarschaften zwischen Räumen) den nächstgelegenen freien Raum. Herkunft, Pflegeweg und Detailgrad dieser Datenstruktur sind offen, siehe Abschnitt 13. Eine echte Lokalisierung über im Gebäude verteilte WLAN-Access-Points ist als möglicher künftiger Ausbauschritt benannt, aber explizit nicht Teil dieses Umfangs (siehe Abschnitt 2, Nicht-Scope).
 
@@ -144,8 +147,7 @@ Keine über `platform/non-functional.md` hinausgehenden Anforderungen.
 
 - ~~Deckt INT-009 alle Räume des Fachbereichs ab?~~ Beantwortet am 2026-08-25: Die Platzhalter-Form liefert alle Räume in einem Aufruf, siehe INT-009.
 - Aktualisierungsfrequenz des serverseitigen Abrufs: 15 Minuten (Arbeitsziel, konsistent mit `platform/data-and-storage.md` Abschnitt 4).
-- Herkunft der Größenklassen und Gebäudeschließzeiten für die Raumliste: Die Android-Alt-App liefert 19 Räume mit Größenklasse und E-Key-Kennzeichen als Ausgangsbestand mit (`assets/rooms.json`); ob diese Liste noch aktuell und vollständig ist, klärt der FSR bei Übernahme in die Stammdatenpflege.
-- Herkunft der Laufwege-Datenstruktur (RAUM-F-060): Ein bestehender Lageplan ist nutzbar (Entscheidung FSR FB4, 2026-08-25) — konkrete Quelle (z. B. auf `fsrfb4.de` oder von der FH bereitgestellt) sowie Format und Verfahren zur Ableitung der Nachbarschaftsdaten daraus bei Umsetzung mit dem FSR zu klären.
-- Detailgrad der Laufwege-Daten: Arbeitsziel ein Nachbarschaftsgraph zwischen Räumen mit Fußweg-Minuten als Gewicht (grobe Etage/Gebäude-Granularität statt exakter Gänge, da einfacher manuell zu pflegen) — zu bestätigen, sobald die vorige Frage geklärt ist.
+- ~~Herkunft der Größenklassen und Gebäudeschließzeiten für die Raumliste~~ Eingeschätzt 2026-08-26 (FSR FB4): vermutlich noch aktuell. Keine Vollprüfung vor Übernahme als Ausgangsbestand in die Stammdatenpflege vorgesehen; Korrektur bei Bedarf über die Verwaltungsoberfläche (`../admin/spec.md`).
+- ~~Herkunft der Laufwege-Datenstruktur (RAUM-F-060)~~ Geklärt 2026-08-26: Ein früherer Lageplan unter `https://campus.inf.fh-dortmund.de/` existierte, ist aber nicht mehr erreichbar (Verbindungsaufbau abgelehnt, live geprüft 2026-08-26). Die Laufwege-Daten müssen deshalb von Hand erstellt werden — FSR-Mitglieder schätzen Fußweg-Distanzen zwischen den gepflegten Räumen und pflegen sie über die Laufwege-Verwaltung in ADMIN (`../admin/spec.md` ADMIN-F-090). Detailgrad unverändert: ein Nachbarschaftsgraph mit Fußweg-Minuten als Gewicht, grobe Etage-/Gebäude-Granularität statt exakter Gänge, da so einfacher manuell zu pflegen.
 - Zeitfenster, nach dem eine Besetzt-Meldung verfällt (RAUM-F-080): 90 Minuten (Arbeitsziel, zwischen einer einzelnen Unterrichtseinheit und einem vollen Vormittag).
 - Lokalisierung über WLAN-Access-Points (Schritt 3 des vom FSR skizzierten Ausbaus, siehe Abschnitt 2 Nicht-Scope): eigenständiges Infrastrukturvorhaben, bei Bedarf als spätere Erweiterung dieser Spec zu behandeln, nicht Teil des aktuellen Umfangs.

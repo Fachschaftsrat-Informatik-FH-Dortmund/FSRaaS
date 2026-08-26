@@ -3,9 +3,9 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.0.0
+version: 3.1.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
@@ -15,6 +15,10 @@ related:
   - integrations.md
   - identity-and-moderation.md
   - ../decisions/0003-eigenes-backend-fuer-community-funktionen.md
+  - ../decisions/0014-selbstbetriebene-fehlertelemetrie.md
+  - ../decisions/0015-resilienz-hintergrund-jobs.md
+  - ../decisions/0016-api-versionierung-und-deprecation.md
+  - ../decisions/0017-zugriff-und-datensicherung-vps.md
   - ../features/canteen-ratings/spec.md
   - ../features/events/spec.md
   - ../features/event-volunteers/spec.md
@@ -117,6 +121,12 @@ Der vollständige Vertrag steht als versionierte OpenAPI-Beschreibung in `api-co
 | API-F-140 | Wenn eine Bewertung mit einer bereits verarbeiteten Idempotenz-Kennung erneut eingereicht wird, muss das Backend sie als bereits verarbeitet erkennen und nicht doppelt zählen. | NEU |
 | API-N-050 | Das System muss Listenergebnisse paginieren. | NEU |
 | API-N-060 | Das System muss alle Zeitangaben im Format ISO 8601 mit Zeitzone liefern. | NEU |
+| API-N-130 | Das System muss zwischen additiven und brechenden Schnittstellenänderungen unterscheiden; nur brechende Änderungen erhöhen das Versionssegment im Pfad. | NEU |
+| API-F-270 | Das System muss bei jedem Aufruf die Client-Version protokollieren, um die Zugriffshäufigkeit je Schnittstellenversion auszuwerten. | NEU |
+| API-N-140 | Wenn eine Schnittstellenversion als veraltet markiert wird, muss sie mindestens 90 Tage zusätzlich zur neuen Version erreichbar bleiben. | NEU |
+| API-N-150 | Das System darf eine veraltete Schnittstellenversion erst abschalten, wenn zusätzlich zur Mindestfrist ein vernachlässigbarer Zugriff gemäß API-F-270 nachgewiesen ist. | NEU |
+
+Zu API-N-130 bis API-N-150: Konkretisieren API-N-030, siehe `../decisions/0016-api-versionierung-und-deprecation.md`.
 
 Zu API-F-140: Diese Anforderung sichert die Offline-Warteschlange aus `architecture.md` (ARCH-F-120) ab — eine wegen unterbrochener Verbindung erneut gesendete Bewertung darf nicht als zweite Bewertung gezählt werden. Ausgestaltung der Idempotenz-Kennung (z. B. clientseitig erzeugte UUID je Vorgang) ist Sache der Umsetzung, nicht dieser Spec.
 
@@ -148,6 +158,18 @@ Nur Zweck und grobe Felder; ausformulierte Datenmodelle entstehen mit den jeweil
 | API-N-070 | Das System muss regelmäßige Sicherungen der serverseitig gespeicherten Daten vorhalten. | NEU |
 | API-N-080 | Das System muss Protokolle nach dem Prinzip der Datensparsamkeit führen. | NEU |
 | API-N-090 | Das System muss den Betriebszustand des Backends überwachen und bei Ausfall benachrichtigen. | NEU |
+| API-N-100 | Das System muss Fehler ab Schweregrad „Error" strukturiert protokollieren und an die selbstbetriebene Fehlertelemetrie-Instanz weiterleiten. | NEU |
+| API-N-110 | Das System muss jeden periodischen Hintergrund-Job so kapseln, dass eine unbehandelte Ausnahme innerhalb eines Durchlaufs protokolliert wird und ausschließlich diesen Durchlauf abbricht, nicht den Backend-Prozess. | NEU |
+| API-N-120 | Das System muss jeden Aufruf eines externen Quellsystems mit Timeout, Wiederholung mit steigendem Abstand und einem Circuit Breaker gegen wiederholten Fehlschlag absichern. | NEU |
+| API-F-260 | Das System muss je periodischem Hintergrund-Job Zeitpunkt und Ergebnis des letzten Durchlaufs über den Health-Check-Endpunkt bereitstellen. | NEU |
+| API-N-160 | Das System muss serverseitige Sicherungen auf einem vom gesicherten Server organisatorisch getrennten Ziel ablegen. | NEU |
+| API-N-170 | Die Wiederherstellung aus einer Sicherung muss innerhalb eines Arbeitstages möglich sein; die Sicherungsfrequenz muss einen Datenverlust von höchstens 24 Stunden sicherstellen. | NEU |
+| API-N-180 | Das System muss mindestens einmal je Semester durch eine tatsächliche Wiederherstellung in eine Testumgebung geprüft werden, nachgewiesen durch ein datiertes Prüfprotokoll. | NEU |
+| API-N-190 | Wenn eine Person Zugriff auf Server, Secrets-Depot oder Hosting-Zugang erhält oder verliert, muss dies über einen dokumentierten Onboarding-/Offboarding-Ablauf erfolgen, einschließlich Rotation aller geteilten Geheimnisse beim Ausscheiden. | NEU |
+
+Zu API-N-100 bis API-F-260: Konkretisieren API-N-090 und lösen die zuvor fehlende Fehler-Isolation periodischer Jobs, siehe `../decisions/0014-selbstbetriebene-fehlertelemetrie.md` und `../decisions/0015-resilienz-hintergrund-jobs.md`.
+
+Zu API-N-160 bis API-N-190: Lösen den zuvor in Abschnitt 10 offenen Punkt zu Zugriffsverwaltung und Backup-Ziel auf, siehe `../decisions/0017-zugriff-und-datensicherung-vps.md`.
 
 Betreiber: FSR FB4 selbst, auf einem eigenen Hetzner-VPS. Entschieden 2026-08-25, siehe `specs/open-questions.md` (Archiv) und `platform/integrations.md` (INT-008).
 
@@ -178,6 +200,6 @@ Zwei Lehren aus dem Altbestand sind in die Anforderungen eingeflossen: Stammdate
 
 ## 10. Offene Fragen
 
-- Konkreter Server-Zuschnitt auf dem Hetzner-VPS: Arbeitsziel kleinste für ASP.NET-Core-Betrieb plus PostgreSQL tragfähige Instanzgröße, Hochskalierung bei Bedarf; Zugriff ausschließlich per SSH-Key für die technische Leitung; tägliches automatisiertes Backup mit mindestens 7 Tagen Aufbewahrung. Endgültig festzuhalten in `../decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+- ~~Zugriffsverwaltung und Backup-Ziel auf dem Hetzner-VPS~~ Geklärt 2026-08-26, siehe `../decisions/0017-zugriff-und-datensicherung-vps.md` (API-N-160 bis API-N-190). Weiterhin offen: konkrete Instanzgröße — Arbeitsziel bleibt kleinste für ASP.NET-Core-Betrieb plus PostgreSQL tragfähige Größe, Hochskalierung bei Bedarf.
 - Fan-out-Mechanismus für die Push-Zustellung (ein UnifiedPush-Aufruf je Android-Endpunkt gegenüber einem Themen-Aufruf für iOS) — offener Punkt aus `../decisions/0008-vertrieb-ueber-drei-app-stores.md`, zu klären mit der zweiten Ausbaustufe.
-- Ob die versions- und sprachabhängigen Hinweise des Altbackends (`/messages`) fachlich übernommen werden oder in NEWS aufgehen — bislang keine Anforderung dazu.
+- Ob die versions- und sprachabhängigen Hinweise des Altbackends (`/messages`) fachlich übernommen werden oder in NEWS aufgehen — betrifft NEWS, SHELL und diese Spec gleichermaßen, siehe `specs/open-questions.md` (dort die Feinstruktur des Altmechanismus als technischer Befund vom 2026-08-26).

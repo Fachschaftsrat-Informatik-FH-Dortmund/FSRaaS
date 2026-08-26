@@ -3,6 +3,7 @@ nummer: 0007
 titel: Datenquellen für Mensa und News
 status: vorgeschlagen
 datum: 2026-08-24
+zuletzt_ergaenzt: 2026-08-26
 betrifft:
   - features/canteen/spec.md
   - features/news/spec.md
@@ -33,9 +34,11 @@ Die Abhängigkeit von `hemacode.de` wird abgelöst. Beide Datenquellen laufen k�
 
 Es ist eine Übergangsphase nötig, in der beide Wege (bisheriger Abruf über `hemacode.de` und neuer Abruf über das eigene Backend) funktionieren müssen, bis die Umstellung abgeschlossen ist. Der Fachbereich bzw. der FSR gewinnt dauerhaft Kontrolle über zwei Kernfunktionen der App, die zuvor von einer nicht selbst betriebenen Infrastruktur abhingen.
 
+**Ergänzung 2026-08-26 — Mensa-Seite gelöst, News-Seite weiterhin offen.** Der Befund vom 2026-08-25 (siehe `platform/integrations.md`, INT-015) löst die Mensa-Hälfte dieser Entscheidung anders als hier ursprünglich angenommen: nicht über einen direkten OpenMensa-Zugriff oder eine Zwischenspeicherung der bisherigen Vermittler-Daten, sondern über eine zuvor unbekannte, offizielle Mensa-API des ITMC der TU Dortmund (INT-015) — TLS-gesichert, institutionell betrieben, mit Öffnungszeiten und zweisprachigen Bezeichnungen. INT-004 gilt damit als abgelöst. Die News-Seite (INT-003, weiterhin `hemacode.de`) ist von diesem Befund nicht betroffen und bleibt ungelöst; die Entscheidung dieses ADR (Ablösung über das eigene Backend) gilt dafür unverändert.
+
 ## Offene Punkte
 
-- Wer betreibt `hemacode.de`, und ist diese Person oder Gruppe ansprechbar?
-- Aus welcher Primärquelle stammen die News ursprünglich? Das ist bislang unbekannt und muss ermittelt werden, bevor die Ablösung im Detail geplant werden kann.
-- Welche Mensen bietet OpenMensa unter welchen Kennungen an?
-- Welche Nutzungsbedingungen gelten für einen direkten Zugriff auf OpenMensa?
+- Wer betreibt `hemacode.de`, und ist diese Person oder Gruppe ansprechbar? Betrifft nach der Ergänzung vom 2026-08-26 nur noch die News-Seite (INT-003).
+- Aus welcher Primärquelle stammen die News ursprünglich? Weiterhin unbekannt und zu ermitteln, bevor die Ablösung im Detail geplant werden kann.
+- ~~Welche Mensen bietet OpenMensa unter welchen Kennungen an?~~ Gegenstandslos: Die Mensa-Seite nutzt seit dem Befund vom 2026-08-25 INT-015 (ITMC-API), nicht OpenMensa direkt.
+- ~~Welche Nutzungsbedingungen gelten für einen direkten Zugriff auf OpenMensa?~~ Gegenstandslos, aus demselben Grund.

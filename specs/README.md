@@ -1,3 +1,10 @@
+---
+status: accepted
+version: 1.1.0
+owner: FSR FB4
+last_reviewed: 2026-08-26
+---
+
 # Spezifikations-Handbuch
 
 Dieses Handbuch legt fest, wie Spezifikationen (Specs) für die FB4-App geschrieben, gepflegt und mit dem Code verbunden werden. Es gilt für alle Dateien unterhalb von `specs/`.
@@ -73,6 +80,8 @@ Jede Spec durchläuft, im Frontmatter-Feld `status`, folgende Zustände:
 | `deprecated` | Das Feature entfällt oder wurde durch etwas anderes abgelöst. Die Spec-Datei bleibt bestehen, einzelne Anforderungen bleiben mit Status „entfallen" und Begründung sichtbar (siehe Abschnitt 4). | Produktentscheidung, dokumentiert idealerweise als ADR unter `decisions/`. |
 
 Eine Spec wird **zu keinem Zeitpunkt gelöscht**. Entfällt ein ganzes Feature, wechselt die gesamte Spec auf `deprecated` mit einer Begründung im Dokument selbst; entfällt nur eine einzelne Anforderung innerhalb einer sonst weiter gültigen Spec, bleibt die Spec in ihrem Status und nur die betroffene Anforderung wird als „entfallen" markiert.
+
+Sonderfall ADRs: `decisions/*.md` verwenden ein eigenes, kleineres Statusvokabular (`vorgeschlagen`, `angenommen`, `abgelöst`, `verworfen`, siehe `_templates/adr.md`) statt der vier Stati oben — ein ADR protokolliert eine getroffene Entscheidung, keine Anforderung mit eigenem Implementierungs-Lebenszyklus. Beide Vokabulare erscheinen bewusst nebeneinander im Index (Abschnitt 10).
 
 ## 4. Anforderungs-IDs
 
@@ -252,10 +261,16 @@ Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = f�
 | `decisions/0010-authentik-als-identitaetsanbieter.md` | – | – | – | angenommen |
 | `decisions/0011-monorepo-und-openapi-vertrag.md` | – | – | – | angenommen |
 | `decisions/0012-zuschnitt-der-ersten-ausbaustufe.md` | – | – | – | angenommen |
+| `decisions/0013-zustand-navigation-und-netzwerkschicht.md` | – | – | – | angenommen |
+| `decisions/0014-selbstbetriebene-fehlertelemetrie.md` | – | – | – | angenommen |
+| `decisions/0015-resilienz-hintergrund-jobs.md` | – | – | – | angenommen |
+| `decisions/0016-api-versionierung-und-deprecation.md` | – | – | – | angenommen |
+| `decisions/0017-zugriff-und-datensicherung-vps.md` | – | – | – | angenommen |
+| `decisions/0018-verwaltungsoberflaeche-react-native-web.md` | – | – | – | angenommen |
 
 Die Spalte „Ausbaustufe" verweist auf `product/roadmap.md`; dort steht die Zuordnung je Anforderung, nicht nur je Datei. Specs der ersten Ausbaustufe stehen auf `accepted`, weil ihre Umsetzung geplant oder begonnen ist (Abschnitt 3); die übrigen bleiben `draft`, bis die jeweils blockierende Klärung vorliegt.
 
-Anmerkung zu den ADRs: Nummern und Titel der ADR `0001`–`0007` sind durch die ursprüngliche Projektplanung festgelegt. `0003`, `0005` und `0006` sind zusätzlich im Schnittstellenregister (`platform/integrations.md`, Einträge INT-008, INT-007, INT-006) referenziert. `0008` bis `0012` sind im laufenden Spec-Prozess neu hinzugekommen (Store-Vertrieb, Werkzeugkasten, Identitätsanbieter, Monorepo und Schnittstellenvertrag, Zuschnitt der Ausbaustufen) — die ADR-Liste wächst bei Bedarf über die ursprünglich geplanten sieben Einträge hinaus.
+Anmerkung zu den ADRs: Nummern und Titel der ADR `0001`–`0007` sind durch die ursprüngliche Projektplanung festgelegt. `0003`, `0005` und `0006` sind zusätzlich im Schnittstellenregister (`platform/integrations.md`, Einträge INT-008, INT-007, INT-006) referenziert. `0008` bis `0012` sind im laufenden Spec-Prozess neu hinzugekommen (Store-Vertrieb, Werkzeugkasten, Identitätsanbieter, Monorepo und Schnittstellenvertrag, Zuschnitt der Ausbaustufen). `0013` bis `0018` entstanden aus einer Prüfung des Spec-Bestands vor Implementierungsbeginn (Zustands-/Navigationsschicht, Fehlertelemetrie, Job-Resilienz, API-Versionierung, VPS-Betrieb, Verwaltungsoberfläche) — die ADR-Liste wächst bei Bedarf über die ursprünglich geplanten sieben Einträge hinaus.
 
 ## 11. Eine neue Spec anlegen
 

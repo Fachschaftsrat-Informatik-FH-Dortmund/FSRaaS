@@ -1,8 +1,8 @@
 ---
 status: accepted
-version: 0.3.0
+version: 0.4.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 ---
 
 # Domänenglossar
@@ -28,7 +28,7 @@ Die nachweisbare Verbindung zwischen einer Anforderung und ihrer Umsetzung: Anfo
 Eigene Speisenkategorie im Mensaplan (Feld `type` mit Wert `Beilagen` in INT-004), die in der Darstellung von den Hauptspeisen (z. B. `Menü 1`, `Tagesgericht`, `Vegetarisches Menü`) getrennt wird. Auftritt: `features/canteen/spec.md`.
 
 **BookStack**
-Die vom FSR betriebene Wiki-Software. Inhaltshierarchie: Shelf (Regal) › Book (Buch) › Chapter (Kapitel) › Page (Seite). Anbindung ist zu verifizieren, siehe INT-007 in `platform/integrations.md`. Auftritt: `features/wiki/spec.md`.
+Die vom FSR betriebene Wiki-Software. Inhaltshierarchie: Shelf (Regal) › Book (Buch) › Chapter (Kapitel) › Page (Seite). API-Zugang bestätigt, Berechtigungsmodell für interne Inhalte offen, siehe INT-007 in `platform/integrations.md`. Auftritt: `features/wiki/spec.md`.
 
 **courseType**
 Kürzel der Veranstaltungsart im FBWS-Termindatensatz (INT-002), z. B. `V` für Vorlesung, `Ü` für Übung, `P` für Praktikum. Selbst angelegte Einträge der Alt-App (eigene, nicht vom FBWS gelieferte Termine) tragen den Wert `C`. Auftritt: `features/schedule/spec.md`, `platform/integrations.md` (INT-002).
@@ -39,8 +39,14 @@ Studiengang im FBWS. Datensatz mit `name` (Klarname), `sname` (Kurzname, wird al
 **EARS (Easy Approach to Requirements Syntax)**
 Satz von Formulierungsmustern für einzeln prüfbare Anforderungen (ubiquitär, ereignisgesteuert, zustandsabhängig, Fehlerfall, optional). Details und Beispiele: `README.md`, Abschnitt 5.
 
+**Ausbaustufe**
+Zeitliche Gruppierung der Umsetzung in zwei Stufen, siehe `product/roadmap.md`. Ordnet zu, *wann* eine bereits spezifizierte Anforderung umgesetzt wird — sie ändert nie die Anforderung selbst. Auftritt: `specs/README.md` Abschnitt 10, `product/roadmap.md`, Frontmatter aller Feature-Specs.
+
+**E-Key**
+Vom FSR verliehener elektronischer Zugangsschlüssel für Räume außerhalb offizieller Zeiten — physisch ein vom bestehenden E-Key-Verwaltungstool (INT-014) verwaltetes Gerät, das die App selbst nicht ausgibt oder technisch schaltet. Auftritt: `features/e-key/spec.md`.
+
 **FBWS**
-Der Webservice des Fachbereichs Informatik unter `ws.inf.fh-dortmund.de/fbws`. Quelle für Studiengänge (INT-001) und Termine (INT-002). Auftritt: `platform/integrations.md`, `features/schedule/spec.md`, `features/room-finder/spec.md`.
+Der Webservice des Fachbereichs Informatik unter `ws.inf.fh-dortmund.de/timetable/` (Pfadkorrektur 2026-08-25, siehe INT-001 in `platform/integrations.md` — der zuvor dokumentierte Pfad `/fbws/` wird nicht weiterverwendet). Quelle für Studiengänge (INT-001) und Termine (INT-002). Auftritt: `platform/integrations.md`, `features/schedule/spec.md`, `features/room-finder/spec.md`.
 
 **FCM (Firebase Cloud Messaging)**
 Von Google betriebener Push-Benachrichtigungsdienst. Die Alt-App abonniert darüber das Thema `Aktuelles` für News-Benachrichtigungen. Seit `decisions/0008-vertrieb-ueber-drei-app-stores.md` nur noch für iOS vorgesehen (als Bridge zu Apples APNs); Android nutzt stattdessen UnifiedPush. Auftritt: `platform/integrations.md` (INT-005), `features/news/spec.md`, `features/settings/spec.md`.
@@ -60,6 +66,9 @@ Planungsstruktur für die Helfer-Anmeldung zu FSR-Events: Ein Event definiert ei
 **HISinOne**
 Das aktuelle Campus-Management-System der FH Dortmund, Nachfolger von ODS für die Notenübersicht. Zugangsweg ist offen, siehe INT-006 in `platform/integrations.md` und `decisions/0006-abloesung-ods-durch-hisinone.md`. Auftritt: `features/grades/spec.md`.
 
+**Laufwege**
+Vom FSR gepflegte Distanz-/Nachbarschaftsstruktur zwischen Räumen, Grundlage der Nächster-freier-Raum-Suche. Ein Eintrag verbindet zwei Raumkennungen mit einem Distanzmaß (Arbeitsziel: Fußweg-Minuten). Auftritt: `features/room-finder/spec.md`, `features/admin/spec.md`, `platform/backend-and-api.md`.
+
 **ODS**
 Das durch HISinOne abgelöste Notenportal der FH Dortmund. Die Alt-App griff darauf per HTML-Scraping einer formularbasierten Sitzung zu (Details: INT-006 in `platform/integrations.md`). Dient hier nur noch als Referenz für das abgelöste Verfahren.
 
@@ -77,6 +86,9 @@ Angabe im FBWS-Termindatensatz (INT-002), für welche Studierendengruppen ein Te
 
 **UnifiedPush**
 Offenes, dezentrales Push-Protokoll ohne zentralen Betreiber: Die App registriert sich bei einem auf dem Gerät installierten „Distributor" (z. B. ein FCM-basierter Distributor oder das quelloffene ntfy), der die Zustellung übernimmt. Ersetzt seit `decisions/0008-vertrieb-ueber-drei-app-stores.md` FCM als Zustellweg für Android, da F-Droid proprietäre Abhängigkeiten wie Firebase im Build ausschließt. Auftritt: `platform/integrations.md` (INT-005), `platform/non-functional.md`.
+
+**Wahlpflicht / Wahlpflichtmodul**
+Lehrveranstaltung, die eine Studentin aus mehreren zulässigen Optionen wählt, statt sie wie eine Pflichtveranstaltung fest im eigenen Fachsemester zugeordnet zu bekommen. Wahlpflichtmodule sind organisatorisch oft einem anderen Fachsemester zugeordnet als dem der wählenden Person, was den eigenen Planungsmodus des Stundenplans motiviert. Auftritt: `features/schedule/spec.md` (SCHED-F-270 ff.).
 
 **Vermittler-Infrastruktur**
 Die von der Alt-App genutzten Dienste unter `hemacode.de` (INT-003 News, INT-004 Mensa), die selbst keine Primärquelle sind, sondern Daten anderer Systeme (FSR-Redaktion bzw. OpenMensa) weiterreichen. Privat betrieben, ohne bekannten Vertrag oder zugesagte Verfügbarkeit — daher als Risiko in `platform/integrations.md` geführt und Gegenstand von `decisions/0007-datenquellen-mensa-und-news.md`.

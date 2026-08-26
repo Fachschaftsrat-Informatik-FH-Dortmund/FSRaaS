@@ -4,9 +4,9 @@ titel: App-Rahmen & Navigation
 praefix: SHELL
 status: accepted
 prioritaet: kern
-version: 0.3.0
+version: 0.5.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main_page.dart
@@ -17,6 +17,7 @@ related:
   - ../../platform/ux-and-theming.md
   - ../../platform/non-functional.md
   - ../../product/vision.md
+  - ../../decisions/0013-zustand-navigation-und-netzwerkschicht.md
 ---
 
 # App-Rahmen & Navigation
@@ -52,8 +53,14 @@ Bietet die übergeordnete Navigationsstruktur, über die alle Features erreichba
 | SHELL-F-020 | Das System muss jedes Kernfeature von der Startseite aus in höchstens zwei Interaktionsschritten erreichbar machen. | NEU |
 | SHELL-F-030 | Wenn die App zum ersten Mal gestartet wird, muss das System vor der Nutzung von Funktionen mit personenbezogenen Daten eine Zustimmung zur Datenschutzerklärung einholen. | Alt: bewusst verworfen |
 | SHELL-F-040 | Das System muss Betriebssystem-Schnellzugriffe auf mindestens die Ansichten Stundenplan und Semesterticket bereitstellen. | Alt: lib/utils/plugins/quick_actions_manager.dart |
+| SHELL-F-050 | Das System muss die Navigationsstruktur datei-basiert abbilden, wobei jede Routendatei auf eine Bildschirmkomponente des zugehörigen `areas/<bereich>`-Moduls verweist, statt Fachlogik in der Routendatei selbst zu implementieren. | NEU |
+| SHELL-F-060 | Das System muss die Tab-Leiste mit genau den Bereichen Stundenplan, Mensaplan, News und Raumsuche besetzen; alle übrigen Bereiche sind ausschließlich über „Mehr" erreichbar. | NEU |
 
 ### Erläuterungen
+
+**`SHELL-F-050`** — Löst die Werkzeugwahl für Navigation über `../../decisions/0013-zustand-navigation-und-netzwerkschicht.md` (Expo Router) auf. Ändert nichts am Navigationsmuster selbst (SHELL-F-010) oder an der Bereichs-Zuordnung (SHELL-F-060), nur an dessen technischer Umsetzung.
+
+**`SHELL-F-060`** — Entscheidung FSR FB4/technische Leitung, 2026-08-26: Die vier meistgenutzten Kernfunktionen der ersten Ausbaustufe besetzen die Tab-Leiste. Semesterticket, Einstellungen und Verwaltung liegen unter „Mehr", ebenso — sobald Ausbaustufe 2 beginnt — Events, Helfer-Anmeldung, Wiki, Notenübersicht und E-Key-Verwaltung. Löst die zuvor offene Frage in Abschnitt 13.
 
 **`SHELL-F-010`** — Entscheidung FSR FB4, 2026-08-25: Muster „Tab-Leiste + Mehr-Sammelpunkt" statt Drawer/Seitenmenü oder Hybrid — die FSR-Vorgabe war, keine 1:1-Kopie der alten fünf gleichrangigen Tabs, sondern eine UI-technisch sinnvolle Struktur zu wählen. Bei inzwischen vierzehn Feature-Specs ist eine flache Tab-Leiste nicht mehr tragfähig (siehe `platform/architecture.md` ARCH-N-010); „Tab-Leiste + Mehr" ist das etablierte Muster für genau diesen Fall, hält die täglich genutzten Bereiche (voraussichtlich Stundenplan, Mensaplan, News) einen Klick entfernt und erreicht seltener genutzte Bereiche über einen zusätzlichen Schritt — konform mit SHELL-F-020 (höchstens zwei Interaktionsschritte für Kernfeatures). Konkrete Zuordnung, welche Bereiche in die Tab-Leiste selbst kommen, ist Teil der Bildschirmgestaltung (siehe Abschnitt 13). Die Liste der sieben Kernfeatures übernimmt `platform/architecture.md` ARCH-F-090 unverändert. Zur bewussten Auslassung von Mensa-Bewertungen (RATE) als eigenem Navigationsziel siehe die Anmerkung dort.
 
@@ -101,4 +108,4 @@ Keine über die Fehlerzustände der einzelnen Features hinausgehenden Fälle.
 
 ## 13. Offene Fragen
 
-- Konkrete Zuordnung der Bereiche zur Tab-Leiste vs. zum „Mehr"-Sammelpunkt (Navigationsmuster selbst ist entschieden, siehe SHELL-F-010) — Klärung durch FSR FB4 und UX im Zuge der Bildschirmgestaltung.
+- ~~Konkrete Zuordnung der Bereiche zur Tab-Leiste vs. zum „Mehr"-Sammelpunkt~~ Entschieden 2026-08-26, siehe SHELL-F-060.

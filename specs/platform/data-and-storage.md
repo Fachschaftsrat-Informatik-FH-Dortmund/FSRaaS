@@ -3,9 +3,9 @@ id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
 status: accepted
-version: 0.2.0
+version: 0.2.2
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
@@ -51,14 +51,16 @@ Dieses Dokument legt fest, welche Datenklassen die App verarbeitet, wo sie liege
 
 ## 3. Verhalten der Alt-App
 
-Grundlage ist ausschließlich die Flutter/iOS-Alt-App; für die Android-Alt-App liegt kein Quellcode vor.
+Grundlage ist überwiegend die Flutter/iOS-Alt-App. **Ergänzung 2026-08-25/26:** Der Android-Quellcode liegt inzwischen ebenfalls vor (`alte apps/android-fb4/`, siehe `product/legacy-inventory.md` Abschnitt 4); die folgende Tabelle nennt dort, wo der Android-Befund die Bewertung bestätigt oder ergänzt.
 
 | Bereich | Quelle | Befund | Bewertung |
 |---|---|---|---|
 | Stundenplan | `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:93-152` | Lokale Datenbank über fünf Einträge, Schlüsselmuster `schedule-<Wochentag>`; je Wochentag eine Abbildung von Hashwert auf Termin (Zeile 105-121, 154-167) | Lokale Haltung übernehmenswert. Bei einer unerwarteten Eintragsanzahl (Zeile 136-147) wird der gesamte Bestand kommentarlos gelöscht und neu angelegt — Datenverlust ohne Rückfrage, nicht übernehmenswert |
 | Einstellungen | `alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart:19-35`, `.../lib/core/settings/settings_service.dart:7-42` | Einfache Schlüssel-Wert-Ablage über `SharedPreferences`, acht fachliche Schlüssel (siehe Tabelle unten) | Fachliche Bedeutung der Schlüssel übernehmenswert; konkretes Speicherformat ist Sache der Neuentwicklung |
 | Semesterticket | `alte apps/fb4_app-main/fb4_app-main/lib/areas/ticket/viewmodels/ticket_overview_viewmodel.dart:22-95` | Bilddatei `semester_ticket.dat` im Dokumentenverzeichnis der App, unverschlüsselt per `File.writeAsBytes` abgelegt | Lokale Bildhaltung übernehmenswert; unverschlüsselte Ablage eines Fahrausweises nicht übernehmenswert, siehe SEC |
+| Semesterticket (Android) | `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/util/TicketUtil.java`, dokumentiert als N-003 in `product/legacy-inventory.md` | Ticket-PDF liegt unverschlüsselt im **externen**, app-fremd zugreifbaren App-Verzeichnis — ein weitergehender Mangel als bei der Flutter-App | Bestätigt und verschärft den bereits über die Flutter-App begründeten Befund; ändert nichts an DATA-F-040, macht die Anforderung aber dringlicher |
 | Zugangsdaten Notenportal (ODS) | `alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/viewmodels/login_page_viewmodel.dart:34-39`, `.../lib/areas/ods/repositories/ods_repository.dart:14-19` | Zugangsdaten liegen im verschlüsselten Systemspeicher (`FlutterSecureStorage`), aber im Klartext und werden bei jedem Tokenablauf erneut an den Server gesendet | Für die Neuentwicklung ausgeschlossen — siehe `identity-and-moderation.md`, `security-and-privacy.md` |
+| Zugangsdaten Hochschulportal (Android) | `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/util/UserCredentialsHelper.java`, `util/Cryptography.java`, dokumentiert als INT-017 in `platform/integrations.md` | Analoges Muster für den (ausgeschlossenen) automatischen Ticket-Bezug: Android-Keystore-verschlüsselt, aber reversibel und bei jedem Sitzungsablauf erneut versandt | Bestätigt dasselbe Altmuster für einen zweiten Zweck (Ticket statt Noten); dieselbe Ausschlussentscheidung gilt, siehe `features/semester-ticket/spec.md` |
 
 Fachliche Bedeutung der acht Einstellungsschlüssel aus `app_constants.dart`, für `features/settings/spec.md` zu übernehmen:
 
@@ -90,7 +92,7 @@ Solange kein Netzzugriff besteht und der Zwischenspeicher einer Datenart abgelau
 
 ## 5. Offline-Warteschlange für Schreibvorgänge
 
-Betrifft Mensa-Bewertungen (RATE), Helfer-Anmeldungen (HELFER), Besetzt-Meldungen der Raumsuche (RAUM-F-070) und die E-Key-Schreibvorgänge Verknüpfen, Verloren-Melden und semesterweise Bestätigen (EKEY). Ausdrücklich **nicht** betroffen sind Verwaltungs- und Moderationshandlungen sowie die Kontolöschung — sie hängen von einem serverseitigen Zustand ab, der sich bis zur Übertragung ändern kann, und werden bei fehlender Verbindung abgelehnt statt eingereiht (`architecture.md` ARCH-F-125). Reihenfolge: Übertragung in Entstehungsreihenfolge (FIFO). Wiederholversuche: mit steigendem Abstand (Backoff), Obergrenze zu bestätigen im Zuge von `backend-and-api.md`. Verfallsfrist: ein Eintrag, der auch nach der maximalen Anzahl Versuche nicht übertragen werden konnte, verfällt nach 7 Tagen (vorgeschlagen, zu bestätigen) und wird der Nutzerin zur manuellen Entscheidung vorgelegt. Sichtbarkeit: die Warteschlange und ihr Status sind für die Nutzerin einsehbar, nicht nur im Hintergrund. Wiederholungen dürfen keine doppelten Wirkungen erzeugen — die Idempotenz von Schreibvorgängen ist Anforderung von `backend-and-api.md` (API), nicht dieses Dokuments.
+Betrifft Mensa-Bewertungen (RATE), Helfer-Anmeldungen (HELFER), Besetzt-Meldungen der Raumsuche (RAUM-F-070) und die E-Key-Schreibvorgänge Verloren-Melden und semesterweise Bestätigen (EKEY). Ausdrücklich **nicht** betroffen sind Verwaltungs- und Moderationshandlungen, die Kontolöschung sowie die E-Key-Verknüpfung (EKEY-F-030 — kann zwischenzeitlich bereits mit einem anderen Konto verknüpft worden sein, siehe `architecture.md` Erläuterung zu ARCH-F-125) — sie hängen von einem serverseitigen Zustand ab, der sich bis zur Übertragung ändern kann, und werden bei fehlender Verbindung abgelehnt statt eingereiht (`architecture.md` ARCH-F-125). Reihenfolge: Übertragung in Entstehungsreihenfolge (FIFO). Wiederholversuche: mit steigendem Abstand (Backoff), Obergrenze zu bestätigen im Zuge von `backend-and-api.md`. Verfallsfrist: ein Eintrag, der auch nach der maximalen Anzahl Versuche nicht übertragen werden konnte, verfällt nach 7 Tagen (vorgeschlagen, zu bestätigen) und wird der Nutzerin zur manuellen Entscheidung vorgelegt. Sichtbarkeit: die Warteschlange und ihr Status sind für die Nutzerin einsehbar, nicht nur im Hintergrund. Wiederholungen dürfen keine doppelten Wirkungen erzeugen — die Idempotenz von Schreibvorgängen ist Anforderung von `backend-and-api.md` (API), nicht dieses Dokuments.
 
 ## 6. Migration
 
@@ -121,6 +123,8 @@ Es gibt keine Datenübernahme aus den Alt-Apps. Gründe: andere Plattform (Flutt
 | DATA-N-150 | Der Gesamtspeicherverbrauch aller Zwischenspeicher sollte eine Obergrenze von 50 MB nicht überschreiten. | NEU |
 | DATA-F-160 | Das System muss eine Nutzeraktion „Alle lokalen Daten löschen" bereitstellen, die alle in Abschnitt 2 gelisteten Datenklassen vom Gerät entfernt. | NEU |
 | DATA-F-170 | Das System muss alle in Abschnitt 2 gelisteten lokalen Daten ausschließlich im App-eigenen Speicherbereich ablegen, sodass eine Deinstallation sie vollständig entfernt. | NEU |
+
+Zu DATA-F-130: Ergänzt um die serverseitige Sitzungsinvalidierung beim Abmelden, siehe `identity-and-moderation.md` IDENT-F-140 — das lokale Entfernen allein reicht nicht aus, da ein entwendetes Token sonst serverseitig weiter gültig bliebe.
 
 ## 9. Offene Fragen
 

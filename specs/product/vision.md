@@ -1,8 +1,8 @@
 ---
 status: accepted
-version: 0.2.0
+version: 0.2.1
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 ---
 
 # Produktvision
@@ -25,7 +25,7 @@ Der Neuaufbau als einzelne React-Native-App (`decisions/0001-react-native-als-pl
 |---|---|
 | Eine App statt zwei | Ablösung von Flutter/iOS- und Android-Alt-App durch eine einzige, plattformübergreifende App |
 | Vom Lese-Client zur Plattform | Ergänzung um Community-Funktionen (Mensa-Bewertungen, Helfer-Anmeldung) und FSR-Redaktion (News, Events), die die Alt-Apps nicht boten |
-| Bestehende Kernnutzung erhalten | Stundenplan, Mensaplan, News, Semesterticket, Notenübersicht bleiben zentrale, mindestens gleichwertige Funktionen (siehe `product/legacy-inventory.md` für den Umfang je Alt-App) |
+| Bestehende Kernnutzung erhalten | Stundenplan, Mensaplan, News, Semesterticket, Notenübersicht bleiben zentrale, mindestens gleichwertige Funktionen (siehe `product/legacy-inventory.md` für den Umfang je Alt-App). Einschränkung: Die Notenübersicht hängt vollständig an einem noch ungeklärten Zugang zu HISinOne und ist als einzige der fünf Funktionen nicht durch einen bereits bekannten technischen Weg gedeckt — siehe `features/grades/spec.md`, INT-006 |
 | Fremdabhängigkeiten abbauen | Ablösung risikobehafteter privater Infrastruktur (`hemacode.de`, siehe INT-003/INT-004) und unsicherer Verfahren (ODS-Passwort-Replay, siehe INT-006, SEC) |
 | Wissen dauerhaft sichern | Spec-anchored Arbeitsweise, damit fachliches und technisches Wissen nicht an einzelne, wechselnde FSR-Mitglieder gebunden bleibt |
 

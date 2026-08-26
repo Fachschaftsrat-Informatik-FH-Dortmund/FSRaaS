@@ -1,8 +1,8 @@
 ---
 status: draft
-version: 0.5.0
+version: 0.5.1
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 ---
 
 # Projektweite offene Fragen
@@ -15,6 +15,8 @@ Fragen ohne festen Platz in einer Einzel-Spec, weil sie mehrere Specs gleichzeit
 | Zeitpunkt der ersten Auslieferung, insbesondere die Kopplung an einen Semesterbeginn | Bestimmt, wann die Google-Play-Testauflage (NFR-N-200, zwei Wochen Vorlauf) angestoßen werden muss | FSR FB4 |
 | Wer nimmt externe Beiträge am MIT-lizenzierten öffentlichen Repository an, und wie wird Missbrauch von Pull Requests gehandhabt? | Organisatorische Folge aus ADR 0008, betrifft keine einzelne Spec | FSR FB4 |
 | Werden die versions- und sprachabhängigen Hinweise des Altbackends (`/messages`) fachlich übernommen oder gehen sie in NEWS auf? | Berührt NEWS, SHELL und `platform/backend-and-api.md` gleichermaßen; bislang gibt es dazu keine Anforderung | FSR FB4, technische Leitung |
+
+**Technischer Befund zu `/messages` (2026-08-26, aus dem Quellcode `alte apps/app.fsrfb4.de/messages/messages.php`, siehe auch `platform/integrations.md` INT-008).** Die Struktur ist reichhaltiger als ein einzelner News-Eintrag: Jeder Hinweis trägt zweisprachigen Titel und Text, bis zu zwei Buttons mit je eigenem Text und einer serverseitig hinterlegten Aktion, eine „Dauerhaft"-Kennzeichnung sowie Gültigkeit über Bereiche von Android-API-Level und `VersionCode` — eine gezielte, ggf. auf bestimmte Versionen begrenzte Handlungsaufforderung (z. B. „bitte aktualisieren"), kein Nachrichtentext. Das spricht eher für eine eigenständige Fortführung als für ein Aufgehen in NEWS, wo eine Meldung keine Buttons oder Versionsbindung kennt. Die Entscheidung selbst bleibt offen und liegt weiterhin bei FSR FB4/technischer Leitung; dieser Befund liefert nur die technischen Fakten dafür.
 
 ## Beantwortete Fragen (Archiv)
 
