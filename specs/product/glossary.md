@@ -1,6 +1,6 @@
 ---
 status: accepted
-version: 0.4.0
+version: 0.4.1
 owner: FSR FB4
 last_reviewed: 2026-08-26
 ---
@@ -88,7 +88,7 @@ Angabe im FBWS-Termindatensatz (INT-002), für welche Studierendengruppen ein Te
 Offenes, dezentrales Push-Protokoll ohne zentralen Betreiber: Die App registriert sich bei einem auf dem Gerät installierten „Distributor" (z. B. ein FCM-basierter Distributor oder das quelloffene ntfy), der die Zustellung übernimmt. Ersetzt seit `decisions/0008-vertrieb-ueber-drei-app-stores.md` FCM als Zustellweg für Android, da F-Droid proprietäre Abhängigkeiten wie Firebase im Build ausschließt. Auftritt: `platform/integrations.md` (INT-005), `platform/non-functional.md`.
 
 **Wahlpflicht / Wahlpflichtmodul**
-Lehrveranstaltung, die eine Studentin aus mehreren zulässigen Optionen wählt, statt sie wie eine Pflichtveranstaltung fest im eigenen Fachsemester zugeordnet zu bekommen. Wahlpflichtmodule sind organisatorisch oft einem anderen Fachsemester zugeordnet als dem der wählenden Person, was den eigenen Planungsmodus des Stundenplans motiviert. Auftritt: `features/schedule/spec.md` (SCHED-F-270 ff.).
+Lehrveranstaltung, die eine Studentin aus mehreren zulässigen Optionen wählt, statt sie wie eine Pflichtveranstaltung fest im eigenen Fachsemester zugeordnet zu bekommen. Der eigene Planungsmodus des Stundenplans bezieht die Liste automatisch aus der FBWS-Sammelkategorie `WFPB` (siehe `platform/integrations.md` INT-002). Auftritt: `features/schedule/spec.md` (SCHED-F-400 ff.).
 
 **Vermittler-Infrastruktur**
 Die von der Alt-App genutzten Dienste unter `hemacode.de` (INT-003 News, INT-004 Mensa), die selbst keine Primärquelle sind, sondern Daten anderer Systeme (FSR-Redaktion bzw. OpenMensa) weiterreichen. Privat betrieben, ohne bekannten Vertrag oder zugesagte Verfügbarkeit — daher als Risiko in `platform/integrations.md` geführt und Gegenstand von `decisions/0007-datenquellen-mensa-und-news.md`.
