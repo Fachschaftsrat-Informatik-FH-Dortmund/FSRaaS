@@ -3,7 +3,7 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.1.0
+version: 1.1.1
 owner: FSR FB4
 last_reviewed: 2026-08-26
 derived_from:
@@ -150,8 +150,13 @@ Ursprünglich angenommen: Der FBWS biete keinen eigenen Endpunkt für Raumbelegu
 
 Für die Raumsuche wird dieser Endpunkt **nicht** mehr verwendet. Maßgeblich ist INT-009; siehe dort und `features/room-finder/spec.md`.
 
-**Nutzungshinweis für den Wahlpflicht-Planungsmodus (SCHED)**
-Für SCHED-F-270 ruft die App diesen Endpunkt zusätzlich mit einem von der Nutzerin gewählten, vom eigenen abweichenden `{grade}` ab, um Wahlpflicht-Termine zu finden, die organisatorisch einem anderen Fachsemester zugeordnet sind als dem eigenen — derselbe Endpunkt, keine neue Integration. Offen (siehe `features/schedule/spec.md` Abschnitt 13): ob ein so abgerufenes `{grade}` tatsächlich die gesuchten Wahlpflicht-Termine liefert oder nur die dort regulär vorgesehenen Pflichtveranstaltungen — vor Umsetzung mit echten Beispieldaten zu verifizieren.
+**Live-Verifikation 2026-08-26 (Rhythmus-Feld `interval`).** Abfrage aller aktuell angebotenen Studiengang/Fachsemester-Kombinationen (35 Paare, gesamter aktueller Bestand) zeigt `interval` ausnahmslos als `"weekly"` — kein einziges Vorkommen eines anderen Werts. Ob das Feld überhaupt einen anderen Wert kennt (z. B. für zweiwöchentliche Veranstaltungen) oder im aktuellen Semester schlicht keine solche Veranstaltung angeboten wird, bleibt offen. Die als Beispiel genannte Veranstaltung „Lern- und Arbeitstechniken" (`INPBPI`/`INPBTI`/`INPBDS`, Fachsemester 2, `courseId` `411031`) erwies sich als **wöchentlich**, kein Beleg für den Zweiwochen-Fall: ein rund dreieinviertelstündiger Block (16:00–19:20 Uhr, vier Viertelstunden-Zeitfenster), parallel in zwei Räumen (`A.2.03`, `lecturerId LUA` und `A.3.03`, `lecturerId LUA2`) angeboten, beide mit identischem `studentSet` (`A-P`).
+
+**Neuer Befund: Parallelangebote ohne Gruppenunterscheidung im `studentSet`.** Die beiden Raum-Varianten derselben Veranstaltung tragen identische Zeit- und `studentSet`-Werte; aus den Rohdaten allein ist nicht erkennbar, welcher der beiden Räume für eine einzelne Studierende vorgesehen ist. Relevant für `features/schedule/spec.md`, dort als offene Frage aufgenommen.
+
+**Nutzungshinweis für den Wahlpflicht-Planungsmodus (SCHED) — Live-Verifikation 2026-08-26.** Für SCHED-F-400 ruft die App diesen Endpunkt mit `{sname}=WFPB`, `{grade}=*` ab. `WFPB` ist eine eigene, in `CourseOfStudy` geführte Pseudo-Studiengangskennung („Bachelor Wahlpflichtfächer WPF") — kein regulärer Studiengang, sondern eine vom Fachbereich gepflegte Sammelkategorie, die alle aktuell angebotenen Wahlpflichtmodule direkt bündelt (Live-Abfrage: 27 distinkte Module, Beispiele: „Data Mining in Industrie und Wirtschaft", „Moderne Datenbanken", „Künstliche Intelligenz"). Jeder Eintrag trägt im Feld `name` die zulässigen Studiengänge/Vertiefungsrichtungen als `[StgPO: ...]`-Angabe (z. B. `PI/TI/DS-19, MI/MID-19/21, WI-18, INF-ST/NSD/DM-22`), unstrukturiert im Text, nicht als eigenes Feld. Die meisten, aber nicht alle Einträge tragen zusätzlich `examinationReg` mit dem Suffix ` WP`; das Muster ist uneinheitlich genug (bei regulären Pflichtveranstaltungen z. B. `2019 84 079 PR`, bei einem Master-Beispiel ganz ohne Suffix beobachtet), um nicht als alleiniges Erkennungsmerkmal zu dienen — maßgeblich ist die Zugehörigkeit zu `WFPB`, nicht der Inhalt von `examinationReg`.
+
+Löst die zuvor offene Frage aus `features/schedule/spec.md` Abschnitt 13 auf, ersetzt aber auch die bisherige Annahme dort (manuelle Fachsemester-Auswahl, vormals SCHED-F-270): Ein Abruf über ein abweichendes `{grade}` des eigenen Studiengangs ist nicht mehr nötig, da `WFPB` bereits die vollständige, aktuelle Liste liefert. **Unverifiziert bleibt, ob `WFPB` auch Master-Wahlpflichtfächer abdeckt** — laut Namensgebung ausdrücklich nur Bachelor; keine äquivalente Kategorie für `INPM`/`MIPM`/`WIPM` in der Studiengangsliste gefunden.
 
 Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/repositories/schedule_repository.dart`, Modell `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/schedule_item.dart`
 
