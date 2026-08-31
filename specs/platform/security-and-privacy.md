@@ -3,9 +3,9 @@ id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
 status: accepted
-version: 1.1.1
+version: 1.1.2
 owner: FSR FB4
-last_reviewed: 2026-08-28
+last_reviewed: 2026-08-31
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main_view_model.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
@@ -15,6 +15,7 @@ derived_from:
 implemented_in:
   - app/src/consent         # SEC-F-010, SEC-F-020
   - app/src/errors          # SEC-F-060 (Fehler nie stillschweigend verschluckt)
+  - app/eslint.config.js    # SEC-F-060 (no-console-Regel: console nur in der Fehlerschicht)
   - app/src/config          # SEC-F-050, SEC-N-030 (Zielsysteme nur über Konfiguration, nur TLS)
 related:
   - data-and-storage.md
@@ -118,7 +119,7 @@ Die Erklärung der Alt-App liegt unter `alte apps/fb4_app-main/fb4_app-main/asse
 
 ## 6. Transportsicherheit, Geheimnisse, Protokollierung
 
-Alle Netzaufrufe laufen über TLS mit ungeprüfter Zertifikatsvalidierung im Produktivbuild; eine Deaktivierung der Prüfung ist ausgeschlossen. Hinweis zur Prüfung: `alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart:7` enthält einen Codekommentar, der eine Ignorierung von Zertifikatsvertrauen nahelegt; im Code selbst wurde keine tatsächliche Zertifikatsumgehung gefunden (kein `badCertificateCallback`, kein `HttpOverrides` im gesamten `lib`-Verzeichnis). Der Kommentar ist damit kein bestätigter Befund, aber ein Hinweis, die Zertifikatsprüfung in der Neuentwicklung ausdrücklich zu testen. Geheimnisse (API-Token, Schlüssel) dürfen nicht im Klartext im Quellcode oder Repository liegen, sondern werden über einen gesicherten Build- oder Laufzeitmechanismus bereitgestellt. Protokolle enthalten keine personenbezogenen Inhalte wie Klartext-Zugangsdaten oder vollständige Nutzerbeiträge.
+Alle Netzaufrufe laufen über TLS mit ungeprüfter Zertifikatsvalidierung im Produktivbuild; eine Deaktivierung der Prüfung ist ausgeschlossen. Hinweis zur Prüfung: `alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart:7` enthält einen Codekommentar, der eine Ignorierung von Zertifikatsvertrauen nahelegt; im Code selbst wurde keine tatsächliche Zertifikatsumgehung gefunden (kein `badCertificateCallback`, kein `HttpOverrides` im gesamten `lib`-Verzeichnis). Der Kommentar ist damit kein bestätigter Befund, aber ein Hinweis, die Zertifikatsprüfung in der Neuentwicklung ausdrücklich zu testen. Geheimnisse (API-Token, Schlüssel) dürfen nicht im Klartext im Quellcode oder Repository liegen, sondern werden über einen gesicherten Build- oder Laufzeitmechanismus bereitgestellt. Protokolle enthalten keine personenbezogenen Inhalte wie Klartext-Zugangsdaten oder vollständige Nutzerbeiträge. Zur Durchsetzung von SEC-F-060 verbietet die Lint-Konfiguration (`app/eslint.config.js`) `console`-Aufrufe außerhalb der Fehlerschicht (`no-console`, Ausnahme nur für `console.error`/`console.warn`); ein still verschluckter Fehler ohne Protokollierung fällt damit bereits im CI-Job `app` auf.
 
 ## 7. Anforderungen
 

@@ -3,9 +3,9 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.1.1
+version: 3.1.2
 owner: FSR FB4
-last_reviewed: 2026-08-28
+last_reviewed: 2026-08-31
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
@@ -131,6 +131,8 @@ Der vollständige Vertrag steht als versionierte OpenAPI-Beschreibung in `api-co
 Zu API-N-130 bis API-N-150: Konkretisieren API-N-030, siehe `../decisions/0016-api-versionierung-und-deprecation.md`.
 
 Zu API-F-140: Diese Anforderung sichert die Offline-Warteschlange aus `architecture.md` (ARCH-F-120) ab — eine wegen unterbrochener Verbindung erneut gesendete Bewertung darf nicht als zweite Bewertung gezählt werden. Ausgestaltung der Idempotenz-Kennung (z. B. clientseitig erzeugte UUID je Vorgang) ist Sache der Umsetzung, nicht dieser Spec.
+
+Zu API-N-040: Das Backend liefert Fehlerantworten als RFC 9457 „Problem Details" (`application/problem+json`) mit maschinenlesbarem `code` und für Menschen lesbarem `title`. Die App-seitige Auswertung (`app/src/net`) unterscheidet drei Fälle: (a) formatkonformer Rumpf → `code` und Meldung daraus; (b) leerer oder fehlender Rumpf (etwa bei einem `401` vom vorgelagerten Reverse Proxy) → Einordnung allein über den HTTP-Status; (c) vorhandener, aber nicht formatkonformer Rumpf (HTML-Fehlerseite, abgeschnittenes JSON) → als `parse`-Fehler sichtbar gemacht, nie still weiterverarbeitet (SEC-F-060, QA-N-070).
 
 ## 5. Fachliche Ressourcen im Überblick
 

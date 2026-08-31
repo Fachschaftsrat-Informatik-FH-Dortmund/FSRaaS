@@ -66,7 +66,7 @@ export class AppError extends Error {
  */
 export function logError(context: string, error: unknown): AppError {
   const appError = AppError.from(error);
-  // eslint-disable-next-line no-console -- bewusst: Fehler sichtbar machen, nicht verschlucken (SEC-F-060)
+  // console.error ist hier bewusst gewollt (SEC-F-060) und in eslint.config.js erlaubt.
   console.error(`[${context}] ${appError.kind}${appError.code ? ` (${appError.code})` : ''}`);
   return appError;
 }

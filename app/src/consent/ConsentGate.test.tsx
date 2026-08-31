@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { clearAll } from '@/storage/kv';
+import { clearAll, writeJson } from '@/storage/kv';
 import { ConsentProvider } from './ConsentProvider';
 import { ConsentGate } from './ConsentGate';
 import { RequiresConsent } from './RequiresConsent';
@@ -46,6 +46,29 @@ describe('SEC-F-010 Personenbezogene Funktionen erst nach wirksamer Einwilligung
       </ConsentProvider>,
     );
     expect(await screen.findByText('Zustimmung erforderlich')).toBeTruthy();
+    expect(screen.queryByText('Bewertung abgeben')).toBeNull();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Jetzt zustimmen' }));
+    await waitFor(() => expect(screen.getByText('Bewertung abgeben')).toBeTruthy());
+  });
+});
+
+describe('SEC-F-020 Erneute Einwilligung nach Änderung der Datenschutzerklärung', () => {
+  it('sperrt personenbezogene Funktionen wieder und weist auf die Änderung hin', async () => {
+    // Zustimmung zu einer älteren Fassung vortäuschen.
+    await writeJson('privacyPolicyConsent', {
+      decision: 'accepted',
+      version: '2000-01-01',
+      decidedAt: new Date().toISOString(),
+    });
+
+    render(
+      <ConsentProvider>
+        <RequiresConsent><Text>Bewertung abgeben</Text></RequiresConsent>
+      </ConsentProvider>,
+    );
+
+    expect(await screen.findByText('Die Datenschutzerklärung hat sich geändert. Bitte stimme der aktualisierten Fassung zu.')).toBeTruthy();
     expect(screen.queryByText('Bewertung abgeben')).toBeNull();
 
     fireEvent.press(screen.getByRole('button', { name: 'Jetzt zustimmen' }));

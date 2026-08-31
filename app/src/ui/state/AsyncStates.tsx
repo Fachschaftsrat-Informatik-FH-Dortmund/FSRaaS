@@ -12,7 +12,7 @@ import { describeAge, shouldShowAge } from './dataAge';
 // Inhalte durch diese Komponente, statt eigene Zustandsansichten zu bauen.
 //
 //   <AsyncStates query={q} isEmpty={(d) => d.items.length === 0}
-//                emptyNextStep={t('mensa.leerHinweis')} resource="speiseplan">
+//                emptyNextStep={t('mensa.leerHinweis')}>
 //     {(data) => <Liste data={data} />}
 //   </AsyncStates>
 
@@ -39,8 +39,6 @@ export interface AsyncStatesProps<T> {
    */
   emptyNextStep: string;
   emptyTitle?: string;
-  /** Datenart für den Altershinweis bei veralteten Offline-Daten (DATA-F-090). */
-  resource?: string;
 }
 
 export function AsyncStates<T>({
@@ -75,6 +73,12 @@ export function AsyncStates<T>({
         }
       />
     );
+  }
+
+  // Übergangszustand: weder Fehler noch als „lädt" markiert, aber noch keine
+  // Daten — als Ladezustand behandeln, statt isEmpty auf undefined aufzurufen.
+  if (!hasData) {
+    return <MessageView busy title={t('states.loading')} />;
   }
 
   const data = query.data as T;

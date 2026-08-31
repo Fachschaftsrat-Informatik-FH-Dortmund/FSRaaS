@@ -27,4 +27,5 @@ i18n.use(initReactI18next).init({
     en: { translation: require('./src/i18n/en.json') },
   },
   interpolation: { escapeValue: false },
+  compatibilityJSON: 'v3',
 });
