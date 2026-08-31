@@ -5,3 +5,28 @@
 # Python
 __pycache__/
 *.pyc
+
+# Node / JavaScript
+node_modules/
+*.tsbuildinfo
+npm-debug.log*
+
+# Expo (app/)
+app/.expo/
+app/dist/
+app/web-build/
+app/expo-env.d.ts
+
+# .NET (backend/)
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Erzeugter Code aus dem Vertrag (tools/contract-codegen)
+app/src/api/generated/
+backend/src/Fb4.Backend/Contract/Generated/
+
+# Editoren / OS
+.DS_Store
+.idea/
+.vs/

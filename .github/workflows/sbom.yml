@@ -1,0 +1,33 @@
+name: SBOM
+
+# Softwarestückliste (SBOM) je veröffentlichtem Stand als Release-Artefakt
+# (QA-N-150). Nutzt den GitHub Dependency Graph (SPDX-Export).
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: SPDX-SBOM aus dem Dependency Graph erzeugen
+        run: |
+          curl -sSL \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/dependency-graph/sbom" \
+            -o sbom.spdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+      - if: github.event_name == 'release'
+        run: gh release upload "${{ github.event.release.tag_name }}" sbom.spdx.json
+        env:
+          GH_TOKEN: ${{ github.token }}

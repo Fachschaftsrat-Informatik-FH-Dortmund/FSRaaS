@@ -3,9 +3,9 @@ id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
 status: accepted
-version: 0.2.2
+version: 0.2.3
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
@@ -14,7 +14,10 @@ derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/viewmodels/login_page_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
-implemented_in: []
+implemented_in:
+  - app/src/cache           # DATA-F-080, DATA-N-150
+  - app/src/ui/state        # DATA-F-090 (Altershinweis)
+  - app/src/state           # Zwischenspeicher-Persistenz (ADR 0013)
 related:
   - backend-and-api.md
   - security-and-privacy.md

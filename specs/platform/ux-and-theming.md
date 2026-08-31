@@ -3,9 +3,9 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: accepted
-version: 0.4.0
+version: 0.4.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/config/themes/color_consts.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
@@ -16,7 +16,8 @@ derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/screens/news_overview_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/settings_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/utils/ui/icons/fb4app_icons.dart
-implemented_in: []
+implemented_in:
+  - app/src/ui             # UX-F-100, UX-F-110, UX-F-130, UX-F-140 (Grundstruktur); UX-F-070, UX-N-020 (Bedienelemente)
 related:
   - ../features/schedule/spec.md
   - ../features/canteen/spec.md

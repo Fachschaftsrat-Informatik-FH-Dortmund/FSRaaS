@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "FB4"
+  },
+  "common": {
+    "retry": "Erneut versuchen",
+    "loading": "Wird geladen …",
+    "cancel": "Abbrechen",
+    "refresh": "Aktualisieren"
+  },
+  "states": {
+    "loading": "Wird geladen …",
+    "emptyTitle": "Nichts vorhanden",
+    "errorTitle": "Etwas ist schiefgelaufen",
+    "offlineTitle": "Keine Verbindung",
+    "offlineBody": "Prüfe deine Internetverbindung und versuche es erneut."
+  },
+  "error": {
+    "offline": "Keine Internetverbindung.",
+    "timeout": "Die Anfrage hat zu lange gedauert.",
+    "server": "Der Dienst ist gerade nicht erreichbar.",
+    "notFound": "Nicht gefunden.",
+    "unauthorized": "Dazu fehlt die Berechtigung.",
+    "unexpectedResponse": "Unerwartete Antwort vom Dienst.",
+    "unknown": "Unbekannter Fehler."
+  },
+  "dataAge": {
+    "prefix": "Stand",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {{count}} Min.",
+    "hoursAgo": "vor {{count}} Std.",
+    "daysAgo": "vor {{count}} Tg.",
+    "offlineHint": "Offline – zuletzt geladener Stand"
+  },
+  "consent": {
+    "title": "Datenschutz",
+    "intro": "Bevor du Funktionen mit personenbezogenen Daten nutzt, brauchen wir deine Zustimmung zur Datenschutzerklärung.",
+    "changedIntro": "Die Datenschutzerklärung hat sich geändert. Bitte stimme der aktualisierten Fassung zu.",
+    "openPolicy": "Datenschutzerklärung öffnen",
+    "accept": "Zustimmen",
+    "defer": "Später – nur Basisfunktionen",
+    "requiredTitle": "Zustimmung erforderlich",
+    "requiredBody": "Diese Funktion verarbeitet personenbezogene Daten. Stimme der Datenschutzerklärung zu, um sie zu nutzen.",
+    "reviewNow": "Jetzt zustimmen"
+  },
+  "language": {
+    "system": "Systemsprache",
+    "de": "Deutsch",
+    "en": "Englisch"
+  }
+}

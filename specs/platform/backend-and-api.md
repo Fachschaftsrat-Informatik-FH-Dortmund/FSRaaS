@@ -3,13 +3,15 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.1.0
+version: 3.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
-implemented_in: []
+implemented_in:
+  - backend/src/Fb4.Backend        # API-N-040 (einheitliches Fehlerformat, Backend-Seite)
+  - app/src/net                    # API-N-040 (App-seitige Auswertung)
 related:
   - architecture.md
   - integrations.md

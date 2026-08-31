@@ -1,0 +1,49 @@
+// npm-Audit-Gate der CI (QA-F-130, quality-and-testing.md Abschnitt 10).
+// `npx audit-ci --config audit-ci.jsonc` bricht bei jeder Schwachstelle ab
+// Schweregrad hoch ab, die NICHT in der Allowlist steht.
+//
+// Die Allowlist enthält ausschließlich Advisories der Expo-/React-Native-
+// BUILD-Werkzeugkette (metro, @expo/cli, tar, postcss, image-size, xmldom …).
+// Diese Pakete laufen nur beim Bauen/Prebuild, gelangen nicht ins App-Paket,
+// und ihre Behebung erzwingt jeweils einen Expo-SDK-Wechsel.
+//
+// Aufgenommen: 2026-08-28, Expo SDK 52. Bei jedem SDK-Wechsel durchsehen und
+// einkürzen. Neue, hier nicht gelistete Advisories ab hoch brechen die CI.
+{
+  "high": true,
+  "critical": true,
+  "report-type": "important",
+  "allowlist": [
+    // tar <=7.5.20 (kritisch + hoch) — @expo/cli > cacache > tar
+    "GHSA-34x7-hfp2-rc4v",
+    "GHSA-8qq5-rm4j-mr97",
+    "GHSA-83g3-92jg-28cx",
+    "GHSA-qffp-2rhf-9h96",
+    "GHSA-9ppj-qmqm-q256",
+    "GHSA-r6q2-hw4h-h46w",
+    "GHSA-vmf3-w455-68vh",
+    "GHSA-w8wr-v893-vjvp",
+    "GHSA-23hp-3jrh-7fpw",
+    "GHSA-8x88-c5mf-7j5w",
+    "GHSA-gvwx-54wh-qm9j",
+    "GHSA-r292-9mhp-454m",
+    // @xmldom/xmldom <=0.8.12 — @expo/plist (iOS-Prebuild)
+    "GHSA-wh4c-j3r5-mjhp",
+    "GHSA-2v35-w6hq-6mfw",
+    "GHSA-f6ww-3ggp-fr8h",
+    "GHSA-x6wf-f3px-wcqx",
+    "GHSA-j759-j44w-7fr8",
+    // postcss <=8.5.22 — @expo/metro-config
+    "GHSA-qx2v-qp2m-jg93",
+    "GHSA-6g55-p6wh-862q",
+    "GHSA-fxqj-rqcc-2cmp",
+    "GHSA-r28c-9q8g-f849",
+    // image-size — metro > image-size
+    "GHSA-w3rx-r6r6-pgpr",
+    "GHSA-5p2g-fcmc-qvqq",
+    // ajv (moderat) — expo-dev-launcher
+    "GHSA-2g4f-4pwh-qvx6",
+    // uuid <11.1.1 (moderat) — xcode / @expo/bunyan
+    "GHSA-w5hq-g745-h8pq"
+  ]
+}

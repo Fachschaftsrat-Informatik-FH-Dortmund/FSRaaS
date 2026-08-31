@@ -3,15 +3,17 @@ id: architecture
 titel: Architektur
 praefix: ARCH
 status: accepted
-version: 1.1.0
+version: 1.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/core/views/base_view.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
-implemented_in: []
+implemented_in:
+  - app/src/ui/state        # ARCH-F-130, ARCH-N-020
+  - app/src/state           # ARCH-F-150, ARCH-N-030 (Server-Zustandsschicht, ADR 0013)
 related:
   - backend-and-api.md
   - integrations.md

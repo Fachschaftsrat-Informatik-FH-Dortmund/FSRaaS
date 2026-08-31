@@ -3,14 +3,15 @@ id: quality-and-testing
 titel: Qualität und Test
 praefix: QA
 status: accepted
-version: 0.4.0
+version: 0.4.2
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/selected_course_info.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/models/news_item.dart
-implemented_in: []
+implemented_in:
+  - tools/spec-check          # QA-N-080, QA-N-090, QA-N-100, QA-N-110
 related:
   - integrations.md
   - non-functional.md
@@ -118,12 +119,15 @@ Zu QA-F-015: Schließt die Lücke, dass QA-F-010 den automatisierten Testzwang w
 
 ## 10. Dependency- und Security-Scanning
 
-Ergänzt die CI-Durchsetzung aus Abschnitt 8 um automatisiertes Scannen von Abhängigkeiten und Quellcode — reines Ausführungsdetail der dort bereits beschlossenen Philosophie, keine neue Architekturentscheidung mit echten Grundsatzalternativen. Ausschließlich kostenlose, GitHub-native Bausteine, da das Repository ohnehin öffentlich und MIT-lizenziert ist (kein zusätzliches Konto/Token für ein wechselndes Ehrenamtsteam).
+Ergänzt die CI-Durchsetzung aus Abschnitt 8 um automatisiertes Scannen von Abhängigkeiten und Quellcode — reines Ausführungsdetail der dort bereits beschlossenen Philosophie, keine neue Architekturentscheidung mit echten Grundsatzalternativen. Ausschließlich kostenlose, GitHub-native Bausteine, da das Repository ohnehin öffentlich und MIT-lizenziert ist (kein zusätzliches Konto/Token für ein wechselndes Ehrenamtsteam). `audit-ci` ist eine freie npm-Bibliothek und keine Ausnahme davon.
+
+Zur Allowlist des npm-Audit-Gates: Eine frische Expo-Installation (ADR 0009) bringt rund ein Dutzend Advisories ab Schweregrad hoch in reiner Build-Werkzeugkette mit (`metro`, `@expo/cli`, `tar`, `postcss`, `image-size`, `@xmldom/xmldom`), die nicht ins App-Paket gelangen und deren Behebung jeweils einen Expo-SDK-Wechsel erzwingt. QA-F-130 zielt ausweislich seines Wortlauts auf *neu eingeführte* Schwachstellen. Der Bestand dieser bekannten, triagierten Advisories steht deshalb — je Eintrag mit GHSA-Kennung, Begründung und Datum — in `app/audit-ci.jsonc`; jede darüber hinausgehende Schwachstelle ab hoch bricht die CI. Die Liste wird bei jedem Expo-SDK-Wechsel durchgesehen und eingekürzt.
 
 | Werkzeug | Zweck | Wirkung bei Verstoß |
 |---|---|---|
 | Dependabot (`.github/dependabot.yml`, npm + NuGet) | Alerts und automatische Update-Pull-Requests für bekannte Schwachstellen (QA-N-120) | Hintergrundmechanismus, blockiert nichts direkt |
-| CI-Audit-Gate (`npm audit --audit-level=high`, `dotnet list package --vulnerable --include-transitive`) | Verhindert, dass eine PR eine neu bekannte Schwachstelle einführt | blockiert den Merge (QA-F-130) |
+| CI-Audit-Gate npm (`audit-ci --high` mit datierter Allowlist, `app/audit-ci.jsonc`) | Verhindert, dass eine PR eine neu bekannte Schwachstelle einführt; der triagierte Bestand an Build-Tooling-Advisories der Expo-Werkzeugkette steht mit Begründung und Datum in der Allowlist | blockiert den Merge (QA-F-130) |
+| CI-Audit-Gate NuGet (`dotnet list package --vulnerable --include-transitive`) | wie oben, für das NuGet-Ökosystem | blockiert den Merge (QA-F-130) |
 | CodeQL | Statische Sicherheitsanalyse (SAST, QA-N-140) | Ergebnisse als PR-Check |
 | GitHub Secret Scanning + Push Protection | Verhindert versehentlich eingecheckte Geheimnisse (QA-N-140) | blockiert den Push bzw. meldet den Fund |
 | GitHub Dependency Graph (SPDX-Export) | Softwarestückliste (SBOM) je veröffentlichtem Stand (QA-N-150) | Release-Artefakt |
