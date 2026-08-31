@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "FB4"
+  },
+  "common": {
+    "retry": "Try again",
+    "loading": "Loading …",
+    "cancel": "Cancel",
+    "refresh": "Refresh"
+  },
+  "states": {
+    "loading": "Loading …",
+    "emptyTitle": "Nothing here",
+    "errorTitle": "Something went wrong",
+    "offlineTitle": "No connection",
+    "offlineBody": "Check your internet connection and try again."
+  },
+  "error": {
+    "offline": "No internet connection.",
+    "timeout": "The request took too long.",
+    "server": "The service is currently unavailable.",
+    "notFound": "Not found.",
+    "unauthorized": "You are not allowed to do that.",
+    "unexpectedResponse": "Unexpected response from the service.",
+    "unknown": "Unknown error."
+  },
+  "dataAge": {
+    "prefix": "As of",
+    "justNow": "just now",
+    "minutesAgo": "{{count}} min ago",
+    "hoursAgo": "{{count}} h ago",
+    "daysAgo": "{{count}} d ago",
+    "offlineHint": "Offline – last loaded state"
+  },
+  "consent": {
+    "title": "Privacy",
+    "intro": "Before you use features that process personal data, we need your consent to the privacy policy.",
+    "changedIntro": "The privacy policy has changed. Please accept the updated version.",
+    "openPolicy": "Open privacy policy",
+    "accept": "Accept",
+    "defer": "Later – basic features only",
+    "requiredTitle": "Consent required",
+    "requiredBody": "This feature processes personal data. Accept the privacy policy to use it.",
+    "reviewNow": "Accept now"
+  },
+  "language": {
+    "system": "System language",
+    "de": "German",
+    "en": "English"
+  }
+}

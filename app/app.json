@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "FB4",
+    "slug": "fb4-app",
+    "scheme": "fb4",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "de.fsrfb4.app",
+      "deploymentTarget": "15.1"
+    },
+    "android": {
+      "package": "de.fsrfb4.app",
+      "minSdkVersion": 29
+    },
+    "plugins": [
+      "expo-dev-client",
+      "expo-localization"
+    ],
+    "extra": {
+      "comment": "Vertrieb, Ziel-API-Stufen und F-Droid-Recipe: Roadmap Schritt 10, NFR Abschnitt 9. expo-updates und EAS bewusst nicht konfiguriert (ADR 0009)."
+    }
+  }
+}

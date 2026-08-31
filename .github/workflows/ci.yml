@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # Prüfungen am Spec-Bestand (QA-N-080 bis QA-N-110). Ein Verstoß blockiert den Merge.
+  spec-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/spec-check/src/cli.js
+      - run: node --test tools/spec-check/test/*.test.js
+
+  # Keine Verhaltensänderung ohne Spec-Änderung (NFR-N-140, README.md Abschnitt 7):
+  # eine PR ändert etwas unter specs/ ODER trägt das Label spec-unchanged.
+  spec-delta:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: specs/ geändert oder Label spec-unchanged gesetzt?
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if echo ",$LABELS," | grep -q ",spec-unchanged,"; then
+            echo "Label spec-unchanged gesetzt — Spec-Delta nicht erforderlich."
+            exit 0
+          fi
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -q '^specs/'; then
+            echo "specs/ geändert — Spec-anchored Merge-Regel erfüllt."
+            exit 0
+          fi
+          echo "::error::Weder eine Änderung unter specs/ noch das Label spec-unchanged. Siehe README.md Abschnitt 7."
+          exit 1
+
+  # Typen werden aus dem Vertrag erzeugt, nicht von Hand geschrieben (API-N-035).
+  contract-codegen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: tools/contract-codegen
+        run: |
+          npm ci
+          npm test
+
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      # QA-F-130: Abhängigkeiten mit bekannter Schwachstelle ab hoch blockieren den
+      # Merge. Die datierte Allowlist in app/audit-ci.jsonc enthält nur den
+      # triagierten Bestand der Expo-Build-Werkzeugkette (quality-and-testing.md
+      # Abschnitt 10); jede darüber hinausgehende Schwachstelle bricht die CI.
+      - run: npx audit-ci --config audit-ci.jsonc
+      - run: npm run typecheck
+      - run: npm test -- --ci
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release
+      # NuGet-Abhängigkeiten mit bekannter Schwachstelle blockieren den Merge (QA-F-130).
+      - name: dotnet list package --vulnerable
+        run: |
+          output="$(dotnet list package --vulnerable --include-transitive 2>&1)"
+          echo "$output"
+          if echo "$output" | grep -qiE '\b(High|Critical)\b'; then
+            echo "::error::Abhängigkeit mit Schwachstelle ab Schweregrad hoch."
+            exit 1
+          fi

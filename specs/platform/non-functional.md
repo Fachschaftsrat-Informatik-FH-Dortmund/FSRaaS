@@ -3,13 +3,15 @@ id: non-functional
 titel: Nicht-funktionale Anforderungen
 praefix: NFR
 status: accepted
-version: 2.0.0
+version: 2.0.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
-implemented_in: []
+implemented_in:
+  - app/src/net             # NFR-F-070 (Netzabruf-Zeitgrenze mit Wiederholen)
+  - app/src/i18n            # NFR-F-115 (Sprachkataloge Deutsch/Englisch, Teilnachweis)
 related:
   - integrations.md
   - architecture.md

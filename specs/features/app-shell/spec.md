@@ -4,14 +4,15 @@ titel: App-Rahmen & Navigation
 praefix: SHELL
 status: accepted
 prioritaet: kern
-version: 0.5.0
+version: 0.5.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/utils/plugins/quick_actions_manager.dart
-implemented_in: []
+implemented_in:
+  - app/src/consent         # SHELL-F-030 (Erststart-Zustimmungs-Gate)
 related:
   - ../../platform/architecture.md
   - ../../platform/ux-and-theming.md
@@ -66,6 +67,8 @@ Bietet die übergeordnete Navigationsstruktur, über die alle Features erreichba
 
 **`SHELL-F-030`** — Die Alt-App ermittelt `shouldShowPrivacyPolicy` korrekt aus Einstellung und Versionsvergleich, überschreibt das Ergebnis aber unmittelbar danach fest auf `false` (`main_view_model.dart:8-22`, dokumentiert in `platform/security-and-privacy.md` SEC-F-010). Das Zustimmungs-Gate der Alt-App ist damit wirkungslos; für die Neuentwicklung ist ein tatsächlich wirksames Gate verbindlich.
 
+Der Erststart-Dialog darf zurückgestellt werden („Später — nur Basisfunktionen"): Die App bleibt dann mit allen Bereichen ohne Personenbezug (Stundenplan, Mensaplan, News, Raumsuche) nutzbar, Funktionen mit personenbezogenen oder nutzergenerierten Daten bleiben bis zur Zustimmung gesperrt (SEC-F-010, Akzeptanzkriterium in Abschnitt 11). Ein Vollbild-Zwang zur Zustimmung vor jeglicher Nutzung wäre stärker als SEC-F-010 verlangt und würde kontofreie Kernfunktionen grundlos blockieren.
+
 ## 5. Datenmodell
 
 Kein eigenes Datenmodell über die Einstellungsschlüssel aus `platform/data-and-storage.md` hinaus (`privacyPolicyAccepted`, `privacyPolicyAcceptedVersion`).
@@ -78,7 +81,7 @@ Keine.
 
 | Zustand | Verhalten |
 |---|---|
-| Erststart | Zustimmungs-Dialog vor Zugriff auf Funktionen mit personenbezogenen Daten (SHELL-F-030) |
+| Erststart | Zustimmungs-Dialog vor Zugriff auf Funktionen mit personenbezogenen Daten (SHELL-F-030); zurückstellbar, Basisfunktionen bleiben nutzbar |
 | Regulärer Start | Direkter Einstieg in die zuletzt genutzte oder konfigurierte Startansicht |
 | Datenschutzerklärung geändert | Erneute Zustimmung eingefordert, siehe `platform/security-and-privacy.md` SEC-F-020 |
 

@@ -3,16 +3,19 @@ id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
 status: accepted
-version: 1.1.0
+version: 1.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-28
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main_view_model.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/services/ods_authentication_service.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/viewmodels/canteen_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/assets/privacy
-implemented_in: []
+implemented_in:
+  - app/src/consent         # SEC-F-010, SEC-F-020
+  - app/src/errors          # SEC-F-060 (Fehler nie stillschweigend verschluckt)
+  - app/src/config          # SEC-F-050, SEC-N-030 (Zielsysteme nur über Konfiguration, nur TLS)
 related:
   - data-and-storage.md
   - identity-and-moderation.md
