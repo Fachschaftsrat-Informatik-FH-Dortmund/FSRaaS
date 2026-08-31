@@ -4,6 +4,11 @@ import { Text } from 'react-native';
 import { AppError } from '@/errors/AppError';
 import { AsyncStates, type QueryLike } from './AsyncStates';
 
+const mockOnline = jest.fn(() => true);
+jest.mock('@/state/useOnlineStatus', () => ({ useOnlineStatus: () => mockOnline() }));
+
+afterEach(() => mockOnline.mockReturnValue(true));
+
 function query<T>(over: Partial<QueryLike<T>>): QueryLike<T> {
   return {
     data: undefined,
@@ -66,11 +71,39 @@ describe('ARCH-F-130 / UX-F-100 Vier Zustände je datenabhängiger Ansicht', () 
   });
 });
 
+describe('DATA-F-090 Offline und abgelaufen: letzter Stand mit Altershinweis statt Leeransicht', () => {
+  it('zeigt bei offline + veralteten Daten den Altershinweis über den Inhalten', () => {
+    mockOnline.mockReturnValue(false);
+    const q = query<{ items: number[] }>({
+      data: { items: [1] },
+      isStale: true,
+      dataUpdatedAt: Date.now() - 20 * 60_000,
+    });
+    render(
+      <AsyncStates query={q} isEmpty={(d) => d.items.length === 0} emptyNextStep={NEXT_STEP}>
+        {() => <Text>Inhalt da</Text>}
+      </AsyncStates>,
+    );
+    expect(screen.getByText(/Offline/)).toBeTruthy();
+    expect(screen.getByText('Inhalt da')).toBeTruthy();
+  });
+
+  it('zeigt online keinen Altershinweis, auch wenn die Daten veraltet sind', () => {
+    const q = query<{ items: number[] }>({ data: { items: [1] }, isStale: true });
+    render(
+      <AsyncStates query={q} isEmpty={(d) => d.items.length === 0} emptyNextStep={NEXT_STEP}>
+        {() => <Text>Inhalt da</Text>}
+      </AsyncStates>,
+    );
+    expect(screen.queryByText(/Offline/)).toBeNull();
+  });
+});
+
 describe('ARCH-N-020 Eine wiederverwendbare Grundstruktur statt je Bildschirm', () => {
   it('dieselbe Komponente bedient alle vier Zustände über dieselbe Schnittstelle', () => {
     // Ein einziger Komponententyp, gesteuert nur über das query-Objekt — kein
     // bildschirmspezifischer Zustandscode nötig.
-    const cases: Array<Partial<QueryLike<{ items: number[] }>>> = [
+    const cases: Partial<QueryLike<{ items: number[] }>>[] = [
       { isPending: true },
       { isError: true, error: new AppError({ kind: 'server', message: 'error.server', retryable: false }) },
       { data: { items: [] } },

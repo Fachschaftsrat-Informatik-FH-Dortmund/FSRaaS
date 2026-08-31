@@ -18,6 +18,14 @@ describe('API-N-040 Einheitliches Fehlerformat des Backends', () => {
     expect(problemToAppError(403, { code: 'forbidden', title: 'x', status: 403 }).kind).toBe('unauthorized');
   });
 
+  it('ordnet eine Fehlerantwort ohne Rumpf allein über den Status ein', () => {
+    for (const body of [undefined, null, '']) {
+      expect(problemToAppError(401, body).kind).toBe('unauthorized');
+      expect(problemToAppError(404, body).kind).toBe('notFound');
+      expect(problemToAppError(503, body).retryable).toBe(true);
+    }
+  });
+
   it('macht eine nicht formatkonforme Antwort als parse-Fehler sichtbar, statt sie weiterzuverarbeiten (SEC-F-060, QA-N-070)', () => {
     const err = problemToAppError(500, '<html>Gateway Timeout</html>');
     expect(err.kind).toBe('parse');

@@ -3,9 +3,9 @@ id: architecture
 titel: Architektur
 praefix: ARCH
 status: accepted
-version: 1.1.1
+version: 1.1.2
 owner: FSR FB4
-last_reviewed: 2026-08-28
+last_reviewed: 2026-08-31
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/core/views/base_view.dart
@@ -14,6 +14,7 @@ derived_from:
 implemented_in:
   - app/src/ui/state        # ARCH-F-130, ARCH-N-020
   - app/src/state           # ARCH-F-150, ARCH-N-030 (Server-Zustandsschicht, ADR 0013)
+  - app/src/architecture.test.ts   # ARCH-F-150, ARCH-N-030 (Nachweis per statischer Analyse, QA-N-115)
 related:
   - backend-and-api.md
   - integrations.md
@@ -72,7 +73,7 @@ Die App trennt Darstellung, Zustandshaltung, fachliche Logik und Datenzugriff. D
 | ARCH-F-150 | Das System muss serverseitigen Zustand über eine dedizierte Server-State-Schicht mit Cache, Hintergrund-Aktualisierung und Invalidierung verwalten, getrennt von lokalem UI-Zustand. | NEU |
 | ARCH-N-030 | Die App muss Bildschirm-lokalen UI-Zustand ausschließlich komponenten- oder modul-gebunden halten, nie als einzelne app-weite Store-Instanz. | NEU |
 
-Zu ARCH-F-150/ARCH-N-030: Konkretisiert ARCH-F-080 und schließt die zuvor offene Frage nach Bibliothekswahl (Abschnitt 7 a. F.) — siehe `../decisions/0013-zustand-navigation-und-netzwerkschicht.md`. ARCH-N-030 benennt ausdrücklich noch einmal das Gegenteil des in der Alt-App gefundenen Singleton-Musters, damit es nicht in neuer Form (z. B. als einzelner globaler State-Management-Store) zurückkehrt.
+Zu ARCH-F-150/ARCH-N-030: Konkretisiert ARCH-F-080 und schließt die zuvor offene Frage nach Bibliothekswahl (Abschnitt 7 a. F.) — siehe `../decisions/0013-zustand-navigation-und-netzwerkschicht.md`. ARCH-N-030 benennt ausdrücklich noch einmal das Gegenteil des in der Alt-App gefundenen Singleton-Musters, damit es nicht in neuer Form (z. B. als einzelner globaler State-Management-Store) zurückkehrt. Beide sind Architektur-Constraints ohne sinnvollen Verhaltenstest und werden nach QA-N-115 per statischer Analyse nachgewiesen (`app/src/architecture.test.ts`): kein Einbinden einer globalen State-Management-Bibliothek und ein zentral konfigurierter Server-State-Client (TanStack Query mit Aufbewahrung, Aktualisierung, Wiederholung, Neustart-Persistenz).
 
 ## 3. Navigation
 

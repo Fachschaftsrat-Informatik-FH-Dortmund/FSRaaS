@@ -3,15 +3,17 @@ id: quality-and-testing
 titel: Qualität und Test
 praefix: QA
 status: accepted
-version: 0.4.2
+version: 0.4.3
 owner: FSR FB4
-last_reviewed: 2026-08-28
+last_reviewed: 2026-08-31
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/selected_course_info.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/models/news_item.dart
 implemented_in:
   - tools/spec-check          # QA-N-080, QA-N-090, QA-N-100, QA-N-110
+  - app/eslint.config.js      # QA-N-115 (Lint-Regel als Nachweis), SEC-F-060 (no-console nur in der Fehlerschicht)
+  - app/src/architecture.test.ts   # QA-N-115 (statische Analyse für ARCH-F-150, ARCH-N-030)
 related:
   - integrations.md
   - non-functional.md
@@ -129,6 +131,7 @@ Zur Allowlist des npm-Audit-Gates: Eine frische Expo-Installation (ADR 0009) bri
 | CI-Audit-Gate npm (`audit-ci --high` mit datierter Allowlist, `app/audit-ci.jsonc`) | Verhindert, dass eine PR eine neu bekannte Schwachstelle einführt; der triagierte Bestand an Build-Tooling-Advisories der Expo-Werkzeugkette steht mit Begründung und Datum in der Allowlist | blockiert den Merge (QA-F-130) |
 | CI-Audit-Gate NuGet (`dotnet list package --vulnerable --include-transitive`) | wie oben, für das NuGet-Ökosystem | blockiert den Merge (QA-F-130) |
 | CodeQL | Statische Sicherheitsanalyse (SAST, QA-N-140) | Ergebnisse als PR-Check |
+| ESLint (`eslint-config-expo` + `no-console`-Regel, `app/eslint.config.js`) | Statische Analyse des App-Codes; die `no-console`-Regel erzwingt SEC-F-060 (kein `console` außerhalb der Fehlerschicht) und dient als Lint-Nachweis im Sinne von QA-N-115 | `npm run lint` im CI-Job `app`, blockiert den Merge |
 | GitHub Secret Scanning + Push Protection | Verhindert versehentlich eingecheckte Geheimnisse (QA-N-140) | blockiert den Push bzw. meldet den Fund |
 | GitHub Dependency Graph (SPDX-Export) | Softwarestückliste (SBOM) je veröffentlichtem Stand (QA-N-150) | Release-Artefakt |
 

@@ -1,9 +1,9 @@
+import { AppError } from '@/errors/AppError';
+import { fetchWithTimeout, unwrap, type ApiResult } from './client';
+
 jest.mock('@/config', () => ({
   config: { apiBaseUrl: 'https://api.fsrfb4.de/v1', netTimeoutMs: 40 },
 }));
-
-import { AppError } from '@/errors/AppError';
-import { fetchWithTimeout, unwrap, type ApiResult } from './client';
 
 describe('NFR-F-070 Netzabruf bricht nach der Zeitgrenze ab', () => {
   it('fetchWithTimeout bricht ab, wenn die Antwort zu lange braucht', async () => {

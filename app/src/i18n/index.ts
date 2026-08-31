@@ -18,7 +18,7 @@ export const resources = {
   en: { translation: en },
 } as const;
 
-export const supportedLanguages = Object.keys(resources) as Array<keyof typeof resources>;
+export const supportedLanguages = Object.keys(resources) as (keyof typeof resources)[];
 
 export const fallbackLanguage: keyof typeof resources = 'de';
 
@@ -38,6 +38,10 @@ export function initI18n(language?: keyof typeof resources) {
     fallbackLng: fallbackLanguage,
     interpolation: { escapeValue: false },
     returnNull: false,
+    // Hermes (React Native) hat kein vollständiges Intl.PluralRules. Die Kataloge
+    // nutzen ausschließlich {{count}} ohne Plural-Suffixe, daher ist das ältere
+    // v3-Pluralformat ausreichend und vermeidet die Laufzeit-Fehlermeldung.
+    compatibilityJSON: 'v3',
   });
 }
 

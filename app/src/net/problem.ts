@@ -21,25 +21,53 @@ function isProblemDetails(value: unknown): value is ProblemDetails {
   );
 }
 
+/** Kein verwertbarer Fehlerrumpf (leer / null) — dann zählt allein der Status. */
+function isEmptyBody(value: unknown): boolean {
+  return value === undefined || value === null || value === '';
+}
+
 function kindForStatus(status: number): AppErrorKind {
   if (status === 404) return 'notFound';
   if (status === 401 || status === 403) return 'unauthorized';
   return 'server';
 }
 
+function messageForStatus(status: number): string {
+  if (status === 404) return 'error.notFound';
+  if (status === 401 || status === 403) return 'error.unauthorized';
+  return 'error.server';
+}
+
+function isRetryable(status: number): boolean {
+  return status >= 500 || status === 429;
+}
+
 /**
- * Wandelt eine Fehlerantwort des Backends in einen AppError. Entspricht der Rumpf
- * nicht dem dokumentierten Format, entsteht ein `parse`-Fehler statt eines still
- * weiterverarbeiteten Teilergebnisses (SEC-F-060, QA-N-070).
+ * Wandelt eine Fehlerantwort des Backends in einen AppError.
+ *
+ * - Rumpf im dokumentierten RFC-9457-Format → Code und Meldung daraus.
+ * - Kein Rumpf (leer/null) → Einordnung allein über den HTTP-Status.
+ * - Rumpf vorhanden, aber nicht formatkonform (z. B. HTML-Fehlerseite,
+ *   abgeschnittenes JSON) → `parse`-Fehler, damit die Abweichung sichtbar wird
+ *   statt still weiterverarbeitet zu werden (SEC-F-060, QA-N-070).
  */
 export function problemToAppError(status: number, body: unknown): AppError {
   if (isProblemDetails(body)) {
+    const effective = body.status ?? status;
     return new AppError({
-      kind: kindForStatus(body.status ?? status),
+      kind: kindForStatus(effective),
       code: body.code,
-      message: body.title ?? 'error.server',
-      status: body.status ?? status,
-      retryable: (body.status ?? status) >= 500 || status === 429,
+      message: body.title ?? messageForStatus(effective),
+      status: effective,
+      retryable: isRetryable(effective),
+    });
+  }
+  if (isEmptyBody(body)) {
+    return new AppError({
+      kind: kindForStatus(status),
+      message: messageForStatus(status),
+      status,
+      retryable: isRetryable(status),
     });
   }
   return new AppError({
