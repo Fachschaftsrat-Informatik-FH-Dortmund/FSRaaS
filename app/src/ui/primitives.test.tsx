@@ -44,6 +44,24 @@ describe('UX-F-130 Einheitliche Fehleranzeige über alle Ansichten', () => {
   });
 });
 
+describe('UX-F-180 / UX-F-185 Höchstens eine hervorgehobene Primäraktion; zerstörende nie hervorgehoben', () => {
+  it('nur die primary-Variante trägt die Akzentfläche', () => {
+    const { rerender } = render(<AppButton label="Speichern" onPress={() => {}} variant="primary" />);
+    const primary = StyleSheet.flatten(screen.getByRole('button', { name: 'Speichern' }).props.style);
+    expect(primary.backgroundColor).toBe('#FF6600');
+
+    rerender(<AppButton label="Speichern" onPress={() => {}} variant="secondary" />);
+    const secondary = StyleSheet.flatten(screen.getByRole('button', { name: 'Speichern' }).props.style);
+    expect(secondary.backgroundColor).toBeUndefined();
+  });
+
+  it('die destructive-Variante hat keine Akzentfläche und ist damit nicht die hervorgehobene Aktion', () => {
+    render(<AppButton label="Löschen" onPress={() => {}} variant="destructive" />);
+    const flat = StyleSheet.flatten(screen.getByRole('button', { name: 'Löschen' }).props.style);
+    expect(flat.backgroundColor).toBeUndefined();
+  });
+});
+
 describe('UX-F-070 Bedeutung nicht allein über Farbe', () => {
   it('der Zustand ist als Klartext erkennbar, das dekorative Symbol ist für die Barrierefreiheit ausgeblendet', () => {
     render(<MessageView symbol="⊘" title="Keine Verbindung" />);

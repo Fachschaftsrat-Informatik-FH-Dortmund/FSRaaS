@@ -3,9 +3,9 @@ id: architecture
 titel: Architektur
 praefix: ARCH
 status: accepted
-version: 1.1.2
+version: 1.1.3
 owner: FSR FB4
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-02
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/core/views/base_view.dart
@@ -14,7 +14,9 @@ derived_from:
 implemented_in:
   - app/src/ui/state        # ARCH-F-130, ARCH-N-020
   - app/src/state           # ARCH-F-150, ARCH-N-030 (Server-Zustandsschicht, ADR 0013)
-  - app/src/architecture.test.ts   # ARCH-F-150, ARCH-N-030 (Nachweis per statischer Analyse, QA-N-115)
+  - app/src/areas           # ARCH-F-140 (Quellcode nach fachlichen Bereichen geschnitten)
+  - app/app                 # ARCH-N-010 (Navigationsstruktur über die fünf Alt-Tabs hinaus), SHELL-F-050
+  - app/src/architecture.test.ts   # ARCH-F-140, ARCH-F-150, ARCH-N-030 (Nachweis per statischer Analyse, QA-N-115)
 related:
   - backend-and-api.md
   - integrations.md
@@ -137,6 +139,8 @@ Die Alt-App schnitt Quellcode nach Fachbereichen: `areas/<bereich>/{models,repos
 | ID | Anforderung | Herkunft |
 |---|---|---|
 | ARCH-F-140 | Das System muss den Quellcode nach fachlichen Bereichen schneiden, sodass Modelle, Datenzugriff, Zustandshaltung und Bildschirme eines Bereichs zusammen auffindbar sind. | Alt: lib/areas/schedule/ |
+
+Zu ARCH-F-140/ARCH-N-010 (Umsetzung Roadmap-Schritt 2): Der Quellcode liegt unter `app/src/areas/<bereich>/` (Unterordner `screens/`, später `models/`, `repositories/`, `hooks/`), die datei-basierten Routen unter `app/app/` verweisen nur darauf (SHELL-F-050). Die Navigationsstruktur (Tab-Leiste mit vier Bereichen plus verschachteltem „Mehr"-Stack) nimmt die derzeit sieben Bereiche der ersten Ausbaustufe auf, ohne sie gleichrangig in einer Tab-Leiste zu häufen (ARCH-N-010). Nachweis per statischer Analyse in `app/src/architecture.test.ts` und `app/src/navigation/*.test.ts` (QA-N-115).
 
 ## 7. Abgrenzung
 

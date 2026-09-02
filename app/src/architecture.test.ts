@@ -1,4 +1,8 @@
+import { readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import pkg from '../package.json';
+import { navAreas, tabAreas } from './navigation/navMap';
 import { createQueryClient, queryPersister, persistMaxAge } from './state/queryClient';
 
 // Architektur-Constraints, die sich nicht sinnvoll als Verhaltenstest prüfen
@@ -31,5 +35,25 @@ describe('ARCH-F-150 Server-Zustand über eine dedizierte Schicht mit Cache, Akt
     expect(typeof queries.retry).toBe('function'); // Wiederholung/Invalidierung zentral
     expect(queryPersister).toBeDefined(); // Persistenz über Neustart
     expect(persistMaxAge).toBeGreaterThan(0);
+  });
+});
+
+describe('ARCH-N-010 Navigationsstruktur trägt mehr als die fünf Alt-Tabs ohne gleichrangige Häufung', () => {
+  it('führt mehr Bereiche als Tab-Plätze und trennt sie in Tab- und „Mehr"-Gruppe', () => {
+    expect(navAreas.length).toBeGreaterThan(tabAreas.length);
+    expect(tabAreas.length).toBeLessThanOrEqual(5);
+    expect(navAreas.some((a) => a.group === 'more')).toBe(true);
+  });
+});
+
+describe('ARCH-F-140 Quellcode nach fachlichen Bereichen geschnitten', () => {
+  const areasDir = join(__dirname, 'areas');
+
+  it('jeder Bereich unter areas/ bündelt seine Bildschirme in einem eigenen Ordner', () => {
+    const areas = readdirSync(areasDir, { withFileTypes: true }).filter((e) => e.isDirectory());
+    expect(areas.length).toBeGreaterThan(0);
+    for (const area of areas) {
+      expect(existsSync(join(areasDir, area.name, 'screens'))).toBe(true);
+    }
   });
 });

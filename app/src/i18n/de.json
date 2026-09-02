@@ -6,7 +6,43 @@
     "retry": "Erneut versuchen",
     "loading": "Wird geladen …",
     "cancel": "Abbrechen",
-    "refresh": "Aktualisieren"
+    "refresh": "Aktualisieren",
+    "dismissHint": "Hinweis schließen"
+  },
+  "nav": {
+    "schedule": "Stundenplan",
+    "canteen": "Mensaplan",
+    "news": "News",
+    "rooms": "Raumsuche",
+    "more": "Mehr"
+  },
+  "more": {
+    "title": "Mehr",
+    "ticket": "Semesterticket",
+    "settings": "Einstellungen",
+    "admin": "Verwaltung & Redaktion",
+    "nextStep": "Wähle einen Bereich aus der Liste.",
+    "groupStudium": "Mein Studium",
+    "groupFachschaft": "Fachschaft",
+    "groupApp": "App",
+    "groupVerwaltung": "Verwaltung"
+  },
+  "areas": {
+    "comingSoonTitle": "Folgt in Kürze",
+    "comingSoonBody": "Dieser Bereich wird in einem späteren Entwicklungsschritt gefüllt. Der Weg dorthin steht bereits."
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "appearanceLabel": "Erscheinungsbild",
+    "languageLabel": "Sprache",
+    "startViewLabel": "Startansicht",
+    "startViewLast": "Zuletzt genutzt",
+    "moreSoon": "Weitere Einstellungen folgen mit den jeweiligen Funktionen."
+  },
+  "appearance": {
+    "system": "System",
+    "light": "Hell",
+    "dark": "Dunkel"
   },
   "states": {
     "loading": "Wird geladen …",

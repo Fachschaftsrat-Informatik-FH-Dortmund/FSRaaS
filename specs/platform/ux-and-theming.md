@@ -3,9 +3,9 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: accepted
-version: 0.4.2
+version: 0.6.0
 owner: FSR FB4
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-02
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/config/themes/color_consts.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
@@ -17,8 +17,11 @@ derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/settings_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/utils/ui/icons/fb4app_icons.dart
 implemented_in:
-  - app/src/ui             # UX-F-100, UX-F-110, UX-F-130, UX-F-140 (Grundstruktur); UX-F-070, UX-N-020 (Bedienelemente)
-  - app/src/ui/primitives.test.tsx   # UX-F-070, UX-F-130, UX-F-140, UX-N-020
+  - app/src/ui             # UX-F-100, UX-F-110, UX-F-130, UX-F-140 (Grundstruktur); UX-F-070, UX-F-180/F-185, UX-N-020 (Bedienelemente); UX-F-190 (Einführungshinweis)
+  - app/src/ui/primitives.test.tsx   # UX-F-070, UX-F-130, UX-F-140, UX-F-180/F-185, UX-N-020
+  - app/src/theme          # UX-F-010 (Akzentfarbe im Farbsystem), UX-F-020/F-030 (Laufzeitreaktion, manuelle Übersteuerung), UX-F-220 (Statusleiste: app/src/theme/statusBar.tsx, Test: app/src/theme/statusBar.test.tsx)
+  - app/app                # UX-F-170 (Bildschirmtitel aus den _layout-Optionen), UX-F-200/UX-N-030 (Navigations-Werkzeug), UX-F-220 (ThemedStatusBar im Wurzel-Layout)
+  - app/src/i18n           # UX-F-210 (Anrede „du" in de.json), Test: app/src/i18n/anrede.test.ts
 related:
   - ../features/schedule/spec.md
   - ../features/canteen/spec.md
@@ -72,6 +75,13 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 | UX-F-140 | Das System muss Ladeanzeigen über alle Ansichten hinweg einheitlich gestalten. | NEU |
 | UX-F-150 | Sofern eine fachliche Bedeutung wiederkehrend durch ein Symbol dargestellt wird (z. B. Essen, Vegetarisch), muss das System dafür ein einheitliches Symbolsystem verwenden. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/utils/ui/icons/fb4app_icons.dart:31 |
 | UX-F-160 | Das System muss für jede Ansicht mit direkt abrufbaren entfernten Daten eine manuelle Aktualisierungsgeste oder eine gleichwertige, sichtbare Aktualisieren-Aktion bereitstellen. | NEU |
+| UX-F-170 | Das System muss auf jedem Bildschirm einen Titel führen, der der Bezeichnung des Einstiegspunkts entspricht, über den der Bildschirm erreicht wurde. | NEU |
+| UX-F-180 | Das System muss je Ansicht höchstens eine visuell hervorgehobene Primäraktion vorsehen. | NEU |
+| UX-F-185 | Das System darf eine zerstörende Aktion nicht als hervorgehobene Primäraktion darstellen. | NEU |
+| UX-F-190 | Wenn ein Bereich zum ersten Mal geöffnet wird, darf das System höchstens einen schließbaren Einführungshinweis zeigen und diesen nach dem Schließen nicht erneut anzeigen. | Alt: bewusst verworfen |
+| UX-F-200 | Wenn der angezeigte Bildschirm wechselt, muss das System den Bedienfokus für Bildschirmvorleser auf den Titel des neuen Bildschirms setzen. | NEU |
+| UX-F-210 | Das System muss nutzerseitige deutsche Texte durchgängig in der Anrede „du" formulieren. | NEU |
+| UX-F-220 | Das System muss die Darstellung der Betriebssystem-Statusleiste (Kontrast der Symbole) an das wirksame Erscheinungsbild anpassen, sodass ihre Inhalte in hellem wie dunklem Erscheinungsbild sichtbar bleiben. | NEU |
 
 ### Nicht-funktionale Anforderungen (UX-N)
 
@@ -79,10 +89,15 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 |---|---|---|
 | UX-N-010 | Das System muss zwischen Textfarbe und Hintergrundfarbe eines Stundenplan-Eintrags einen Kontrast von mindestens 4,5:1 einhalten. | NEU |
 | UX-N-020 | Das System muss für Bedienelemente eine Mindestgröße von 44×44 dp bzw. dem plattformüblichen Äquivalent einhalten. | NEU |
+| UX-N-030 | Das System muss die Systemeinstellung „Bewegung reduzieren" respektieren und Übergangsanimationen bei aktivierter Einstellung reduzieren oder abschalten. | NEU |
 
 ### Begründungen
 
 **Zu UX-F-020 / UX-F-030 (Hell-/Dunkelmodus).** Die Alt-App liest die Systemhelligkeit nur einmalig in `FB4App.build()` aus (`lib/main.dart:111-112`) und besitzt keinen Beobachter für spätere Änderungen; ein Wechsel der Systemeinstellung wirkt sich erst nach Neustart der App aus. Das entspricht nicht mehr dem, was Nutzerinnen und Nutzer von Betriebssystemen mit systemweitem Dunkelmodus erwarten. Die manuelle Übersteuerung (UX-F-030) ist zusätzlich nötig, weil einzelne Personen unabhängig von der Systemeinstellung ein bestimmtes Erscheinungsbild bevorzugen können.
+
+Umgesetzt (Roadmap-Schritt 2) über `app/src/theme`: ein `ThemeProvider` löst bei jedem Rendern aus dem abonnierenden `useColorScheme()` und der gespeicherten Wahl (`appearanceMode`) das wirksame Farbschema auf — die Systemhelligkeit wird also nicht mehr beim Start eingefroren (UX-F-020), und eine Wahl `light`/`dark` gilt vor dem Systemzustand (UX-F-030). Das On-Device-Umschalten der Systemeinstellung bei laufender App ist zusätzlich im Prüfprotokoll `specs/pruefprotokolle/2026-09-02-app-rahmen.md` festgehalten (QA-F-020).
+
+**Zu UX-F-220 (Statusleiste).** Die App zeichnet ihre Ansichten themengefärbt, die Betriebssystem-Statusleiste (Uhr, Akku, Empfang) bleibt davon aber unberührt, solange sie nicht ausdrücklich gesetzt wird. Der native Android-Rahmen liefert eine hell voreingestellte Statusleiste; im Dunkelmodus zeichnet das System dort helle Symbole auf hellen Grund, sodass die gesamte Statuszeile unsichtbar wird — ein Befund aus der Geräteprüfung des App-Rahmens. UX-F-220 verlangt daher, die Statusleiste dem wirksamen Erscheinungsbild anzugleichen. Umgesetzt über `app/src/theme/statusBar.tsx` (`ThemedStatusBar`), einmalig im Wurzel-Layout `app/app/_layout.tsx` gerendert: die Symbolfarbe folgt dem vom `ThemeProvider` aufgelösten Schema (also auch einer manuellen Übersteuerung, UX-F-030), der Hintergrund bleibt durchscheinend, sodass der themengefärbte Hintergrund der jeweiligen Ansicht trägt. Die Sichtprüfung in hellem und dunklem Erscheinungsbild ist im Prüfprotokoll `specs/pruefprotokolle/2026-09-02-app-rahmen.md` festgehalten.
 
 **Zu UX-F-070 / UX-F-080 (Farbe als alleiniger Bedeutungsträger).** Menschen mit Farbsinnstörung oder in hellem Umgebungslicht können eine reine Opazitätsabstufung derselben Farbe nicht zuverlässig von der Vollfarbe unterscheiden. Der konkrete Befund in `schedule_card.dart:52-54` — Gruppenzugehörigkeit wird ausschließlich über `mainOrange.withAlpha(168)` signalisiert — ist ein Beispiel für diesen allgemeinen Mangel und wird in UX-F-080 gezielt adressiert.
 
@@ -93,6 +108,22 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 **Zu UX-F-160 (Aktualisierungsgeste).** Die Flutter-Alt-App bot Pull-to-Refresh (`product/legacy-inventory.md`, L-034); für die Neuentwicklung war dafür bislang keine Anforderung mehr formuliert, obwohl mehrere Ansichten (NEWS, MENSA, EVENT) direkt abrufbare entfernte Daten zeigen. Ergänzt das bisher nur im Fehlerzustand vorgesehene „Wiederholen" (siehe jeweilige Feature-Spec, Abschnitt 7) um eine reguläre, jederzeit verfügbare Aktualisierungsmöglichkeit.
 
 **Zu UX-F-150 (Symbolsystem, entschieden).** Bestehende Open-Source-Icon-Bibliothek statt eigener Schriftart oder eigenem SVG-Set — Entscheidung FSR FB4, 2026-08-25. Konkrete Bibliothek (z. B. Lucide, Material Symbols, Phosphor) wählt die technische Leitung bei Umsetzung; Kriterium ist lediglich Verfügbarkeit unter offener Lizenz und Abdeckung der benötigten fachlichen Symbole (Essen, Vegetarisch u. a.).
+
+Fachliche Symbolzuordnung der Tab-Leiste (Bedeutung, nicht konkrete Glyphe — `../features/app-shell/nutzerfuehrung-konzept.md` Abschnitt 3.1):
+
+| Tab | Bedeutung des Symbols |
+|---|---|
+| Stundenplan | Kalender / Raster |
+| Mensaplan | Besteck |
+| News | Sprechblase / Zeitung |
+| Raumsuche | Lupe / Grundriss |
+| Mehr | Punkte-Menü |
+
+Der aktive Tab ist zusätzlich zur Akzentfarbe durch das gefüllte (statt umrissene) Symbol markiert (UX-F-070).
+
+**Zu UX-F-170 bis UX-F-210, UX-N-030 (Nutzerführung).** Diese Anforderungen entstammen dem Konzept `../features/app-shell/nutzerfuehrung-konzept.md` Abschnitt 12 (2026-09-02) und ergänzen die Führung im Rahmen der App: ein Bildschirm ist an seinem Titel wiedererkennbar (UX-F-170), trägt höchstens eine hervorgehobene Aktion (UX-F-180), und eine zerstörende Aktion wird nie hervorgehoben, damit sie nicht versehentlich als der erwartete nächste Schritt wirkt (UX-F-185, verwandt mit UX-F-120). Statt eines Onboarding-Karussells — das in beiden Alt-Apps fehlte bzw. übersprungen worden wäre — erklärt die App eine Funktion höchstens mit einem einzigen, schließbaren Hinweis im Bereich selbst (UX-F-190). UX-F-200 (Vorlesefokus auf den neuen Titel) und UX-N-030 („Bewegung reduzieren") sind Barrierefreiheits-Anforderungen, die das Navigations-Werkzeug (Expo Router / React Navigation) weitgehend selbst erfüllt; ihre Wirkung wird per Prüfprotokoll am Gerät bestätigt (QA-F-020). UX-F-210 schreibt die Anrede „du" verbindlich fest (Entscheidung FSR FB4, 2026-09-02, Begründung im Konzept Abschnitt 10) — im Englischen ohnehin „you", die Anforderung betrifft daher die deutschen Kataloge.
+
+**Zu UX-F-180 / UX-F-185 (Umsetzung).** Das Bedienelement `AppButton` (`app/src/ui/primitives.tsx`) kennt die Varianten `primary` (hervorgehoben, Akzentfläche), `secondary` und `destructive` (Warnfarbe als Text, ohne Akzentfläche). Die „höchstens eine"-Regel je Ansicht ist eine Bildschirm-Gestaltungsregel und wird beim Bau der einzelnen Ansichten im Prüfprotokoll geführt; die Primitive stellt nur sicher, dass eine zerstörende Aktion nicht als `primary` darstellbar ist.
 
 ## Bewusst nicht übernommenes Altverhalten
 

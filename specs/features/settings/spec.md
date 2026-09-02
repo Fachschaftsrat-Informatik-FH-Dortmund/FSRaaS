@@ -4,9 +4,9 @@ titel: Einstellungen
 praefix: SET
 status: accepted
 prioritaet: bestand
-version: 0.2.0
+version: 0.3.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-09-02
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/LinksDownloadsFragment.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/UserSettingFragment.java
@@ -15,7 +15,11 @@ derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/settings_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/privacy_page.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/licenses_page.dart
-implemented_in: []
+implemented_in:
+  - app/src/theme           # SET-F-020 (Erscheinungsbild-Wahl, Schlüssel appearanceMode)
+  - app/src/i18n            # SET-F-100/F-110 (Sprachwahl, Schlüssel uiLanguage)
+  - app/src/navigation      # SET-F-160 (Startansicht-Wahl, Schlüssel startView)
+  - app/src/areas/settings  # Einstellungsbildschirm (Teilumfang: Erscheinungsbild, Sprache, Startansicht)
 related:
   - ../../platform/data-and-storage.md
   - ../../platform/security-and-privacy.md
@@ -36,6 +40,7 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 
 - Push-Benachrichtigungs-Opt-in (INT-005).
 - Erscheinungsbild (hell/dunkel/systemabhängig), siehe `platform/ux-and-theming.md` UX-F-030.
+- Wahl der Startansicht (siehe `features/app-shell/spec.md` SHELL-F-070).
 - Mensa-Auswahl (siehe `features/canteen/spec.md`).
 - Datenschutzerklärung, Einwilligungsstatus, „Alle lokalen Daten löschen".
 - Lizenzhinweise (Open-Source-Bibliotheken).
@@ -72,6 +77,7 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 | SET-F-130 | Das System muss die Anzeigeversion und die Build-Nummer der laufenden App anzeigen, aus dem Build gelesen. | Alt: bewusst verworfen |
 | SET-F-140 | Das System muss einen Rückmeldeweg an den FSR bereitstellen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/more_list_page.dart:47 |
 | SET-F-150 | Das System muss der Nutzerin das Festlegen der Reihenfolge der angezeigten Mensen ermöglichen (siehe `features/canteen/spec.md` MENSA-F-025). | Recherche: alte apps/android-fb4, activities/MenuSortActivity.java, 2026-08-25 |
+| SET-F-160 | Das System muss der Nutzerin die Wahl der Startansicht ermöglichen: einer der vier Tab-Bereiche oder „zuletzt genutzt". | NEU |
 
 ### Erläuterungen
 
@@ -81,9 +87,20 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 
 **`SET-F-130`** — Die Flutter-Alt-App zeigt eine fest einprogrammierte Versionsnummer (`more_list_page.dart:157`, dokumentiert als M-006), die dadurch von der tatsächlich installierten Version abweichen kann. Da `platform/non-functional.md` NFR-N-230 verlangt, dass ein Fehlerbericht eindeutig einer Quellcode-Version zuordenbar ist, muss die angezeigte Version aus dem Build stammen.
 
+**`SET-F-160`** — Neu aus `../app-shell/nutzerfuehrung-konzept.md` Abschnitt 12. Voreinstellung ist der Stundenplan (`../app-shell/spec.md` SHELL-F-070). Die Option „zuletzt genutzt" merkt sich den zuletzt aktiven Tab lokal (Einstellungsschlüssel-Ergänzung, Abschnitt 5); die zuvor offene Frage nach ihrem Aufwand ist mit der Umsetzung beantwortet — ein zusätzlich vermerkter Tab-Schlüssel genügt.
+
+**Umsetzungsstand (Roadmap-Schritt 2).** Umgesetzt sind SET-F-020 (Erscheinungsbild), SET-F-100/F-110 (Sprachwahl) und SET-F-160 (Startansicht); alle wirken sofort, ohne separaten Speichern-Schritt. Der Einstellungsbildschirm ist über „Mehr" erreichbar und trägt bislang nur diese Gruppen. Die übrigen SET-Anforderungen folgen mit ihren jeweiligen Funktionen (Mensa-Auswahl mit Schritt 4, Stundenplan-Schalter mit Schritt 5, Ticket-Helligkeit mit Schritt 8, Push mit der zweiten Ausbaustufe, Links/Downloads mit Schritt 7, Datenschutz-/Lösch-/Lizenz-/Rückmelde-Ansichten mit Schritt 10 bzw. den betroffenen Features). `status` bleibt daher `accepted`.
+
 ## 5. Datenmodell
 
-Einstellungsschlüssel: siehe `platform/data-and-storage.md` Abschnitt 3, ergänzt um `appearanceMode` (hell/dunkel/systemabhängig, siehe `platform/ux-and-theming.md` UX-F-030).
+Einstellungsschlüssel: siehe `platform/data-and-storage.md` Abschnitt 3, ergänzt um zwei Schlüssel aus der Neuentwicklung:
+
+| Schlüssel | Werte | Bedeutung |
+|---|---|---|
+| `appearanceMode` | `system` \| `light` \| `dark` | Erscheinungsbild-Wahl (SET-F-020, `platform/ux-and-theming.md` UX-F-030); `system` folgt der Systemeinstellung zur Laufzeit (UX-F-020) |
+| `uiLanguage` | `system` \| `de` \| `en` | Oberflächensprache (SET-F-100); `system` folgt der Systemsprache (SET-F-110) |
+| `startView` | `schedule` \| `canteen` \| `news` \| `rooms` \| `last` | Startansicht beim regulären Start (SET-F-160, `../app-shell/spec.md` SHELL-F-070) |
+| `lastTab` | `schedule` \| `canteen` \| `news` \| `rooms` \| `more` | Zuletzt aktiver Tab, nur ausgewertet wenn `startView` = `last` |
 
 ## 6. Externe Schnittstellen
 

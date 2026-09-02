@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AppError } from '@/errors/AppError';
 import { useOnlineStatus } from '@/state/useOnlineStatus';
+import { useTheme } from '@/theme';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { describeAge, shouldShowAge } from './dataAge';
 
@@ -100,10 +101,14 @@ export function AsyncStates<T>({
 
 function DataAgeBanner({ updatedAt }: { updatedAt: number }) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
   const age = describeAge(updatedAt);
   return (
-    <View style={styles.ageBanner} accessibilityRole="text">
-      <Text style={styles.ageText}>
+    <View
+      style={[styles.ageBanner, { backgroundColor: colors.banner }]}
+      accessibilityRole="text"
+    >
+      <Text style={[styles.ageText, { color: colors.onBanner }]}>
         {'⊘ '}
         {t('dataAge.offlineHint')} · {t('dataAge.prefix')} {t(age.key, { count: age.count })}
       </Text>
@@ -113,6 +118,6 @@ function DataAgeBanner({ updatedAt }: { updatedAt: number }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  ageBanner: { backgroundColor: '#3A3A3C', paddingVertical: 6, paddingHorizontal: 12 },
-  ageText: { color: '#FFFFFF', fontSize: 13, textAlign: 'center' },
+  ageBanner: { paddingVertical: 6, paddingHorizontal: 12 },
+  ageText: { fontSize: 13, textAlign: 'center' },
 });
