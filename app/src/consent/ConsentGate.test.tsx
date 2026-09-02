@@ -53,6 +53,28 @@ describe('SEC-F-010 Personenbezogene Funktionen erst nach wirksamer Einwilligung
   });
 });
 
+describe('SHELL-F-110 Gesperrte Ansicht nennt Grund, bietet Freischaltweg und zeigt danach dieselbe Ansicht', () => {
+  it('nennt den Grund und einen direkten Weg zur Freischaltung, dann erscheint der ursprüngliche Inhalt', async () => {
+    render(
+      <ConsentProvider>
+        <RequiresConsent><Text>Bewertung abgeben</Text></RequiresConsent>
+      </ConsentProvider>,
+    );
+
+    // Grund benannt (ein Satz), Freischaltweg als Knopf sichtbar.
+    expect(await screen.findByText('Zustimmung erforderlich')).toBeTruthy();
+    expect(
+      screen.getByText('Diese Funktion verarbeitet personenbezogene Daten. Stimme der Datenschutzerklärung zu, um sie zu nutzen.'),
+    ).toBeTruthy();
+    const unlock = screen.getByRole('button', { name: 'Jetzt zustimmen' });
+
+    fireEvent.press(unlock);
+
+    // Nach der Freischaltung dieselbe Ansicht, an der die Nutzerin war.
+    await waitFor(() => expect(screen.getByText('Bewertung abgeben')).toBeTruthy());
+  });
+});
+
 describe('SEC-F-020 Erneute Einwilligung nach Änderung der Datenschutzerklärung', () => {
   it('sperrt personenbezogene Funktionen wieder und weist auf die Änderung hin', async () => {
     // Zustimmung zu einer älteren Fassung vortäuschen.

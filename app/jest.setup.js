@@ -12,7 +12,56 @@ jest.mock('@react-native-community/netinfo', () => ({
 }));
 
 jest.mock('expo-localization', () => ({
-  getLocales: () => [{ languageCode: 'de', languageTag: 'de-DE' }],
+  getLocales: jest.fn(() => [{ languageCode: 'de', languageTag: 'de-DE' }]),
+}));
+
+jest.mock('expo-system-ui', () => ({
+  setBackgroundColorAsync: jest.fn(() => Promise.resolve()),
+}));
+
+// AccessibilityInfo: „Bewegung reduzieren" standardmäßig aus, überschreibbar.
+jest.spyOn(require('react-native').AccessibilityInfo, 'isReduceMotionEnabled')
+  .mockResolvedValue(false);
+jest.spyOn(require('react-native').AccessibilityInfo, 'addEventListener')
+  .mockReturnValue({ remove: jest.fn() });
+
+jest.mock('react-native-safe-area-context', () =>
+  require('react-native-safe-area-context/jest/mock').default,
+);
+
+// Navigations- und Schnellzugriffs-Module haben nativen Anteil, der im
+// Jest-Umfeld nicht existiert. Route-Dateien selbst sind reine Re-Exporte
+// (SHELL-F-050) und werden nicht über den Router getestet.
+jest.mock('expo-router', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  const passthrough = ({ children }) => children ?? null;
+  return {
+    __esModule: true,
+    Link: ({ children, href, asChild, ...rest }) =>
+      asChild ? children : React.createElement(Text, rest, children),
+    Stack: Object.assign(passthrough, { Screen: () => null }),
+    Tabs: Object.assign(passthrough, { Screen: () => null }),
+    Slot: passthrough,
+    Redirect: () => null,
+    useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+    usePathname: () => '/',
+  };
+});
+
+jest.mock('expo-quick-actions', () => ({
+  __esModule: true,
+  setItems: jest.fn(() => Promise.resolve()),
+  addListener: jest.fn(() => ({ remove: jest.fn() })),
+  isSupported: jest.fn(() => Promise.resolve(true)),
+  initial: undefined,
+  maxCount: 4,
+}));
+
+jest.mock('expo-quick-actions/router', () => ({
+  __esModule: true,
+  useQuickActionRouting: jest.fn(),
+  isRouterAction: jest.fn(() => true),
 }));
 
 // i18next synchron initialisieren, damit t() in Komponententests Klartext liefert.

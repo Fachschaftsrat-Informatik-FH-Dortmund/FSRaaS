@@ -22,7 +22,9 @@
     "plugins": [
       "expo-dev-client",
       "expo-localization",
-      "expo-asset"
+      "expo-asset",
+      "expo-router",
+      "expo-quick-actions"
     ],
     "extra": {
       "comment": "Vertrieb, Ziel-API-Stufen und F-Droid-Recipe: Roadmap Schritt 10, NFR Abschnitt 9. expo-updates und EAS bewusst nicht konfiguriert (ADR 0009)."

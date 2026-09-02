@@ -6,7 +6,43 @@
     "retry": "Try again",
     "loading": "Loading …",
     "cancel": "Cancel",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "dismissHint": "Dismiss hint"
+  },
+  "nav": {
+    "schedule": "Timetable",
+    "canteen": "Canteen",
+    "news": "News",
+    "rooms": "Room finder",
+    "more": "More"
+  },
+  "more": {
+    "title": "More",
+    "ticket": "Semester ticket",
+    "settings": "Settings",
+    "admin": "Administration & editing",
+    "nextStep": "Pick an area from the list.",
+    "groupStudium": "My studies",
+    "groupFachschaft": "Student council",
+    "groupApp": "App",
+    "groupVerwaltung": "Administration"
+  },
+  "areas": {
+    "comingSoonTitle": "Coming soon",
+    "comingSoonBody": "This area will be filled in a later development step. The way to get here already works."
+  },
+  "settings": {
+    "title": "Settings",
+    "appearanceLabel": "Appearance",
+    "languageLabel": "Language",
+    "startViewLabel": "Start screen",
+    "startViewLast": "Last used",
+    "moreSoon": "More settings will arrive together with the respective features."
+  },
+  "appearance": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   },
   "states": {
     "loading": "Loading …",

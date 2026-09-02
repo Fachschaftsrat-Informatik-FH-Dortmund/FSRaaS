@@ -5,6 +5,11 @@
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    // Metro löst Pakete über das "exports"-Feld auf; tsc muss dasselbe tun,
+    // sonst finden Pakete wie expo-quick-actions (nur "exports", kein "main")
+    // keine Typen.
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": [
         "./src/*"

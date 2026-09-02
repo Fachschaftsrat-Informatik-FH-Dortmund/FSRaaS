@@ -1,8 +1,8 @@
 ---
 status: accepted
-version: 1.1.0
+version: 1.1.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-02
 ---
 
 # Spezifikations-Handbuch
@@ -46,8 +46,9 @@ specs/
 │   ├── api-contract.yaml              OpenAPI-Vertrag des eigenen Backends, Anhang zu INT-008
 │   ├── non-functional.md              (NFR) Leistungs-, Verfügbarkeits- und Kompatibilitätsanforderungen
 │   └── quality-and-testing.md         (QA) Teststrategie, Qualitätssicherung, Release-Kriterien
+├── pruefprotokolle/                   datierte Prüfprotokolle (QA Abschnitt 3), wo ein Test unverhältnismäßig ist
 ├── features/                          eine Spec je fachlichem Feature
-│   ├── app-shell/spec.md              (SHELL)
+│   ├── app-shell/spec.md              (SHELL)  — daneben: nutzerfuehrung-konzept.md (Design-Herleitung)
 │   ├── room-finder/spec.md            (RAUM)
 │   ├── schedule/spec.md               (SCHED)
 │   ├── canteen/spec.md                (MENSA)
@@ -248,6 +249,8 @@ Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = f�
 | `product/legacy-inventory.md` | – | – | – | accepted |
 | `product/whatsapp-feedback-inventory.md` | – | – | – | draft |
 | `product/roadmap.md` | – | – | – | accepted |
+| `features/app-shell/nutzerfuehrung-konzept.md` | – | – | – | accepted |
+| `pruefprotokolle/2026-09-02-app-rahmen.md` | – | – | – | draft |
 | `open-questions.md` | – | – | – | draft |
 | `decisions/0001-react-native-als-plattform.md` | – | – | – | angenommen |
 | `decisions/0002-spec-anchored-arbeitsweise.md` | – | – | – | angenommen |
