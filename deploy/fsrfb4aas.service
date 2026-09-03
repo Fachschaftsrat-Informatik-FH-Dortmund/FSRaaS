@@ -1,24 +1,24 @@
-# systemd-Unit für das FB4-Backend. Auf dem Server nach
-#   /etc/systemd/system/fb4.service
-# kopieren, dann:  sudo systemctl daemon-reload && sudo systemctl enable --now fb4
+# systemd-Unit für das fsrfb4aas-Backend. Auf dem Server nach
+#   /etc/systemd/system/fsrfb4aas.service
+# kopieren, dann:  sudo systemctl daemon-reload && sudo systemctl enable fsrfb4aas
 #
-# Läuft als eigener, unprivilegierter Nutzer `fb4`. Geheimnisse kommen
-# ausschließlich aus /etc/fb4/fb4.env (SEC-N-110, ADR 0017) — siehe
-# deploy/fb4.env.example. Kestrel bindet nur an localhost; TLS und
-# öffentliche Erreichbarkeit macht der nginx-Reverse-Proxy (deploy/nginx-fb4.conf).
+# Läuft als eigener, unprivilegierter Nutzer `fsrfb4aas`. Geheimnisse kommen
+# ausschließlich aus /etc/fsrfb4aas/fsrfb4aas.env (SEC-N-110, ADR 0017) — siehe
+# deploy/fsrfb4aas.env.example. Kestrel bindet nur an localhost; TLS und
+# öffentliche Erreichbarkeit macht der nginx-Reverse-Proxy (deploy/nginx-fsrfb4aas.conf).
 
 [Unit]
-Description=FB4-App Backend (ASP.NET Core)
+Description=fsrfb4aas Backend (ASP.NET Core)
 After=network-online.target postgresql.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=fb4
-Group=fb4
-WorkingDirectory=/var/www/fb4
-ExecStart=/usr/bin/dotnet /var/www/fb4/Fb4.Backend.dll
-EnvironmentFile=/etc/fb4/fb4.env
+User=fsrfb4aas
+Group=fsrfb4aas
+WorkingDirectory=/var/www/fsrfb4aas
+ExecStart=/usr/bin/dotnet /var/www/fsrfb4aas/Fb4.Backend.dll
+EnvironmentFile=/etc/fsrfb4aas/fsrfb4aas.env
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://127.0.0.1:5100
 Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -26,21 +26,21 @@ Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
 # (loopback als vertrauenswürdiger Proxy). Ohne Codeänderung über den Schalter.
 Environment=ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
 # DataProtection-Schlüssel dauerhaft ablegen (sonst Warnung + neue Schlüssel je Neustart).
-# HOME/DOTNET_CLI_HOME auf ein beschreibbares Verzeichnis, da der fb4-Nutzer kein Home hat.
-Environment=XDG_DATA_HOME=/var/lib/fb4
-Environment=HOME=/var/lib/fb4
-Environment=DOTNET_CLI_HOME=/var/lib/fb4
+# HOME/DOTNET_CLI_HOME auf ein beschreibbares Verzeichnis, da der Nutzer kein Home hat.
+Environment=XDG_DATA_HOME=/var/lib/fsrfb4aas
+Environment=HOME=/var/lib/fsrfb4aas
+Environment=DOTNET_CLI_HOME=/var/lib/fsrfb4aas
 Restart=always
 RestartSec=5
 KillSignal=SIGINT
-SyslogIdentifier=fb4
+SyslogIdentifier=fsrfb4aas
 
-# Härtung — der Dienst schreibt nur nach /var/lib/fb4 und /var/log/fb4
+# Härtung — der Dienst schreibt nur nach /var/lib/fsrfb4aas und /var/log/fsrfb4aas
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/var/lib/fb4 /var/log/fb4
+ReadWritePaths=/var/lib/fsrfb4aas /var/log/fsrfb4aas
 
 [Install]
 WantedBy=multi-user.target
