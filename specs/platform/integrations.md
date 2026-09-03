@@ -3,9 +3,9 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.1.1
+version: 1.2.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/
@@ -657,8 +657,22 @@ Gering bis mittel. Der zuvor hier vermerkte Blockade-Charakter entfällt: Die Um
 **Ersatzoption**
 Nicht zutreffend — Authentik ist selbst die Ersatzoption für den zuvor angenommenen, ungeklärten Hochschul-SSO-Weg.
 
+**Verwaltungs-API (Gruppen und Mitgliedschaft)**
+Für ADMIN-F-070 (Zuweisen und Entziehen der Rollen FSR-Redaktion und Moderation) schreibt das Backend die Gruppenmitgliedschaft in Authentik über dessen REST-Verwaltungs-API unter `https://<instanz>/api/v3/`. Rollen sind Authentik-Gruppen; das Backend hält keine eigene Rollentabelle (API-F-250).
+
+| Zweck | Aufruf (Authentik `api/v3`) | Ausgewertete Felder |
+|---|---|---|
+| Gruppen-ID zu einem Namen ermitteln | `GET core/groups/?name={Gruppenname}` | `results[].pk` (UUID), `results[].name` |
+| Mitglieder einer Gruppe lesen | `GET core/groups/{pk}/` | `pk`, `name`, `users_obj[].pk` (Ganzzahl), `users_obj[].username`, `users_obj[].name` |
+| Konto einer Gruppe hinzufügen | `POST core/groups/{pk}/add_user/` mit `{ "pk": "{kontoId}" }` (Authentik nimmt die Ganzzahl auch als String an) | HTTP-Status |
+| Konto aus einer Gruppe entfernen | `POST core/groups/{pk}/remove_user/` mit `{ "pk": "{kontoId}" }` | HTTP-Status |
+
+**Authentifizierung:** Bearer-Token eines Authentik-Dienstkontos (Intent *API*) mit Schreibrecht auf die betreffenden Gruppen — am einfachsten Mitglied von `authentik Admins`. Token und Basis-URL kommen ausschließlich aus der Backend-Konfiguration bzw. einem Secret-Mechanismus (SEC-N-110), nie aus dem Quellcode oder einer Feature-Spec.
+
+**Status dieser Teil-Schnittstelle:** Lesepfad **live verifiziert am 2026-09-03** gegen die eigenbetriebene Instanz `auth.tobtech.de`: `GET core/groups/?name=…` liefert je Gruppe `pk`/`name`, `GET core/groups/{pk}/` liefert `users_obj` mit genau den Feldern `pk`/`username`/`name`. Die Gruppen `FSR-Redaktion` und `Moderation` existieren. Der Schreibpfad (`add_user`/`remove_user`) ist strukturell aus derselben API bekannt, ein Round-Trip gegen die Instanz steht noch aus (nur beim ersten echten Rollenwechsel bestätigbar). Vertragstest gegen diese Struktur: `AuthentikDirectoryContractTests` (QA-N-070). Ohne konfigurierte API meldet das Backend die Rollenverwaltung als „nicht verfügbar" (503), statt still zu scheitern.
+
 **Status**
-Anbieter entschieden. Offen: Zeitpunkt und Ergebnis der App-Registrierung im FH-Microsoft-Mandanten sowie die Frage, welche Claims der Upstream liefert. Beides blockiert die Umsetzung nicht.
+Anbieter entschieden, OIDC-Discovery und Verwaltungs-API-Lesepfad gegen `auth.tobtech.de` verifiziert (2026-09-03). Offen: Zeitpunkt und Ergebnis der App-Registrierung im FH-Microsoft-Mandanten, welche Claims der Upstream liefert, und der Schreib-Round-Trip der Verwaltungs-API. Nichts davon blockiert die Umsetzung.
 
 ---
 

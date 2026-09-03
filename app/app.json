@@ -24,10 +24,13 @@
       "expo-localization",
       "expo-asset",
       "expo-router",
-      "expo-quick-actions"
+      "expo-quick-actions",
+      "expo-secure-store"
     ],
     "extra": {
-      "comment": "Vertrieb, Ziel-API-Stufen und F-Droid-Recipe: Roadmap Schritt 10, NFR Abschnitt 9. expo-updates und EAS bewusst nicht konfiguriert (ADR 0009)."
+      "comment": "Vertrieb, Ziel-API-Stufen und F-Droid-Recipe: Roadmap Schritt 10, NFR Abschnitt 9. expo-updates und EAS bewusst nicht konfiguriert (ADR 0009).",
+      "authIssuer": "https://auth.tobtech.de/application/o/fb4-app/",
+      "authClientId": "fb4-app"
     }
   }
 }

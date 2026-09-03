@@ -14,13 +14,25 @@ npm-debug.log*
 # Expo (app/)
 app/.expo/
 app/dist/
+app/dist-web/
+app/dist-android/
 app/web-build/
 app/expo-env.d.ts
+
+# Web-Export der Verwaltungsoberfläche, vom Backend mitausgeliefert (ADR 0018) —
+# entsteht im Build, nie committen
+backend/src/Fb4.Backend/wwwroot/admin/
 
 # .NET (backend/)
 [Bb]in/
 [Oo]bj/
 *.user
+
+# Lokale Backend-Konfiguration mit Geheimnissen (Verbindungszeichenfolge,
+# Authentik-Token) — nie committen. Die produktiven Werte kommen im Betrieb
+# aus Umgebungsvariablen/Secrets (SEC-N-110).
+appsettings.Development.json
+appsettings.Local.json
 
 # Erzeugter Code aus dem Vertrag (tools/contract-codegen)
 app/src/api/generated/

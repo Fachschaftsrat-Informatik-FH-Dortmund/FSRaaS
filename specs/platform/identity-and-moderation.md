@@ -3,11 +3,13 @@ id: identity-and-moderation
 titel: Identität und Moderation
 praefix: IDENT
 status: accepted
-version: 1.4.0
+version: 1.4.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-02
 derived_from: []
-implemented_in: []
+implemented_in:
+  - backend/src/Fb4.Backend/Infrastructure/Auth  # IDENT-F-045 (Rollen aus INT-012)
+  - app/src/auth                                 # IDENT-F-140, IDENT-N-030, DATA-F-120/130 (Anmeldung, Token, Abmeldung)
 related:
   - security-and-privacy.md
   - backend-and-api.md

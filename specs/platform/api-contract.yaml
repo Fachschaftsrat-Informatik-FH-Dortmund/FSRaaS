@@ -16,7 +16,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -611,6 +611,62 @@ paths:
         "403": { $ref: "#/components/responses/Verboten" }
         "412":
           description: Zwischenzeitlich geändert; neuerer Stand über GET erneut abrufen
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
+        default: { $ref: "#/components/responses/Fehler" }
+
+  /verwaltung/stammdaten:
+    get:
+      tags: [verwaltung]
+      summary: Ferngepflegte Stammdaten zur Bearbeitung
+      description: |
+        Erfüllt ADMIN-F-180 und ADMIN-F-190. Liefert denselben Bestand wie
+        `GET /stammdaten`, hier jedoch nur für die Rolle FSR-Redaktion und mit
+        `ETag` für die optimistische Nebenläufigkeitskontrolle beim Ersetzen.
+      responses:
+        "200":
+          description: Aktueller Stammdatenbestand
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Stammdaten" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
+        "403": { $ref: "#/components/responses/Verboten" }
+        default: { $ref: "#/components/responses/Fehler" }
+    put:
+      tags: [verwaltung]
+      summary: Stammdaten ersetzen
+      description: |
+        Erfüllt ADMIN-F-180, ADMIN-F-190 und ADMIN-F-200. Ersetzt den gesamten
+        Bestand (Mensa-Liste, Raumliste, Links, Semestertermine, Ticket-Bildausschnitt).
+        Der Kopf `If-Match` schützt vor dem Überschreiben einer zwischenzeitlichen
+        Änderung durch eine andere Person.
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Stammdaten" }
+      responses:
+        "200":
+          description: Stammdaten gesetzt
+          headers:
+            ETag:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Stammdaten" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
+        "403": { $ref: "#/components/responses/Verboten" }
+        "412":
+          description: Zwischenzeitlich geändert; neuerer Stand über GET erneut abrufen (ADMIN-F-200)
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Fehler" }

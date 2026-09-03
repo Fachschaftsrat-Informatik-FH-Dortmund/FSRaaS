@@ -40,5 +40,5 @@ Kein eigenständiges `admin-web/`-React-Projekt. ADMIN-Bildschirme leben in `app
 ## Offene Punkte
 
 - ~~Ergebnis des Prototyps~~ Siehe Ergänzung 2026-08-26 — erfolgreich, keine Revision nötig.
-- Hosting des Web-Exports: vom Backend mitausgeliefert oder separat als statische Seite gehostet — bei Einrichtung von Schritt 3 festzulegen.
+- ~~Hosting des Web-Exports: vom Backend mitausgeliefert oder separat als statische Seite gehostet~~ Geklärt bei Einrichtung von Schritt 3 (FSR FB4, 2026-09-02): **vom Backend mitausgeliefert** unter dem Pfad `/admin`. ASP.NET Core stellt die statischen Export-Dateien aus `wwwroot/admin` bereit (`Program.cs`); die CI baut den Expo-Web-Export (`npx expo export --platform web`) und legt ihn dorthin. Eine Auslieferung, eine Domain, gemeinsame TLS-Konfiguration — passt zum Ziel einer für eine wechselnde Ehrenamtsbesetzung minimal zu betreibenden Landschaft.
 - Aus dem Spike mitgenommen: `Pressable`-Elemente rendern unter React Native Web ohne explizites `accessibilityRole="button"` als generische statt als Button-ARIA-Rolle — bei Umsetzung je Bedienelement zu setzen, relevant für `ux-and-theming.md` UX-F-060 (für Bildschirmvorleser auswertbare Beschriftung).

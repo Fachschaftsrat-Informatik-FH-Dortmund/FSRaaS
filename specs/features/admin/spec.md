@@ -4,11 +4,18 @@ titel: Verwaltung und Redaktion
 praefix: ADMIN
 status: accepted
 prioritaet: kern
-version: 0.2.1
+version: 0.3.1
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-03
 derived_from: []
-implemented_in: []
+implemented_in:
+  - backend/src/Fb4.Backend/Endpoints          # ADMIN-F-010/020/070/080/090/100/180/190
+  - backend/src/Fb4.Backend/Domain              # Datenmodell Stammdaten, Laufwege, Verwaltungsprotokoll
+  - backend/src/Fb4.Backend/Infrastructure/Auth # ADMIN-F-010 (serverseitige Rollenprüfung), API-F-250
+  - backend/src/Fb4.Backend/Infrastructure/Audit # ADMIN-F-110, ADMIN-N-020
+  - app/src/auth                                # Anmeldung gegen Authentik (INT-012)
+  - app/src/areas/admin                         # ADMIN-F-020/030 (App- und Web-Layout), ADMIN-N-010
+  - specs/pruefprotokolle/2026-09-02-schritt-3-verwaltung.md # ADMIN-N-010, ADMIN-F-070 (Live-Verifikation ausstehend)
 related:
   - ../../platform/backend-and-api.md
   - ../../platform/identity-and-moderation.md
@@ -40,6 +47,7 @@ Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Ar
 - Zugangsschutz und Rollenprüfung für alle Verwaltungsfunktionen.
 - Redaktion von FSR-News: anlegen, bearbeiten, veröffentlichen, zurückziehen.
 - Zuweisung der Rollen FSR-Redaktion und Moderation an Konten.
+- Pflege der Stammdaten ohne externes Quellsystem: Mensa-Liste, Raumliste, Links-/Downloads-Liste, Semestertermine und Ticket-Bildausschnitt (API-F-230).
 - Pflege der Laufwege-Datenstruktur zwischen Räumen (Grundlage für RAUM-F-060).
 - Moderation gemeldeter Bewertungskommentare (zweite Ausbaustufe, siehe `../../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md`).
 - Anlegen von Helferbedarf und Übersicht der Besetzung (zweite Ausbaustufe).
@@ -84,6 +92,9 @@ Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Ar
 | ADMIN-F-150 | Das System muss der Rolle FSR-Redaktion eine Übersicht aller Rollen/Schichten eines Events mit besetzten und offenen Plätzen bereitstellen. | NEU |
 | ADMIN-F-160 | Das System muss der Rolle FSR-Redaktion den Upload einer Prüfungsplan-Datei sowie die Anzeige des Importergebnisses (übernommene Einträge, verworfene Zeilen mit Grund) ermöglichen. | NEU |
 | ADMIN-F-170 | Wenn ein Prüfungsplan-Upload Zeilen enthält, die nicht ausgewertet werden konnten, muss das System den Import dennoch abschließen und die betroffenen Zeilen einzeln benennen. | NEU |
+| ADMIN-F-180 | Das System muss der Rolle FSR-Redaktion das Anlegen, Ändern und Entfernen von Einträgen der Mensa-Liste, der Raumliste und der Links-/Downloads-Liste ermöglichen. | NEU |
+| ADMIN-F-190 | Das System muss der Rolle FSR-Redaktion das Ändern der Semestertermine und des Ticket-Bildausschnitts ermöglichen. | NEU |
+| ADMIN-F-200 | Wenn eine Stammdaten-Liste gespeichert wird, während sie zwischenzeitlich von einer anderen Person geändert wurde, muss das System den Speichervorgang ablehnen und den neueren Stand zur erneuten Bearbeitung anbieten. | NEU |
 
 ### Erläuterungen
 
@@ -99,6 +110,8 @@ Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Ar
 
 **`ADMIN-F-110` — Umfang der Protokollierung.** Protokolliert werden Zeitpunkt, Konto und betroffener Datensatz, nicht der Inhalt nutzergenerierter Beiträge — `../../platform/security-and-privacy.md` (SEC-N-120) untersagt personenbezogene Inhalte in Protokollen, und API-N-080 verlangt Datensparsamkeit. Bei einer Moderationsentscheidung wird also festgehalten, dass ein bestimmter Kommentar entfernt wurde, nicht sein Wortlaut.
 
+**`ADMIN-F-180` / `ADMIN-F-190` / `ADMIN-F-200` — Stammdaten-Pflege statt Konfigurationsdatei.** Das abgelöste Backend `app.fsrfb4.de` pflegte diese Daten über ein Formular ohne Übersicht, Validierung oder Historie und veraltete dadurch (`../../platform/integrations.md` INT-008, „Lese-/Schreibtrennung bei `/data`"). Diese Anforderungen verlegen die Pflege in die Verwaltungsoberfläche. Gespeichert wird je Liste als Ganzes (vollständige Ersetzung), abgesichert gegen gleichzeitige Bearbeitung durch dieselbe optimistische Nebenläufigkeitskontrolle wie bei Meldungsentwürfen und Laufwegen (`If-Match`, siehe Abschnitt 9); ADMIN-F-200 ist die zugehörige Fehlerreaktion. Der App wird derselbe Bestand kontofrei ausgeliefert (API-F-230), mit einem im Anwendungspaket mitgelieferten Ausgangsbestand als Rückfall (API-F-235).
+
 **`ADMIN-F-120` bis `ADMIN-F-170` — Ausbaustufe.** Diese sechs Anforderungen gehören zur zweiten Ausbaustufe, weil die von ihnen bedienten Funktionen dort liegen: Moderation gemeinsam mit RATE-F-020/060, Helferbedarf gemeinsam mit HELFER, Prüfungsplan gemeinsam mit SCHED-F-190 bis F-220 und der Klärung von INT-013. Zuordnung siehe `../../product/roadmap.md`.
 
 ## 5. Datenmodell
@@ -108,6 +121,8 @@ Meldungsentwurf (FSR-News): Titel, Text, geplanter Veröffentlichungszeitpunkt, 
 Rollenzuweisung: Konto-Referenz und Rolle. Führendes System ist Authentik; das Backend hält keine eigene Kopie, sondern liest die Zuweisung aus dem Token und schreibt Änderungen über Authentik zurück.
 
 Laufwege-Eintrag: zwei Raumkennungen und ein Distanzmaß (Arbeitsziel Fußweg-Minuten, siehe `../room-finder/spec.md` Abschnitt 13). Grobe Felder bereits in `../../platform/backend-and-api.md` Abschnitt 5 vorgedacht.
+
+Stammdaten (ADMIN-F-180/190): Mensa-Liste, Raumliste, Links-/Downloads-Liste, Semestertermine und Ticket-Bildausschnitt. Feldstruktur je Ressource in `../../platform/backend-and-api.md` Abschnitt 5 und im Vertrag (`../../platform/api-contract.yaml`, Schemata `Mensa`, `Raum`, `Link`, `Semestertermine`, `Bildausschnitt`). Führendes System ist das eigene Backend; es gibt keine externe Quelle.
 
 Verwaltungsprotokoll: Zeitpunkt, handelndes Konto, Art der Handlung, Referenz auf den betroffenen Datensatz. Kein Inhalt nutzergenerierter Beiträge (siehe Erläuterung zu ADMIN-F-110).
 
@@ -123,7 +138,7 @@ Alle Verwaltungsfunktionen laufen über das eigene Backend INT-008; der Vertrag 
 |---|---|
 | Nicht angemeldet | Anmeldeaufforderung; der Verwaltungsbereich ist nicht sichtbar (ADMIN-F-020) |
 | Angemeldet ohne Verwaltungsrolle | Verwaltungsbereich bleibt unsichtbar; ein direkt aufgerufener Verwaltungspfad wird abgelehnt (ADMIN-F-010) |
-| Laden | Ladeanzeige beim Abrufen von Entwürfen, Rollen, Laufwegen oder Meldungen |
+| Laden | Ladeanzeige beim Abrufen von Entwürfen, Rollen, Laufwegen, Stammdaten oder Meldungen |
 | Leer | Je Bereich benannter Leerzustand mit dem nächsten Schritt, etwa „noch keine Entwürfe — neue Meldung anlegen" (`../../platform/ux-and-theming.md` UX-F-110) |
 | Fehler | Fehlermeldung mit Wiederholen-Option; ein nicht gespeicherter Entwurf bleibt erhalten |
 | Offline | Verwaltungsfunktionen sind nicht verfügbar, siehe Abschnitt 8 |
@@ -141,6 +156,7 @@ Ein lokal begonnener, noch nicht abgesendeter Meldungsentwurf bleibt davon unber
 | Fall | Reaktion |
 |---|---|
 | Zwei Personen bearbeiten denselben Meldungsentwurf gleichzeitig | Der zweite Speichervorgang wird abgelehnt, mit Hinweis auf die zwischenzeitliche Änderung und Anzeige des neueren Stands |
+| Zwei Personen bearbeiten dieselbe Stammdaten-Liste gleichzeitig | Der zweite Speichervorgang wird abgelehnt (ADMIN-F-200); der neuere Stand wird erneut geladen und zur Bearbeitung angeboten |
 | Rollenänderung schlägt fehl, weil Authentik nicht erreichbar ist | Fehlermeldung mit Wiederholen-Option; die bisherige Rollenzuweisung bleibt unverändert |
 | Prüfungsplan-Datei hat ein unerwartetes Format | Import abbrechen, bisherigen Bestand unverändert lassen, erkannte Abweichung benennen |
 | Prüfungsplan-Datei enthält einzelne unlesbare Zeilen | Import abschließen, unlesbare Zeilen einzeln im Ergebnisbericht benennen (ADMIN-F-170) |
@@ -173,7 +189,21 @@ Nicht zutreffend — keine der Alt-Apps bietet Verwaltungs- oder Redaktionsfunkt
 
 ## 13. Offene Fragen
 
-- Ob der Web-Export vom Backend mitausgeliefert oder separat als statische Seite gehostet wird — offener Punkt in `../../decisions/0018-verwaltungsoberflaeche-react-native-web.md`.
+- ~~Ob der Web-Export vom Backend mitausgeliefert oder separat als statische Seite gehostet wird~~ Geklärt bei Einrichtung von Schritt 3 (FSR FB4, 2026-09-02): Der Web-Export wird **vom Backend mitausgeliefert** — ASP.NET Core stellt die statischen Export-Dateien unter dem Pfad `/admin` bereit. Eine Auslieferung, eine Domain, gemeinsame TLS-Konfiguration; die CI baut den Expo-Web-Export und legt ihn ins Backend-Artefakt. Siehe `../../decisions/0018-verwaltungsoberflaeche-react-native-web.md`.
 - ~~Ergebnis des in ADR 0018 vorgesehenen Prototyps~~ Erfolgreich durchgeführt und bestätigt am 2026-08-26, siehe dort.
 - Ob Meldungsentwürfe eine geplante Veröffentlichung zu einem künftigen Zeitpunkt unterstützen sollen oder nur sofortiges Veröffentlichen; für die erste Ausbaustufe ist das Feld im Datenmodell vorgesehen, eine zeitgesteuerte Auslieferung aber nicht gefordert.
 - Ob das Verwaltungsprotokoll (ADMIN-F-110) in der Oberfläche einsehbar sein soll oder nur serverseitig geführt wird — für die erste Ausbaustufe genügt die serverseitige Führung.
+
+## 14. Umsetzungsstand (Roadmap-Schritt 3)
+
+| Anforderung | Stand |
+|---|---|
+| ADMIN-F-010, ADMIN-F-020, ADMIN-F-030 | umgesetzt (Backend-Rollenprüfung, App-Sichtbarkeit an Rolle gebunden, gemeinsame Codebasis App + Web-Export) |
+| ADMIN-F-070 | **teilweise** — App/Web-Fluss, Backend-Endpunkt und `IAuthentikDirectory` vorhanden; Vertragstest gegen die INT-012-Struktur grün. Der **Lesepfad** der Authentik-Verwaltungs-API ist am 2026-09-03 live gegen `auth.tobtech.de` bestätigt (Gruppen `FSR-Redaktion`/`Moderation` vorhanden, Feldstruktur passt). Ausstehend: erster schreibender Rollenwechsel und ein durchgängiger Anmeldevorgang über den Browser (Prüfprotokoll `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md`). |
+| ADMIN-F-080 | umgesetzt (Ablehnung beim Entzug der letzten FSR-Redaktions-Zuweisung, als reine Funktion getestet) |
+| ADMIN-F-090, ADMIN-F-100 | umgesetzt (Laufwege-Pflege mit Hinweis auf unbekannte Raumkennungen) |
+| ADMIN-F-110, ADMIN-N-020 | umgesetzt (Verwaltungsprotokoll je verändernder Handlung; Aufbewahrung 12 Monate über periodischen Aufräum-Job) |
+| ADMIN-F-180, ADMIN-F-190, ADMIN-F-200 | umgesetzt (Stammdaten-Pflege mit optimistischer Nebenläufigkeitskontrolle) |
+| ADMIN-N-010 | Prüfprotokoll (Weboberfläche ab 1024 px), siehe `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md` |
+| ADMIN-F-040 bis ADMIN-F-060 | offen — News-Redaktion, Roadmap-Schritt 7 (NEWS) |
+| ADMIN-F-120 bis ADMIN-F-170 | offen — zweite Ausbaustufe |

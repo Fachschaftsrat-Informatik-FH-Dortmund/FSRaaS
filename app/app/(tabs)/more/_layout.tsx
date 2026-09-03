@@ -27,7 +27,8 @@ export default function MoreLayout() {
       <Stack.Screen name="index" options={{ title: t('more.title') }} />
       <Stack.Screen name="ticket" options={{ title: t('more.ticket') }} />
       <Stack.Screen name="settings" options={{ title: t('more.settings') }} />
-      <Stack.Screen name="admin" options={{ title: t('more.admin') }} />
+      {/* Verwaltung ist ein eigener verschachtelter Stack mit eigenen Kopfzeilen. */}
+      <Stack.Screen name="admin" options={{ title: t('more.admin'), headerShown: false }} />
     </Stack>
   );
 }

@@ -12,7 +12,9 @@ public sealed class ApiException(int status, string code, string title, string? 
     public string Code { get; } = code;
     public string? Detail { get; } = detail;
 
+    public static ApiException BadRequest(string code, string title) => new(400, code, title);
     public static ApiException NotFound(string code, string title) => new(404, code, title);
     public static ApiException Conflict(string code, string title) => new(409, code, title);
+    public static ApiException PreconditionFailed(string code, string title) => new(412, code, title);
     public static ApiException TooManyRequests(string code, string title) => new(429, code, title);
 }
