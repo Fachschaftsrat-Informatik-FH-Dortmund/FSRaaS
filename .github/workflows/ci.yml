@@ -72,6 +72,13 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      # Vertragstypen aus api-contract.yaml erzeugen (API-N-035); die Zieldatei
+      # app/src/api/generated/schema.ts ist gitignored und entsteht hier neu.
+      - name: contract types
+        working-directory: .
+        run: |
+          npm --prefix tools/contract-codegen ci
+          node tools/contract-codegen/src/generate.mjs
       # QA-F-130: Abhängigkeiten mit bekannter Schwachstelle ab hoch blockieren den
       # Merge. Die datierte Allowlist in app/audit-ci.jsonc enthält nur den
       # triagierten Bestand der Expo-Build-Werkzeugkette (quality-and-testing.md
@@ -96,6 +103,11 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      - name: contract types
+        working-directory: .
+        run: |
+          npm --prefix tools/contract-codegen ci
+          node tools/contract-codegen/src/generate.mjs
       - run: npx expo export --platform web --output-dir dist-web
       - uses: actions/upload-artifact@v4
         with:
@@ -109,9 +121,19 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
+      # Vertragstypen erzeugen (API-N-035); backend/src/Fb4.Backend/Contract/Generated/
+      # ist gitignored und entsteht hier neu, vor dem Build.
+      - name: contract types
+        working-directory: .
+        run: |
+          npm --prefix tools/contract-codegen ci
+          node tools/contract-codegen/src/generate.mjs
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release
       - run: dotnet test --no-build -c Release

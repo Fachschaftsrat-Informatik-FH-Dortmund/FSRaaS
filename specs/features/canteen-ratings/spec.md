@@ -4,11 +4,12 @@ titel: Mensa-Bewertungen
 praefix: RATE
 status: accepted
 prioritaet: kern
-version: 1.0.0
+version: 1.0.1
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-09-03
 derived_from: []
-implemented_in: []
+implemented_in:
+  - backend/src/Fb4.Backend/Infrastructure/Mensa   # RATE-F-050 (Gerichtsnormalisierung, in Roadmap-Schritt 4 vorgezogen für MENSA-F-090)
 related:
   - ../../platform/backend-and-api.md
   - ../../platform/identity-and-moderation.md
@@ -69,7 +70,9 @@ Ermöglicht Studierenden, Gerichte des Mensaplans zu bewerten, und anderen Studi
 
 **`RATE-F-090`** — Entscheidung FSR FB4, 2026-08-25 (`decisions/0004-identitaet-und-anmeldung.md`): Vor dieser Entscheidung genügte für jede Bewertung ein reines, gerätegebundenes Pseudonym, auch zum Verfassen. Ersetzt durch eine Kontopflicht ausschließlich für den Schreibpfad — Lesen bleibt uneingeschränkt kontofrei. Löst die bisherige Offene Frage zur Umgehbarkeit der Einmal-pro-Tag-Sperre bei Gerätewechsel (siehe Abschnitt 13): Ein Konto ist nicht gerätegebunden.
 
-**`RATE-F-050`** — Rohtitel aus INT-004 (`meals[].title`) sind nicht garantiert stabil formatiert (siehe `platform/quality-and-testing.md` Abschnitt 5, „Normalisierung der Gerichtsbezeichnungen"). Ohne Normalisierung würde geringfügig unterschiedlich geschriebene, aber identische Gerichte als getrennte Bewertungsziele geführt. Normalisierungsregel: Kleinschreibung, Vereinheitlichung von Mehrfach-Leerzeichen auf ein einzelnes, Entfernen von führendem/nachgestelltem Whitespace, Entfernen führender Tagesnummerierungen (Muster `^\d+\.\s*`). Diese Regel ist der verbindliche Ausgangspunkt für die in `platform/quality-and-testing.md` (QA) geforderten Tests; eine Erweiterung bei Umsetzung (z. B. um weitere beobachtete Schreibvarianten) bleibt möglich, ohne dass diese Kernregel entfällt.
+**`RATE-F-050`** — Rohtitel der Speiseplan-Quelle (INT-015 `title.de`, vormals INT-004 `meals[].title`) sind nicht garantiert stabil formatiert (siehe `platform/quality-and-testing.md` Abschnitt 5, „Normalisierung der Gerichtsbezeichnungen"). Ohne Normalisierung würden geringfügig unterschiedlich geschriebene, aber identische Gerichte als getrennte Bewertungsziele geführt. Kernregel der Normalisierung: Kleinschreibung, Vereinheitlichung von Mehrfach-Leerzeichen auf ein einzelnes, Entfernen von führendem/nachgestelltem Whitespace, Entfernen führender Tagesnummerierungen (Muster `^\d+\.\s*`). Diese Regel ist der verbindliche Ausgangspunkt für die in `platform/quality-and-testing.md` (QA) geforderten Tests.
+
+**Erweiterung für das INT-015-Titelformat (2026-09-03, Roadmap-Schritt 4).** INT-015-Titel tragen Zusatzstoff-/Allergen-Codes inline in Klammern (`platform/integrations.md` INT-015), die sich je Zubereitungstag unterscheiden können (`"… (20a,28)"` an einem Tag, `"… (20a)"` an einem anderen). Vor der Kernregel werden daher Klammergruppen entfernt, die als solche Code-Aufzählung erkennbar sind — Muster `\(\s*\d[0-9a-z,\s]*\)` (öffnende Klammer, erste Zeichen eine Ziffer, dann nur Ziffern/Kleinbuchstaben/Kommata/Leerzeichen). Klammern mit anderem Inhalt (z. B. `(scharf)`) bleiben unberührt. Die ` | `-Komponententrenner mehrteiliger Gerichte bleiben erhalten und werden von der Kernregel deterministisch behandelt. Weitere beobachtete Schreibvarianten dürfen bei Bedarf ergänzt werden, ohne dass die Kernregel entfällt.
 
 **`RATE-F-080`** — Entscheidung FSR FB4, 2026-08-25 (siehe `product/whatsapp-feedback-inventory.md` Abschnitt 8, dort als offene Frage geführt und nun direkt vom FSR beantwortet statt über eine gesonderte Nutzerumfrage): Dieselbe normalisierte Gerichtsbezeichnung (RATE-F-050) kann an verschiedenen Tagen unterschiedlich zubereitet und entsprechend unterschiedlich bewertet werden. Die tagesaktuelle Durchschnittsbewertung ergibt sich durch Filterung der vorhandenen Bewertungen (Zeitstempel, siehe Datenmodell) auf den aktuellen Tag — kein zusätzliches Datenfeld nötig.
 

@@ -15,7 +15,13 @@ public abstract class PeriodicJobService(
     JobStatusRegistry registry,
     ILogger logger) : BackgroundService
 {
+    /// <summary>Fuer abgeleitete Jobs, die einzelne Teilschritte protokollieren.</summary>
+    protected ILogger Logger => logger;
+
     protected abstract Task RunOnceAsync(CancellationToken cancellationToken);
+
+    /// <summary>Nur für Tests (InternalsVisibleTo): ein einzelner Durchlauf ohne Zeitgeber.</summary>
+    internal Task RunOnceForTestAsync(CancellationToken cancellationToken = default) => RunOnceAsync(cancellationToken);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

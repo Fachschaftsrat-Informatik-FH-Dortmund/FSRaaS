@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 
+// Registriert die Hintergrundaufgabe für den Lieblingsgericht-Abgleich
+// (MENSA-F-100). Muss beim App-Start ausgeführt werden — auch, wenn das
+// Betriebssystem die App headless für die Aufgabe startet.
+import '@/areas/canteen/registerBackgroundTask';
 import { ConsentGate } from '@/consent/ConsentGate';
 import { logError } from '@/errors/AppError';
 import { initI18n } from '@/i18n';

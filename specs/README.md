@@ -1,8 +1,8 @@
 ---
 status: accepted
-version: 1.1.2
+version: 1.1.3
 owner: FSR FB4
-last_reviewed: 2026-09-02
+last_reviewed: 2026-09-03
 ---
 
 # Spezifikations-Handbuch
@@ -233,7 +233,7 @@ Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = f�
 | `features/app-shell/spec.md` | SHELL | kern | 1 | accepted |
 | `features/room-finder/spec.md` | RAUM | kern | 1 | accepted |
 | `features/schedule/spec.md` | SCHED | kern | 1 (ohne Prüfungsplan) | accepted |
-| `features/canteen/spec.md` | MENSA | kern | 1 | accepted |
+| `features/canteen/spec.md` | MENSA | kern | 1 | implemented |
 | `features/canteen-ratings/spec.md` | RATE | kern | 1 (ohne Freitext) | accepted |
 | `features/news/spec.md` | NEWS | kern | 1 (ohne Push) | accepted |
 | `features/admin/spec.md` | ADMIN | kern | 1 (Teilumfang) | accepted |

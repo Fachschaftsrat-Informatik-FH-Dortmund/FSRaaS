@@ -20,6 +20,11 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
     public DbSet<SammlungsRevision> Revisionen => Set<SammlungsRevision>();
     public DbSet<Verwaltungsprotokoll> Verwaltungsprotokolle => Set<Verwaltungsprotokoll>();
 
+    // Mensa-Speiseplan-Zwischenspeicher (API-F-070/F-075, INT-015) — ab Roadmap-Schritt 4.
+    public DbSet<SpeiseplanTag> Speiseplaene => Set<SpeiseplanTag>();
+    public DbSet<MensaVerzeichnisEintrag> MensaVerzeichnis => Set<MensaVerzeichnisEintrag>();
+    public DbSet<MensaZwischenspeicherStand> MensaStand => Set<MensaZwischenspeicherStand>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -48,5 +53,9 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.ZeitpunktUtc);
         });
+
+        b.Entity<SpeiseplanTag>().HasKey(x => new { x.MensaId, x.Datum });
+        b.Entity<MensaVerzeichnisEintrag>().HasKey(x => new { x.Art, x.QuelleId });
+        b.Entity<MensaZwischenspeicherStand>().HasKey(x => x.Id);
     }
 }

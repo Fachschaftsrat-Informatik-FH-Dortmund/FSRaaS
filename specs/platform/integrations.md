@@ -3,7 +3,7 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.2.2
+version: 1.3.0
 owner: FSR FB4
 last_reviewed: 2026-09-03
 derived_from:
@@ -771,23 +771,41 @@ Zu definieren: Aufruf-/Integrationsart (API vs. direkter DB-Zugriff), Antwortstr
 
 ## INT-015 — Mensa-API des ITMC (TU Dortmund)
 
-**Status: bestätigt, live erprobt.** Ersetzt INT-004 als Speiseplan-Quelle.
+**Status: bestätigt, live erprobt (Feldstruktur verifiziert 2026-09-03).** Ersetzt INT-004 als Speiseplan-Quelle.
 
 **Zweck**
-Liefert Speisepläne, Öffnungszeiten, Gerichtskategorien und Zusatzstoff-/Allergenschlüssel der Mensen des Studierendenwerks Dortmund. Grundlage für MENSA und, über die normalisierten Gerichtsbezeichnungen, für RATE.
+Liefert Speisepläne, Gerichtskategorien und Zusatzstoff-/Allergenschlüssel der Mensen des Studierendenwerks Dortmund. Grundlage für MENSA und, über die normalisierten Gerichtsbezeichnungen, für RATE.
 
 **Aufruf**
 ```
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}/{date}
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}
-GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}/openings/all
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/types
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/additives
 ```
-`{id}` ist die ITMC-Mensakennung (Feld `itmcId` der Mensa-Stammdaten, z. B. `341` für die Hauptmensa), `{date}` ein Datum. Die zweite Form liefert alle vorliegenden Tage einer Mensa als Abbildung von Datum auf Gerichtsliste.
+`{id}` ist die ITMC-Mensakennung (Feld `quelleId` der Mensa-Stammdaten, z. B. `341` für die Hauptmensa), `{date}` ein Datum `YYYY-MM-DD`.
 
-**Antwortstruktur**
-Speiseplan als JSON-Liste von Gerichten je Tag; `types` und `additives` liefern die Schlüsselverzeichnisse für Gerichtskategorien und Zusatzstoffe. **Bezeichnungen sind zweisprachig** als Objekt mit den Schlüsseln `de` und `en` abgelegt — live bestätigt am 2026-08-25, Beispiel: `{"id":"N","name":{"de":"Vegan","en":"Vegan"}}`. Damit trägt diese Quelle die Zweisprachigkeit aus NFR-F-115 ohne eigene Übersetzungsarbeit. Genaue Feldnamen der Gerichtsdatensätze sind bei Umsetzung anhand einer Live-Antwort zu dokumentieren; die Android-Alt-App bildet sie auf `MenuDto`, `MenuInformationDto` und `OpeningsDto` ab.
+**Antwortstruktur (verifiziert 2026-09-03)**
+
+`GET /canteens/{id}/{date}` → JSON-**Liste** von Gerichten. `GET /canteens/{id}` → JSON-**Objekt**, Schlüssel = Datum `YYYY-MM-DD`, Wert = dieselbe Gerichtsliste (alle vorliegenden Tage in einem Aufruf).
+
+Gericht-Objekt:
+
+| Feld | Typ | Bedeutung |
+|---|---|---|
+| `title` | Objekt `{de, en}` | Bezeichnung des Gerichts. Zusatzstoff-/Allergen-Codes stehen zusätzlich inline in Klammern; mehrteilige Gerichte trennen die Komponenten mit ` \| ` (Beispiel: `"Bolognese (20a,28) \| Spaghetti (20a) \| Reibkäse (2,22,26)"`) |
+| `type` | Liste von Strings | Kennzeichnungen des Gerichts, Schlüssel aus `/types` (z. B. `A` Fleisch aus artgerechter Haltung, `B` Klimateller, `N` Vegan, `R`, `G`) |
+| `additives` | Liste von Strings | Zusatzstoff-/Allergen-Codes, Schlüssel aus `/additives` (z. B. `["2","20a","22"]`) |
+| `category` | String | numerischer Kategorie-Code (nicht anzeigetauglich; für die Anzeige dient `counterNames`) |
+| `price` | Objekt `{student, staff, guest}` | Preise als **String** mit Komma-Dezimaltrennung und Euro-Zeichen, Beispiel `"3,30 €"` — clientseitig zu parsen |
+| `counter` | String | Ausgabestelle, unlokalisiert (z. B. `"Menü 1"`, `"Beilagen"`) |
+| `counterNames` | Objekt `{de, en}` | zweisprachige Anzeigekategorie; für die getrennte Beilagen-Darstellung (MENSA-F-040) maßgeblich |
+| `dispoId` | String | interne Kennung des Dispositionssatzes |
+| `position` | Zahl | Sortierreihenfolge innerhalb des Tages |
+
+`GET /types` und `GET /additives` → je JSON-Liste von `{ "id": String, "name": { "de": String, "en": String } }`, Beispiel `{"id":"N","name":{"de":"Vegan","en":"Vegan"}}`. Damit trägt diese Quelle die Zweisprachigkeit aus NFR-F-115 ohne eigene Übersetzungsarbeit.
+
+`GET /canteens/{id}/openings/all` antwortete am 2026-09-03 mit **HTTP 500** und wird nicht verwendet. Die Öffnungszeiten je Mensa und Wochentag kommen aus den gepflegten Stammdaten (`features/admin/spec.md`, MENSA-F-047); die Android-Alt-App führt beide Quellen nebeneinander, für die Neuentwicklung sind die Stammdaten führend. Fällt eine künftige Auswertung von `openings/all` positiv aus, kann sie als zusätzliche Quelle nachgezogen werden, ohne dass MENSA-F-047 sich ändert.
 
 **Authentifizierung**
 Keine.
@@ -810,7 +828,7 @@ OpenMensa als offenes Verzeichnisprojekt oder die Speiseplanseiten des Studieren
 **Zugehörige Stammdaten**
 Die Zuordnung von Mensa-Kennung zu ITMC-Kennung, Anzeigename, Öffnungszeiten, Standardauswahl und Anzeigereihenfolge ist **nicht** Teil dieser Schnittstelle, sondern wird vom eigenen Backend gepflegt (siehe INT-008 und `features/admin/spec.md`). Die Android-Alt-App führt dafür neun Mensen mit den Feldern `name`, `id`, `itmcId`, `url`, `pdfUrl`, `enabledDefault`, `openingTime` (fünf Werktagseinträge) und `defaultOrder`.
 
-Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java`, `module/NetworkModule.java`, `assets/canteens.json`; live abgefragt am 2026-08-25
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java`, `module/NetworkModule.java`, `assets/canteens.json`; live abgefragt am 2026-08-25, Feldstruktur der Gerichts-, `types`- und `additives`-Antworten live verifiziert am 2026-09-03
 
 ---
 

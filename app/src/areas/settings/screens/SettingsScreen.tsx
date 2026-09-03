@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -18,6 +19,7 @@ import { Screen } from '@/ui/Screen';
 export function SettingsScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const router = useRouter();
   const { mode, setMode } = useAppearanceMode();
   const { preference, setPreference } = useLanguage();
 
@@ -65,6 +67,19 @@ export function SettingsScreen() {
         />
       </View>
 
+      <View style={styles.group}>
+        <Text style={[styles.label, { color: colors.text }]}>{t('nav.canteen')}</Text>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t('settings.canteenSelection')}
+          onPress={() => router.push('/canteen/auswahl')}
+          style={[styles.row, { borderColor: colors.border }]}
+        >
+          <Text style={[styles.rowText, { color: colors.text }]}>{t('settings.canteenSelection')}</Text>
+          <Text style={[styles.rowText, { color: colors.textMuted }]}>›</Text>
+        </Pressable>
+      </View>
+
       <Text style={[styles.hint, { color: colors.textMuted }]}>{t('settings.moreSoon')}</Text>
     </Screen>
   );
@@ -74,4 +89,14 @@ const styles = StyleSheet.create({
   group: { gap: 8 },
   label: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   hint: { fontSize: 13 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  rowText: { fontSize: 16 },
 });

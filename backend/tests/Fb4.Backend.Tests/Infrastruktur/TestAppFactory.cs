@@ -5,6 +5,7 @@ using Fb4.Backend.Endpoints;
 using Fb4.Backend.Infrastructure;
 using Fb4.Backend.Infrastructure.Audit;
 using Fb4.Backend.Infrastructure.Auth;
+using Fb4.Backend.Infrastructure.Mensa;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -78,9 +79,12 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
             if (descriptor is not null) services.Remove(descriptor);
             services.AddDbContext<Fb4DbContext>(o => o.UseInMemoryDatabase(_dbName));
             // Feature-Dienste hängen produktiv an der Verbindungszeichenfolge
-            // (Program.cs); im Test kommt die Datenbank von hier.
+            // (Program.cs); im Test kommt die Datenbank von hier. Der
+            // INT-015-Abruf-Job wird bewusst nicht registriert — Endpunkttests
+            // seeden den Zwischenspeicher direkt.
             services.AddScoped<StammdatenStore>();
             services.AddScoped<AuditLog>();
+            services.AddScoped<SpeiseplanStore>();
 
             services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, o =>
             {

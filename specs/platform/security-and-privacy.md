@@ -3,9 +3,9 @@ id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
 status: accepted
-version: 1.1.2
+version: 1.1.3
 owner: FSR FB4
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main_view_model.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
@@ -111,7 +111,7 @@ Die Erklärung der Alt-App liegt unter `alte apps/fb4_app-main/fb4_app-main/asse
 | Berechtigung | Wofür | Anforderung |
 |---|---|---|
 | Dateiauswahl | Import des Semesterticket-PDFs (TICKET-F-010) | vorhanden in beiden Alt-Apps |
-| Benachrichtigungen | Lieblingsgericht-Hinweis (MENSA-F-100, rein lokal) sowie Push (INT-005, zweite Ausbaustufe) | Opt-in |
+| Benachrichtigungen | Lieblingsgericht-Hinweis (MENSA-F-100, rein lokal, umgesetzt Roadmap-Schritt 4 — Berechtigung wird erst beim ersten Markieren angefragt, SEC-F-080; ohne Berechtigung bleibt das Markieren nutzbar, SEC-F-090) sowie Push (INT-005, zweite Ausbaustufe) | Opt-in |
 | Kalender, ausschließlich schreibend | Übertragen ausgewählter Stundenplan-Termine in einen gewählten Gerätekalender (SCHED-F-175) | Opt-in, erst bei tatsächlicher Nutzung anzufragen (SEC-F-080) |
 | Standort | – | wird nicht benötigt und nicht angefragt; die Raumsuche arbeitet mit manueller Referenzraum-Eingabe (RAUM-F-050) |
 
