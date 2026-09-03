@@ -2,7 +2,7 @@ import { AppError } from '@/errors/AppError';
 import { fetchWithTimeout, unwrap, type ApiResult } from './client';
 
 jest.mock('@/config', () => ({
-  config: { apiBaseUrl: 'https://api.fsrfb4.de/v1', netTimeoutMs: 40 },
+  config: { apiBaseUrl: 'https://api.fb4.it/v1', netTimeoutMs: 40 },
 }));
 
 describe('NFR-F-070 Netzabruf bricht nach der Zeitgrenze ab', () => {
@@ -14,7 +14,7 @@ describe('NFR-F-070 Netzabruf bricht nach der Zeitgrenze ab', () => {
       });
     }) as unknown as typeof fetch;
 
-    await expect(fetchWithTimeout('https://api.fsrfb4.de/v1/langsam')).rejects.toMatchObject({
+    await expect(fetchWithTimeout('https://api.fb4.it/v1/langsam')).rejects.toMatchObject({
       name: 'AbortError',
     });
 

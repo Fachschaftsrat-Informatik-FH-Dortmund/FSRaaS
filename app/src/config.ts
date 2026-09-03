@@ -20,7 +20,7 @@ export const config = {
   apiBaseUrl:
     process.env.EXPO_PUBLIC_API_BASE_URL ??
     extra.apiBaseUrl ??
-    'https://api.fsrfb4.de/v1',
+    'https://api.fb4.it/v1',
 
   /**
    * Zeitgrenze für einen einzelnen Netzabruf (NFR-F-070). Nach Ablauf wird der

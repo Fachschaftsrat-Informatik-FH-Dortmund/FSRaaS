@@ -34,6 +34,10 @@ backend/src/Fb4.Backend/wwwroot/admin/
 appsettings.Development.json
 appsettings.Local.json
 
+# Server-Umgebungsdatei, falls lokal aus deploy/fsrfb4aas.env.example erzeugt — die
+# echten Werte leben nur auf dem Server (/etc/fsrfb4aas/fsrfb4aas.env) und im Vaultwarden-Depot
+deploy/fsrfb4aas.env
+
 # Erzeugter Code aus dem Vertrag (tools/contract-codegen)
 app/src/api/generated/
 backend/src/Fb4.Backend/Contract/Generated/

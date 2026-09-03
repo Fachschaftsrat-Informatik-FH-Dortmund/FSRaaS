@@ -3,7 +3,7 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.2.1
+version: 3.3.0
 owner: FSR FB4
 last_reviewed: 2026-09-03
 derived_from:
@@ -16,6 +16,8 @@ implemented_in:
   - backend/src/Fb4.Backend/Infrastructure/Mensa # API-F-070, API-F-075 (INT-015-Abruf, Zwischenspeicher, Aktualisierungs-Job); API-N-110/N-120, API-F-260
   - app/src/net                                 # API-N-040 (App-seitige Auswertung)
   - app/src/areas/canteen                       # API-F-235 (App-seitiger Stammdaten-Ausgangsbestand, mit MENSA vorgezogen)
+  - .github/workflows/deploy.yml                # API-N-200 (automatisierte Auslieferung nach grüner CI)
+  - deploy                                      # API-N-200 (systemd-Unit, Reverse-Proxy, Betriebs-Runbook)
 related:
   - architecture.md
   - integrations.md
@@ -178,10 +180,13 @@ Nur Zweck und grobe Felder; ausformulierte Datenmodelle entstehen mit den jeweil
 | API-N-170 | Die Wiederherstellung aus einer Sicherung muss innerhalb eines Arbeitstages möglich sein; die Sicherungsfrequenz muss einen Datenverlust von höchstens 24 Stunden sicherstellen. | NEU |
 | API-N-180 | Das System muss mindestens einmal je Semester durch eine tatsächliche Wiederherstellung in eine Testumgebung geprüft werden, nachgewiesen durch ein datiertes Prüfprotokoll. | NEU |
 | API-N-190 | Wenn eine Person Zugriff auf Server, Secrets-Depot oder Hosting-Zugang erhält oder verliert, muss dies über einen dokumentierten Onboarding-/Offboarding-Ablauf erfolgen, einschließlich Rotation aller geteilten Geheimnisse beim Ausscheiden. | NEU |
+| API-N-200 | Das System muss über einen im Repository beschriebenen, automatisierten Ablauf ausgeliefert werden, der nach erfolgreicher CI Build, Test, Übertragung auf den Zielserver und Neustart des Dienstes umfasst und den Betriebszustand nach dem Neustart prüft. | NEU |
 
 Zu API-N-100 bis API-F-260: Konkretisieren API-N-090 und lösen die zuvor fehlende Fehler-Isolation periodischer Jobs, siehe `../decisions/0014-selbstbetriebene-fehlertelemetrie.md` und `../decisions/0015-resilienz-hintergrund-jobs.md`.
 
 Zu API-N-160 bis API-N-190: Lösen den zuvor in Abschnitt 10 offenen Punkt zu Zugriffsverwaltung und Backup-Ziel auf, siehe `../decisions/0017-zugriff-und-datensicherung-vps.md`.
+
+Zu API-N-200: Setzt die Lehre aus `../decisions/0002-spec-anchored-arbeitsweise.md` für den Betrieb um — die Alt-Projekte scheiterten daran, dass Auslieferungswissen an Einzelpersonen gebunden war. Umgesetzt als GitHub-Actions-Workflow (`.github/workflows/deploy.yml`, ausgelöst durch einen grünen CI-Lauf auf `main`) plus dokumentierte Server-Einrichtung, systemd-Unit und Reverse-Proxy-Konfiguration unter `deploy/`. Geheimnisse gelangen ausschließlich über eine `EnvironmentFile` auf dem Server in den Dienst, nie über das Repository oder den CI-Runner (SEC-N-110). Nachweis über ein datiertes Prüfprotokoll statt eines automatisierten Tests (`quality-and-testing.md` Abschnitt 3, QA-F-015): Ein automatisierter Test des Auslieferungswegs setzte einen realen Zielserver mit Datenbank und Reverse-Proxy voraus; der Health-Check am Ende des Workflows prüft das Ergebnis bei jedem Lauf, ein gesonderter Testaufbau wäre unverhältnismäßig.
 
 Betreiber: FSR FB4 selbst, auf einem eigenen Hetzner-VPS. Entschieden 2026-08-25, siehe `specs/open-questions.md` (Archiv) und `platform/integrations.md` (INT-008).
 

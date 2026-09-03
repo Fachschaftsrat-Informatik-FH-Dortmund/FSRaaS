@@ -3,7 +3,7 @@ import { problemToAppError } from './problem';
 describe('API-N-040 Einheitliches Fehlerformat des Backends', () => {
   it('wertet eine RFC-9457-Antwort mit code und title aus', () => {
     const err = problemToAppError(409, {
-      type: 'https://api.fsrfb4.de/problems/conflict',
+      type: 'https://api.fb4.it/problems/conflict',
       title: 'Für dieses Gericht heute bereits bewertet.',
       status: 409,
       code: 'bereits_heute_bewertet',

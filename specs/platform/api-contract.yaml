@@ -16,7 +16,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.5.0
+  version: 0.5.1
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -26,7 +26,9 @@ info:
     identifier: MIT
 
 servers:
-  - url: https://api.fsrfb4.de/v1
+  # Produktive Domain 2026-09-03 auf api.fb4.it festgelegt (Wildcard-DNS *.fb4.it
+  # auf den Hetzner-VPS). Reverse-Proxy und Auslieferung: deploy/ im Repo.
+  - url: https://api.fb4.it/v1
     description: Produktivbetrieb (Hetzner-VPS, FSR FB4)
 
 tags:

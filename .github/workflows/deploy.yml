@@ -1,0 +1,103 @@
+name: Deploy Backend (Hetzner)
+
+# Auslieferung des Backends auf den Hetzner-VPS (API-N-200, ADR 0017).
+# Läuft ausschließlich nach grüner CI auf main — oder manuell per Knopfdruck.
+# Ablauf, Server-Ersteinrichtung und Secret-Rotation: deploy/README.md.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nie zwei Deployments gleichzeitig; ein laufendes nicht abbrechen.
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # workflow_run feuert bei jedem CI-Abschluss — nur der grüne Lauf deployt.
+    # workflow_dispatch (manuell) hat kein workflow_run-Objekt und deployt immer.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Den exakt getesteten Stand ausliefern (bei workflow_run), sonst main.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      # Vertragstypen aus api-contract.yaml erzeugen (API-N-035); die Zielordner
+      # sind gitignored und entstehen hier neu, vor jedem Build.
+      - name: Vertragstypen erzeugen
+        run: |
+          npm --prefix tools/contract-codegen ci
+          node tools/contract-codegen/src/generate.mjs
+
+      # Verwaltungsoberfläche als Web-Export (ADR 0018). Landet direkt in
+      # wwwroot/admin und wird vom Backend unter /admin mitausgeliefert.
+      - name: Verwaltungsoberfläche bauen
+        working-directory: app
+        run: |
+          npm ci
+          npx expo export --platform web --output-dir ../backend/src/Fb4.Backend/wwwroot/admin
+
+      - name: Build und Test
+        working-directory: backend
+        run: |
+          dotnet restore
+          dotnet build --no-restore -c Release
+          dotnet test --no-build -c Release
+
+      - name: Veröffentlichen
+        working-directory: backend
+        run: dotnet publish src/Fb4.Backend/Fb4.Backend.csproj -c Release --no-restore -o publish
+
+      - name: Artefakte ins Staging-Verzeichnis übertragen
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "backend/publish/*"
+          target: "/opt/fsrfb4aas/incoming"
+          strip_components: 2
+          rm: true
+
+      - name: Umschalten, Dienst neu starten, Health prüfen
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            sudo systemctl stop fsrfb4aas
+            sudo rm -rf /var/www/fsrfb4aas
+            sudo mv /opt/fsrfb4aas/incoming /var/www/fsrfb4aas
+            sudo chown -R fsrfb4aas:fsrfb4aas /var/www/fsrfb4aas
+            mkdir -p /opt/fsrfb4aas/incoming
+            sudo systemctl start fsrfb4aas
+            sleep 4
+            if ! curl -fsS --max-time 10 http://127.0.0.1:5100/health > /dev/null; then
+              echo "::error::/health antwortet nicht — Rollout fehlgeschlagen"
+              sudo journalctl -u fsrfb4aas -n 60 --no-pager
+              exit 1
+            fi
+            echo "Deployment ok — $(curl -fsS http://127.0.0.1:5100/health)"
