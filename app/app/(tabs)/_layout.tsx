@@ -32,7 +32,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: t('nav.schedule') }} />
-      <Tabs.Screen name="canteen" options={{ title: t('nav.canteen') }} />
+      {/* Mensaplan ist ein verschachtelter Stack (Speiseplan + Mensenauswahl) und
+          zeigt seine eigenen Kopfzeilen. */}
+      <Tabs.Screen name="canteen" options={{ title: t('nav.canteen'), headerShown: false }} />
       <Tabs.Screen name="news" options={{ title: t('nav.news') }} />
       <Tabs.Screen name="rooms" options={{ title: t('nav.rooms') }} />
       <Tabs.Screen name="more" options={{ title: t('nav.more'), headerShown: false }} />

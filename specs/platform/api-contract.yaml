@@ -16,7 +16,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -118,7 +118,7 @@ paths:
     get:
       tags: [mensa]
       summary: Gerichtskategorien und Zusatzstoffverzeichnis
-      description: Zwischenspeicher von INT-015, erfüllt API-F-075 und MENSA-F-048.
+      description: Zwischenspeicher von INT-015, erfüllt API-F-075, MENSA-F-035 und MENSA-F-048.
       security: []
       parameters:
         - $ref: "#/components/parameters/Sprache"
@@ -129,13 +129,17 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [kategorien, zusatzstoffe]
+                required: [kategorien, zusatzstoffe, kennzeichnungen]
                 properties:
                   kategorien:
                     type: array
                     items: { $ref: "#/components/schemas/Schluesselwert" }
                   zusatzstoffe:
                     type: array
+                    items: { $ref: "#/components/schemas/Schluesselwert" }
+                  kennzeichnungen:
+                    type: array
+                    description: Ernährungs-/Herkunftsmerkmale (INT-015 `types`), erfüllt MENSA-F-035.
                     items: { $ref: "#/components/schemas/Schluesselwert" }
         default: { $ref: "#/components/responses/Fehler" }
 
@@ -899,13 +903,24 @@ components:
         schluessel:
           type: string
           description: Normalisierte Bezeichnung nach RATE-F-050; Bindeglied zu Bewertungen und Lieblingsgerichten (MENSA-F-090).
-        kategorie: { type: string }
-        bezeichnung: { type: string }
-        preisStudierende: { type: number }
-        preisMitarbeitende: { type: number }
-        preisGaeste: { type: number }
+        kategorie:
+          type: string
+          description: Anzeigekategorie in der über Accept-Language gewählten Sprache (INT-015 `counterNames`); `Beilagen` wird von der App abgesetzt dargestellt (MENSA-F-040).
+        bezeichnung:
+          type: string
+          description: Gerichtsbezeichnung in der gewählten Sprache (INT-015 `title`), ohne die inline stehenden Zusatzstoff-Codes.
+        preisStudierende:
+          type: [number, "null"]
+          description: Preis in Euro. Das Backend parst den INT-015-String (`"3,30 €"`); nicht parsebar → null.
+        preisMitarbeitende: { type: [number, "null"] }
+        preisGaeste: { type: [number, "null"] }
         zusatzstoffe:
           type: array
+          description: Zusatzstoff-/Allergenhinweise in der gewählten Sprache (INT-015 `additives`, über das Verzeichnis aufgelöst).
+          items: { type: string }
+        kennzeichnungen:
+          type: array
+          description: Ernährungs-/Herkunftsmerkmale in der gewählten Sprache (INT-015 `type`), erfüllt MENSA-F-035. Leer, wenn die Quelle keine liefert.
           items: { type: string }
 
     Schluesselwert:

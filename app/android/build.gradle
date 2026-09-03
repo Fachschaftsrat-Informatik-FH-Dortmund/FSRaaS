@@ -26,6 +26,10 @@ apply plugin: "com.facebook.react.rootproject"
 allprojects {
     repositories {
         maven {
+            // @notifee/react-native — lokales Android-Artefakt (kein Firebase, NFR-N-170)
+            url(new File(["node", "--print", "require.resolve('@notifee/react-native/package.json')"].execute(null, rootDir).text.trim(), "../android/libs"))
+        }
+        maven {
             // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
             url(new File(['node', '--print', "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), '../android'))
         }

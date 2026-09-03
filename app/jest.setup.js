@@ -90,6 +90,34 @@ jest.mock('expo-quick-actions/router', () => ({
   isRouterAction: jest.fn(() => true),
 }));
 
+// Lieblingsgericht-Benachrichtigung (MENSA-F-100): lokale Benachrichtigungen und
+// Hintergrund-Weckruf haben nativen Anteil.
+jest.mock('@notifee/react-native', () => ({
+  __esModule: true,
+  default: {
+    createChannel: jest.fn(() => Promise.resolve('lieblingsgerichte')),
+    requestPermission: jest.fn(() => Promise.resolve({ authorizationStatus: 1 })),
+    getNotificationSettings: jest.fn(() => Promise.resolve({ authorizationStatus: 1 })),
+    displayNotification: jest.fn(() => Promise.resolve('id')),
+  },
+  AndroidImportance: { DEFAULT: 3 },
+  AuthorizationStatus: { DENIED: 0, AUTHORIZED: 1, PROVISIONAL: 2 },
+}));
+
+jest.mock('expo-task-manager', () => ({
+  __esModule: true,
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: jest.fn(() => Promise.resolve(false)),
+  unregisterTaskAsync: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('expo-background-fetch', () => ({
+  __esModule: true,
+  registerTaskAsync: jest.fn(() => Promise.resolve()),
+  unregisterTaskAsync: jest.fn(() => Promise.resolve()),
+  BackgroundFetchResult: { NoData: 1, NewData: 2, Failed: 3 },
+}));
+
 // i18next synchron initialisieren, damit t() in Komponententests Klartext liefert.
 const i18nMod = require('i18next');
 const i18n = i18nMod.default || i18nMod;

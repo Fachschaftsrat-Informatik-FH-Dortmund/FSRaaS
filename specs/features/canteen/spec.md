@@ -2,11 +2,11 @@
 id: canteen
 titel: Mensaplan
 praefix: MENSA
-status: accepted
+status: implemented
 prioritaet: kern
-version: 1.0.0
+version: 1.1.0
 owner: FSR FB4
-last_reviewed: 2026-08-25
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java
   - alte apps/android-fb4/FB4/fB4/src/main/assets/canteens.json
@@ -16,7 +16,10 @@ derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/models/meal.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/viewmodels/canteen_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/select_canteens_page.dart
-implemented_in: []
+implemented_in:
+  - backend/src/Fb4.Backend/Endpoints              # MENSA-F-010/030/035/040/045/047/048/050/060/075, API-F-070/F-075
+  - backend/src/Fb4.Backend/Infrastructure/Mensa   # INT-015-Zwischenspeicher, Gerichtsnormalisierung (RATE-F-050), Aktualisierungs-Job
+  - app/src/areas/canteen                          # MENSA-F-010 bis F-110, Screens, Lieblingsgerichte, lokale Benachrichtigung
 related:
   - ../../platform/integrations.md
   - ../../platform/backend-and-api.md
@@ -65,6 +68,7 @@ Zeigt Studierenden den Speiseplan der von ihnen gewählten Mensen des Studierend
 | MENSA-F-020 | Das System muss der Nutzerin die Auswahl einer oder mehrerer Mensen aus der vom Backend gelieferten Mensa-Liste ermöglichen. | Alt: lib/areas/more/screens/select_canteens_page.dart |
 | MENSA-F-025 | Das System muss der Nutzerin das Festlegen der Reihenfolge ermöglichen, in der die gewählten Mensen angezeigt werden. | Recherche: alte apps/android-fb4, activities/MenuSortActivity.java, 2026-08-25 |
 | MENSA-F-030 | Das System muss zu jedem Gericht Kategorie, Bezeichnung, Preis für Studierende, Mitarbeitende und Gäste sowie Zusatzstoff-/Allergenhinweise anzeigen. | Alt: lib/areas/canteen/models/meal.dart |
+| MENSA-F-035 | Sofern die Quelle (INT-015) zu einem Gericht Kennzeichnungen liefert (z. B. vegan, vegetarisch, Klimateller), muss das System sie am Gericht anzeigen. | Recherche: INT-015, 2026-09-03 |
 | MENSA-F-040 | Das System muss `Beilagen` als eigene Kategorie von den Hauptspeisen getrennt darstellen. | Alt: lib/areas/canteen/models/meal.dart |
 | MENSA-F-045 | Das System muss der Nutzerin das Blättern zu benachbarten Tagen des Speiseplans ermöglichen. | Alt: lib/areas/canteen/screens/canteen_overview_page.dart:39 |
 | MENSA-F-047 | Das System muss zu jeder gewählten Mensa deren Öffnungszeiten für den angezeigten Wochentag ausweisen. | Recherche: alte apps/android-fb4, model/OpeningsDto.java, 2026-08-25 |
@@ -89,6 +93,12 @@ Zeigt Studierenden den Speiseplan der von ihnen gewählten Mensen des Studierend
 **`MENSA-F-100` — lokale Benachrichtigung statt INT-005 (UnifiedPush/FCM).** INT-005 ist ein Themen-/Endpunkt-Abonnement für alle Nutzerinnen gleichermaßen und für Inhalte gedacht, die der FSR selbst veröffentlicht (News); es eignet sich nicht für eine pro Nutzerin unterschiedliche, personenbezogene Auswahl wie Lieblingsgerichte, ohne diese Auswahl an das Backend zu übertragen — was MENSA-F-090 gerade ausschließt. Der Abgleich (MENSA-F-100) erfolgt daher rein clientseitig gegen den ohnehin abgerufenen Tages-Speiseplan (MENSA-F-010), die Benachrichtigung wird über die geräteeigene lokale Benachrichtigungs-API ausgelöst, ohne Netzwerkbeteiligung. Dafür ist wie bei INT-005 die vom Betriebssystem erteilte allgemeine Benachrichtigungsberechtigung erforderlich (siehe Abschnitt 9 „Fehlerfälle"), aber kein Push-Abonnement.
 
 **`MENSA-F-100` — Zeitpunkt „vormittags" und Plattformgrenzen.** Damit die Benachrichtigung für die Tagesplanung nutzbar ist, muss der Abgleich vor der Mittagszeit erfolgen (Zielwert siehe MENSA-N-010). Ein zu einer festen Uhrzeit garantiert ausgeführter Hintergrundabruf ist auf mobilen Betriebssystemen (insbesondere iOS) nicht zugesichert (vgl. bereits dokumentierte Zurückhaltung zu Hintergrundabrufen in `platform/non-functional.md` NFR-N-090). Trifft der Hintergrundabruf nicht rechtzeitig ein, holt das System den Abgleich beim nächsten Öffnen der App nach, sofern es noch vormittags ist (siehe Abschnitt 9 „Fehlerfälle") — es gibt keine rückwirkende Benachrichtigung am Nachmittag.
+
+**`MENSA-F-100` — Umsetzungsmechanismus (Roadmap-Schritt 4).** Der Weckruf erfolgt über die betriebssystemeigene Hintergrundaufgabe (Android WorkManager, iOS BGTaskScheduler), nicht über Push. Beim Weckruf lädt die App selbst den Tagesplan der gewählten Mensen aus dem Backend-Zwischenspeicher (INT-008), gleicht ihn lokal gegen die gerätegespeicherte Lieblingsliste ab und löst die Benachrichtigung über die lokale Benachrichtigungs-API des Geräts aus. Die Lieblingsliste verlässt das Gerät nicht (MENSA-F-090); INT-005/UnifiedPush ist nicht beteiligt. Da die Ausführungszeit des Weckrufs vom Betriebssystem bestimmt wird, bleibt MENSA-N-010 ein Zielwert mit Vordergrund-Nachholung.
+
+**`MENSA-F-035`.** INT-015 liefert je Gericht ein `type`-Feld mit Kennzeichnungen (Kürzel wie `N` = vegan, `B` = Klimateller), aufgelöst über das `/types`-Verzeichnis. Die Kennzeichnungen werden über denselben Zwischenspeicher- und Sprachweg wie Kategorien und Zusatzstoffe ausgeliefert (`platform/integrations.md` INT-015, MENSA-F-048). Fehlt das Feld oder ist es leer, entfällt die Anzeige ersatzlos.
+
+**Zustimmungs-Gate bei Lieblingsgerichten.** Der Speiseplan selbst und die Mensaauswahl sind kontofrei und ungegatet (Lesefunktionen ohne personenbezogene Verarbeitung). Das Markieren eines Lieblingsgerichts (MENSA-F-080) verarbeitet dagegen Ernährungsvorlieben (`platform/data-and-storage.md` Abschnitt 2, Datenklasse „Lieblingsgerichte", personenbezogen) und wird deshalb — obwohl rein gerätelokal — hinter das Zustimmungs-Gate gestellt (`platform/security-and-privacy.md` SEC-F-010). Die Systemberechtigung für Benachrichtigungen wird erst beim ersten Markieren angefragt (SEC-F-080); wird sie verweigert, bleibt das Markieren nutzbar, nur die Benachrichtigung entfällt (SEC-F-090, siehe Abschnitt 9).
 
 ## 5. Datenmodell
 
@@ -146,6 +156,6 @@ Speisepläne gelten laut `platform/data-and-storage.md` Abschnitt 4 bis Tagesend
 ## 13. Offene Fragen
 
 - ~~Datenquelle für Mensa-Öffnungszeiten: keine bestätigte Quelle identifiziert.~~ Beantwortet am 2026-08-25: INT-015 liefert Öffnungszeiten je Mensa; zusätzlich enthalten die Mensa-Stammdaten eine gepflegte Angabe je Wochentag. Aufgenommen als MENSA-F-047.
-- Welche der beiden Öffnungszeit-Quellen führend ist — die Schnittstelle (INT-015, `openings/all`) oder die gepflegten Stammdaten — bei Umsetzung zu entscheiden; die Android-Alt-App führt beide nebeneinander.
-- Zuverlässigkeit zeitgesteuerter Hintergrundabrufe je Plattform (insbesondere iOS Background App Refresh) für den Zielwert aus MENSA-N-010 — vor Umsetzung anhand eines frühen Prototyps zu validieren, vgl. `platform/non-functional.md` Abschnitt 11 zum generellen Umgang mit Leistungszielwerten.
+- ~~Welche der beiden Öffnungszeit-Quellen führend ist — die Schnittstelle (INT-015, `openings/all`) oder die gepflegten Stammdaten.~~ Entschieden am 2026-09-03 (Roadmap-Schritt 4): Die gepflegten Stammdaten sind führend; `openings/all` antwortete bei der Verifikation mit HTTP 500 und wird nicht genutzt (`platform/integrations.md` INT-015).
+- ~~Zuverlässigkeit zeitgesteuerter Hintergrundabrufe je Plattform für den Zielwert aus MENSA-N-010.~~ In Roadmap-Schritt 4 umgesetzt über die betriebssystemeigene Hintergrundaufgabe mit Vordergrund-Nachholung (siehe Erläuterung zu MENSA-F-100); die tatsächliche Ausführungszeit auf Gerät wird im Prüfprotokoll `pruefprotokolle/2026-09-04-schritt-4-mensa.md` festgehalten, MENSA-N-010 bleibt Zielwert (`platform/non-functional.md` Abschnitt 11).
 - Ob ein zusätzlicher, globaler Ein-/Ausschalter für Lieblingsgerichte-Benachrichtigungen in `features/settings/spec.md` sinnvoll ist (unabhängig vom Entfernen einzelner Markierungen, MENSA-F-080) — für den ersten Umfang genügt das Markieren/Entmarkieren selbst als Opt-in/Opt-out, siehe Abschnitt 4.

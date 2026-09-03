@@ -2,7 +2,7 @@
 id: roadmap
 titel: Ausbaustufen und Umsetzungsreihenfolge
 status: accepted
-version: 0.1.3
+version: 0.1.4
 owner: FSR FB4
 last_reviewed: 2026-09-03
 related:
@@ -79,7 +79,7 @@ Zu Schritt 3 vor Schritt 4: Der Mensaplan braucht die Mensa-Liste aus den Stammd
 
 Zu Schritt 6: Der Stundenplan-Raumabgleich (SCHED-F-410 bis F-450) gehört fachlich zum Stundenplan, wird aber hier umgesetzt, weil er den Raumplan-Zwischenspeicher aus RAUM voraussetzt. Vorab ist der Spike aus `../platform/integrations.md` INT-009 zu klären (bildet der Raumplan kurzfristige Ausfälle/Raumänderungen ab?); fällt er negativ aus, bleiben Ansicht laufender Veranstaltungen und Abgleichhinweis auf den Sollplan beschränkt.
 
-Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — MENSA-F-090 (Lieblingsgerichte) braucht denselben normalisierten Gerichtsschlüssel als Bindeglied, siehe `../features/canteen/spec.md` MENSA-F-090.
+Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — MENSA-F-090 (Lieblingsgerichte) braucht denselben normalisierten Gerichtsschlüssel als Bindeglied, siehe `../features/canteen/spec.md` MENSA-F-090. Ebenfalls vorgezogen: API-F-235 (App-seitiger Stammdaten-Ausgangsbestand), da MENSA der erste Konsument der Stammdaten ist. Die Lieblingsgericht-Benachrichtigung (MENSA-F-100) läuft rein lokal über die betriebssystemeigene Hintergrundaufgabe plus lokale Benachrichtigungs-API (kein Firebase, kein UnifiedPush) — F-Droid-Tauglichkeit (NFR-N-170) bleibt gewahrt; die tatsächliche Vormittags-Ausführungszeit (MENSA-N-010) ist ein Zielwert, im Prüfprotokoll `../pruefprotokolle/2026-09-04-schritt-4-mensa.md` festgehalten.
 
 Zu Schritt 10: Die Testauflage bei Google Play (NFR-N-200: zwölf Testende über vierzehn zusammenhängende Tage) erzeugt allein zwei Wochen Vorlauf und ist bereits während Schritt 8 anzustoßen, nicht erst in Schritt 10.
 

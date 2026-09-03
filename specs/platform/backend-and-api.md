@@ -3,7 +3,7 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.2.0
+version: 3.2.1
 owner: FSR FB4
 last_reviewed: 2026-09-03
 derived_from:
@@ -11,9 +11,11 @@ derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
 implemented_in:
   - backend/src/Fb4.Backend                     # API-N-040 (Fehlerformat)
-  - backend/src/Fb4.Backend/Endpoints           # API-F-230, API-F-240 (Stammdaten, Studiengang-Rückfall)
+  - backend/src/Fb4.Backend/Endpoints           # API-F-230, API-F-240 (Stammdaten, Studiengang-Rückfall); API-F-070, API-F-075 (Mensa-Speiseplan-Zwischenspeicher)
   - backend/src/Fb4.Backend/Infrastructure/Auth # API-F-250 (Rollen aus INT-012)
+  - backend/src/Fb4.Backend/Infrastructure/Mensa # API-F-070, API-F-075 (INT-015-Abruf, Zwischenspeicher, Aktualisierungs-Job); API-N-110/N-120, API-F-260
   - app/src/net                                 # API-N-040 (App-seitige Auswertung)
+  - app/src/areas/canteen                       # API-F-235 (App-seitiger Stammdaten-Ausgangsbestand, mit MENSA vorgezogen)
 related:
   - architecture.md
   - integrations.md

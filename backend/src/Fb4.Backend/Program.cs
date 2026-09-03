@@ -3,6 +3,7 @@ using Fb4.Backend.Endpoints;
 using Fb4.Backend.Infrastructure;
 using Fb4.Backend.Infrastructure.Audit;
 using Fb4.Backend.Infrastructure.Auth;
+using Fb4.Backend.Infrastructure.Mensa;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 
@@ -30,10 +31,24 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddDbContext<Fb4DbContext>(o => o.UseNpgsql(connectionString));
     builder.Services.AddScoped<StammdatenStore>();
     builder.Services.AddScoped<AuditLog>();
+    builder.Services.AddScoped<SpeiseplanStore>();
+
+    // Mensa-Speiseplan-Quelle INT-015: eigener User-Agent (Bot-Filter vorgelagerter
+    // Proxys) und Standard-Resilienz (Timeout, Retry mit Backoff, Circuit Breaker —
+    // API-N-120, ADR 0015).
+    builder.Services.AddHttpClient<ItmcMensaClient>(c =>
+    {
+        c.BaseAddress = new Uri(
+            builder.Configuration["Itmc:BaseUrl"]
+            ?? "https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/");
+        c.DefaultRequestHeaders.UserAgent.ParseAdd("fb4-backend");
+    }).AddStandardResilienceHandler();
+
     // Reihenfolge zählt: der Host wartet StartAsync des DbInitializers vollständig
-    // ab (Migration + Seed), bevor der Aufräum-Job seinen ersten Durchlauf beginnt.
+    // ab (Migration + Seed), bevor die periodischen Jobs ihren ersten Durchlauf beginnen.
     builder.Services.AddHostedService<DbInitializer>();
     builder.Services.AddHostedService<VerwaltungsprotokollAufraeumJob>();
+    builder.Services.AddHostedService<SpeiseplanAktualisierungJob>();
 }
 else
 {
@@ -82,6 +97,7 @@ app.MapGet("/health", (JobStatusRegistry jobs) => Results.Ok(new
 // (api-contract.yaml servers-URL, API-N-030/N-130). /health bleibt versionsfrei.
 var v1 = app.MapGroup("/v1");
 v1.MapStammdatenEndpoints();
+v1.MapMensaEndpoints();
 v1.MapVerwaltungEndpoints();
 
 // Web-Export der Verwaltungsoberfläche (ADR 0018, Entscheidung 2026-09-02):

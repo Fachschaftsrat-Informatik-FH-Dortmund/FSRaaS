@@ -100,6 +100,46 @@ namespace Fb4.Backend.Migrations
                     b.ToTable("Mensen");
                 });
 
+            modelBuilder.Entity("Fb4.Backend.Domain.MensaVerzeichnisEintrag", b =>
+                {
+                    b.Property<string>("Art")
+                        .HasColumnType("text");
+
+                    b.Property<string>("QuelleId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BezeichnungDe")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BezeichnungEn")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Art", "QuelleId");
+
+                    b.ToTable("MensaVerzeichnis");
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.MensaZwischenspeicherStand", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("QuelleErreichbar")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("VerzeichnisseAbgerufenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MensaStand");
+                });
+
             modelBuilder.Entity("Fb4.Backend.Domain.RaumEintrag", b =>
                 {
                     b.Property<string>("RoomId")
@@ -169,6 +209,26 @@ namespace Fb4.Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SemesterKalender");
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.SpeiseplanTag", b =>
+                {
+                    b.Property<string>("MensaId")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("Datum")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("AbgerufenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GerichteJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("MensaId", "Datum");
+
+                    b.ToTable("Speiseplaene");
                 });
 
             modelBuilder.Entity("Fb4.Backend.Domain.StudiengangRueckfall", b =>

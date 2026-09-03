@@ -1,6 +1,6 @@
 ---
 status: accepted
-version: 0.4.2
+version: 0.4.3
 owner: FSR FB4
 last_reviewed: 2026-09-03
 ---
@@ -25,7 +25,7 @@ Die abzulösende Flutter/iOS-App, deren Quellcode unter `alte apps/fb4_app-main/
 Die nachweisbare Verbindung zwischen einer Anforderung und ihrer Umsetzung: Anforderungs-ID im Testnamen, Quellverzeichnis in `implemented_in:` der Spec, sowie die Merge-Regel „kein Merge ohne Spec-Delta". Details: `README.md`, Abschnitt 7.
 
 **Beilagen**
-Eigene Speisenkategorie im Mensaplan (Feld `type` mit Wert `Beilagen` in INT-004), die in der Darstellung von den Hauptspeisen (z. B. `Menü 1`, `Tagesgericht`, `Vegetarisches Menü`) getrennt wird. Auftritt: `features/canteen/spec.md`.
+Eigene Speisenkategorie im Mensaplan (Ausgabestelle `counter`/`counterNames` mit Wert `Beilagen` in INT-015; vormals Feld `type` in INT-004), die in der Darstellung von den Hauptspeisen (z. B. `Menü 1`, `Tagesgericht`, `Vegetarisches Menü`) getrennt wird. Auftritt: `features/canteen/spec.md`.
 
 **BookStack**
 Die vom FSR betriebene Wiki-Software. Inhaltshierarchie: Shelf (Regal) › Book (Buch) › Chapter (Kapitel) › Page (Seite). API-Zugang bestätigt, Berechtigungsmodell für interne Inhalte offen, siehe INT-007 in `platform/integrations.md`. Auftritt: `features/wiki/spec.md`.
@@ -65,6 +65,9 @@ Planungsstruktur für die Helfer-Anmeldung zu FSR-Events: Ein Event definiert ei
 
 **HISinOne**
 Das aktuelle Campus-Management-System der FH Dortmund, Nachfolger von ODS für die Notenübersicht. Zugangsweg ist offen, siehe INT-006 in `platform/integrations.md` und `decisions/0006-abloesung-ods-durch-hisinone.md`. Auftritt: `features/grades/spec.md`.
+
+**Kennzeichnung (Mensa)**
+Ernährungs- oder Herkunftsmerkmal eines Gerichts (z. B. vegan, vegetarisch, Klimateller), von INT-015 im Feld `type` als Kürzel geliefert und über das `/types`-Verzeichnis zweisprachig aufgelöst. Von den Zusatzstoff-/Allergenhinweisen (`additives`) zu unterscheiden. Auftritt: `features/canteen/spec.md` (MENSA-F-035).
 
 **Laufwege**
 Vom FSR gepflegte Distanz-/Nachbarschaftsstruktur zwischen Räumen, Grundlage der Nächster-freier-Raum-Suche. Ein Eintrag verbindet zwei Raumkennungen mit einem Distanzmaß (Arbeitsziel: Fußweg-Minuten). Auftritt: `features/room-finder/spec.md`, `features/admin/spec.md`, `platform/backend-and-api.md`.

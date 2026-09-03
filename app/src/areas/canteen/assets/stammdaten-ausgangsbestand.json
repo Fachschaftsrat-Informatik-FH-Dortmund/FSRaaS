@@ -1,0 +1,17 @@
+{
+  "_hinweis": "Im Anwendungspaket mitgelieferter Ausgangsbestand der ferngepflegten Stammdaten (API-F-235, MENSA-F-075). Wird nur verwendet, wenn das Backend beim Ausliefern nicht erreichbar ist. Quelle: alte apps/android-fb4 assets/canteens.json, gespiegelt aus backend SeedData.cs.",
+  "mensen": [
+    { "id": "Mensa", "name": "Hauptmensa", "quelleId": "341", "standardAuswahl": true, "reihenfolge": 10, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=341&limit=100", "oeffnungszeiten": ["11:30 - 14:45", "11:30 - 14:45", "11:30 - 14:45", "11:30 - 14:45", "11:30 - 14:00"] },
+    { "id": "Kostbar", "name": "Kostbar", "quelleId": "456", "standardAuswahl": false, "reihenfolge": 20, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=456&limit=100", "oeffnungszeiten": ["8:00 - 14:30", "8:00 - 14:30", "8:00 - 14:30", "8:00 - 14:30", "8:00 - 14:30"] },
+    { "id": "Sonnen", "name": "Mensa Sonnenstrasse", "quelleId": "455", "standardAuswahl": false, "reihenfolge": 40, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=455&limit=100", "oeffnungszeiten": ["7:30 - 14:00", "7:30 - 14:00", "7:30 - 14:00", "7:30 - 14:00", "7:30 - 14:00"] },
+    { "id": "Sued", "name": "Mensa Sued", "quelleId": "342", "standardAuswahl": false, "reihenfolge": 50, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=342&limit=100", "oeffnungszeiten": ["11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:00"] },
+    { "id": "Max", "name": "Max-Ophuels-Platz", "quelleId": "453", "standardAuswahl": false, "reihenfolge": 60, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=453&limit=100", "oeffnungszeiten": ["11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15"] },
+    { "id": "Arch", "name": "Archeteria Campus Sued", "quelleId": "452", "standardAuswahl": false, "reihenfolge": 80, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=452&limit=100", "oeffnungszeiten": ["8:00 - 15:00", "8:00 - 15:00", "8:00 - 15:00", "8:00 - 15:00", "8:00 - 14:30"] },
+    { "id": "Soest", "name": "Mensaforum Soest", "quelleId": "451", "standardAuswahl": false, "reihenfolge": 90, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=451&limit=100", "oeffnungszeiten": ["7:00 - 14:00", "7:00 - 14:00", "7:00 - 14:00", "7:00 - 14:00", "7:00 - 14:00"] },
+    { "id": "Foodfakultaet", "name": "Food Fakultaet", "quelleId": "474", "standardAuswahl": false, "reihenfolge": 100, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=474&limit=100", "oeffnungszeiten": ["11:30 - 19:30", "11:30 - 19:30", "11:30 - 19:30", "11:30 - 19:30", "11:30 - 18:30"] },
+    { "id": "Galerie", "name": "Galerie", "quelleId": "451", "standardAuswahl": false, "reihenfolge": 120, "speiseplanUrl": "https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr=451&limit=100", "oeffnungszeiten": ["7:30 - 15:00", "7:30 - 15:00", "7:30 - 15:00", "7:30 - 15:00", "7:30 - 15:00"] }
+  ],
+  "raeume": [],
+  "links": [],
+  "semestertermine": {}
+}

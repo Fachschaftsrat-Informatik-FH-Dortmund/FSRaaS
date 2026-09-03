@@ -3,9 +3,9 @@ id: quality-and-testing
 titel: Qualität und Test
 praefix: QA
 status: accepted
-version: 0.4.3
+version: 0.4.4
 owner: FSR FB4
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/models/selected_course_info.dart
@@ -66,11 +66,11 @@ Die Wirkung gilt in beide Richtungen: Eine Anforderung ohne zugehörigen Test is
 | Gruppenzuordnung im Stundenplan | `alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:209-252` (`isGroupInScheduleItem`) | Bereichslogik über `studentSet` mit mehreren Sonderfällen, im Altcode schwer nachzuvollziehen und dadurch fehleranfällig. Eigene Prüfung deckte zusätzliche Verdachtsmomente auf: Zeile 216 vergleicht `info.groupNumber` (eine Ziffer) statt `info.groupLetter` mit dem ersten Zeichen des `studentSet` bei Einzelwerten; Zeile 210 prüft `groupLetter == "" \|\| groupLetter == ""` — dieselbe Bedingung doppelt, vermutlich ein Kopierfehler | Keine Gruppenkennung → alle Termine sichtbar; Einzelwert-`studentSet` z. B. `C8`; Wildcard `*`; Bereich `A1-C9` mit Gruppen `B5` (innerhalb), `A0` (unter Untergrenze), `C10` (über Obergrenze), `D2` (außerhalb); Bereich mit offener Grenze z. B. `A-C9`. Das für die Neuentwicklung korrekte Verhalten je Fall definiert `features/schedule/spec.md`, nicht dieses Dokument |
 | Zeitformat-Umwandlung `HHmm` | INT-002 in `integrations.md` | Rohwerte kommen ohne führende Nullen und wahlweise als Zahl oder String; Stundenplan und Raumsuche bauen beide darauf auf | `800` → `0800`; `930` → `0930`; `1215` unverändert; numerischer Wert `800` vs. String `"800"` |
 | Datumsauswertung News-Feed | `alte apps/fb4_app-main/fb4_app-main/lib/areas/news/models/news_item.dart:26` (INT-003) | Belegter Fehler in der Alt-App: 12-Stunden-Muster `hh` statt 24-Stunden-Muster `HH`, obwohl die Rohdaten keine AM/PM-Angabe enthalten | `"24.08.2026 - 14:30:00"` muss als 14:30 Uhr ausgewertet werden, nicht als vormittags fehlinterpretiert |
-| Normalisierung der Gerichtsbezeichnungen | RATE, Rohdaten aus INT-004 (`meals[].title`) | Neue Fachlogik ohne Vorbild in der Alt-App; uneinheitliche Roh-Titel würden dasselbe Gericht an verschiedenen Tagen als unterschiedliche Bewertungsziele behandeln | konkrete Normalisierungsregeln definiert `features/canteen-ratings/spec.md`; hier nur als Pflicht-Testbereich benannt |
+| Normalisierung der Gerichtsbezeichnungen | RATE, Rohdaten aus INT-015 (`title.de`; vormals INT-004 `meals[].title`) | Neue Fachlogik ohne Vorbild in der Alt-App; uneinheitliche Roh-Titel (u. a. inline stehende, tagesabhängige Zusatzstoff-Codes) würden dasselbe Gericht an verschiedenen Tagen als unterschiedliche Bewertungsziele behandeln | konkrete Normalisierungsregeln definiert `features/canteen-ratings/spec.md`; hier nur als Pflicht-Testbereich benannt |
 
 ## 6. Prüfung gegen Fremdsysteme
 
-Keines der Systeme INT-001 bis INT-004 gibt eine Stabilitätszusage (siehe Risikoeinschätzung in `integrations.md`). Für jedes dieser Systeme sollte ein Vertragstest oder eine Schemaänderungs-Erkennung bestehen: ein automatisierter Abgleich der tatsächlichen Antwortstruktur gegen die in `integrations.md` dokumentierten Felder, der bei Abweichung (fehlendes Feld, geänderter Typ, unerwarteter Wert z. B. bei `weekday` oder `courseType`) sichtbar fehlschlägt, statt die Abweichung stillschweigend weiterzuverarbeiten.
+Keines der Systeme INT-001 bis INT-004 sowie INT-015 gibt eine Stabilitätszusage (siehe Risikoeinschätzung in `integrations.md`). Für jedes dieser Systeme sollte ein Vertragstest oder eine Schemaänderungs-Erkennung bestehen: ein automatisierter Abgleich der tatsächlichen Antwortstruktur gegen die in `integrations.md` dokumentierten Felder, der bei Abweichung (fehlendes Feld, geänderter Typ, unerwarteter Wert z. B. bei `weekday`, `courseType` oder dem Preis-String von INT-015) sichtbar fehlschlägt, statt die Abweichung stillschweigend weiterzuverarbeiten.
 
 ## 7. Definition of Done
 
@@ -105,7 +105,7 @@ Kontrolle dieser Regeln sowie der Spec-Code-Kopplung aus `README.md` Abschnitt 7
 | QA-F-040 | Die Umwandlung der FBWS-Zeitfelder in das Format `HHmm` mit führenden Nullen muss automatisiert getestet werden. | NEU |
 | QA-F-050 | Die Datumsauswertung des News-Feeds muss mit einem Testfall für Zeitangaben ab 13:00 Uhr automatisiert getestet werden. | NEU |
 | QA-F-060 | Die Normalisierung von Gerichtsbezeichnungen für die Bewertungsfunktion muss automatisiert getestet werden. | NEU |
-| QA-N-070 | Für INT-001 bis INT-004 sollte ein Vertragstest oder eine Schemaänderungs-Erkennung bestehen, der bzw. die bei struktureller Abweichung von der dokumentierten Antwortstruktur fehlschlägt. | NEU |
+| QA-N-070 | Für INT-001 bis INT-004 sowie INT-015 sollte ein Vertragstest oder eine Schemaänderungs-Erkennung bestehen, der bzw. die bei struktureller Abweichung von der dokumentierten Antwortstruktur fehlschlägt. | NEU |
 | QA-N-080 | Es dürfen keine doppelten Anforderungs-IDs über den gesamten Spec-Bestand hinweg vorkommen. | NEU |
 | QA-N-090 | Jede Anforderung muss genau eine Herkunftsmarkierung tragen. | NEU |
 | QA-N-100 | Jede Spec-Datei muss alle für ihren Typ vorgesehenen Frontmatter-Pflichtfelder enthalten. | NEU |
