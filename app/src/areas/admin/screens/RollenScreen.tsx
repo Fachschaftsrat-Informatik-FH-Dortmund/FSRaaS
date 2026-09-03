@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +7,7 @@ import { useTheme } from '@/theme';
 import { AppButton } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates } from '@/ui/state/AsyncStates';
+import { AdminGate } from '../ui/AdminGate';
 import { useAdminApi, type Rollenzuweisung } from '../api';
 
 type Rolle = 'fsr-redaktion' | 'moderation';
@@ -26,9 +27,11 @@ export function RollenScreen() {
     const err = AppError.from(rollen.error);
     if (err.code === 'authentik_nicht_verfuegbar') {
       return (
-        <Screen center>
-          <Text style={[styles.hinweis, { color: colors.textMuted }]}>{t('admin.roles.unavailable')}</Text>
-        </Screen>
+        <AdminGate>
+          <Screen center>
+            <Text style={[styles.hinweis, { color: colors.textMuted }]}>{t('admin.roles.unavailable')}</Text>
+          </Screen>
+        </AdminGate>
       );
     }
   }
@@ -38,46 +41,59 @@ export function RollenScreen() {
       await rollenSpeichern.mutateAsync({ kontoId, rollen: rollenNeu });
     } catch (error) {
       const err = AppError.from(error);
-      Alert.alert(t(err.code === 'letzte_redaktion' ? 'admin.roles.lastRedaktion' : 'admin.saveError'));
+      const schluessel =
+        err.code === 'letzte_redaktion'
+          ? 'admin.roles.lastRedaktion'
+          : err.code === 'konto_unbekannt'
+            ? 'admin.roles.unknownAccount'
+            : err.code === 'authentik_nicht_verfuegbar'
+              ? 'admin.roles.unavailable'
+              : 'admin.saveError';
+      Alert.alert(t(schluessel));
     }
   }
 
   return (
-    <Screen scroll>
-      <AsyncStates
-        query={rollen}
-        isEmpty={(list) => list.length === 0}
-        emptyNextStep={t('admin.roles.emptyNextStep')}
-      >
-        {(list) => (
-          <View style={styles.list}>
-            {list.map((z) => (
-              <Zeile key={z.kontoId} zuweisung={z} onSpeichern={speichern} />
-            ))}
-            <View style={styles.addBox}>
-              <Text style={[styles.addLabel, { color: colors.text }]}>{t('admin.roles.addLabel')}</Text>
-              <TextInput
-                value={neuKonto}
-                onChangeText={setNeuKonto}
-                autoCapitalize="none"
-                placeholder={t('admin.roles.addPlaceholder')}
-                placeholderTextColor={colors.textMuted}
-                style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                accessibilityLabel={t('admin.roles.addLabel')}
-              />
-              <AppButton
-                label={t('admin.roles.addRedaktion')}
-                onPress={() => {
-                  if (neuKonto.trim()) void speichern(neuKonto.trim(), ['fsr-redaktion']);
-                  setNeuKonto('');
-                }}
-                disabled={!neuKonto.trim()}
-              />
+    <AdminGate>
+      <Screen scroll>
+        <AsyncStates
+          query={rollen}
+          isEmpty={(list) => list.length === 0}
+          emptyNextStep={t('admin.roles.emptyNextStep')}
+        >
+          {(list) => (
+            <View style={styles.list}>
+              {list.map((z) => (
+                <Zeile key={z.kontoId} zuweisung={z} onSpeichern={speichern} />
+              ))}
+              <View style={styles.addBox}>
+                <Text style={[styles.addLabel, { color: colors.text }]}>{t('admin.roles.addLabel')}</Text>
+                <Text style={[styles.addHint, { color: colors.textMuted }]}>{t('admin.roles.addHint')}</Text>
+                <TextInput
+                  value={neuKonto}
+                  onChangeText={setNeuKonto}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder={t('admin.roles.addPlaceholder')}
+                  placeholderTextColor={colors.textMuted}
+                  style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                  accessibilityLabel={t('admin.roles.addLabel')}
+                />
+                <AppButton
+                  label={t('admin.roles.addRedaktion')}
+                  onPress={() => {
+                    const kennung = neuKonto.trim();
+                    if (kennung) void speichern(kennung, ['fsr-redaktion']);
+                    setNeuKonto('');
+                  }}
+                  disabled={!neuKonto.trim() || rollenSpeichern.isPending}
+                />
+              </View>
             </View>
-          </View>
-        )}
-      </AsyncStates>
-    </Screen>
+          )}
+        </AsyncStates>
+      </Screen>
+    </AdminGate>
   );
 }
 
@@ -90,13 +106,19 @@ function Zeile({
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const serverRollen = (zuweisung.rollen as Rolle[]).slice().sort().join(',');
   const [rollenState, setRollenState] = useState<Rolle[]>(zuweisung.rollen as Rolle[]);
+
+  // Nach jedem Nachladen (Erfolg wie abgelehnter Speicherversuch) den lokalen
+  // Zustand auf den tatsächlichen Serverstand zurückführen (ADMIN-F-080).
+  useEffect(() => {
+    setRollenState(serverRollen ? (serverRollen.split(',') as Rolle[]) : []);
+  }, [serverRollen]);
 
   const toggle = (r: Rolle) =>
     setRollenState((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
 
-  const geaendert =
-    [...rollenState].sort().join(',') !== [...(zuweisung.rollen as Rolle[])].sort().join(',');
+  const geaendert = [...rollenState].sort().join(',') !== serverRollen;
 
   return (
     <View style={[styles.zeile, { borderBottomColor: colors.border }]}>
@@ -134,5 +156,6 @@ const styles = StyleSheet.create({
   hinweis: { fontSize: 15, textAlign: 'center' },
   addBox: { marginTop: 24, gap: 8 },
   addLabel: { fontSize: 15, fontWeight: '600' },
+  addHint: { fontSize: 13 },
   input: { minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12 },
 });

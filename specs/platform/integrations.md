@@ -3,7 +3,7 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.2.1
+version: 1.2.2
 owner: FSR FB4
 last_reviewed: 2026-09-03
 derived_from:
@@ -537,6 +537,8 @@ INT-001 + INT-002, über `roomId` zusammengeführt. Nach dem Wildcard-Befund nur
 **Status**
 Bestätigt und produktiv erprobt. Der Wildcard-Aufruf ist der vorgesehene Weg für die Raumsuche; er liefert Rohtermine, aus denen die Frei/Belegt-Auskunft im eigenen Code abgeleitet wird.
 
+**Nutzung (Stand 2026-09-03).** Der Zwischenspeicher dieses Endpunkts speist mehrere App-Sichten: die Freie-Raum-Suche (RAUM-F-020), die Raumübersicht und die Ansicht laufender Veranstaltungen (RAUM-F-150/RAUM-F-200) sowie den Abgleich der Stundenplan-Termine gegen den Raumplan (`features/schedule/spec.md` SCHED-F-410). Vor Umsetzung von Roadmap-Schritt 6 als Spike zu klären: ob dieser Endpunkt kurzfristige Ausfälle und Raumänderungen abbildet oder nur den Sollplan — davon hängt ab, wie belastbar die Ansicht laufender Veranstaltungen und der Stundenplan-Hinweis sind. Dabei auch `note` (Freitext) und `flags` (Bedeutung bislang unklar) auf Absage-/Verlegungssignale prüfen.
+
 **Bezug zu ARCH-F-040 / API-F-040/API-F-050**
 Diese Anforderungen gingen davon aus, Raumbelegung sei nur durch Zusammenführung der Termine aller Studiengang/Semester-Kombinationen herleitbar, und begründeten damit einen wesentlichen Teil des eigenen Backends. Der Wildcard-Befund vom 2026-08-25 widerlegt diese Annahme vollständig: Ein einziger Aufruf liefert alle Raumtermine. Entscheidung FSR FB4, 2026-08-25: Die Zusammenführung entfällt ersatzlos; das Backend ruft den Wildcard-Endpunkt periodisch ab und hält das Ergebnis als Zwischenspeicher vor — aus denselben Gründen wie bei News und Mensa (Ausfallpuffer, TLS-Erzwingung, keine unmittelbare App-Abhängigkeit vom Hochschulsystem), nicht wegen Aggregationsbedarf. ARCH-F-040 und API-F-040/API-F-050 sind entsprechend angepasst.
 
@@ -662,14 +664,17 @@ Für ADMIN-F-070 (Zuweisen und Entziehen der Rollen FSR-Redaktion und Moderation
 
 | Zweck | Aufruf (Authentik `api/v3`) | Ausgewertete Felder |
 |---|---|---|
+| Konto-ID zu einem Benutzernamen ermitteln | `GET core/users/?username={Benutzername}` | `results[].pk` (Ganzzahl), `results[].username` |
 | Gruppen-ID zu einem Namen ermitteln | `GET core/groups/?name={Gruppenname}` | `results[].pk` (UUID), `results[].name` |
 | Mitglieder einer Gruppe lesen | `GET core/groups/{pk}/` | `pk`, `name`, `users_obj[].pk` (Ganzzahl), `users_obj[].username`, `users_obj[].name` |
 | Konto einer Gruppe hinzufügen | `POST core/groups/{pk}/add_user/` mit `{ "pk": "{kontoId}" }` (Authentik nimmt die Ganzzahl auch als String an) | HTTP-Status |
 | Konto aus einer Gruppe entfernen | `POST core/groups/{pk}/remove_user/` mit `{ "pk": "{kontoId}" }` | HTTP-Status |
 
+Die Verwaltungsoberfläche listet Konten mit bestehender Rolle über den Gruppen-Lesepfad. Ein Konto **ohne** bisherige Rolle benennt die bedienende Person über den Benutzernamen; das Backend löst ihn über `core/users/?username=` zur `pk` auf, bevor Aussperrprüfung (ADMIN-F-080) und Protokolleintrag (ADMIN-F-110) darauf arbeiten. Eine bereits numerische Kennung wird ohne Auflösung übernommen.
+
 **Authentifizierung:** Bearer-Token eines Authentik-Dienstkontos (Intent *API*) mit Schreibrecht auf die betreffenden Gruppen — am einfachsten Mitglied von `authentik Admins`. Token und Basis-URL kommen ausschließlich aus der Backend-Konfiguration bzw. einem Secret-Mechanismus (SEC-N-110), nie aus dem Quellcode oder einer Feature-Spec.
 
-**Status dieser Teil-Schnittstelle:** Lesepfad **live verifiziert am 2026-09-03** gegen die eigenbetriebene Instanz `auth.tobtech.de`: `GET core/groups/?name=…` liefert je Gruppe `pk`/`name`, `GET core/groups/{pk}/` liefert `users_obj` mit genau den Feldern `pk`/`username`/`name`. Die Gruppen `FSR-Redaktion` und `Moderation` existieren. Der Schreibpfad (`add_user`/`remove_user`) ist strukturell aus derselben API bekannt, ein Round-Trip gegen die Instanz steht noch aus (nur beim ersten echten Rollenwechsel bestätigbar). Vertragstest gegen diese Struktur: `AuthentikDirectoryContractTests` (QA-N-070). Ohne konfigurierte API meldet das Backend die Rollenverwaltung als „nicht verfügbar" (503), statt still zu scheitern.
+**Status dieser Teil-Schnittstelle:** Lesepfad **live verifiziert am 2026-09-03** gegen die eigenbetriebene Instanz `auth.tobtech.de`: `GET core/groups/?name=…` liefert je Gruppe `pk`/`name`, `GET core/groups/{pk}/` liefert `users_obj` mit genau den Feldern `pk`/`username`/`name`. Die Gruppen `FSR-Redaktion` und `Moderation` existieren. Der Schreibpfad (`add_user`/`remove_user`) und die Benutzernamen-Auflösung (`core/users/?username=`) sind strukturell aus derselben API bekannt, ein Round-Trip gegen die Instanz steht noch aus (nur beim ersten echten Rollenwechsel bestätigbar). Vertragstest gegen diese Struktur: `AuthentikDirectoryContractTests` (QA-N-070). Ohne konfigurierte API meldet das Backend die Rollenverwaltung als „nicht verfügbar" (503), statt still zu scheitern.
 
 **Status**
 Anbieter entschieden, OIDC-Discovery und Verwaltungs-API-Lesepfad gegen `auth.tobtech.de` verifiziert (2026-09-03). Offen: Zeitpunkt und Ergebnis der App-Registrierung im FH-Microsoft-Mandanten, welche Claims der Upstream liefert, und der Schreib-Round-Trip der Verwaltungs-API. Nichts davon blockiert die Umsetzung.

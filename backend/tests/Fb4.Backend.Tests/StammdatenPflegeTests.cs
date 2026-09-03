@@ -46,6 +46,42 @@ public class StammdatenPflegeTests(TestAppFactory factory) : IClassFixture<TestA
     }
 
     [Fact]
+    public async Task ADMIN_F_180_Raumliste_laesst_sich_ersetzen()
+    {
+        var client = factory.CreateClientAls(Rolle.FsrRedaktion);
+        var (daten, etag) = await Laden(client);
+
+        var neu = daten with
+        {
+            Raeume = [new Raum { RoomId = "X.Y.99", Groesse = Raumgroesse.Klein, EkeyZugaenglich = true }],
+        };
+        (await client.SendAsync(Put(etag, neu))).EnsureSuccessStatusCode();
+
+        var raeume = await client.GetFromJsonAsync<List<Raum>>("/v1/raeume");
+        Assert.Single(raeume!);
+        Assert.Equal("X.Y.99", raeume![0].RoomId);
+    }
+
+    [Fact]
+    public async Task ADMIN_F_180_doppelte_Mensa_Kennung_wird_als_400_abgelehnt()
+    {
+        var client = factory.CreateClientAls(Rolle.FsrRedaktion);
+        var (daten, etag) = await Laden(client);
+
+        var neu = daten with
+        {
+            Mensen =
+            [
+                new Mensa { Id = "Doppelt", Name = "A", Reihenfolge = 1 },
+                new Mensa { Id = "Doppelt", Name = "B", Reihenfolge = 2 },
+            ],
+        };
+        var response = await client.SendAsync(Put(etag, neu));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ADMIN_F_190_Semestertermine_und_Ticket_Bildausschnitt_lassen_sich_aendern()
     {
         var client = factory.CreateClientAls(Rolle.FsrRedaktion);
@@ -53,13 +89,18 @@ public class StammdatenPflegeTests(TestAppFactory factory) : IClassFixture<TestA
 
         var neu = daten with
         {
-            Semestertermine = new Semestertermine { SemesterBeginn = new DateOnly(2026, 9, 22) },
+            Semestertermine = new Semestertermine
+            {
+                SemesterBeginn = new DateOnly(2026, 9, 22),
+                NaechsterWinterSemesterBeginn = new DateOnly(2027, 3, 15),
+            },
             TicketBildausschnitt = new Bildausschnitt { Links = 161, Oben = 148, Rechts = 555, Unten = 350 },
         };
         (await client.SendAsync(Put(etag, neu))).EnsureSuccessStatusCode();
 
         var frisch = await client.GetFromJsonAsync<Stammdaten>("/v1/stammdaten");
         Assert.Equal(new DateOnly(2026, 9, 22), frisch!.Semestertermine.SemesterBeginn);
+        Assert.Equal(new DateOnly(2027, 3, 15), frisch.Semestertermine.NaechsterWinterSemesterBeginn);
         Assert.Equal(555, frisch.TicketBildausschnitt!.Rechts);
     }
 

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { defaultShouldDehydrateQuery } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -20,7 +21,16 @@ export function Providers({ children }: { children: ReactNode }) {
     <SafeAreaProvider>
       <PersistQueryClientProvider
         client={queryClient}
-        persistOptions={{ persister: queryPersister, maxAge: persistMaxAge }}
+        persistOptions={{
+          persister: queryPersister,
+          maxAge: persistMaxAge,
+          // Verwaltungsdaten sind ausschließlich online nutzbar (ADMIN Abschnitt 8)
+          // und enthalten Kontonamen — nicht auf die Platte schreiben.
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) =>
+              defaultShouldDehydrateQuery(query) && query.queryKey[0] !== 'verwaltung',
+          },
+        }}
       >
         <ThemeProvider>
           <LanguageProvider>

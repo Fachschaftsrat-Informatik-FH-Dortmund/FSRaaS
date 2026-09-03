@@ -3,9 +3,9 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.1.3
+version: 3.2.0
 owner: FSR FB4
-last_reviewed: 2026-09-02
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
@@ -66,6 +66,8 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 | API-N-015 | Das System muss die Anzahl eingehender kontofreier Schreibanfragen je Quelle und Zeitfenster begrenzen. | NEU |
 | ~~API-F-040~~ | ~~Das System muss die Termine aller Studiengang/Semester-Kombinationen aus INT-002 periodisch abrufen und über `roomId` zu einer Raumbelegung zusammenführen.~~ — entfallen | NEU |
 | API-F-045 | Das System muss die Raumtermine über den Platzhalter-Aufruf aus INT-009 periodisch abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | Recherche: alte apps/android-fb4, retrofit/TimetableApi.java, 2026-08-25 |
+| API-F-055 | Das System muss der App eine Übersicht aller im Raumplan-Zwischenspeicher (INT-009) geführten Räume mit ihrer aktuellen Belegung bereitstellen, nicht beschränkt auf die kuratierte Raumliste. | NEU |
+| API-F-056 | Das System muss der App die zwischengespeicherten Raumplan-Termine für den lokalen Abgleich mit dem Stundenplan bereitstellen, ohne den Stundenplan der Nutzerin serverseitig zu speichern. | NEU |
 | ~~API-F-050~~ | ~~Das System muss der App für die Raumsuche einen einzelnen Abfrage-Endpunkt auf der aggregierten Raumbelegung bereitstellen, statt die App alle Kombinationen aus INT-001 einzeln abfragen zu lassen.~~ — entfallen | NEU |
 | API-F-060 | Das System muss News aus INT-003 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
 | API-F-070 | Das System muss Mensa-Speisepläne aus INT-015 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
@@ -89,6 +91,8 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 | API-F-250 | Das System muss Rollenzugehörigkeiten aus dem Identitätsanbieter (INT-012) übernehmen, statt eine eigene Rollenverwaltung zu führen. | NEU |
 
 **API-F-040 und API-F-050 (entfallen).** Befund vom 2026-08-25 aus dem Android-Quellcode: Der Endpunkt INT-009 nimmt in der Form `Room/*/AllEvents` einen Platzhalter entgegen und liefert alle Raumtermine in einem Aufruf. Die Annahme, Raumbelegung sei nur durch Zusammenführung über alle Studiengang/Semester-Kombinationen herleitbar, ist damit widerlegt. Ersetzt durch API-F-045, das nur noch die Zwischenspeicherung fordert — nicht die Zusammenführung. Siehe auch `architecture.md` ARCH-F-040 und `features/room-finder/spec.md`.
+
+**API-F-055 / API-F-056 — weitere Sichten auf den Raumplan-Zwischenspeicher.** Beide liefern nur andere Projektionen des bereits nach API-F-045 vorgehaltenen INT-009-Bestands, kein zusätzlicher externer Abruf. API-F-055 trägt Raumübersicht und Ansicht laufender Veranstaltungen aus `../features/room-finder/spec.md` (RAUM-F-150 ff.). API-F-056 trägt den Stundenplan-Abgleich aus `../features/schedule/spec.md` (SCHED-F-410): Das Backend stellt die Raumplan-Termine bereit, der Abgleich gegen den persönlichen Stundenplan läuft auf dem Gerät — API-F-100 (kein serverseitiges Speichern des persönlichen Stundenplans) bleibt ohne Ausnahme.
 
 Zu API-N-010/API-N-015: Die vorige Fassung von API-N-010 begrenzte „je Person und Zeitfenster" und ließ damit die kontofreien Schreibpfade ungeschützt — Helfer-Anmeldungen (HELFER-F-020) und Besetzt-Meldungen der Raumsuche (RAUM-F-070) kennen keine Person im Sinne eines Kontos. API-N-015 schließt diese Lücke und stellt auf die Anfragequelle ab statt auf eine Identität.
 
@@ -145,7 +149,7 @@ Nur Zweck und grobe Felder; ausformulierte Datenmodelle entstehen mit den jeweil
 | Bewertung | Mensa-Bewertung je Gericht | Pseudonym, Gericht-Referenz, Sterne, Kommentar (optional), Zeitstempel |
 | Event | Import aus dem FSR-ICS-Kalender (INT-011) | UID, Titel, Zeitraum, Ort, Beschreibung, Status, Helferbedarf (Verknüpfung) |
 | Helferbedarf / -anmeldung | Personalplanung je Event | Rolle, Schicht, benötigte Anzahl, angemeldete Personen (Name, Kontaktweg) |
-| Raumtermine | Zwischenspeicher der Rohtermine aus INT-009 | roomId, Zeitraum, Bezeichnung des Termins |
+| Raumtermine | Zwischenspeicher der Rohtermine aus INT-009 | roomId, Wochentag/Zeitraum, Bezeichnung, note — Grundlage für Raumsuche, Raumübersicht (RAUM-F-150) und Stundenplan-Abgleich (SCHED-F-410) |
 | Raum-Stammdaten | vom FSR gepflegte Raumliste | roomId, Größe (klein/mittel/groß), E-Key-Eignung |
 | Mensa-Stammdaten | vom FSR gepflegte Mensa-Liste | Kennung, ITMC-Kennung, Anzeigename, Öffnungszeiten je Wochentag, Standardauswahl, Anzeigereihenfolge, Speiseplan-URL |
 | Links und Downloads | vom FSR gepflegte Liste externer Verweise | Bezeichnung, URL, Gruppierung, Reihenfolge |

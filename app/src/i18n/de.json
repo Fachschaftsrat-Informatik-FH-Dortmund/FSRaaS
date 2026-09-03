@@ -101,6 +101,7 @@
     "saved": "Gespeichert.",
     "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
     "stale": "Zwischenzeitlich geändert. Bitte den neueren Stand laden und erneut speichern.",
+    "staleReloaded": "Zwischenzeitlich von jemand anderem geändert. Der neuere Stand wurde geladen — bitte die Änderungen erneut vornehmen.",
     "sections": {
       "rollen": "Rollen",
       "stammdaten": "Stammdaten",
@@ -110,11 +111,13 @@
       "redaktion": "FSR-Redaktion",
       "moderation": "Moderation",
       "save": "Rollen speichern",
-      "emptyNextStep": "Noch keine Rollen vergeben. Konto-Kennung unten eintragen.",
+      "emptyNextStep": "Noch keine Rollen vergeben. Benutzernamen unten eintragen.",
       "unavailable": "Die Rollenverwaltung ist derzeit nicht verfügbar (Identitätsanbieter nicht erreichbar).",
       "lastRedaktion": "Die letzte verbleibende FSR-Redaktions-Rolle kann nicht entzogen werden.",
+      "unknownAccount": "Kein Konto mit diesem Benutzernamen gefunden.",
       "addLabel": "Konto hinzufügen",
-      "addPlaceholder": "Konto-Kennung",
+      "addHint": "Benutzername des FSR-Kontos. Konten mit bestehender Rolle stehen bereits oben.",
+      "addPlaceholder": "Benutzername",
       "addRedaktion": "Als FSR-Redaktion hinzufügen"
     },
     "laufwege": {
@@ -130,15 +133,36 @@
     "stammdaten": {
       "emptyNextStep": "Noch keine Stammdaten.",
       "mensen": "Mensen",
+      "raeume": "Räume",
       "links": "Links & Downloads",
       "semester": "Semestertermine",
+      "ticket": "Ticket-Bildausschnitt",
       "name": "Bezeichnung",
+      "mensaId": "Kennung",
+      "quelleId": "ITMC-Nummer (optional)",
       "order": "Reihenfolge",
       "default": "Standardauswahl",
+      "roomId": "Raumkennung",
+      "size": "Größe",
+      "sizeKlein": "Klein",
+      "sizeMittel": "Mittel",
+      "sizeGross": "Groß",
+      "ekey": "E-Key-Zugang",
+      "schliesszeit": "Schließzeit (optional)",
+      "group": "Gruppe (optional)",
       "remove": "Entfernen",
+      "addMensa": "Mensa hinzufügen",
+      "addRaum": "Raum hinzufügen",
       "addLink": "Link hinzufügen",
       "semesterBeginn": "Semesterbeginn (JJJJ-MM-TT)",
-      "semesterEnde": "Semesterende (JJJJ-MM-TT)"
+      "semesterEnde": "Semesterende (JJJJ-MM-TT)",
+      "semesterWinter": "Nächster Wintersemesterbeginn (JJJJ-MM-TT)",
+      "semesterSommer": "Nächster Sommersemesterbeginn (JJJJ-MM-TT)",
+      "ticketLinks": "Links",
+      "ticketOben": "Oben",
+      "ticketRechts": "Rechts",
+      "ticketUnten": "Unten",
+      "dateError": "Bitte alle Datumsfelder im Format JJJJ-MM-TT ausfüllen oder leer lassen."
     }
   }
 }

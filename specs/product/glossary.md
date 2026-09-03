@@ -1,8 +1,8 @@
 ---
 status: accepted
-version: 0.4.1
+version: 0.4.2
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-03
 ---
 
 # Domänenglossar
@@ -74,6 +74,9 @@ Das durch HISinOne abgelöste Notenportal der FH Dortmund. Die Alt-App griff dar
 
 **OpenMensa**
 Offenes Verzeichnisprojekt für Mensa-Speisepläne deutscher Hochschulen. Datenquelle hinter dem von der Alt-App genutzten Vermittler (INT-004). Auftritt: `platform/integrations.md`, `features/canteen/spec.md`.
+
+**Raumplan**
+Die raumbezogene Sicht des FBWS auf die Veranstaltungstermine (INT-009, Platzhalter-Form `Room/*/AllEvents`) — dieselben Termine wie im studiengangsbezogenen Terminplan (INT-002), nur nach `roomId` statt nach Studiengang/Fachsemester geordnet. Das Backend hält den Raumplan als Zwischenspeicher vor; daraus leiten sich Freie-Raum-Suche, Raumübersicht, Ansicht laufender Veranstaltungen und der Stundenplan-Raumabgleich ab. Auftritt: `features/room-finder/spec.md`, `features/schedule/spec.md`, `platform/integrations.md` (INT-009).
 
 **SIDD**
 Sitzungstoken des ODS-Systems, aus einem Meta-Refresh-Tag der Login-Antwort extrahiert und für nachfolgende Anfragen als Query-Parameter mitgeschickt. Teil des abgelösten ODS-Verfahrens, siehe INT-006. Kein Bestandteil der Neuentwicklung.

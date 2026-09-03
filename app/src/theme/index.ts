@@ -5,3 +5,4 @@ export {
 } from './appearanceMode';
 export { colorsFor, lightColors, darkColors, type Scheme, type ThemeColors } from './tokens';
 export { ThemedStatusBar, statusBarStyle } from './statusBar';
+export { navigationThemeFor } from './navigationTheme';

@@ -101,6 +101,7 @@
     "saved": "Saved.",
     "saveError": "Saving failed. Please try again.",
     "stale": "Changed in the meantime. Please load the newer state and save again.",
+    "staleReloaded": "Changed by someone else in the meantime. The newer state has been loaded — please re-apply your changes.",
     "sections": {
       "rollen": "Roles",
       "stammdaten": "Master data",
@@ -110,11 +111,13 @@
       "redaktion": "Editorial",
       "moderation": "Moderation",
       "save": "Save roles",
-      "emptyNextStep": "No roles assigned yet. Enter an account id below.",
+      "emptyNextStep": "No roles assigned yet. Enter a username below.",
       "unavailable": "Role administration is currently unavailable (identity provider not reachable).",
       "lastRedaktion": "The last remaining editorial role cannot be removed.",
+      "unknownAccount": "No account found with that username.",
       "addLabel": "Add account",
-      "addPlaceholder": "Account id",
+      "addHint": "Username of the student council account. Accounts that already have a role are listed above.",
+      "addPlaceholder": "Username",
       "addRedaktion": "Add as editorial"
     },
     "laufwege": {
@@ -130,15 +133,36 @@
     "stammdaten": {
       "emptyNextStep": "No master data yet.",
       "mensen": "Canteens",
+      "raeume": "Rooms",
       "links": "Links & downloads",
       "semester": "Semester dates",
+      "ticket": "Ticket image crop",
       "name": "Label",
+      "mensaId": "ID",
+      "quelleId": "ITMC number (optional)",
       "order": "Order",
       "default": "Default selection",
+      "roomId": "Room ID",
+      "size": "Size",
+      "sizeKlein": "Small",
+      "sizeMittel": "Medium",
+      "sizeGross": "Large",
+      "ekey": "E-key access",
+      "schliesszeit": "Closing time (optional)",
+      "group": "Group (optional)",
       "remove": "Remove",
+      "addMensa": "Add canteen",
+      "addRaum": "Add room",
       "addLink": "Add link",
       "semesterBeginn": "Semester start (YYYY-MM-DD)",
-      "semesterEnde": "Semester end (YYYY-MM-DD)"
+      "semesterEnde": "Semester end (YYYY-MM-DD)",
+      "semesterWinter": "Next winter semester start (YYYY-MM-DD)",
+      "semesterSommer": "Next summer semester start (YYYY-MM-DD)",
+      "ticketLinks": "Left",
+      "ticketOben": "Top",
+      "ticketRechts": "Right",
+      "ticketUnten": "Bottom",
+      "dateError": "Please fill all date fields as YYYY-MM-DD or leave them empty."
     }
   }
 }

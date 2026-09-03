@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Fb4.Backend.Infrastructure;
 
@@ -41,6 +42,23 @@ public sealed class ApiExceptionHandler(IProblemDetailsService problemDetails) :
     public async ValueTask<bool> TryHandleAsync(
         HttpContext http, Exception exception, CancellationToken cancellationToken)
     {
+        // Nebenläufigkeitskonflikt der Datenbank (ADMIN-F-200): gleiche Antwort wie
+        // die vorgelagerte If-Match-Prüfung, damit die App nur einen Fall behandeln muss.
+        if (exception is DbUpdateConcurrencyException)
+        {
+            http.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
+            return await problemDetails.TryWriteAsync(new ProblemDetailsContext
+            {
+                HttpContext = http,
+                ProblemDetails = new ProblemDetails
+                {
+                    Status = StatusCodes.Status412PreconditionFailed,
+                    Title = "Die Liste wurde zwischenzeitlich geändert. Bitte den neueren Stand laden und erneut speichern.",
+                    Extensions = { ["code"] = "stand_veraltet" },
+                },
+            });
+        }
+
         if (exception is not ApiException api) return false;
 
         http.Response.StatusCode = api.Status;

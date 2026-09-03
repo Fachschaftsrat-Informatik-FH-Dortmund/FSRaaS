@@ -20,13 +20,13 @@ public static class PublicEndpoints
 
         app.MapGet("/mensen", async (Fb4DbContext db, CancellationToken ct) =>
         {
-            var mensen = await db.Mensen.OrderBy(m => m.Reihenfolge).ToListAsync(ct);
+            var mensen = await db.Mensen.AsNoTracking().OrderBy(m => m.Reihenfolge).ToListAsync(ct);
             return Results.Ok(mensen.Select(m => m.ToDto()).ToList());
         }).AllowAnonymous().WithTags("mensa");
 
         app.MapGet("/raeume", async (Fb4DbContext db, CancellationToken ct) =>
         {
-            var raeume = await db.Raeume.OrderBy(r => r.RoomId).ToListAsync(ct);
+            var raeume = await db.Raeume.AsNoTracking().OrderBy(r => r.RoomId).ToListAsync(ct);
             return Results.Ok(raeume.Select(r => r.ToDto()).ToList());
         }).AllowAnonymous().WithTags("raum");
 
@@ -34,7 +34,7 @@ public static class PublicEndpoints
         // INT-001 unmittelbar an (ARCH-F-020).
         app.MapGet("/stundenplan/studiengaenge", async (Fb4DbContext db, CancellationToken ct) =>
         {
-            var liste = await db.StudiengangRueckfall.OrderBy(s => s.Kurzname).ToListAsync(ct);
+            var liste = await db.StudiengangRueckfall.AsNoTracking().OrderBy(s => s.Kurzname).ToListAsync(ct);
             return Results.Ok(liste.Select(s => s.ToDto()).ToList());
         }).AllowAnonymous().WithTags("stundenplan");
 

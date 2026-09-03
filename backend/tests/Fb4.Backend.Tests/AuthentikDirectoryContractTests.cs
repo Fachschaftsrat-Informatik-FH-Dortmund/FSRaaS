@@ -43,7 +43,7 @@ public class AuthentikDirectoryContractTests
                 var u when u.Contains("groups/?name=Moderation") =>
                     """{"results":[{"pk":"grp-mod","name":"Moderation"}]}""",
                 var u when u.Contains("groups/grp-red/") =>
-                    """{"pk":"grp-red","name":"FSR-Redaktion","users_obj":[{"pk":"u1","username":"alice","name":"Alice A."}]}""",
+                    """{"pk":"grp-red","name":"FSR-Redaktion","users_obj":[{"pk":1,"username":"alice","name":"Alice A."}]}""",
                 var u when u.Contains("groups/grp-mod/") =>
                     """{"pk":"grp-mod","name":"Moderation","users_obj":[]}""",
                 _ => "{}",
@@ -54,9 +54,37 @@ public class AuthentikDirectoryContractTests
         var zuweisungen = await dir.ListeRollenzuweisungenAsync(default);
 
         var alice = Assert.Single(zuweisungen);
-        Assert.Equal("u1", alice.KontoId);
+        Assert.Equal("1", alice.KontoId);
         Assert.Equal("Alice A.", alice.Anzeigename);
         Assert.Contains(Rolle.FsrRedaktion, alice.Rollen);
+    }
+
+    [Fact]
+    public async Task ADMIN_F_070_Benutzername_wird_zur_stabilen_Konto_Id_aufgeloest()
+    {
+        var dir = Mit(req => req.RequestUri!.ToString().Contains("core/users/?username=tobi")
+            ? Json("""{"results":[{"pk":42,"username":"tobi","name":"Tobi B."}]}""")
+            : Json("""{"results":[]}"""));
+
+        Assert.Equal("42", await dir.KontoIdAufloesenAsync("tobi", default));
+    }
+
+    [Fact]
+    public async Task ADMIN_F_070_bereits_numerische_Kennung_wird_ohne_Netzaufruf_uebernommen()
+    {
+        var dir = Mit(_ => throw new InvalidOperationException("Für eine numerische Kennung darf kein Aufruf erfolgen."));
+
+        Assert.Equal("42", await dir.KontoIdAufloesenAsync("42", default));
+    }
+
+    [Fact]
+    public async Task ADMIN_F_070_unbekannter_Benutzername_wird_als_404_gemeldet()
+    {
+        var dir = Mit(_ => Json("""{"results":[]}"""));
+
+        var fehler = await Assert.ThrowsAsync<ApiException>(() => dir.KontoIdAufloesenAsync("niemand", default));
+        Assert.Equal(404, fehler.Status);
+        Assert.Equal("konto_unbekannt", fehler.Code);
     }
 
     [Fact]

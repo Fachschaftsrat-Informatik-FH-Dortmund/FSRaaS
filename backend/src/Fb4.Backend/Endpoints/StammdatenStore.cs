@@ -27,7 +27,8 @@ public sealed class StammdatenStore(Fb4DbContext db)
 
     public async Task<(Stammdaten daten, string etag)> ErsetzenAsync(Stammdaten neu, string? ifMatch, CancellationToken ct)
     {
-        await PruefeStandAsync(SammlungsRevision.Stammdaten, ifMatch, ct);
+        PruefeEingabe(neu);
+        var revision = await StandPruefenAsync(SammlungsRevision.Stammdaten, ifMatch, ct);
 
         db.Mensen.RemoveRange(await db.Mensen.ToListAsync(ct));
         db.Raeume.RemoveRange(await db.Raeume.ToListAsync(ct));
@@ -44,9 +45,37 @@ public sealed class StammdatenStore(Fb4DbContext db)
         if (kalender is null) { kalender = new SemesterKalender { Id = 1 }; db.SemesterKalender.Add(kalender); }
         kalender.Uebernehmen(neu.Semestertermine, neu.TicketBildausschnitt);
 
-        var etag = await NeueVersionAsync(SammlungsRevision.Stammdaten, ct);
-        return (Zusammensetzen(mensen, raeume, links, kalender), etag);
+        revision.Version = Guid.NewGuid();
+        return (Zusammensetzen(mensen, raeume, links, kalender), ETag.Von(revision.Version));
     }
+
+    /// <summary>
+    /// ADMIN Abschnitt 9 / API-N-040: strukturell fehlerhafte Eingaben werden als
+    /// 400 abgewiesen, nicht erst beim Speichern als 500 (Datensparsamkeit der
+    /// Fehlermeldung inklusive — kein Inhalt, nur die betroffene Kennung).
+    /// </summary>
+    static void PruefeEingabe(Stammdaten neu)
+    {
+        if (neu.Mensen is null || neu.Raeume is null || neu.Links is null)
+            throw ApiException.BadRequest("stammdaten_unvollstaendig",
+                "Mensa-, Raum- und Links-Liste müssen angegeben sein (auch leer).");
+
+        if (neu.Mensen.Any(m => string.IsNullOrWhiteSpace(m.Id)))
+            throw ApiException.BadRequest("mensa_id_leer", "Jeder Mensa-Eintrag braucht eine Kennung.");
+        var doppelteMensa = ErsteDoppelte(neu.Mensen.Select(m => m.Id));
+        if (doppelteMensa is not null)
+            throw ApiException.BadRequest("mensa_id_doppelt", $"Die Mensa-Kennung „{doppelteMensa}“ kommt mehrfach vor.");
+
+        if (neu.Raeume.Any(r => string.IsNullOrWhiteSpace(r.RoomId)))
+            throw ApiException.BadRequest("raum_id_leer", "Jeder Raum-Eintrag braucht eine Kennung.");
+        var doppelterRaum = ErsteDoppelte(neu.Raeume.Select(r => r.RoomId));
+        if (doppelterRaum is not null)
+            throw ApiException.BadRequest("raum_id_doppelt", $"Die Raumkennung „{doppelterRaum}“ kommt mehrfach vor.");
+    }
+
+    static string? ErsteDoppelte(IEnumerable<string> werte) => werte
+        .GroupBy(w => w, StringComparer.OrdinalIgnoreCase)
+        .FirstOrDefault(g => g.Count() > 1)?.Key;
 
     public async Task<(IReadOnlyList<Laufweg> wege, string etag)> LaufwegeAsync(CancellationToken ct)
     {
@@ -58,11 +87,13 @@ public sealed class StammdatenStore(Fb4DbContext db)
     public async Task<(IReadOnlyList<Laufweg> wege, IReadOnlyList<string> unbekannt, string etag)>
         LaufwegeErsetzenAsync(IReadOnlyList<Laufweg> neu, string? ifMatch, CancellationToken ct)
     {
-        await PruefeStandAsync(SammlungsRevision.Laufwege, ifMatch, ct);
-
         // ADMIN Abschnitt 9: ein Weg von einem Raum zu sich selbst wird abgelehnt.
         if (neu.Any(w => string.Equals(w.VonRoomId, w.NachRoomId, StringComparison.OrdinalIgnoreCase)))
             throw ApiException.BadRequest("laufweg_selbstbezug", "Ein Laufweg darf nicht auf dieselbe Raumkennung verweisen.");
+        if (neu.Any(w => string.IsNullOrWhiteSpace(w.VonRoomId) || string.IsNullOrWhiteSpace(w.NachRoomId)))
+            throw ApiException.BadRequest("laufweg_unvollstaendig", "Jeder Laufweg braucht zwei Raumkennungen.");
+
+        var revision = await StandPruefenAsync(SammlungsRevision.Laufwege, ifMatch, ct);
 
         var bekannt = (await db.Raeume.Select(r => r.RoomId).ToListAsync(ct))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -74,9 +105,9 @@ public sealed class StammdatenStore(Fb4DbContext db)
 
         db.Laufwege.RemoveRange(await db.Laufwege.ToListAsync(ct));
         db.Laufwege.AddRange(neu.Select(w => w.ToEntity()));
-        var etag = await NeueVersionAsync(SammlungsRevision.Laufwege, ct);
 
-        return (neu.ToList(), unbekannt, etag);
+        revision.Version = Guid.NewGuid();
+        return (neu.ToList(), unbekannt, ETag.Von(revision.Version));
     }
 
     static Stammdaten Zusammensetzen(
@@ -89,30 +120,28 @@ public sealed class StammdatenStore(Fb4DbContext db)
         TicketBildausschnitt = kalender.ToAusschnittDto(),
     };
 
-    async Task<SammlungsRevision> RevisionAsync(string bereich, CancellationToken ct)
+    /// <summary>Lesepfad: nur die Stand-Kennung, ohne den Change-Tracker zu berühren.</summary>
+    async Task<string> ETagAsync(string bereich, CancellationToken ct)
+    {
+        var r = await db.Revisionen.AsNoTracking().FirstOrDefaultAsync(x => x.Bereich == bereich, ct);
+        return ETag.Von(r?.Version ?? Guid.Empty);
+    }
+
+    /// <summary>
+    /// Schreibpfad: lädt die Revision verfolgt (der Aufrufer setzt danach eine neue
+    /// <see cref="SammlungsRevision.Version"/>), legt sie bei Bedarf an und weist einen
+    /// veralteten <c>If-Match</c> als 412 ab (ADMIN-F-200).
+    /// </summary>
+    async Task<SammlungsRevision> StandPruefenAsync(string bereich, string? ifMatch, CancellationToken ct)
     {
         var r = await db.Revisionen.FirstOrDefaultAsync(x => x.Bereich == bereich, ct);
         if (r is null) { r = new SammlungsRevision { Bereich = bereich }; db.Revisionen.Add(r); }
-        return r;
-    }
 
-    async Task<string> ETagAsync(string bereich, CancellationToken ct)
-        => ETag.Von((await RevisionAsync(bereich, ct)).Version);
-
-    async Task<string> NeueVersionAsync(string bereich, CancellationToken ct)
-    {
-        var r = await RevisionAsync(bereich, ct);
-        r.Version = Guid.NewGuid();
-        return ETag.Von(r.Version);
-    }
-
-    async Task PruefeStandAsync(string bereich, string? ifMatch, CancellationToken ct)
-    {
-        var aktuell = ETag.Von((await RevisionAsync(bereich, ct)).Version);
-        if (!ETag.Passt(ifMatch, aktuell))
+        if (!ETag.Passt(ifMatch, ETag.Von(r.Version)))
             throw ApiException.PreconditionFailed(
                 "stand_veraltet",
                 "Die Liste wurde zwischenzeitlich geändert. Bitte den neueren Stand laden und erneut speichern.");
+        return r;
     }
 }
 

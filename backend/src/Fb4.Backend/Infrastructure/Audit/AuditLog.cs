@@ -36,6 +36,10 @@ public sealed class AuditLog(Fb4DbContext db, IHttpContextAccessor httpContext)
 /// </summary>
 public static class VerwaltungsprotokollAufbewahrung
 {
+    /// <summary>
+    /// ADMIN-N-020: mindestens zwölf Monate. 366 Tage, damit auch über ein
+    /// Schaltjahr hinweg kein Eintrag vor Ablauf von zwölf Monaten entfernt wird.
+    /// </summary>
     public static readonly TimeSpan Frist = TimeSpan.FromDays(366);
 
     public static async Task<int> EntferneAelterAlsAsync(Fb4DbContext db, DateTimeOffset jetzt, CancellationToken ct = default)
