@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider } from '@/auth/AuthProvider';
 import { ConsentProvider } from '@/consent/ConsentProvider';
 import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { ThemeProvider } from '@/theme';
@@ -23,7 +24,9 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         <ThemeProvider>
           <LanguageProvider>
-            <ConsentProvider>{children}</ConsentProvider>
+            <AuthProvider>
+              <ConsentProvider>{children}</ConsentProvider>
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </PersistQueryClientProvider>

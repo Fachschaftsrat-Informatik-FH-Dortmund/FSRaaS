@@ -8,6 +8,7 @@ export type AppErrorKind =
   | 'server' // Backend hat einen Fehler geliefert (RFC 9457, API-N-040)
   | 'notFound' // 404
   | 'unauthorized' // 401/403
+  | 'auth' // Anmeldung fehlgeschlagen, abgebrochen oder nicht eingerichtet (INT-012)
   | 'parse' // Antwort entsprach nicht der erwarteten Struktur
   | 'unknown';
 

@@ -14,6 +14,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@expo/metro-runtime": "~4.0.1",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/netinfo": "11.4.1",
     "@tanstack/query-async-storage-persister": "^5.102.8",
@@ -21,22 +22,28 @@
     "@tanstack/react-query-persist-client": "^5.102.8",
     "expo": "~52.0.0",
     "expo-asset": "~11.0.5",
+    "expo-auth-session": "~6.0.3",
     "expo-constants": "~17.0.8",
+    "expo-crypto": "~14.0.2",
     "expo-dev-client": "~5.0.0",
     "expo-linking": "~7.0.5",
     "expo-localization": "~16.0.0",
     "expo-quick-actions": "~6.0.2",
     "expo-router": "~4.0.22",
+    "expo-secure-store": "~14.0.1",
     "expo-status-bar": "~2.0.0",
     "expo-system-ui": "~4.0.0",
+    "expo-web-browser": "~14.0.2",
     "i18next": "^23.16.0",
     "openapi-fetch": "^0.17.0",
     "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-i18next": "^15.1.0",
     "react-native": "0.76.9",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0"
+    "react-native-screens": "~4.4.0",
+    "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
@@ -52,6 +59,6 @@
     "typescript": "~5.3.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <23"
   }
 }

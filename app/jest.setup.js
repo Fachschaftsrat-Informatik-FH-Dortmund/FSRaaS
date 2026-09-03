@@ -49,6 +49,32 @@ jest.mock('expo-router', () => {
   };
 });
 
+jest.mock('expo-secure-store', () => ({
+  __esModule: true,
+  WHEN_UNLOCKED: 'whenUnlocked',
+  getItemAsync: jest.fn(() => Promise.resolve(null)),
+  setItemAsync: jest.fn(() => Promise.resolve()),
+  deleteItemAsync: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('expo-web-browser', () => ({
+  __esModule: true,
+  maybeCompleteAuthSession: jest.fn(),
+  openAuthSessionAsync: jest.fn(() => Promise.resolve({ type: 'dismiss' })),
+}));
+
+jest.mock('expo-auth-session', () => ({
+  __esModule: true,
+  makeRedirectUri: jest.fn(() => 'fb4://auth'),
+  fetchDiscoveryAsync: jest.fn(() => Promise.resolve({ endSessionEndpoint: undefined })),
+  exchangeCodeAsync: jest.fn(),
+  refreshAsync: jest.fn(),
+  AuthRequest: class {
+    codeVerifier = 'verifier';
+    promptAsync = jest.fn(() => Promise.resolve({ type: 'dismiss' }));
+  },
+}));
+
 jest.mock('expo-quick-actions', () => ({
   __esModule: true,
   setItems: jest.fn(() => Promise.resolve()),

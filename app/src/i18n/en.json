@@ -83,5 +83,62 @@
     "system": "System language",
     "de": "German",
     "en": "English"
+  },
+  "admin": {
+    "title": "Administration",
+    "signInPrompt": "Sign-in required",
+    "signInBody": "Sign in with your student council account to open administration.",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signInCancelled": "Sign-in cancelled.",
+    "signInFailed": "Sign-in failed. Please try again.",
+    "authNotConfigured": "Sign-in not set up",
+    "authNotConfiguredBody": "No identity provider is configured for this app yet. Administration becomes available once it is set up.",
+    "signedInAs": "Signed in as {{name}}",
+    "noRole": "No access",
+    "noRoleBody": "Your account has no administration role. Contact the student council editorial team.",
+    "save": "Save",
+    "saved": "Saved.",
+    "saveError": "Saving failed. Please try again.",
+    "stale": "Changed in the meantime. Please load the newer state and save again.",
+    "sections": {
+      "rollen": "Roles",
+      "stammdaten": "Master data",
+      "laufwege": "Walking routes"
+    },
+    "roles": {
+      "redaktion": "Editorial",
+      "moderation": "Moderation",
+      "save": "Save roles",
+      "emptyNextStep": "No roles assigned yet. Enter an account id below.",
+      "unavailable": "Role administration is currently unavailable (identity provider not reachable).",
+      "lastRedaktion": "The last remaining editorial role cannot be removed.",
+      "addLabel": "Add account",
+      "addPlaceholder": "Account id",
+      "addRedaktion": "Add as editorial"
+    },
+    "laufwege": {
+      "emptyNextStep": "No walking routes yet. Add one via “Add row”.",
+      "from": "From room",
+      "to": "To room",
+      "weight": "Minutes",
+      "add": "Add row",
+      "remove": "Remove",
+      "selfRef": "A walking route must not point to the same room id.",
+      "unknownRooms": "Saved. Unknown room ids: {{rooms}}"
+    },
+    "stammdaten": {
+      "emptyNextStep": "No master data yet.",
+      "mensen": "Canteens",
+      "links": "Links & downloads",
+      "semester": "Semester dates",
+      "name": "Label",
+      "order": "Order",
+      "default": "Default selection",
+      "remove": "Remove",
+      "addLink": "Add link",
+      "semesterBeginn": "Semester start (YYYY-MM-DD)",
+      "semesterEnde": "Semester end (YYYY-MM-DD)"
+    }
   }
 }

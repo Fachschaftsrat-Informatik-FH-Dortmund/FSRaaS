@@ -3,9 +3,9 @@ id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
 status: accepted
-version: 0.2.4
+version: 0.2.5
 owner: FSR FB4
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-02
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
@@ -18,6 +18,7 @@ implemented_in:
   - app/src/cache           # DATA-F-080, DATA-N-150
   - app/src/ui/state        # DATA-F-090 (Altershinweis, Test: AsyncStates.test.tsx)
   - app/src/state           # Zwischenspeicher-Persistenz (ADR 0013)
+  - app/src/auth            # DATA-F-120, DATA-F-130 (Sitzungsmerkmal im gesicherten Systemspeicher, Entfernen bei Abmeldung)
 related:
   - backend-and-api.md
   - security-and-privacy.md

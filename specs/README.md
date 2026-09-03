@@ -1,6 +1,6 @@
 ---
 status: accepted
-version: 1.1.1
+version: 1.1.2
 owner: FSR FB4
 last_reviewed: 2026-09-02
 ---
@@ -251,6 +251,7 @@ Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = f�
 | `product/roadmap.md` | – | – | – | accepted |
 | `features/app-shell/nutzerfuehrung-konzept.md` | – | – | – | accepted |
 | `pruefprotokolle/2026-09-02-app-rahmen.md` | – | – | – | draft |
+| `pruefprotokolle/2026-09-02-schritt-3-verwaltung.md` | – | – | – | draft |
 | `open-questions.md` | – | – | – | draft |
 | `decisions/0001-react-native-als-plattform.md` | – | – | – | angenommen |
 | `decisions/0002-spec-anchored-arbeitsweise.md` | – | – | – | angenommen |

@@ -83,5 +83,62 @@
     "system": "Systemsprache",
     "de": "Deutsch",
     "en": "Englisch"
+  },
+  "admin": {
+    "title": "Verwaltung",
+    "signInPrompt": "Anmeldung erforderlich",
+    "signInBody": "Melde dich mit deinem FSR-Konto an, um die Verwaltung zu öffnen.",
+    "signIn": "Anmelden",
+    "signOut": "Abmelden",
+    "signInCancelled": "Anmeldung abgebrochen.",
+    "signInFailed": "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+    "authNotConfigured": "Anmeldung nicht eingerichtet",
+    "authNotConfiguredBody": "Für diese App ist noch kein Identitätsanbieter hinterlegt. Die Verwaltung ist erst nach Einrichtung nutzbar.",
+    "signedInAs": "Angemeldet als {{name}}",
+    "noRole": "Kein Zugriff",
+    "noRoleBody": "Dein Konto hat keine Verwaltungsrolle. Wende dich an die FSR-Redaktion.",
+    "save": "Speichern",
+    "saved": "Gespeichert.",
+    "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "stale": "Zwischenzeitlich geändert. Bitte den neueren Stand laden und erneut speichern.",
+    "sections": {
+      "rollen": "Rollen",
+      "stammdaten": "Stammdaten",
+      "laufwege": "Laufwege"
+    },
+    "roles": {
+      "redaktion": "FSR-Redaktion",
+      "moderation": "Moderation",
+      "save": "Rollen speichern",
+      "emptyNextStep": "Noch keine Rollen vergeben. Konto-Kennung unten eintragen.",
+      "unavailable": "Die Rollenverwaltung ist derzeit nicht verfügbar (Identitätsanbieter nicht erreichbar).",
+      "lastRedaktion": "Die letzte verbleibende FSR-Redaktions-Rolle kann nicht entzogen werden.",
+      "addLabel": "Konto hinzufügen",
+      "addPlaceholder": "Konto-Kennung",
+      "addRedaktion": "Als FSR-Redaktion hinzufügen"
+    },
+    "laufwege": {
+      "emptyNextStep": "Noch keine Laufwege. Über „Zeile hinzufügen“ anlegen.",
+      "from": "Von Raum",
+      "to": "Nach Raum",
+      "weight": "Minuten",
+      "add": "Zeile hinzufügen",
+      "remove": "Entfernen",
+      "selfRef": "Ein Laufweg darf nicht auf dieselbe Raumkennung verweisen.",
+      "unknownRooms": "Gespeichert. Unbekannte Raumkennungen: {{rooms}}"
+    },
+    "stammdaten": {
+      "emptyNextStep": "Noch keine Stammdaten.",
+      "mensen": "Mensen",
+      "links": "Links & Downloads",
+      "semester": "Semestertermine",
+      "name": "Bezeichnung",
+      "order": "Reihenfolge",
+      "default": "Standardauswahl",
+      "remove": "Entfernen",
+      "addLink": "Link hinzufügen",
+      "semesterBeginn": "Semesterbeginn (JJJJ-MM-TT)",
+      "semesterEnde": "Semesterende (JJJJ-MM-TT)"
+    }
   }
 }

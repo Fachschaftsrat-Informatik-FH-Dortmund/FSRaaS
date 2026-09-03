@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { useHasAdminRole } from '@/auth/AuthProvider';
 import { moreAreasByGroup } from '@/navigation/navMap';
 import { useTheme } from '@/theme';
 import { Screen } from '@/ui/Screen';
@@ -15,10 +16,21 @@ import { Screen } from '@/ui/Screen';
 export function MoreScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const hatVerwaltungsrolle = useHasAdminRole();
+
+  // ADMIN-F-020: Der Verwaltungsbereich ist nur mit mindestens einer
+  // Verwaltungsrolle überhaupt sichtbar. Das Ausblenden ersetzt nicht die
+  // serverseitige Ablehnung (ADMIN-F-010) — es ist eine Darstellungsfrage.
+  const sichtbareGruppen = moreAreasByGroup()
+    .map((section) => ({
+      ...section,
+      areas: section.areas.filter((area) => area.key !== 'admin' || hatVerwaltungsrolle),
+    }))
+    .filter((section) => section.areas.length > 0);
 
   return (
     <Screen scroll>
-      {moreAreasByGroup().map((section) => (
+      {sichtbareGruppen.map((section) => (
         <Fragment key={section.group}>
           <Text style={[styles.groupHeader, { color: colors.textMuted }]}>
             {t(section.titleKey)}

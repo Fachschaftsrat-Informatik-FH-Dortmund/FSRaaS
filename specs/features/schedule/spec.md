@@ -4,9 +4,9 @@ titel: Stundenplan
 praefix: SCHED
 status: accepted
 prioritaet: kern
-version: 2.0.0
+version: 2.1.0
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/dialog/CalendarExportDialog.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/service/DataService.java
@@ -54,6 +54,7 @@ Für Studierende mit Wahlpflichtfächern kommt eine zweite Herausforderung hinzu
 - Planungsmodus: Auswahl konfliktfreier Termine für Wahlpflichtmodule gegenüber dem eigenen Stundenplan, einschließlich explizitem Hinweis bei fehlender konfliktfreier Konstellation.
 - Planungsmodus: auswählbares bevorzugtes Zeitfenster für die Anwesenheit an der Hochschule sowie auswählbarer Optimierungsmodus, nach dem mehrere konfliktfreie Terminoptionen geordnet werden.
 - Planungsmodus: mehrere Wahlpflichtmodule gleichzeitig in einer Planungsauswahl führen und einzelne davon als „Pflicht" markieren, um weitere Kandidaten dagegen zu prüfen.
+- Abgleich der eigenen offiziellen Termine gegen den Raumplan (INT-009) und Hinweis am Stundenplan-Eintrag bei abweichendem Raum oder fehlender Zuordnung.
 
 ### Nicht-Scope
 
@@ -64,6 +65,7 @@ Für Studierende mit Wahlpflichtfächern kommt eine zweite Herausforderung hinzu
 - Automatische, kombinatorische Optimierung über mehrere gleichzeitig **unentschiedene** Wahlpflicht-Kandidaten hinweg — mehrere Kandidaten können gleichzeitig in der Planungsauswahl geführt werden (SCHED-F-370), die Konfliktprüfung (SCHED-F-290/390) erfolgt aber je Kandidat einzeln gegen den bereits übernommenen Plan und die bereits als „Pflicht" markierten Module, nicht kombinatorisch zwischen mehreren noch unentschiedenen Kandidaten. Diese Ausgestaltung wurde bewusst erwogen und zurückgestellt (Rücksprache FSR FB4, 2026-08-25) — siehe Erläuterung zu SCHED-F-390.
 - ~~Automatische Zuordnung „Wahlpflichtmodul → zuständiges Fachsemester"~~ Seit 2026-08-26 doch im Scope: `platform/integrations.md` INT-002 dokumentiert mit `WFPB` eine vom Fachbereich selbst gepflegte Sammelkategorie, die alle aktuell angebotenen Wahlpflichtmodule automatisch liefert (SCHED-F-400) — eine manuelle Fachsemester-Auswahl durch die Nutzerin ist damit nicht mehr nötig.
 - Echtzeit- oder Kapazitätsdaten zu Veranstaltungen (z. B. Auslastung, freie Plätze) — INT-002 liefert dazu keine Felder, siehe `platform/integrations.md` INT-002.
+- Verbindliche Auskunft über Ausfall oder Raumänderung — der Abgleich aus SCHED-F-410 ff. liefert nur einen unbestätigten Hinweis; die verbindliche Quelle für Raumänderungen ist „FB-Aktuelles" (`../news/spec.md`, `platform/integrations.md` INT-010).
 
 ## 3. Nutzergeschichten
 
@@ -84,6 +86,7 @@ Für Studierende mit Wahlpflichtfächern kommt eine zweite Herausforderung hinzu
 - Als Studierende möchte ich festlegen, in welchem Zeitfenster ich überhaupt an der Hochschule sein möchte, damit mir der Planungsmodus keine für mich unpassend frühen oder späten Termine bevorzugt vorschlägt.
 - Als Studierende möchte ich zwischen verschiedenen Optimierungszielen wählen (z. B. möglichst wenig Zeit vor Ort, ein ausgeglichener Tagesablauf oder mehr Pausen zwischen Terminen), damit der Planungsmodus zu meiner persönlichen Situation passt.
 - Als Studierende möchte ich mehrere in Frage kommende Wahlpflichtmodule gleichzeitig im Blick behalten und einzelne davon als bereits entschieden markieren, damit ich schrittweise prüfen kann, ob ein weiteres Modul noch dazupasst, ohne alles gleichzeitig kombinatorisch durchrechnen zu müssen.
+- Als Studierende möchte ich im Stundenplan einen Hinweis sehen, wenn der aktuelle Raumplan für einen meiner Termine einen anderen Raum führt oder ihn nicht kennt, damit ich nicht vor einem falschen oder leeren Raum stehe.
 
 ## 4. Funktionale Anforderungen
 
@@ -141,6 +144,12 @@ Die Zahl numerisch statt zeichenweise zu vergleichen ist ausdrücklich festgehal
 | SCHED-F-370 | Das System muss der Nutzerin ermöglichen, mehrere nach SCHED-F-280 ausgewählte Wahlpflichtmodule gleichzeitig in einer Planungsauswahl zu führen. | NEU |
 | SCHED-F-380 | Das System muss der Nutzerin ermöglichen, ein Wahlpflichtmodul innerhalb der Planungsauswahl (SCHED-F-370) als „Pflicht" zu markieren, sobald sie sich für dessen Teilnahme entschieden hat. | NEU |
 | SCHED-F-390 | Bei der Konfliktprüfung (SCHED-F-290) eines nicht als „Pflicht" markierten Wahlpflichtmoduls der Planungsauswahl muss das System dessen Termine gegen den bereits übernommenen Stundenplan sowie gegen die als „Pflicht" markierten Wahlpflichtmodule derselben Planungsauswahl prüfen, nicht gegen andere, ebenfalls noch nicht als „Pflicht" markierte Kandidaten. | NEU |
+| SCHED-F-410 | Das System muss jeden offiziellen Termin des persönlichen Stundenplans gegen die zwischengespeicherten Raumplan-Termine (INT-009, siehe `../room-finder/spec.md`) abgleichen, zugeordnet über die in beiden Beständen gemeinsam vorhandenen Merkmale Bezeichnung, Wochentag, Beginnzeit und Gruppenangabe. | NEU |
+| SCHED-F-420 | Wenn ein offizieller Termin im Raumplan zugeordnet werden kann, dort aber unter keiner der geführten Raumkennungen mit dem im Stundenplan gespeicherten Raum übereinstimmt, dann muss das System am betroffenen Stundenplan-Eintrag einen Hinweis auf eine mögliche Raumänderung mit der abweichenden Raumkennung anzeigen. | NEU |
+| SCHED-F-430 | Wenn ein offizieller Termin im aktuellen Raumplan unter keinem Merkmalssatz zugeordnet werden kann, dann muss das System am betroffenen Stundenplan-Eintrag einen Hinweis anzeigen, dass der Termin im Raumplan fehlt und möglicherweise entfällt oder verlegt wurde. | NEU |
+| SCHED-F-440 | Das System muss einen Hinweis nach SCHED-F-420 oder SCHED-F-430 als unbestätigte Ableitung kennzeichnen und auf „FB-Aktuelles" (`../news/spec.md`) als verbindliche Quelle verweisen. | NEU |
+| SCHED-F-445 | Solange ein Hinweis nach SCHED-F-420 oder SCHED-F-430 angezeigt wird, darf das System den betroffenen Stundenplan-Eintrag nicht verändern, verschieben, ausblenden oder dessen gespeicherten Raum überschreiben. | NEU |
+| SCHED-F-450 | Falls der Raumplan-Zwischenspeicher älter als die vorgesehene Aktualisierungsfrequenz ist, muss das System keinen Hinweis nach SCHED-F-420 oder SCHED-F-430 anzeigen und stattdessen das Alter des Raumplan-Stands ausweisen. | NEU |
 
 ### Erläuterungen
 
@@ -216,6 +225,14 @@ Bei Gleichstand nach diesen Kriterien ist die Reihenfolge nicht weiter festgeleg
 
 **`SCHED-F-370` bis `SCHED-F-390` — Planungsauswahl mit Pflicht-Markierung statt Vollkombinatorik.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Denkbar wäre auch ein Modus, der zusätzlich zu den Pflichtkursen mehrere gleichzeitig noch unentschiedene Wahlpflicht-Kandidaten entgegennimmt und alle Kombinationen daraus durchrechnet, um passende Konstellationen auszugeben. Diese Ausweitung wurde bewusst zurückgestellt — Begründung: die Ergebnisdarstellung würde bei mehr als wenigen gleichzeitig offenen Kandidaten schnell unübersichtlich, und der Zusatznutzen gegenüber dem hier gewählten schrittweisen Vorgehen (ein Kandidat nach dem anderen wird entschieden und dann als „Pflicht" markiert, SCHED-F-380) erschien nicht klar genug, um die Komplexität zu rechtfertigen. SCHED-F-370 bis SCHED-F-390 decken dafür genau den in den Nutzergeschichten beschriebenen Fall ab: mehrere Module gleichzeitig im Blick behalten, aber einzeln entscheiden. Eine Vollkombinatorik über mehrere gleichzeitig unentschiedene Kandidaten bleibt eine mögliche spätere Erweiterung, siehe Abschnitt 13.
 
+**`SCHED-F-410` bis `SCHED-F-450` — Raumplan-Abgleich.** Der Fachbereich pflegt Termine im FBWS an zwei Stellen, die dieselben Veranstaltungen aus unterschiedlicher Richtung zeigen: der studiengangsbezogene Terminplan (INT-002), aus dem der Stundenplan entsteht, und der raumbezogene Raumplan (INT-009), den das Backend alle paar Minuten neu abruft (`platform/backend-and-api.md` API-F-045). Die App speichert den einmal angelegten Stundenplan lokal und aktualisiert ihn nicht von selbst — ein zwischenzeitlicher Raumwechsel im FBWS bleibt der Nutzerin daher verborgen. SCHED-F-410 schließt diese Lücke, indem es den lokal gespeicherten Termin gegen den frischen Raumplan hält. Der Abgleich läuft vollständig auf dem Gerät; das Backend liefert nur die Raumplan-Termine (`platform/backend-and-api.md` API-F-056), der Stundenplan verlässt das Gerät nicht (`platform/backend-and-api.md` API-F-100).
+
+INT-002 und INT-009 teilen keine gemeinsame Veranstaltungskennung — INT-002 führt kein `courseId`. Die Zuordnung erfolgt deshalb über den Merkmalssatz Bezeichnung + Wochentag + Beginnzeit + `studentSet`; dessen Trennschärfe ist vor Umsetzung an echten Daten zu prüfen (Abschnitt 13).
+
+SCHED-F-420 fordert bewusst „unter keiner der geführten Raumkennungen": Eine Veranstaltung, die regulär parallel in zwei Räumen läuft (belegt für „Lern- und Arbeitstechniken", siehe Abschnitt 13 und `platform/integrations.md` INT-002), darf keinen Fehlalarm auslösen, wenn der eigene gespeicherte Raum einer der beiden ist.
+
+Der Hinweis ist bewusst schwach: Er ändert den Eintrag nicht (SCHED-F-445), verschwindet bei veraltetem Raumplan (SCHED-F-450) und nennt „FB-Aktuelles" als die Stelle, an der eine Raumänderung verbindlich steht (SCHED-F-440). Ob INT-009 kurzfristige Änderungen überhaupt trägt, ist offen — dieselbe Frage wie in `../room-finder/spec.md` Abschnitt 13.
+
 ## 5. Datenmodell
 
 Termin (offiziell): siehe INT-002-Felder in `platform/integrations.md`, ergänzt um Kennzeichnung `istOffiziell: true`, `gruppenzugehoerig: boolean` (Ergebnis von SCHED-F-060 bis SCHED-F-090), `abweichendeGruppe: boolean` (SCHED-F-260, Termin einer anderen Gruppe übernommen statt des eigenen), `ausWahlpflicht: boolean` (SCHED-F-400, aus der Wahlpflicht-Sammelkategorie statt aus dem eigenen Fachsemester übernommen) und `akzeptierterKonflikt: boolean` (SCHED-F-310).
@@ -228,9 +245,11 @@ Wahlpflicht-Planungsauswahl (lokal): eine Liste gewählter Wahlpflichtmodule aus
 
 Gemeinsame Persistenz aller vier Datenarten: `platform/data-and-storage.md`, DATA-F-010.
 
+Raumplan-Abgleich (lokal, berechnet, SCHED-F-410): je offiziellem Termin ein Status `übereinstimmend` | `raumabweichung` (mit abweichender Raumkennung) | `nicht_zugeordnet`, hergeleitet aus dem Vergleich mit den zwischengespeicherten Raumplan-Terminen. Rein geräteseitig, kein serverseitiges Pendant; keine Persistenz über den aktuellen Raumplan-Stand hinaus nötig.
+
 ## 6. Externe Schnittstellen
 
-Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-002 (FBWS Termine) für den Terminabruf und den vom Backend (INT-008) importierten Prüfungsplan (INT-013) für die Prüfungsauswahl. Für den Planungsmodus (SCHED-F-400) ruft die App INT-002 zusätzlich für die FBWS-Sammelkategorie der Wahlpflichtmodule ab — technisch derselbe Endpunkt, keine neue Integration. Keine weiteren Endpunktdetails hier — siehe `platform/integrations.md`.
+Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-002 (FBWS Termine) für den Terminabruf und den vom Backend (INT-008) importierten Prüfungsplan (INT-013) für die Prüfungsauswahl. Für den Planungsmodus (SCHED-F-400) ruft die App INT-002 zusätzlich für die FBWS-Sammelkategorie der Wahlpflichtmodule ab — technisch derselbe Endpunkt, keine neue Integration. Für den Raumplan-Abgleich (SCHED-F-410) ruft die App zusätzlich die zwischengespeicherten Raumplan-Termine über das Backend ab (INT-008, `platform/api-contract.yaml` `/raumplan/termine`, API-F-056); die Rohquelle ist INT-009, kein direkter FBWS-Aufruf aus der App. Keine weiteren Endpunktdetails hier — siehe `platform/integrations.md` und `platform/api-contract.yaml`.
 
 ## 7. UI-Flows & Zustände
 
@@ -243,6 +262,9 @@ Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-0
 | Offline | Zuletzt geladener Stand wird angezeigt, siehe Abschnitt 8 |
 | Planungsmodus: kein konfliktfreier Termin (SCHED-F-300) | Expliziter Hinweis „keine konfliktfreie Terminoption für dieses Modul"; Möglichkeit zur bewussten Übernahme trotz Konflikt (SCHED-F-310) wird angeboten |
 | Planungsmodus: Termin außerhalb des Zeitfensters (SCHED-F-340) | Termin bleibt wählbar, zusätzlich sichtbar als „außerhalb des bevorzugten Zeitfensters" gekennzeichnet, keine gesonderte Bestätigung nötig |
+| Raumabweichung für einen Termin erkannt (SCHED-F-420) | Kleiner Hinweis am Eintrag mit der abweichenden Raumkennung, Eintrag sonst unverändert |
+| Termin im Raumplan nicht auffindbar (SCHED-F-430) | Kleiner Hinweis „im Raumplan nicht gefunden — evtl. Ausfall oder Verlegung", Eintrag unverändert |
+| Raumplan-Stand veraltet oder nicht abrufbar | Kein Abweichungshinweis; falls veraltet, Alter des Raumplan-Stands sichtbar (SCHED-F-450) |
 
 ## 8. Offline-Verhalten
 
@@ -257,6 +279,8 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 | Kalenderberechtigung wird verweigert | Datei-Export als Rückfallweg anbieten (SCHED-F-177), keine wiederholte Nachfrage |
 | INT-001 nicht erreichbar | Rückfallliste des Backends verwenden (SCHED-F-254), Alter der Liste sichtbar machen |
 | Eigener Termin überschneidet sich zeitlich mit einem offiziellen Termin | Beide Termine anzeigen, zusätzlich sichtbarer Konflikthinweis (SCHED-F-230), keine automatische Konfliktauflösung |
+| Raumplan-Termine nicht abrufbar | Stundenplan normal anzeigen, keinen Abgleichhinweis zeigen, kein Fehler in der Stundenplanansicht |
+| Mehrere Raumplan-Termine passen mehrdeutig auf denselben Stundenplan-Termin | Keinen Abweichungshinweis erzeugen (sicherer Rückfall), Vorfall protokollieren (SEC-F-060) |
 
 ## 10. Nicht-funktionale Anforderungen
 
@@ -282,6 +306,10 @@ Der Stundenplan ist einer der drei in `platform/architecture.md` (ARCH-F-100) be
 - Termine außerhalb des festgelegten Zeitfensters werden sichtbar gekennzeichnet, aber nicht ausgeblendet (SCHED-F-340).
 - Bei mehreren konfliktfreien Terminen für ein Wahlpflichtmodul steht im jeweils gewählten Optimierungsmodus erkennbar die nach dessen Kriterium (Tagesspanne bzw. Nachbarabstand, siehe Erläuterung zu SCHED-F-350/360) günstigste Option zuerst (SCHED-F-360).
 - Wird ein Wahlpflichtmodul in der Planungsauswahl als „Pflicht" markiert, zählt es bei der Prüfung weiterer, noch nicht markierter Kandidaten als fixer Bestandteil des Plans; zwei gleichzeitig unentschiedene Kandidaten werden dabei nicht gegeneinander geprüft (SCHED-F-390).
+- Ein offizieller Termin, dessen Raum im aktuellen Raumplan abweicht, trägt im Stundenplan einen Hinweis mit der abweichenden Raumkennung, ohne dass der Eintrag selbst verändert wird (SCHED-F-420/F-445).
+- Ein offizieller Termin, der im Raumplan nicht auffindbar ist, trägt einen Hinweis auf möglichen Ausfall oder Verlegung (SCHED-F-430).
+- Eine regulär in zwei Räumen parallel angebotene Veranstaltung löst keinen Abweichungshinweis aus, solange der gespeicherte Raum einer der beiden ist (SCHED-F-420).
+- Bei veraltetem Raumplan-Stand erscheint kein Abweichungshinweis, sondern das Alter des Stands (SCHED-F-450).
 
 ## 12. Bewusst nicht übernommenes Altverhalten
 
