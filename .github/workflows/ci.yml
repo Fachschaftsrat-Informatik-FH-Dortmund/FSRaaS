@@ -109,7 +109,7 @@ jobs:
           npm --prefix tools/contract-codegen ci
           node tools/contract-codegen/src/generate.mjs
       - run: npx expo export --platform web --output-dir dist-web
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: admin-web
           path: app/dist-web
