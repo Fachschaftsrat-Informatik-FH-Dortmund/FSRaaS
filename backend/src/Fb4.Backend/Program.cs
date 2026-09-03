@@ -19,6 +19,8 @@ builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddSingleton<JobStatusRegistry>();
+
 // PostgreSQL über EF Core (ADR 0011, backend-and-api.md Abschnitt 8).
 // Ohne Verbindungszeichenfolge bleibt der Context nicht konfiguriert — das
 // Gerüst startet trotzdem, damit /health auch ohne Datenbank antwortet.
@@ -32,6 +34,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // ab (Migration + Seed), bevor der Aufräum-Job seinen ersten Durchlauf beginnt.
     builder.Services.AddHostedService<DbInitializer>();
     builder.Services.AddHostedService<VerwaltungsprotokollAufraeumJob>();
+}
+else
+{
+    // Ohne Datenbank trotzdem gestartet (nur /health). Der DbInitializer meldet das.
+    builder.Services.AddHostedService<DbInitializer>();
 }
 
 // Anmeldung gegen Authentik (INT-012, ADR 0010) und Rollen-Richtlinien.
@@ -47,13 +54,6 @@ if (authOptions.ManagementApiKonfiguriert)
 else
 {
     builder.Services.AddSingleton<IAuthentikDirectory, NichtKonfigurierteAuthentikDirectory>();
-}
-
-builder.Services.AddSingleton<JobStatusRegistry>();
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    // Ohne Datenbank trotzdem gestartet (nur /health). Der DbInitializer meldet das.
-    builder.Services.AddHostedService<DbInitializer>();
 }
 
 var app = builder.Build();

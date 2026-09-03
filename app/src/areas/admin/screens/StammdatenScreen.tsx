@@ -1,28 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppError } from '@/errors/AppError';
 import { useTheme } from '@/theme';
-import { AppButton } from '@/ui/primitives';
+import { AppButton, SegmentedControl } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates } from '@/ui/state/AsyncStates';
+import { AdminGate } from '../ui/AdminGate';
 import { useAdminApi, type Stammdaten } from '../api';
 
 // ADMIN-F-180 / ADMIN-F-190: Mensa-, Raum- und Links-Liste sowie Semestertermine
-// und Ticket-Bildausschnitt pflegen. Gespeichert wird der Bestand als Ganzes,
-// abgesichert gegen gleichzeitige Bearbeitung über den Stand (ADMIN-F-200).
+// und Ticket-Bildausschnitt anlegen, ändern und entfernen. Gespeichert wird der
+// Bestand als Ganzes, abgesichert gegen gleichzeitige Bearbeitung über den Stand
+// (ADMIN-F-200). Öffnungszeiten und Speiseplan-URL der Mensen folgen mit dem
+// MENSA-Schnitt (Roadmap-Schritt 4).
+
+type Mensa = Stammdaten['mensen'][number];
+type Raum = Stammdaten['raeume'][number];
+type Link = Stammdaten['links'][number];
+type Raumgroesse = Raum['groesse'];
+
+const DATUM = /^\d{4}-\d{2}-\d{2}$/;
+const istDatumOderLeer = (v?: string) => !v || DATUM.test(v);
 
 export function StammdatenScreen() {
   const { t } = useTranslation();
   const { stammdaten, stammdatenSpeichern } = useAdminApi();
 
   return (
-    <Screen scroll>
-      <AsyncStates query={stammdaten} isEmpty={() => false} emptyNextStep={t('admin.stammdaten.emptyNextStep')}>
-        {({ daten, etag }) => <Editor daten={daten} etag={etag} speichern={stammdatenSpeichern} />}
-      </AsyncStates>
-    </Screen>
+    <AdminGate>
+      <Screen scroll>
+        <AsyncStates query={stammdaten} isEmpty={() => false} emptyNextStep={t('admin.stammdaten.emptyNextStep')}>
+          {({ daten, etag }) => <Editor daten={daten} etag={etag} speichern={stammdatenSpeichern} />}
+        </AsyncStates>
+      </Screen>
+    </AdminGate>
   );
 }
 
@@ -43,40 +56,72 @@ function Editor({
     setEntwurf(daten);
   }, [daten]);
 
-  const setMensa = (i: number, patch: Partial<Stammdaten['mensen'][number]>) =>
+  const setMensa = (i: number, patch: Partial<Mensa>) =>
     setEntwurf((d) => ({ ...d, mensen: d.mensen.map((m, k) => (k === i ? { ...m, ...patch } : m)) }));
-  const setLink = (i: number, patch: Partial<Stammdaten['links'][number]>) =>
+  const setRaum = (i: number, patch: Partial<Raum>) =>
+    setEntwurf((d) => ({ ...d, raeume: d.raeume.map((r, k) => (k === i ? { ...r, ...patch } : r)) }));
+  const setLink = (i: number, patch: Partial<Link>) =>
     setEntwurf((d) => ({ ...d, links: d.links.map((l, k) => (k === i ? { ...l, ...patch } : l)) }));
+  const setTermin = (patch: Partial<Stammdaten['semestertermine']>) =>
+    setEntwurf((d) => ({ ...d, semestertermine: { ...d.semestertermine, ...patch } }));
+  const setAusschnitt = (patch: Partial<NonNullable<Stammdaten['ticketBildausschnitt']>>) =>
+    setEntwurf((d) => ({
+      ...d,
+      ticketBildausschnitt: { links: 0, oben: 0, rechts: 0, unten: 0, ...d.ticketBildausschnitt, ...patch },
+    }));
+
+  const setStandardMensa = (i: number) =>
+    setEntwurf((d) => ({
+      ...d,
+      mensen: d.mensen.map((m, k) => ({ ...m, standardAuswahl: k === i ? !m.standardAuswahl : false })),
+    }));
 
   async function speichernJetzt() {
+    const termine = entwurf.semestertermine;
+    if (
+      ![
+        termine.semesterBeginn,
+        termine.semesterEnde,
+        termine.naechsterWinterSemesterBeginn,
+        termine.naechsterSommerSemesterBeginn,
+      ].every(istDatumOderLeer)
+    ) {
+      Alert.alert(t('admin.stammdaten.dateError'));
+      return;
+    }
     try {
       await speichern.mutateAsync({ daten: entwurf, etag });
       Alert.alert(t('admin.saved'));
     } catch (error) {
       const err = AppError.from(error);
-      Alert.alert(t(err.status === 412 ? 'admin.stale' : 'admin.saveError'));
+      Alert.alert(t(err.status === 412 ? 'admin.staleReloaded' : 'admin.saveError'));
     }
   }
+
+  const ausschnitt = entwurf.ticketBildausschnitt ?? { links: 0, oben: 0, rechts: 0, unten: 0 };
 
   return (
     <View style={styles.wrap}>
       <Abschnitt titel={t('admin.stammdaten.mensen')}>
         {entwurf.mensen.map((m, i) => (
-          <View key={m.id || i} style={[styles.karte, { borderColor: colors.border }]}>
+          <View key={`mensa-${i}`} style={[styles.karte, { borderColor: colors.border }]}>
+            <Feld label={t('admin.stammdaten.mensaId')} value={m.id} onChange={(v) => setMensa(i, { id: v })} />
             <Feld label={t('admin.stammdaten.name')} value={m.name} onChange={(v) => setMensa(i, { name: v })} />
+            <Feld
+              label={t('admin.stammdaten.quelleId')}
+              value={m.quelleId ?? ''}
+              onChange={(v) => setMensa(i, { quelleId: v || undefined })}
+            />
             <Feld
               label={t('admin.stammdaten.order')}
               value={String(m.reihenfolge)}
               keyboard
-              onChange={(v) => setMensa(i, { reihenfolge: Number(v) || 0 })}
+              onChange={(v) => setMensa(i, { reihenfolge: ganzzahl(v) })}
             />
             <SchalterZeile
               label={t('admin.stammdaten.default')}
               value={m.standardAuswahl}
-              onChange={(v) => setEntwurf((d) => ({
-                ...d,
-                mensen: d.mensen.map((x, k) => ({ ...x, standardAuswahl: k === i ? v : v ? false : x.standardAuswahl })),
-              }))}
+              onChange={() => setStandardMensa(i)}
             />
             <AppButton
               label={t('admin.stammdaten.remove')}
@@ -85,13 +130,75 @@ function Editor({
             />
           </View>
         ))}
+        <AppButton
+          label={t('admin.stammdaten.addMensa')}
+          variant="secondary"
+          onPress={() =>
+            setEntwurf((d) => ({
+              ...d,
+              mensen: [...d.mensen, { id: '', name: '', standardAuswahl: false, reihenfolge: d.mensen.length * 10 + 10 }],
+            }))
+          }
+        />
+      </Abschnitt>
+
+      <Abschnitt titel={t('admin.stammdaten.raeume')}>
+        {entwurf.raeume.map((r, i) => (
+          <View key={`raum-${i}`} style={[styles.karte, { borderColor: colors.border }]}>
+            <Feld
+              label={t('admin.stammdaten.roomId')}
+              value={r.roomId}
+              onChange={(v) => setRaum(i, { roomId: v })}
+            />
+            <SegmentedControl<Raumgroesse>
+              label={t('admin.stammdaten.size')}
+              value={r.groesse}
+              onChange={(v) => setRaum(i, { groesse: v })}
+              options={[
+                { value: 'klein', label: t('admin.stammdaten.sizeKlein') },
+                { value: 'mittel', label: t('admin.stammdaten.sizeMittel') },
+                { value: 'gross', label: t('admin.stammdaten.sizeGross') },
+              ]}
+            />
+            <SchalterZeile
+              label={t('admin.stammdaten.ekey')}
+              value={r.ekeyZugaenglich}
+              onChange={(v) => setRaum(i, { ekeyZugaenglich: v })}
+            />
+            <Feld
+              label={t('admin.stammdaten.schliesszeit')}
+              value={r.schliesszeit ?? ''}
+              onChange={(v) => setRaum(i, { schliesszeit: v || null })}
+            />
+            <AppButton
+              label={t('admin.stammdaten.remove')}
+              variant="destructive"
+              onPress={() => setEntwurf((d) => ({ ...d, raeume: d.raeume.filter((_, k) => k !== i) }))}
+            />
+          </View>
+        ))}
+        <AppButton
+          label={t('admin.stammdaten.addRaum')}
+          variant="secondary"
+          onPress={() =>
+            setEntwurf((d) => ({
+              ...d,
+              raeume: [...d.raeume, { roomId: '', groesse: 'mittel', ekeyZugaenglich: false }],
+            }))
+          }
+        />
       </Abschnitt>
 
       <Abschnitt titel={t('admin.stammdaten.links')}>
         {entwurf.links.map((l, i) => (
-          <View key={i} style={[styles.karte, { borderColor: colors.border }]}>
+          <View key={`link-${i}`} style={[styles.karte, { borderColor: colors.border }]}>
             <Feld label={t('admin.stammdaten.name')} value={l.bezeichnung} onChange={(v) => setLink(i, { bezeichnung: v })} />
             <Feld label="URL" value={l.url} onChange={(v) => setLink(i, { url: v })} />
+            <Feld
+              label={t('admin.stammdaten.group')}
+              value={l.gruppe ?? ''}
+              onChange={(v) => setLink(i, { gruppe: v || undefined })}
+            />
             <AppButton
               label={t('admin.stammdaten.remove')}
               variant="destructive"
@@ -102,7 +209,12 @@ function Editor({
         <AppButton
           label={t('admin.stammdaten.addLink')}
           variant="secondary"
-          onPress={() => setEntwurf((d) => ({ ...d, links: [...d.links, { bezeichnung: '', url: '', reihenfolge: d.links.length * 10 }] }))}
+          onPress={() =>
+            setEntwurf((d) => ({
+              ...d,
+              links: [...d.links, { bezeichnung: '', url: '', reihenfolge: d.links.length * 10 + 10 }],
+            }))
+          }
         />
       </Abschnitt>
 
@@ -110,12 +222,49 @@ function Editor({
         <Feld
           label={t('admin.stammdaten.semesterBeginn')}
           value={entwurf.semestertermine.semesterBeginn ?? ''}
-          onChange={(v) => setEntwurf((d) => ({ ...d, semestertermine: { ...d.semestertermine, semesterBeginn: v || undefined } }))}
+          onChange={(v) => setTermin({ semesterBeginn: v || undefined })}
         />
         <Feld
           label={t('admin.stammdaten.semesterEnde')}
           value={entwurf.semestertermine.semesterEnde ?? ''}
-          onChange={(v) => setEntwurf((d) => ({ ...d, semestertermine: { ...d.semestertermine, semesterEnde: v || undefined } }))}
+          onChange={(v) => setTermin({ semesterEnde: v || undefined })}
+        />
+        <Feld
+          label={t('admin.stammdaten.semesterWinter')}
+          value={entwurf.semestertermine.naechsterWinterSemesterBeginn ?? ''}
+          onChange={(v) => setTermin({ naechsterWinterSemesterBeginn: v || undefined })}
+        />
+        <Feld
+          label={t('admin.stammdaten.semesterSommer')}
+          value={entwurf.semestertermine.naechsterSommerSemesterBeginn ?? ''}
+          onChange={(v) => setTermin({ naechsterSommerSemesterBeginn: v || undefined })}
+        />
+      </Abschnitt>
+
+      <Abschnitt titel={t('admin.stammdaten.ticket')}>
+        <Feld
+          label={t('admin.stammdaten.ticketLinks')}
+          value={String(ausschnitt.links)}
+          keyboard
+          onChange={(v) => setAusschnitt({ links: ganzzahl(v) })}
+        />
+        <Feld
+          label={t('admin.stammdaten.ticketOben')}
+          value={String(ausschnitt.oben)}
+          keyboard
+          onChange={(v) => setAusschnitt({ oben: ganzzahl(v) })}
+        />
+        <Feld
+          label={t('admin.stammdaten.ticketRechts')}
+          value={String(ausschnitt.rechts)}
+          keyboard
+          onChange={(v) => setAusschnitt({ rechts: ganzzahl(v) })}
+        />
+        <Feld
+          label={t('admin.stammdaten.ticketUnten')}
+          value={String(ausschnitt.unten)}
+          keyboard
+          onChange={(v) => setAusschnitt({ unten: ganzzahl(v) })}
         />
       </Abschnitt>
 
@@ -124,7 +273,12 @@ function Editor({
   );
 }
 
-function Abschnitt({ titel, children }: { titel: string; children: React.ReactNode }) {
+function ganzzahl(v: string): number {
+  const n = Number.parseInt(v, 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function Abschnitt({ titel, children }: { titel: string; children: ReactNode }) {
   const { colors } = useTheme();
   return (
     <View style={styles.abschnitt}>

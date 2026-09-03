@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,15 @@ namespace Fb4.Backend.Infrastructure.Auth;
 public interface IAuthentikDirectory
 {
     Task<IReadOnlyList<Rollenzuweisung>> ListeRollenzuweisungenAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Löst eine vom Menschen eingegebene Kennung (Benutzername) zur stabilen
+    /// Authentik-Konto-Id auf (ADMIN-F-070). Eine bereits numerische Kennung wird
+    /// unverändert zurückgegeben.
+    /// </summary>
+    Task<string> KontoIdAufloesenAsync(string kennung, CancellationToken ct);
+
+    /// <summary>Setzt die Gruppenmitgliedschaft. <paramref name="kontoId"/> ist eine aufgelöste Authentik-Id.</summary>
     Task SetzeRollenAsync(string kontoId, IReadOnlyList<Rolle> rollen, CancellationToken ct);
 }
 
@@ -27,6 +37,7 @@ public interface IAuthentikDirectory
 public sealed class NichtKonfigurierteAuthentikDirectory : IAuthentikDirectory
 {
     public Task<IReadOnlyList<Rollenzuweisung>> ListeRollenzuweisungenAsync(CancellationToken ct) => throw NichtVerfuegbar();
+    public Task<string> KontoIdAufloesenAsync(string kennung, CancellationToken ct) => throw NichtVerfuegbar();
     public Task SetzeRollenAsync(string kontoId, IReadOnlyList<Rolle> rollen, CancellationToken ct) => throw NichtVerfuegbar();
 
     static ApiException NichtVerfuegbar() => new(
@@ -38,8 +49,8 @@ public sealed class NichtKonfigurierteAuthentikDirectory : IAuthentikDirectory
 /// HTTP-Anbindung an die Authentik-Verwaltungs-API (INT-012). Die verwendeten
 /// Endpunkt- und Feldnamen stehen ausschließlich im Schnittstellenregister
 /// (<c>platform/integrations.md</c> INT-012, Abschnitt „Verwaltungs-API"), nicht
-/// hier. Live-Verifikation steht aus, solange keine Instanz mit Schreibtoken
-/// bereitsteht (Prüfprotokoll 2026-09-02).
+/// hier. Live-Verifikation des Schreibpfads steht aus, solange keine Instanz mit
+/// Schreibtoken bereitsteht (Prüfprotokoll 2026-09-02).
 /// </summary>
 public sealed class AuthentikDirectory(HttpClient http, IOptions<AuthentikOptions> options) : IAuthentikDirectory
 {
@@ -60,6 +71,25 @@ public sealed class AuthentikDirectory(HttpClient http, IOptions<AuthentikOption
             var name = redaktion.GetValueOrDefault(id) ?? moderation.GetValueOrDefault(id);
             return new Rollenzuweisung { KontoId = id, Anzeigename = name, Rollen = rollen };
         }).ToList();
+    }
+
+    public async Task<string> KontoIdAufloesenAsync(string kennung, CancellationToken ct)
+    {
+        kennung = kennung.Trim();
+        if (string.IsNullOrEmpty(kennung))
+            throw ApiException.BadRequest("konto_kennung_leer", "Es wurde keine Konto-Kennung angegeben.");
+
+        // Authentik-Konto-pk ist eine Ganzzahl (INT-012). Ist die Kennung schon
+        // numerisch, gilt sie direkt — sonst als Benutzername auflösen.
+        if (long.TryParse(kennung, NumberStyles.None, CultureInfo.InvariantCulture, out _))
+            return kennung;
+
+        Vorbereiten();
+        var resp = await http.GetFromJsonAsync<ListeDto<BenutzerDto>>(
+            $"core/users/?username={Uri.EscapeDataString(kennung)}", ct) ?? throw Strukturbruch("Benutzerliste ohne Rumpf");
+        var treffer = resp.Results.FirstOrDefault(u => string.Equals(u.Username, kennung, StringComparison.OrdinalIgnoreCase))
+            ?? throw new ApiException(404, "konto_unbekannt", $"Kein Authentik-Konto mit dem Benutzernamen „{kennung}“.");
+        return treffer.Pk.ToString(CultureInfo.InvariantCulture);
     }
 
     public async Task SetzeRollenAsync(string kontoId, IReadOnlyList<Rolle> rollen, CancellationToken ct)
@@ -84,7 +114,9 @@ public sealed class AuthentikDirectory(HttpClient http, IOptions<AuthentikOption
         var gruppenId = await GruppenIdAsync(gruppe, ct);
         var resp = await http.GetFromJsonAsync<GruppeDto>($"core/groups/{gruppenId}/", ct)
             ?? throw Strukturbruch("Gruppe ohne Rumpf");
-        return (resp.UsersObj ?? []).ToDictionary(u => u.Pk.ToString() ?? "", u => (string?)(u.Name ?? u.Username));
+        return (resp.UsersObj ?? []).ToDictionary(
+            u => u.Pk.ToString(CultureInfo.InvariantCulture),
+            u => (string?)(u.Name ?? u.Username));
     }
 
     async Task<string> GruppenIdAsync(string gruppe, CancellationToken ct)
@@ -93,7 +125,7 @@ public sealed class AuthentikDirectory(HttpClient http, IOptions<AuthentikOption
             $"core/groups/?name={Uri.EscapeDataString(gruppe)}", ct) ?? throw Strukturbruch("Gruppenliste ohne Rumpf");
         var treffer = resp.Results.FirstOrDefault(g => g.Name == gruppe)
             ?? throw new ApiException(503, "authentik_gruppe_fehlt", $"Gruppe {gruppe} existiert in Authentik nicht.");
-        return treffer.Pk.ToString() ?? "";
+        return treffer.Pk;
     }
 
     async Task SetzeMitgliedschaftAsync(string gruppe, string kontoId, bool sollMitglied, CancellationToken ct)
@@ -114,11 +146,11 @@ public sealed class AuthentikDirectory(HttpClient http, IOptions<AuthentikOption
     // Nur die tatsächlich ausgewerteten Felder — Abweichung schlägt sichtbar fehl (QA-N-070).
     sealed record ListeDto<T>([property: JsonPropertyName("results")] IReadOnlyList<T> Results);
     sealed record GruppeDto(
-        [property: JsonPropertyName("pk")] object Pk,
+        [property: JsonPropertyName("pk")] string Pk,
         [property: JsonPropertyName("name")] string Name,
         [property: JsonPropertyName("users_obj")] IReadOnlyList<BenutzerDto>? UsersObj);
     sealed record BenutzerDto(
-        [property: JsonPropertyName("pk")] object Pk,
+        [property: JsonPropertyName("pk")] long Pk,
         [property: JsonPropertyName("username")] string? Username,
         [property: JsonPropertyName("name")] string? Name);
 }

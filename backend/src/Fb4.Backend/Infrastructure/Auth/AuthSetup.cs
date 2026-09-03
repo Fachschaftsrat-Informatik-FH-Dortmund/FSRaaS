@@ -38,8 +38,13 @@ public static class AuthSetup
                     jwt.TokenValidationParameters.ValidAudience = options.Audience;
                     // Discovery/JWKS-Abruf: eindeutiger User-Agent, falls die
                     // Authentik-Instanz hinter einem Reverse Proxy / CDN mit
-                    // Bot-Filter liegt (weist Anfragen ohne UA sonst ab).
-                    var backchannel = new HttpClient(new HttpClientHandler());
+                    // Bot-Filter liegt (weist Anfragen ohne UA sonst ab). Der
+                    // Backchannel lebt für die Prozesslaufzeit (Standardmuster für
+                    // JwtBearer); PooledConnectionLifetime lässt DNS-Wechsel greifen.
+                    var backchannel = new HttpClient(new SocketsHttpHandler
+                    {
+                        PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+                    });
                     backchannel.DefaultRequestHeaders.UserAgent.ParseAdd("fb4-backend");
                     backchannel.Timeout = TimeSpan.FromSeconds(30);
                     jwt.Backchannel = backchannel;

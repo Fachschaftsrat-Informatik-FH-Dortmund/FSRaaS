@@ -7,6 +7,7 @@ import { useTheme } from '@/theme';
 import { AppButton } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates } from '@/ui/state/AsyncStates';
+import { AdminGate } from '../ui/AdminGate';
 import { useAdminApi, type Laufweg } from '../api';
 
 // ADMIN-F-090 / ADMIN-F-100: Laufwege zwischen Raumkennungen pflegen. Eine
@@ -18,15 +19,17 @@ export function LaufwegeScreen() {
   const { laufwege, laufwegeSpeichern } = useAdminApi();
 
   return (
-    <Screen scroll>
-      <AsyncStates
-        query={laufwege}
-        isEmpty={() => false}
-        emptyNextStep={t('admin.laufwege.emptyNextStep')}
-      >
-        {({ wege, etag }) => <Editor initial={wege} etag={etag} speichern={laufwegeSpeichern} />}
-      </AsyncStates>
-    </Screen>
+    <AdminGate>
+      <Screen scroll>
+        <AsyncStates
+          query={laufwege}
+          isEmpty={() => false}
+          emptyNextStep={t('admin.laufwege.emptyNextStep')}
+        >
+          {({ wege, etag }) => <Editor initial={wege} etag={etag} speichern={laufwegeSpeichern} />}
+        </AsyncStates>
+      </Screen>
+    </AdminGate>
   );
 }
 
@@ -69,7 +72,7 @@ function Editor({
           err.code === 'laufweg_selbstbezug'
             ? 'admin.laufwege.selfRef'
             : err.status === 412
-              ? 'admin.stale'
+              ? 'admin.staleReloaded'
               : 'admin.saveError',
         ),
       );

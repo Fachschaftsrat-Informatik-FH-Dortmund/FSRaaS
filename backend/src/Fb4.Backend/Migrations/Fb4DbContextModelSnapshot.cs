@@ -126,6 +126,7 @@ namespace Fb4.Backend.Migrations
                         .HasColumnType("text");
 
                     b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("uuid");
 
                     b.HasKey("Bereich");

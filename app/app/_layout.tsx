@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 
 import { ConsentGate } from '@/consent/ConsentGate';
@@ -6,7 +7,7 @@ import { logError } from '@/errors/AppError';
 import { initI18n } from '@/i18n';
 import { readLanguagePreference, resolveLanguage } from '@/i18n/languagePreference';
 import { Providers } from '@/state/Providers';
-import { ThemedStatusBar } from '@/theme';
+import { navigationThemeFor, ThemedStatusBar, useTheme } from '@/theme';
 import { useReducedMotion } from '@/ui/reducedMotion';
 
 // Wurzel des datei-basierten Routers (SHELL-F-050). Diese Datei verdrahtet nur
@@ -41,13 +42,24 @@ export default function RootLayout() {
 }
 
 function RootStack() {
+  const { scheme, colors } = useTheme();
   const reducedMotion = useReducedMotion();
+  const navTheme = useMemo(() => navigationThemeFor(scheme, colors), [scheme, colors]);
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: reducedMotion ? 'none' : 'default', // UX-N-030
-      }}
-    />
+    // Das Farbsystem der App auch an React Navigation geben (UX-F-020, UX-F-030):
+    // ohne diese Brücke bleibt dessen Theme hell und blitzt bei Szenenübergängen
+    // — etwa dem Tab-Wechsel — durch die kurz teiltransparenten Szenen durch.
+    // `contentStyle` deckt zusätzlich den Stack-Grund selbst ab, wie in den
+    // verschachtelten Stacks unter (tabs)/more auch.
+    <NavThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: reducedMotion ? 'none' : 'default', // UX-N-030
+        }}
+      />
+    </NavThemeProvider>
   );
 }

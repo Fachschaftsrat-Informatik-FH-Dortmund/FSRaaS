@@ -4,7 +4,7 @@ titel: Verwaltung und Redaktion
 praefix: ADMIN
 status: accepted
 prioritaet: kern
-version: 0.3.1
+version: 0.3.2
 owner: FSR FB4
 last_reviewed: 2026-09-03
 derived_from: []
@@ -104,13 +104,15 @@ Der Zuschnitt folgt einer Beobachtung aus dem Alltag des FSR: Ein Teil dieser Ar
 
 **`ADMIN-F-050` — Zurückziehen statt Löschen.** Eine bereits ausgelieferte Meldung kann auf Geräten im Zwischenspeicher liegen (`../../platform/data-and-storage.md` Abschnitt 4) und laut NEWS-F-050 angepinnt sein. Ein stilles Verschwinden würde für angepinnte Meldungen einen Eintrag ohne Inhalt hinterlassen; die Kennzeichnung als zurückgezogen macht den Vorgang stattdessen sichtbar.
 
-**`ADMIN-F-080` — Aussperrschutz.** Ohne diese Regel könnte sich der FSR versehentlich vollständig aus der eigenen Verwaltung aussperren; die Wiederherstellung wäre nur mit Serverzugang möglich und damit an einzelne Personen gebunden — genau das Muster, das `../../decisions/0002-spec-anchored-arbeitsweise.md` als Ursache des Scheiterns der Alt-Apps benennt.
+**`ADMIN-F-080` — Aussperrschutz.** Ohne diese Regel könnte sich der FSR versehentlich vollständig aus der eigenen Verwaltung aussperren; die Wiederherstellung wäre nur mit Serverzugang möglich und damit an einzelne Personen gebunden — genau das Muster, das `../../decisions/0002-spec-anchored-arbeitsweise.md` als Ursache des Scheiterns der Alt-Apps benennt. Das Backend prüft die Regel auf dem aufgelösten Kontobezeichner (siehe ADMIN-F-070): Da jede verändernde Rollenfunktion selbst die Rolle FSR-Redaktion voraussetzt (ADMIN-F-010), greift die Ablehnung genau dann, wenn das betroffene Konto die einzige verbleibende Zuweisung hält — also beim Selbstentzug.
+
+**`ADMIN-F-070` — Kontoauswahl.** Konten mit bestehender Verwaltungsrolle listet die Oberfläche aus Authentik (INT-012). Ein Konto **ohne** bisherige Rolle wird über seinen Benutzernamen benannt; das Backend löst diesen vor der Aussperrprüfung und dem Protokolleintrag zur stabilen Authentik-Konto-Id auf (`../../platform/integrations.md` INT-012, `core/users/?username=`). Eine bereits numerische Kennung gilt unverändert. Ein unbekannter Benutzername wird als Fehler zurückgemeldet, nicht stillschweigend übergangen (SEC-F-060).
 
 **`ADMIN-F-100` — Hinweis statt Ablehnung.** Die aggregierten Raumdaten sind ein Abbild der FBWS-Termine (INT-002/INT-009) und enthalten nur Räume, in denen tatsächlich Veranstaltungen stattfinden. Ein Verbindungsgang oder ein Treppenhaus taucht dort nie auf, ist für einen Nachbarschaftsgraphen aber sinnvoll. Eine harte Ablehnung würde die Pflege unnötig einschränken; der Hinweis genügt, um Tippfehler zu bemerken.
 
 **`ADMIN-F-110` — Umfang der Protokollierung.** Protokolliert werden Zeitpunkt, Konto und betroffener Datensatz, nicht der Inhalt nutzergenerierter Beiträge — `../../platform/security-and-privacy.md` (SEC-N-120) untersagt personenbezogene Inhalte in Protokollen, und API-N-080 verlangt Datensparsamkeit. Bei einer Moderationsentscheidung wird also festgehalten, dass ein bestimmter Kommentar entfernt wurde, nicht sein Wortlaut.
 
-**`ADMIN-F-180` / `ADMIN-F-190` / `ADMIN-F-200` — Stammdaten-Pflege statt Konfigurationsdatei.** Das abgelöste Backend `app.fsrfb4.de` pflegte diese Daten über ein Formular ohne Übersicht, Validierung oder Historie und veraltete dadurch (`../../platform/integrations.md` INT-008, „Lese-/Schreibtrennung bei `/data`"). Diese Anforderungen verlegen die Pflege in die Verwaltungsoberfläche. Gespeichert wird je Liste als Ganzes (vollständige Ersetzung), abgesichert gegen gleichzeitige Bearbeitung durch dieselbe optimistische Nebenläufigkeitskontrolle wie bei Meldungsentwürfen und Laufwegen (`If-Match`, siehe Abschnitt 9); ADMIN-F-200 ist die zugehörige Fehlerreaktion. Der App wird derselbe Bestand kontofrei ausgeliefert (API-F-230), mit einem im Anwendungspaket mitgelieferten Ausgangsbestand als Rückfall (API-F-235).
+**`ADMIN-F-180` / `ADMIN-F-190` / `ADMIN-F-200` — Stammdaten-Pflege statt Konfigurationsdatei.** Das abgelöste Backend `app.fsrfb4.de` pflegte diese Daten über ein Formular ohne Übersicht, Validierung oder Historie und veraltete dadurch (`../../platform/integrations.md` INT-008, „Lese-/Schreibtrennung bei `/data`"). Diese Anforderungen verlegen die Pflege in die Verwaltungsoberfläche. Gespeichert wird je Liste als Ganzes (vollständige Ersetzung), abgesichert gegen gleichzeitige Bearbeitung durch dieselbe optimistische Nebenläufigkeitskontrolle wie bei Meldungsentwürfen und Laufwegen (`If-Match`, siehe Abschnitt 9); ADMIN-F-200 ist die zugehörige Fehlerreaktion. Die Prüfung greift zweistufig: der `If-Match`-Vergleich vor der Änderung und eine Nebenläufigkeitskennung auf Datenbankebene, die das Zeitfenster bis zum Festschreiben abdeckt — beide Wege münden in dieselbe Antwort (`412`), die App lädt daraufhin den neueren Stand nach und bietet ihn zur erneuten Bearbeitung an. Strukturell fehlerhafte Eingaben (leere oder doppelte Kennungen) werden als `400` abgewiesen, nicht erst beim Speichern. Der App wird derselbe Bestand kontofrei ausgeliefert (API-F-230), mit einem im Anwendungspaket mitgelieferten Ausgangsbestand als Rückfall (API-F-235).
 
 **`ADMIN-F-120` bis `ADMIN-F-170` — Ausbaustufe.** Diese sechs Anforderungen gehören zur zweiten Ausbaustufe, weil die von ihnen bedienten Funktionen dort liegen: Moderation gemeinsam mit RATE-F-020/060, Helferbedarf gemeinsam mit HELFER, Prüfungsplan gemeinsam mit SCHED-F-190 bis F-220 und der Klärung von INT-013. Zuordnung siehe `../../product/roadmap.md`.
 
@@ -198,12 +200,13 @@ Nicht zutreffend — keine der Alt-Apps bietet Verwaltungs- oder Redaktionsfunkt
 
 | Anforderung | Stand |
 |---|---|
-| ADMIN-F-010, ADMIN-F-020, ADMIN-F-030 | umgesetzt (Backend-Rollenprüfung, App-Sichtbarkeit an Rolle gebunden, gemeinsame Codebasis App + Web-Export) |
-| ADMIN-F-070 | **teilweise** — App/Web-Fluss, Backend-Endpunkt und `IAuthentikDirectory` vorhanden; Vertragstest gegen die INT-012-Struktur grün. Der **Lesepfad** der Authentik-Verwaltungs-API ist am 2026-09-03 live gegen `auth.tobtech.de` bestätigt (Gruppen `FSR-Redaktion`/`Moderation` vorhanden, Feldstruktur passt). Ausstehend: erster schreibender Rollenwechsel und ein durchgängiger Anmeldevorgang über den Browser (Prüfprotokoll `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md`). |
-| ADMIN-F-080 | umgesetzt (Ablehnung beim Entzug der letzten FSR-Redaktions-Zuweisung, als reine Funktion getestet) |
+| ADMIN-F-010, ADMIN-F-020, ADMIN-F-030 | umgesetzt (Backend-Rollenprüfung, App-Sichtbarkeit an Rolle gebunden, Unterseiten zusätzlich mit Umleitung bei Direktaufruf ohne Rolle; gemeinsame Codebasis App + Web-Export) |
+| ADMIN-F-070 | **teilweise** — App/Web-Fluss, Backend-Endpunkt und `IAuthentikDirectory` vorhanden; Konten ohne bisherige Rolle werden über den Benutzernamen benannt und backendseitig zur Konto-Id aufgelöst (`core/users/?username=`, INT-012). Vertragstest gegen die INT-012-Struktur grün. Der **Lesepfad** der Authentik-Verwaltungs-API ist am 2026-09-03 live gegen `auth.tobtech.de` bestätigt. Ausstehend: erster schreibender Rollenwechsel und ein durchgängiger Anmeldevorgang über den Browser (Prüfprotokoll `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md`). |
+| ADMIN-F-080 | umgesetzt (Ablehnung beim Entzug der letzten FSR-Redaktions-Zuweisung, als reine Funktion getestet; App zeigt den Grund an) |
 | ADMIN-F-090, ADMIN-F-100 | umgesetzt (Laufwege-Pflege mit Hinweis auf unbekannte Raumkennungen) |
 | ADMIN-F-110, ADMIN-N-020 | umgesetzt (Verwaltungsprotokoll je verändernder Handlung; Aufbewahrung 12 Monate über periodischen Aufräum-Job) |
-| ADMIN-F-180, ADMIN-F-190, ADMIN-F-200 | umgesetzt (Stammdaten-Pflege mit optimistischer Nebenläufigkeitskontrolle) |
-| ADMIN-N-010 | Prüfprotokoll (Weboberfläche ab 1024 px), siehe `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md` |
+| ADMIN-F-180, ADMIN-F-190 | umgesetzt (Mensa-, Raum- und Links-Liste anlegen/ändern/entfernen; Semestertermine und Ticket-Bildausschnitt änderbar; Backend- und Komponententests je Anforderung) |
+| ADMIN-F-200 | umgesetzt (zweistufig: `If-Match`-Prüfung und Nebenläufigkeitskennung auf Datenbankebene → `412`; die App lädt daraufhin den neueren Stand nach) |
+| ADMIN-N-010 | **teilweise** — Schwellwertlogik (1024 px) festgelegt und getestet; die Kartenliste ist auf breiten Bildschirmen bereits vollständig bedienbar. Das eigene **mehrspaltige Tabellen-Rendering** ab 1024 px steht noch aus (Prüfprotokoll `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md`). |
 | ADMIN-F-040 bis ADMIN-F-060 | offen — News-Redaktion, Roadmap-Schritt 7 (NEWS) |
 | ADMIN-F-120 bis ADMIN-F-170 | offen — zweite Ausbaustufe |

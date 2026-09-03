@@ -67,16 +67,19 @@ public static class VerwaltungEndpoints
             Rollenzuweisung eingabe,
             IAuthentikDirectory dir, AuditLog audit, Fb4DbContext db, CancellationToken ct) =>
         {
+            // Die App darf einen Benutzernamen senden; die Aussperr-Regel und das
+            // Protokoll brauchen die stabile Konto-Id (ADMIN-F-070/F-080/F-110).
+            var kontoId = await dir.KontoIdAufloesenAsync(eingabe.KontoId, ct);
             var bestand = await dir.ListeRollenzuweisungenAsync(ct);
-            if (RollenRegeln.WuerdeLetzteRedaktionsRolleEntziehen(bestand, eingabe.KontoId, eingabe.Rollen))
+            if (RollenRegeln.WuerdeLetzteRedaktionsRolleEntziehen(bestand, kontoId, eingabe.Rollen))
                 throw ApiException.Conflict(
                     "letzte_redaktion",
                     "Die letzte verbleibende Zuweisung der Rolle FSR-Redaktion kann nicht entzogen werden.");
 
-            await dir.SetzeRollenAsync(eingabe.KontoId, eingabe.Rollen, ct);
-            audit.Vormerken("rollen.gesetzt", $"konto:{eingabe.KontoId}");
+            await dir.SetzeRollenAsync(kontoId, eingabe.Rollen, ct);
+            audit.Vormerken("rollen.gesetzt", $"konto:{kontoId}");
             await db.SaveChangesAsync(ct);
-            return Results.Ok(eingabe);
+            return Results.Ok(eingabe with { KontoId = kontoId });
         });
 
         return app;

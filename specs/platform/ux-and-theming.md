@@ -3,9 +3,9 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: accepted
-version: 0.6.0
+version: 0.6.1
 owner: FSR FB4
-last_reviewed: 2026-09-02
+last_reviewed: 2026-09-03
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/config/themes/color_consts.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
@@ -19,8 +19,8 @@ derived_from:
 implemented_in:
   - app/src/ui             # UX-F-100, UX-F-110, UX-F-130, UX-F-140 (Grundstruktur); UX-F-070, UX-F-180/F-185, UX-N-020 (Bedienelemente); UX-F-190 (Einführungshinweis)
   - app/src/ui/primitives.test.tsx   # UX-F-070, UX-F-130, UX-F-140, UX-F-180/F-185, UX-N-020
-  - app/src/theme          # UX-F-010 (Akzentfarbe im Farbsystem), UX-F-020/F-030 (Laufzeitreaktion, manuelle Übersteuerung), UX-F-220 (Statusleiste: app/src/theme/statusBar.tsx, Test: app/src/theme/statusBar.test.tsx)
-  - app/app                # UX-F-170 (Bildschirmtitel aus den _layout-Optionen), UX-F-200/UX-N-030 (Navigations-Werkzeug), UX-F-220 (ThemedStatusBar im Wurzel-Layout)
+  - app/src/theme          # UX-F-010 (Akzentfarbe im Farbsystem), UX-F-020/F-030 (Laufzeitreaktion, manuelle Übersteuerung; Navigations-Theme-Brücke app/src/theme/navigationTheme.ts, Test navigationTheme.test.ts), UX-F-220 (Statusleiste: app/src/theme/statusBar.tsx, Test: app/src/theme/statusBar.test.tsx)
+  - app/app                # UX-F-170 (Bildschirmtitel aus den _layout-Optionen), UX-F-200/UX-N-030 (Navigations-Werkzeug), UX-F-220 (ThemedStatusBar im Wurzel-Layout), UX-F-020/F-030 (Navigations-Theme im Wurzel-Layout gesetzt)
   - app/src/i18n           # UX-F-210 (Anrede „du" in de.json), Test: app/src/i18n/anrede.test.ts
 related:
   - ../features/schedule/spec.md
@@ -96,6 +96,8 @@ Jede Anforderung ist einzeln prüfbar, folgt einem EARS-Muster und trägt genau 
 **Zu UX-F-020 / UX-F-030 (Hell-/Dunkelmodus).** Die Alt-App liest die Systemhelligkeit nur einmalig in `FB4App.build()` aus (`lib/main.dart:111-112`) und besitzt keinen Beobachter für spätere Änderungen; ein Wechsel der Systemeinstellung wirkt sich erst nach Neustart der App aus. Das entspricht nicht mehr dem, was Nutzerinnen und Nutzer von Betriebssystemen mit systemweitem Dunkelmodus erwarten. Die manuelle Übersteuerung (UX-F-030) ist zusätzlich nötig, weil einzelne Personen unabhängig von der Systemeinstellung ein bestimmtes Erscheinungsbild bevorzugen können.
 
 Umgesetzt (Roadmap-Schritt 2) über `app/src/theme`: ein `ThemeProvider` löst bei jedem Rendern aus dem abonnierenden `useColorScheme()` und der gespeicherten Wahl (`appearanceMode`) das wirksame Farbschema auf — die Systemhelligkeit wird also nicht mehr beim Start eingefroren (UX-F-020), und eine Wahl `light`/`dark` gilt vor dem Systemzustand (UX-F-030). Das On-Device-Umschalten der Systemeinstellung bei laufender App ist zusätzlich im Prüfprotokoll `specs/pruefprotokolle/2026-09-02-app-rahmen.md` festgehalten (QA-F-020).
+
+Das Navigations-Werkzeug (Expo Router / React Navigation) führt über einen internen Container ein eigenes Theme, das ohne Zutun auf der hellen Voreinstellung bleibt. Damit das wirksame Farbschema auch für die vom Navigator gezeichneten Flächen gilt — Navigator- und Szenengrund, Kopf- und Tab-Leiste, die Fläche hinter Szenenübergängen —, überführt `app/src/theme/navigationTheme.ts` das Farbsystem in ein React-Navigation-Theme, das das Wurzel-Layout `app/app/_layout.tsx` setzt (ergänzt um einen `contentStyle`-Grund am Wurzel-Stack, wie ihn die verschachtelten Stacks bereits tragen). Vor dieser Brücke blitzte beim Tab-Wechsel im Dunkelmodus kurz ein heller Rand durch die während des Übergangs teiltransparenten Szenen; der Befund ist im selben Prüfprotokoll festgehalten (visuelle Bestätigung am Gerät ausstehend).
 
 **Zu UX-F-220 (Statusleiste).** Die App zeichnet ihre Ansichten themengefärbt, die Betriebssystem-Statusleiste (Uhr, Akku, Empfang) bleibt davon aber unberührt, solange sie nicht ausdrücklich gesetzt wird. Der native Android-Rahmen liefert eine hell voreingestellte Statusleiste; im Dunkelmodus zeichnet das System dort helle Symbole auf hellen Grund, sodass die gesamte Statuszeile unsichtbar wird — ein Befund aus der Geräteprüfung des App-Rahmens. UX-F-220 verlangt daher, die Statusleiste dem wirksamen Erscheinungsbild anzugleichen. Umgesetzt über `app/src/theme/statusBar.tsx` (`ThemedStatusBar`), einmalig im Wurzel-Layout `app/app/_layout.tsx` gerendert: die Symbolfarbe folgt dem vom `ThemeProvider` aufgelösten Schema (also auch einer manuellen Übersteuerung, UX-F-030), der Hintergrund bleibt durchscheinend, sodass der themengefärbte Hintergrund der jeweiligen Ansicht trägt. Die Sichtprüfung in hellem und dunklem Erscheinungsbild ist im Prüfprotokoll `specs/pruefprotokolle/2026-09-02-app-rahmen.md` festgehalten.
 

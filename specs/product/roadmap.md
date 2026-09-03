@@ -2,9 +2,9 @@
 id: roadmap
 titel: Ausbaustufen und Umsetzungsreihenfolge
 status: accepted
-version: 0.1.2
+version: 0.1.3
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-03
 related:
   - ../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md
   - ../decisions/0011-monorepo-und-openapi-vertrag.md
@@ -43,7 +43,7 @@ Anforderungen ohne Nennung gehören zur ersten Ausbaustufe.
 | Spec | Erste Ausbaustufe | Zweite Ausbaustufe |
 |---|---|---|
 | SHELL | vollständig | – |
-| SCHED | SCHED-F-010 bis F-180, F-230 bis F-260, F-270 bis F-390 | SCHED-F-190 bis F-220 (Prüfungsplan) |
+| SCHED | SCHED-F-010 bis F-180, F-230 bis F-260, F-270 bis F-450 | SCHED-F-190 bis F-220 (Prüfungsplan) |
 | MENSA | vollständig | – |
 | RAUM | vollständig | – |
 | NEWS | NEWS-F-010 bis F-050, F-080, F-110 bis F-140 | NEWS-F-060/F-070 (Push), NEWS-F-090 (FB-Aktuelles), NEWS-F-100 (Event-Erinnerungen) |
@@ -66,8 +66,8 @@ Vertikale Schnitte: Jeder Schritt umfasst Vertragsanteil, Backend, App und Tests
 | 2 | App-Rahmen | SHELL vollständig, Erscheinungsbild und Sprachwahl (UX-F-020/030, SET-F-020, SET-F-100/110) | Navigation steht, Bereiche sind leer aber erreichbar |
 | 3 | Stammdaten und Verwaltung | API-F-230 bis F-240, ADMIN-F-010 bis F-030, F-070 bis F-110, Anmeldung gegen Authentik | FSR kann Mensen, Räume und Links pflegen; Rollen greifen |
 | 4 | Mensaplan | MENSA vollständig, Zwischenspeicher von INT-015 | Erstes vollständiges Feature, kontofrei, ohne Schreibpfad |
-| 5 | Stundenplan | SCHED ohne Prüfungsplan, einschließlich Gruppenlogik, Planungsmodus, Kalender-Export | Meistgenutzte Funktion beider Alt-Apps abgelöst |
-| 6 | Raumsuche | RAUM vollständig, einschließlich Besetzt-Meldungen und Laufwege-Pflege in ADMIN | Erster kontofreier Schreibpfad, erste Offline-Warteschlange |
+| 5 | Stundenplan | SCHED ohne Prüfungsplan und ohne Raumplan-Abgleich, einschließlich Gruppenlogik, Planungsmodus, Kalender-Export | Meistgenutzte Funktion beider Alt-Apps abgelöst |
+| 6 | Raumsuche | RAUM vollständig (einschließlich Raumübersicht, Ansicht laufender Veranstaltungen, Besetzt-Meldungen, Laufwege-Pflege in ADMIN) und der Stundenplan-Raumabgleich SCHED-F-410 bis F-450 | Erster kontofreier Schreibpfad, erste Offline-Warteschlange |
 | 7 | News | NEWS ohne Push und FB-Aktuelles, ADMIN-F-040 bis F-060 | Erste redaktionell gepflegte Inhalte |
 | 8 | Semesterticket | TICKET vollständig | Bestandsfunktion abgelöst |
 | 9 | Bewertungen | RATE ohne Freitext, Kontopflicht beim Schreiben | Erste kontogebundene Funktion |
@@ -76,6 +76,8 @@ Vertikale Schnitte: Jeder Schritt umfasst Vertragsanteil, Backend, App und Tests
 Zu Schritt 0: Die vier Prüfskripte aus `../platform/quality-and-testing.md` Abschnitt 8 entstehen hier, nicht später — sie sind der Mechanismus, der den spec-anchored Ansatz trägt (NFR-N-140), und ohne sie läuft der Bestand ab dem ersten Merge auseinander.
 
 Zu Schritt 3 vor Schritt 4: Der Mensaplan braucht die Mensa-Liste aus den Stammdaten, die Raumsuche die Raumliste. Die Verwaltungsoberfläche kommt deshalb vor den Features, die von ihr abhängen — nicht als Kür am Ende.
+
+Zu Schritt 6: Der Stundenplan-Raumabgleich (SCHED-F-410 bis F-450) gehört fachlich zum Stundenplan, wird aber hier umgesetzt, weil er den Raumplan-Zwischenspeicher aus RAUM voraussetzt. Vorab ist der Spike aus `../platform/integrations.md` INT-009 zu klären (bildet der Raumplan kurzfristige Ausfälle/Raumänderungen ab?); fällt er negativ aus, bleiben Ansicht laufender Veranstaltungen und Abgleichhinweis auf den Sollplan beschränkt.
 
 Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — MENSA-F-090 (Lieblingsgerichte) braucht denselben normalisierten Gerichtsschlüssel als Bindeglied, siehe `../features/canteen/spec.md` MENSA-F-090.
 

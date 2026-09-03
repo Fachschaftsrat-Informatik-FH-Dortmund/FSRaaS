@@ -34,7 +34,15 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
         b.Entity<SemesterKalender>().HasKey(x => x.Id);
         b.Entity<StudiengangRueckfall>().HasKey(x => x.Kurzname);
         b.Entity<LaufwegEintrag>().HasKey(x => x.Id);
-        b.Entity<SammlungsRevision>().HasKey(x => x.Bereich);
+        b.Entity<SammlungsRevision>(e =>
+        {
+            e.HasKey(x => x.Bereich);
+            // Optimistische Nebenläufigkeitskontrolle auf Datenbankebene (ADMIN-F-200):
+            // Der If-Match-Vergleich im StammdatenStore prüft vor der Änderung, dieser
+            // Token schließt das Zeitfenster bis zum SaveChanges. Bei echtem Rennen
+            // wirft EF eine DbUpdateConcurrencyException → 412 (ApiExceptionHandler).
+            e.Property(x => x.Version).IsConcurrencyToken();
+        });
         b.Entity<Verwaltungsprotokoll>(e =>
         {
             e.HasKey(x => x.Id);

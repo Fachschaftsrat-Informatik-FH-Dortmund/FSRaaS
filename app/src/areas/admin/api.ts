@@ -50,12 +50,14 @@ function fehler(status: number, error: unknown): AppError {
 }
 
 export function useAdminApi() {
-  const { getAccessToken } = useAuth();
+  const { getAccessToken, status } = useAuth();
+  const angemeldet = status === 'signed-in';
   const client = useMemo(() => adminClient(getAccessToken), [getAccessToken]);
   const qc = useQueryClient();
 
   const stammdaten: UseQueryResult<StammdatenMitStand> = useQuery({
     queryKey: ['verwaltung', 'stammdaten'],
+    enabled: angemeldet,
     queryFn: async () => {
       const { data, error, response } = await client.GET('/verwaltung/stammdaten');
       if (error || !data) throw fehler(response.status, error);
@@ -73,10 +75,18 @@ export function useAdminApi() {
       return { daten: data, etag: response.headers.get('etag') ?? '' } satisfies StammdatenMitStand;
     },
     onSuccess: (next) => qc.setQueryData(['verwaltung', 'stammdaten'], next),
+    // ADMIN-F-200: bei zwischenzeitlicher Änderung den neueren Stand nachladen,
+    // damit die Oberfläche ihn zur erneuten Bearbeitung anbietet.
+    onError: (error) => {
+      if (AppError.from(error).status === 412) {
+        qc.invalidateQueries({ queryKey: ['verwaltung', 'stammdaten'] });
+      }
+    },
   });
 
   const laufwege: UseQueryResult<LaufwegeMitStand> = useQuery({
     queryKey: ['verwaltung', 'laufwege'],
+    enabled: angemeldet,
     queryFn: async () => {
       const { data, error, response } = await client.GET('/verwaltung/laufwege');
       if (error || !data) throw fehler(response.status, error);
@@ -91,13 +101,21 @@ export function useAdminApi() {
         body: wege,
       });
       if (error || !data) throw fehler(response.status, error);
-      return data as { laufwege: Laufweg[]; unbekannteRaeume: string[] };
+      const ergebnis = data as { laufwege: Laufweg[]; unbekannteRaeume: string[] };
+      return { ...ergebnis, etag: response.headers.get('etag') ?? '' };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['verwaltung', 'laufwege'] }),
+    onSuccess: ({ laufwege: wege, etag }) =>
+      qc.setQueryData<LaufwegeMitStand>(['verwaltung', 'laufwege'], { wege, etag }),
+    onError: (error) => {
+      if (AppError.from(error).status === 412) {
+        qc.invalidateQueries({ queryKey: ['verwaltung', 'laufwege'] });
+      }
+    },
   });
 
   const rollen: UseQueryResult<Rollenzuweisung[]> = useQuery({
     queryKey: ['verwaltung', 'rollen'],
+    enabled: angemeldet,
     queryFn: async () => {
       const { data, error, response } = await client.GET('/verwaltung/rollen');
       if (error || !data) throw fehler(response.status, error);
@@ -112,7 +130,9 @@ export function useAdminApi() {
       if (error || !data) throw fehler(response.status, error);
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['verwaltung', 'rollen'] }),
+    // Erfolg wie Fehlschlag: den tatsächlichen Stand aus Authentik nachladen,
+    // damit die Oberfläche nie eine abgelehnte Änderung anzeigt (ADMIN-F-080).
+    onSettled: () => qc.invalidateQueries({ queryKey: ['verwaltung', 'rollen'] }),
   });
 
   return { stammdaten, stammdatenSpeichern, laufwege, laufwegeSpeichern, rollen, rollenSpeichern };

@@ -16,7 +16,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -251,6 +251,69 @@ paths:
         "202":
           description: Meldung entgegengenommen
         "429": { $ref: "#/components/responses/ZuVieleAnfragen" }
+        default: { $ref: "#/components/responses/Fehler" }
+
+  /raeume/uebersicht:
+    get:
+      tags: [raum]
+      summary: Alle Räume mit aktueller Belegung
+      description: |
+        Erfüllt RAUM-F-150 bis RAUM-F-190, RAUM-F-240 bis RAUM-F-260 und API-F-055.
+        Grundlage ist der Zwischenspeicher der Raumplan-Termine aus INT-009
+        (Platzhalter-Form, API-F-045) — nicht auf die kuratierte Raumliste
+        (RAUM-F-120) beschränkt. Die Ansicht laufender Veranstaltungen (RAUM-F-200)
+        ist die clientseitig nach Veranstaltung gruppierte Sicht auf diese Antwort.
+      security: []
+      parameters:
+        - name: zeitpunkt
+          in: query
+          required: false
+          description: Bezugszeitpunkt der Belegung; ohne Angabe „jetzt".
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Räume mit Belegungszustand und Stand-Alter
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [raeume, standAlter]
+                properties:
+                  raeume:
+                    type: array
+                    items: { $ref: "#/components/schemas/RaumStatus" }
+                  standAlter: { $ref: "#/components/schemas/StandAlter" }
+        default: { $ref: "#/components/responses/Fehler" }
+
+  /raumplan/termine:
+    get:
+      tags: [raum]
+      summary: Zwischengespeicherte Raumplan-Termine für den Stundenplan-Abgleich
+      description: |
+        Erfüllt SCHED-F-410 und API-F-056. Liefert die zwischengespeicherten
+        Raumplan-Termine aus INT-009; die App gleicht sie lokal gegen ihren
+        ausschließlich gerätegespeicherten Stundenplan ab (SCHED-F-410), sodass
+        API-F-100 ohne Ausnahme gewahrt bleibt.
+      security: []
+      parameters:
+        - name: studiengang
+          in: query
+          required: false
+          description: Optionaler Filter auf einen Studiengang-Kurznamen (INT-001).
+          schema: { type: string }
+      responses:
+        "200":
+          description: Raumplan-Termine mit Stand-Alter
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [termine, standAlter]
+                properties:
+                  termine:
+                    type: array
+                    items: { $ref: "#/components/schemas/RaumplanTermin" }
+                  standAlter: { $ref: "#/components/schemas/StandAlter" }
         default: { $ref: "#/components/responses/Fehler" }
 
   # ---------------------------------------------------------------------- News
@@ -524,9 +587,10 @@ paths:
       tags: [verwaltung]
       summary: Rollen eines Kontos setzen
       description: |
-        Erfüllt ADMIN-F-070. Wirkt auf Authentik-Gruppen. Der Versuch, die letzte
-        verbleibende Zuweisung der Rolle FSR-Redaktion zu entziehen, wird abgelehnt
-        (ADMIN-F-080).
+        Erfüllt ADMIN-F-070. Wirkt auf Authentik-Gruppen. `kontoId` darf ein
+        Benutzername sein; das Backend löst ihn zur stabilen Konto-Id auf (INT-012)
+        und gibt sie in der Antwort zurück. Der Versuch, die letzte verbleibende
+        Zuweisung der Rolle FSR-Redaktion zu entziehen, wird abgelehnt (ADMIN-F-080).
       requestBody:
         required: true
         content:
@@ -534,12 +598,17 @@ paths:
             schema: { $ref: "#/components/schemas/Rollenzuweisung" }
       responses:
         "200":
-          description: Rollen gesetzt
+          description: Rollen gesetzt; `kontoId` ist die aufgelöste Konto-Id
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Rollenzuweisung" }
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
+        "404":
+          description: Kein Konto mit dem angegebenen Benutzernamen (ADMIN-F-070)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         "409":
           description: Letzte Zuweisung der Rolle FSR-Redaktion (ADMIN-F-080)
           content:
@@ -607,6 +676,11 @@ paths:
                   unbekannteRaeume:
                     type: array
                     items: { type: string }
+        "400":
+          description: Eintrag ohne Raumkennung oder Weg auf dieselbe Kennung (ADMIN Abschnitt 9)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         "412":
@@ -663,6 +737,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Stammdaten" }
+        "400":
+          description: Leere oder doppelte Mensa-/Raumkennung (ADMIN Abschnitt 9)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         "412":
@@ -877,6 +956,48 @@ components:
           type: string
           enum: [lehrveranstaltung, pruefung, sonstiges]
           description: Beide Arten machen den Raum belegt (RAUM-F-030).
+        note:
+          type: [string, "null"]
+          description: Freitext aus INT-009, sofern gesetzt (RAUM-F-220).
+
+    RaumStatus:
+      type: object
+      description: >
+        Belegungszustand eines Raums zum Abfragezeitpunkt (RAUM-F-150 bis RAUM-F-190).
+        groesse und ekeyZugaenglich sind nur bei Räumen der kuratierten Liste
+        (RAUM-F-120) gesetzt; aktuellerTermin bei zustand = belegt,
+        naechsterTermin bei zustand = frei.
+      required: [roomId, zustand, besetztMeldungen]
+      properties:
+        roomId: { type: string }
+        zustand:
+          type: string
+          enum: [frei, belegt]
+        groesse: { $ref: "#/components/schemas/Raumgroesse" }
+        ekeyZugaenglich: { type: boolean }
+        aktuellerTermin: { $ref: "#/components/schemas/Raumtermin" }
+        naechsterTermin: { $ref: "#/components/schemas/Raumtermin" }
+        besetztMeldungen:
+          type: integer
+          description: Anzahl gültiger „besetzt"-Meldungen (RAUM-F-190).
+
+    RaumplanTermin:
+      type: object
+      description: >
+        Ein zwischengespeicherter Raumplan-Termin aus INT-009, reduziert auf die
+        für den lokalen Stundenplan-Abgleich nötigen Felder (SCHED-F-410).
+      required: [roomId, wochentag, beginn, ende, bezeichnung]
+      properties:
+        roomId: { type: string }
+        wochentag:
+          type: string
+          enum: [Mon, Tue, Wed, Thu, Fri]
+        beginn: { type: string, description: "HHmm, linksseitig auf vier Stellen aufgefüllt" }
+        ende: { type: string, description: "HHmm, linksseitig auf vier Stellen aufgefüllt" }
+        bezeichnung: { type: string }
+        studentSet: { type: [string, "null"] }
+        lecturerId: { type: [string, "null"] }
+        note: { type: [string, "null"] }
 
     Klassifizierung:
       type: string
@@ -974,7 +1095,12 @@ components:
       type: object
       required: [kontoId, rollen]
       properties:
-        kontoId: { type: string }
+        kontoId:
+          type: string
+          description: >
+            Stabile Authentik-Konto-Id. Beim Schreiben (PUT /verwaltung/rollen)
+            auch als Benutzername zulässig; das Backend löst ihn auf und gibt die
+            Id zurück (ADMIN-F-070).
         anzeigename: { type: string }
         rollen:
           type: array
