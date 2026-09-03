@@ -1,0 +1,46 @@
+# systemd-Unit für das FB4-Backend. Auf dem Server nach
+#   /etc/systemd/system/fb4.service
+# kopieren, dann:  sudo systemctl daemon-reload && sudo systemctl enable --now fb4
+#
+# Läuft als eigener, unprivilegierter Nutzer `fb4`. Geheimnisse kommen
+# ausschließlich aus /etc/fb4/fb4.env (SEC-N-110, ADR 0017) — siehe
+# deploy/fb4.env.example. Kestrel bindet nur an localhost; TLS und
+# öffentliche Erreichbarkeit macht der nginx-Reverse-Proxy (deploy/nginx-fb4.conf).
+
+[Unit]
+Description=FB4-App Backend (ASP.NET Core)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fb4
+Group=fb4
+WorkingDirectory=/var/www/fb4
+ExecStart=/usr/bin/dotnet /var/www/fb4/Fb4.Backend.dll
+EnvironmentFile=/etc/fb4/fb4.env
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5100
+Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
+# Hinter dem nginx-Reverse-Proxy: X-Forwarded-For / X-Forwarded-Proto auswerten
+# (loopback als vertrauenswürdiger Proxy). Ohne Codeänderung über den Schalter.
+Environment=ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+# DataProtection-Schlüssel dauerhaft ablegen (sonst Warnung + neue Schlüssel je Neustart).
+# HOME/DOTNET_CLI_HOME auf ein beschreibbares Verzeichnis, da der fb4-Nutzer kein Home hat.
+Environment=XDG_DATA_HOME=/var/lib/fb4
+Environment=HOME=/var/lib/fb4
+Environment=DOTNET_CLI_HOME=/var/lib/fb4
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+SyslogIdentifier=fb4
+
+# Härtung — der Dienst schreibt nur nach /var/lib/fb4 und /var/log/fb4
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/fb4 /var/log/fb4
+
+[Install]
+WantedBy=multi-user.target
