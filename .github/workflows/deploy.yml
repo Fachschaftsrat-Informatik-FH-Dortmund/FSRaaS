@@ -94,10 +94,16 @@ jobs:
             sudo chown -R fsrfb4aas:fsrfb4aas /var/www/fsrfb4aas
             mkdir -p /opt/fsrfb4aas/incoming
             sudo systemctl start fsrfb4aas
-            sleep 4
-            if ! curl -fsS --max-time 10 http://127.0.0.1:5100/health > /dev/null; then
-              echo "::error::/health antwortet nicht — Rollout fehlgeschlagen"
-              sudo journalctl -u fsrfb4aas -n 60 --no-pager
-              exit 1
-            fi
-            echo "Deployment ok — $(curl -fsS http://127.0.0.1:5100/health)"
+            # Auf Bereitschaft warten. Der erste Start macht Migration + Seed und
+            # kann eine Minute brauchen; systemd Type=simple meldet sofort "gestartet".
+            for i in $(seq 1 40); do
+              if curl -fsS --max-time 5 http://127.0.0.1:5100/health > /dev/null; then
+                echo "Deployment ok — $(curl -fsS http://127.0.0.1:5100/health)"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "::error::/health kam binnen 120 s nicht hoch — Rollout fehlgeschlagen"
+            sudo systemctl status fsrfb4aas --no-pager || true
+            sudo journalctl -u fsrfb4aas -n 80 --no-pager
+            exit 1

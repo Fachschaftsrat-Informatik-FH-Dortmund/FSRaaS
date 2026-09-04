@@ -93,6 +93,12 @@ public sealed class ItmcMensaClient(HttpClient http)
         return new GerichtCache
         {
             Schluessel = GerichtNormalisierung.Normalisieren(titelDe),
+            // Anzeigekategorie aus der Ausgabestelle. Manche Verbrauchsorte (Food
+            // Fakultaet, Kennung 474) liefern weder counterNames noch counter; der
+            // rein numerische category-Code ist bewusst KEIN Ersatz (er ist nicht
+            // anzeigetauglich und ueber /categories nicht aufloesbar). Leerer String
+            // heisst „ohne Kategorie" — die App bildet daraus eine Sammelgruppe ohne
+            // Ueberschrift (MENSA-F-160, integrations.md INT-015).
             KategorieDe = d.CounterNames?.De?.Trim() ?? d.Counter?.Trim() ?? "",
             KategorieEn = d.CounterNames?.En?.Trim() ?? d.Counter?.Trim() ?? "",
             BezeichnungDe = GerichtNormalisierung.OhneZusatzstoffKlammern(titelDe),

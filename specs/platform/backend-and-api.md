@@ -3,9 +3,9 @@ id: backend-and-api
 titel: Backend und Schnittstelle
 praefix: API
 status: accepted
-version: 3.3.0
+version: 3.4.0
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/news/repositories/news_repository.dart
@@ -68,6 +68,7 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 | API-F-030 | Wenn eine Bewertung oder eine Helfer-Anmeldung eingereicht wird, muss das Backend die Identität der einreichenden Person serverseitig prüfen. | NEU |
 | API-N-010 | Das System muss die Anzahl eingehender Schreibanfragen je Konto und Zeitfenster begrenzen. | NEU |
 | API-N-015 | Das System muss die Anzahl eingehender kontofreier Schreibanfragen je Quelle und Zeitfenster begrenzen. | NEU |
+| API-N-017 | Das System muss auch kontofreie Leseanfragen je Quelle und Zeitfenster begrenzen, mit einem Schwellwert, der übliche App-Nutzung — auch die mehrerer Personen hinter einer geteilten Adresse — nicht behindert, und einen abgewiesenen Aufruf mit einem wiederholbaren Fehler (API-N-040) beantworten. | NEU |
 | ~~API-F-040~~ | ~~Das System muss die Termine aller Studiengang/Semester-Kombinationen aus INT-002 periodisch abrufen und über `roomId` zu einer Raumbelegung zusammenführen.~~ — entfallen | NEU |
 | API-F-045 | Das System muss die Raumtermine über den Platzhalter-Aufruf aus INT-009 periodisch abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | Recherche: alte apps/android-fb4, retrofit/TimetableApi.java, 2026-08-25 |
 | API-F-055 | Das System muss der App eine Übersicht aller im Raumplan-Zwischenspeicher (INT-009) geführten Räume mit ihrer aktuellen Belegung bereitstellen, nicht beschränkt auf die kuratierte Raumliste. | NEU |
@@ -76,6 +77,7 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 | API-F-060 | Das System muss News aus INT-003 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
 | API-F-070 | Das System muss Mensa-Speisepläne aus INT-015 vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. | NEU |
 | API-F-075 | Das System muss Öffnungszeiten, Gerichtskategorien und Zusatzstoffverzeichnis aus INT-015 vorab abrufen und der App aus dem eigenen Zwischenspeicher ausliefern. | Recherche: alte apps/android-fb4, retrofit/MenuApi.java, 2026-08-25 |
+| API-F-076 | Das System muss den Speiseplan-Zwischenspeicher (API-F-070) so aus INT-015 auffrischen, dass eine Aktualisierung vor der morgendlichen und vor der mittäglichen studentischen Nutzungsspitze abgeschlossen ist, zusätzlich zu einem regelmäßigen Grundintervall über den Tag. | NEU |
 | API-N-020 | Das System muss alle Aufrufe zwischen App und Backend ausschließlich über TLS führen. | Alt: lib/areas/canteen/repositories/meals_repository.dart:21 |
 | ~~API-F-080~~ | ~~Das System muss der FSR-Redaktion die Pflege von Events ermöglichen.~~ — entfallen | NEU |
 | API-F-090 | Das System muss der FSR-Redaktion die Pflege von FSR-News ermöglichen. | NEU |
@@ -99,6 +101,10 @@ Zu „Ablösung Fremdabhängigkeit": Verifiziert in `meals_repository.dart:21` �
 **API-F-055 / API-F-056 — weitere Sichten auf den Raumplan-Zwischenspeicher.** Beide liefern nur andere Projektionen des bereits nach API-F-045 vorgehaltenen INT-009-Bestands, kein zusätzlicher externer Abruf. API-F-055 trägt Raumübersicht und Ansicht laufender Veranstaltungen aus `../features/room-finder/spec.md` (RAUM-F-150 ff.). API-F-056 trägt den Stundenplan-Abgleich aus `../features/schedule/spec.md` (SCHED-F-410): Das Backend stellt die Raumplan-Termine bereit, der Abgleich gegen den persönlichen Stundenplan läuft auf dem Gerät — API-F-100 (kein serverseitiges Speichern des persönlichen Stundenplans) bleibt ohne Ausnahme.
 
 Zu API-N-010/API-N-015: Die vorige Fassung von API-N-010 begrenzte „je Person und Zeitfenster" und ließ damit die kontofreien Schreibpfade ungeschützt — Helfer-Anmeldungen (HELFER-F-020) und Besetzt-Meldungen der Raumsuche (RAUM-F-070) kennen keine Person im Sinne eines Kontos. API-N-015 schließt diese Lücke und stellt auf die Anfragequelle ab statt auf eine Identität.
+
+Zu API-N-017: Ergänzt am 2026-09-04. API-N-010/N-015 decken nur Schreibpfade ab; die kontofreien Lese-Endpunkte (Speiseplan, Mensa-Verzeichnisse, News, Events, Raumtermine) waren bislang völlig ungebremst. Da sie ausschließlich aus dem eigenen Zwischenspeicher bedienen und keinen Fremdaufruf je Anfrage auslösen (API-F-070/060/150/160), ist eine großzügige Obergrenze je Adresse ausreichend — sie schützt nur gegen fehlerhafte oder bösartige Clients, nicht gegen normale Spitzenlast, die der App-seitige Zwischenspeicher (`platform/data-and-storage.md` Abschnitt 4) und die HTTP-Cache-Header nach API-N-016 ohnehin abfangen. Das Regelwerk (`AddRateLimiter`) ist einmal zentral zu setzen und wirkt für alle kontofreien Routen.
+
+Zu API-F-076: Der Speiseplan-Zwischenspeicher wurde in Roadmap-Schritt 4 in einem festen 6-Stunden-Intervall ab Prozessstart aufgefrischt. Das trifft die studentischen Nutzungsspitzen nur zufällig. Da der Speiseplan die meistgenutzte Ansicht der App ist und Studierende typischerweise morgens vor dem Aufstehen und kurz vor der Essenszeit nachsehen (`../features/canteen/spec.md` MENSA-N-020), wird der Job auf Ortszeit-Läufe umgestellt, die vor beiden Fenstern liegen (z. B. gegen 05:30 und 10:00 Uhr), ergänzt um weitere Läufe über den Tag, damit auch Folgetags- und Abenddaten fließen. Der Lauf bleibt ein fester, sparsamer Zeitplan im Sinne von `non-functional.md` NFR-N-090 — kein fortlaufendes Polling, keine nachfragegesteuerte Auslösung (dazu die offene Frage in `../features/canteen/spec.md` Abschnitt 13). Die Fehler-Isolation je Lauf (API-N-110) und die Resilienz je INT-015-Aufruf (API-N-120) gelten unverändert.
 
 Zu API-F-205: Löst die zuvor unbestimmte Zustellung des Hinweises aus API-F-200. Ein Abfrage-Endpunkt statt einer zugestellten Meldung hält API-F-100 (kein serverseitiges Speichern persönlicher Auswahl) ohne Ausnahme ein: Das Backend nennt lediglich den Zeitpunkt der letzten Änderung, die App entscheidet anhand ihrer ausschließlich lokal gespeicherten Auswahl, ob das eine Benachrichtigung wert ist (SCHED-F-220). Der Weg funktioniert zudem ohne Push-Infrastruktur.
 
@@ -133,6 +139,7 @@ Der vollständige Vertrag steht als versionierte OpenAPI-Beschreibung in `api-co
 | API-F-140 | Wenn eine Bewertung mit einer bereits verarbeiteten Idempotenz-Kennung erneut eingereicht wird, muss das Backend sie als bereits verarbeitet erkennen und nicht doppelt zählen. | NEU |
 | API-N-050 | Das System muss Listenergebnisse paginieren. | NEU |
 | API-N-060 | Das System muss alle Zeitangaben im Format ISO 8601 mit Zeitzone liefern. | NEU |
+| API-N-016 | Das System muss zwischengespeicherte Leseantworten mit HTTP-Cache-Headern versehen (u. a. `Cache-Control` und `ETag`), deren Gültigkeitsdauer der jeweiligen Zwischenspeicher-Regel aus `../platform/data-and-storage.md` Abschnitt 4 entspricht, sodass Client- und vorgelagerte Proxy-Caches unnötige Wiederholungsabrufe vermeiden und ein unveränderter Abruf mit `304` beantwortet werden kann. | NEU |
 | API-N-130 | Das System muss zwischen additiven und brechenden Schnittstellenänderungen unterscheiden; nur brechende Änderungen erhöhen das Versionssegment im Pfad. | NEU |
 | API-F-270 | Das System muss bei jedem Aufruf die Client-Version protokollieren, um die Zugriffshäufigkeit je Schnittstellenversion auszuwerten. | NEU |
 | API-N-140 | Wenn eine Schnittstellenversion als veraltet markiert wird, muss sie mindestens 90 Tage zusätzlich zur neuen Version erreichbar bleiben. | NEU |
@@ -142,6 +149,8 @@ Zu API-N-130 bis API-N-150: Konkretisieren API-N-030, siehe `../decisions/0016-a
 
 Zu API-F-140: Diese Anforderung sichert die Offline-Warteschlange aus `architecture.md` (ARCH-F-120) ab — eine wegen unterbrochener Verbindung erneut gesendete Bewertung darf nicht als zweite Bewertung gezählt werden. Ausgestaltung der Idempotenz-Kennung (z. B. clientseitig erzeugte UUID je Vorgang) ist Sache der Umsetzung, nicht dieser Spec.
 
+Zu API-N-016: Ergänzt am 2026-09-04. Die Lese-Endpunkte lieferten bislang keine Cache-Header; jeder App-Start und jeder Fokuswechsel konnte einen Vollabruf auslösen, obwohl der App-seitige Zwischenspeicher (`../platform/data-and-storage.md` Abschnitt 4) die Daten meist noch hält. Mit `Cache-Control` (max-age passend zur Datenart, für den Speiseplan bis Tagesende) und `ETag`/`If-None-Match` bedient der Server einen unveränderten Abruf mit einem leeren `304` statt der vollen Nutzlast, und ein etwaiger Reverse-Proxy kann die Antwort für alle Clients zwischenspeichern. Das ist die zweite, vom Anwendungscode unabhängige Entlastung neben der Ratenbegrenzung nach API-N-017. Bei der Umsetzung erhalten die betroffenen Lese-Endpunkte in `api-contract.yaml` einen `ETag`-Antwortkopf und einen `If-None-Match`-Anfrageparameter — dasselbe Muster, das die Verwaltungs-Endpunkte dort bereits für die Nebenläufigkeitskontrolle nutzen (API-N-035).
+
 Zu API-N-040: Das Backend liefert Fehlerantworten als RFC 9457 „Problem Details" (`application/problem+json`) mit maschinenlesbarem `code` und für Menschen lesbarem `title`. Die App-seitige Auswertung (`app/src/net`) unterscheidet drei Fälle: (a) formatkonformer Rumpf → `code` und Meldung daraus; (b) leerer oder fehlender Rumpf (etwa bei einem `401` vom vorgelagerten Reverse Proxy) → Einordnung allein über den HTTP-Status; (c) vorhandener, aber nicht formatkonformer Rumpf (HTML-Fehlerseite, abgeschnittenes JSON) → als `parse`-Fehler sichtbar gemacht, nie still weiterverarbeitet (SEC-F-060, QA-N-070).
 
 ## 5. Fachliche Ressourcen im Überblick
@@ -150,7 +159,7 @@ Nur Zweck und grobe Felder; ausformulierte Datenmodelle entstehen mit den jeweil
 
 | Ressource | Zweck | Grobe Felder |
 |---|---|---|
-| Bewertung | Mensa-Bewertung je Gericht | Pseudonym, Gericht-Referenz, Sterne, Kommentar (optional), Zeitstempel |
+| Bewertung | Mensa-Bewertung je Gericht | Pseudonym, Gericht-Referenz, Bewertungsstufe (schlecht/gut/sehr gut), Kommentar (optional), Zeitstempel |
 | Event | Import aus dem FSR-ICS-Kalender (INT-011) | UID, Titel, Zeitraum, Ort, Beschreibung, Status, Helferbedarf (Verknüpfung) |
 | Helferbedarf / -anmeldung | Personalplanung je Event | Rolle, Schicht, benötigte Anzahl, angemeldete Personen (Name, Kontaktweg) |
 | Raumtermine | Zwischenspeicher der Rohtermine aus INT-009 | roomId, Wochentag/Zeitraum, Bezeichnung, note — Grundlage für Raumsuche, Raumübersicht (RAUM-F-150) und Stundenplan-Abgleich (SCHED-F-410) |

@@ -3,9 +3,9 @@ id: security-and-privacy
 titel: Sicherheit und Datenschutz
 praefix: SEC
 status: accepted
-version: 1.1.3
+version: 1.2.1
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main_view_model.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/ods/repositories/ods_repository.dart
@@ -77,7 +77,8 @@ Nutzergenerierte Inhalte und personenbezogene Daten sind gegenüber dem Bestand 
 |---|---|---|---|---|---|
 | Helfer-Anmeldung (Name, Kontaktweg) | Koordination von Helferbedarf bei FSR-Events | Einwilligung | Eigenes Backend (INT-008), FSR-Eventorganisation | 30 Tage nach Eventende, danach Löschung (`identity-and-moderation.md`, IDENT-N-020) | `features/event-volunteers/spec.md` |
 | Konto (SSO-Kennung oder E-Mail-Adresse, siehe INT-012) | Anmeldung für das Verfassen von Bewertungen und für die E-Key-Verwaltung | Einwilligung | Eigenes Backend (INT-008), ggf. Hochschul-SSO-Dienst | bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` IDENT-F-130 | `platform/identity-and-moderation.md`, `features/canteen-ratings/spec.md`, `features/e-key/spec.md` |
-| Bewertung (Konto-Referenz, angezeigtes Pseudonym, Sternebewertung, optionaler Kommentar) | Community-Bewertung von Mensa-Gerichten | Einwilligung | Eigenes Backend (INT-008), andere Nutzerinnen (Anzeige nur des Pseudonyms) | dauerhaft bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` | `features/canteen-ratings/spec.md` |
+| Bewertung (Konto-Referenz, angezeigtes Pseudonym, Bewertungsstufe, optionaler Kommentar) | Community-Bewertung von Mensa-Gerichten | Einwilligung | Eigenes Backend (INT-008), andere Nutzerinnen (Anzeige nur des Pseudonyms) | dauerhaft bis Löschung durch Nutzerin, siehe `identity-and-moderation.md` | `features/canteen-ratings/spec.md` |
+| Gerichtsfoto (Bilddatei, Konto-Referenz, Freigabestand) | Nutzergenerierte Bebilderung des Mensaplans | Einwilligung | Eigenes Backend (INT-008), andere Nutzerinnen (öffentliche Anzeige nach Freigabe) | dauerhaft bis Löschung durch die hochladende Person, Moderation oder Kontolöschung (`features/canteen-photos/spec.md` FOTO-F-100/F-160) | `features/canteen-photos/spec.md` |
 | Push-Kennung, iOS (Firebase-Geräte-ID) | Zustellung von Push-Benachrichtigungen | Einwilligung (Opt-in) | Google/Firebase als Bridge zu Apple/APNs (INT-005) | bis Abmeldung vom Thema bzw. Firebase-Standardfristen | `features/news/spec.md`, `features/settings/spec.md` |
 | Push-Endpunkt, Android (UnifiedPush-Endpunkt-URL) | Zustellung von Push-Benachrichtigungen | Einwilligung (Opt-in) | Eigenes Backend (INT-008) sowie der von der Nutzerin gewählte Distributor (INT-005) | bis Abmeldung, danach Löschung des Endpunkts | `features/news/spec.md`, `features/settings/spec.md` |
 | Push-Kennung bei Helfer-Anmeldung | Benachrichtigung angemeldeter Helfender bei Absage eines Events (HELFER-F-060) | Einwilligung | Eigenes Backend (INT-008), Zustellweg wie oben | mit der zugehörigen Anmeldung, spätestens 30 Tage nach Eventende | `features/event-volunteers/spec.md` |
@@ -111,7 +112,8 @@ Die Erklärung der Alt-App liegt unter `alte apps/fb4_app-main/fb4_app-main/asse
 | Berechtigung | Wofür | Anforderung |
 |---|---|---|
 | Dateiauswahl | Import des Semesterticket-PDFs (TICKET-F-010) | vorhanden in beiden Alt-Apps |
-| Benachrichtigungen | Lieblingsgericht-Hinweis (MENSA-F-100, rein lokal, umgesetzt Roadmap-Schritt 4 — Berechtigung wird erst beim ersten Markieren angefragt, SEC-F-080; ohne Berechtigung bleibt das Markieren nutzbar, SEC-F-090) sowie Push (INT-005, zweite Ausbaustufe) | Opt-in |
+| Benachrichtigungen | Lieblingsgericht-Hinweis (MENSA-F-100, Auslösung rein lokal — Berechtigung wird erst bei der ersten Höchstbewertung angefragt, SEC-F-080; ohne Berechtigung bleibt das Bewerten nutzbar, SEC-F-090; zusätzlich global abschaltbar über SET-F-170/MENSA-F-105) sowie Push (INT-005, zweite Ausbaustufe) | Opt-in |
+| Fotoauswahl bzw. Kamera | Hochladen eines Gerichtsfotos (`../features/canteen-photos/spec.md` FOTO-F-050), zweite Ausbaustufe; Metadaten werden vor der Übertragung entfernt (FOTO-F-140) | Opt-in, erst bei tatsächlicher Nutzung anzufragen (SEC-F-080) |
 | Kalender, ausschließlich schreibend | Übertragen ausgewählter Stundenplan-Termine in einen gewählten Gerätekalender (SCHED-F-175) | Opt-in, erst bei tatsächlicher Nutzung anzufragen (SEC-F-080) |
 | Standort | – | wird nicht benötigt und nicht angefragt; die Raumsuche arbeitet mit manueller Referenzraum-Eingabe (RAUM-F-050) |
 

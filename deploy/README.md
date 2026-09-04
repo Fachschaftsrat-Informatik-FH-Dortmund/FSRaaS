@@ -35,8 +35,10 @@ push auf main  ──►  CI (.github/workflows/ci.yml)  ──►  grün?
   über *Actions → Deploy Backend (Hetzner) → Run workflow*.
 - EF-Core-Migrationen laufen beim Dienststart automatisch über den
   `DbInitializer` — kein eigener Migrationsschritt.
-- Schlägt `/health` nach dem Neustart fehl, bricht der Job mit den letzten
-  60 Journal-Zeilen ab. Der alte Stand ist dann schon weg — Rollback: Abschnitt 7.
+- Nach dem Neustart pollt der Job `/health` bis zu 120 s (der erste Start macht
+  Migration + Seed). Kommt es nicht hoch, bricht er mit `systemctl status` und
+  den letzten 80 Journal-Zeilen ab. Der alte Stand ist dann schon weg —
+  Rollback: Abschnitt 7.
 
 ---
 

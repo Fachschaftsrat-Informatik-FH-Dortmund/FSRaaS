@@ -1,6 +1,6 @@
 ---
 status: draft
-version: 0.1.0
+version: 0.2.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 ---
@@ -10,6 +10,8 @@ last_reviewed: 2026-09-04
 Datum: 2026-09-04
 Prüfer: Umsetzung (technische Leitung)
 Grundlage: `../features/canteen/spec.md` 1.1.0, `../platform/quality-and-testing.md` Abschnitt 3, `../platform/non-functional.md` Abschnitt 11
+
+**Nachtrag vom 2026-09-04, nach Abschluss dieser Prüfung.** Die Mensa-Spec wurde am selben Tag auf Fassung 2.0.0 überarbeitet (zusammengefasste Gerichtsliste, Datumsgrenzen, Wischen, Ansicht aller Mensen; MENSA-F-080 entfallen zugunsten der Höchstbewertung MENSA-F-085). Dieses Protokoll bleibt als datierter Befund zur Fassung 1.1.0 unverändert bestehen und wird **nicht** rückwirkend angepasst. Die hier geprüften Punkte zu MENSA-N-010, MENSA-F-100 und MENSA-F-110 gelten fachlich weiter, ihre Auslösung wechselt jedoch mit Roadmap-Schritt 9 von der Stern-Markierung auf die Höchstbewertung — die Prüfpunkte „Berechtigung beim ersten Markieren" und „Markieren bleibt nutzbar" sind dann auf die Bewertung zu beziehen und erneut zu prüfen.
 
 Dieses Protokoll deckt die Anforderungen des Schnitts ab, für die nach `quality-and-testing.md` Abschnitt 3 ein datiertes Prüfprotokoll statt eines automatisierten Tests zulässig ist (Leistungswerte, Geräteverhalten), sowie die Punkte, deren Verifikation Geräte oder Fremdsysteme benötigt.
 

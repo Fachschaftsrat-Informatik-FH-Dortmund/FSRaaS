@@ -1,8 +1,8 @@
 ---
 status: accepted
-version: 1.1.3
+version: 1.2.0
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 ---
 
 # Spezifikations-Handbuch
@@ -53,6 +53,7 @@ specs/
 │   ├── schedule/spec.md               (SCHED)
 │   ├── canteen/spec.md                (MENSA)
 │   ├── canteen-ratings/spec.md        (RATE)
+│   ├── canteen-photos/spec.md         (FOTO)
 │   ├── news/spec.md                   (NEWS)
 │   ├── events/spec.md                 (EVENT)
 │   ├── event-volunteers/spec.md       (HELFER)
@@ -118,6 +119,7 @@ Präfix je Themenbereich, verbindlich für das gesamte Projekt:
 | SCHED | Stundenplan | `features/schedule/spec.md` |
 | MENSA | Mensaplan | `features/canteen/spec.md` |
 | RATE | Mensa-Bewertungen | `features/canteen-ratings/spec.md` |
+| FOTO | Gerichtsfotos | `features/canteen-photos/spec.md` |
 | NEWS | News | `features/news/spec.md` |
 | EVENT | Event-Kalender | `features/events/spec.md` |
 | HELFER | Helfer-Anmeldung | `features/event-volunteers/spec.md` |
@@ -216,7 +218,7 @@ Ziel ist Dichte, nicht Kürze um jeden Preis. Jede fachliche Aussage bleibt erha
 
 ## 10. Index aller Specs
 
-Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = für den Ablösungs-Umfang der Alt-Apps essentiell, **bestand** = übernommen, aber nachrangig. Querschnitts-Specs (`platform/`) sowie Produkt- und Prozessdokumente tragen keine Priorität (`–`).
+Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = für den Ablösungs-Umfang der Alt-Apps essentiell, **bestand** = übernommen, aber nachrangig, **ausbau** = ohne Vorbild in den Alt-Apps und über deren Umfang hinausgehend. Querschnitts-Specs (`platform/`) sowie Produkt- und Prozessdokumente tragen keine Priorität (`–`).
 
 | Datei | Präfix | Priorität | Ausbaustufe | Status |
 |---|---|---|---|---|
@@ -233,8 +235,9 @@ Alle Spec-Dateien des Projekts. Priorität nur für Feature-Specs: **kern** = f�
 | `features/app-shell/spec.md` | SHELL | kern | 1 | accepted |
 | `features/room-finder/spec.md` | RAUM | kern | 1 | accepted |
 | `features/schedule/spec.md` | SCHED | kern | 1 (ohne Prüfungsplan) | accepted |
-| `features/canteen/spec.md` | MENSA | kern | 1 | implemented |
+| `features/canteen/spec.md` | MENSA | kern | 1 | accepted |
 | `features/canteen-ratings/spec.md` | RATE | kern | 1 (ohne Freitext) | accepted |
+| `features/canteen-photos/spec.md` | FOTO | ausbau | 2 | draft |
 | `features/news/spec.md` | NEWS | kern | 1 (ohne Push) | accepted |
 | `features/admin/spec.md` | ADMIN | kern | 1 (Teilumfang) | accepted |
 | `features/settings/spec.md` | SET | bestand | 1 | accepted |

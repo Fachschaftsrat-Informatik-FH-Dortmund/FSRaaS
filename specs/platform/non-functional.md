@@ -3,9 +3,9 @@ id: non-functional
 titel: Nicht-funktionale Anforderungen
 praefix: NFR
 status: accepted
-version: 2.0.1
+version: 2.0.2
 owner: FSR FB4
-last_reviewed: 2026-08-28
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart
@@ -61,7 +61,7 @@ Grundsatz: Der Ausfall eines Fremdsystems darf nur den davon abhängigen Funktio
 
 ## 5. Energie- und Datenverbrauch
 
-Hintergrundabrufe laufen in festen, sparsamen Intervallen statt fortlaufendem Polling. Bereits gültige Zwischenspeicher (siehe `data-and-storage.md` Abschnitt 4) werden nicht vorzeitig erneut abgerufen. Umfangreiche Abrufe (z. B. Wiki-Vorabladen) nehmen Rücksicht auf Mobilfunkverbindungen; genaue Schwellwerte sind offen (Abschnitt 8).
+Hintergrundabrufe laufen in festen, sparsamen Intervallen statt fortlaufendem Polling. Ein fester Zeitplan darf dabei an bekannte Nutzungsspitzen angelehnt sein (z. B. Speiseplan-Auffrischung vor der Morgen- und der Mittagszeit, `backend-and-api.md` API-F-076) — das bleibt ein fester Plan im Sinne von NFR-N-090, solange die Auslösung nicht von der Anfragemenge abhängt. Bereits gültige Zwischenspeicher (siehe `data-and-storage.md` Abschnitt 4) werden nicht vorzeitig erneut abgerufen. Umfangreiche Abrufe (z. B. Wiki-Vorabladen) nehmen Rücksicht auf Mobilfunkverbindungen; genaue Schwellwerte sind offen (Abschnitt 8).
 
 ## 6. Sprache
 

@@ -3,9 +3,9 @@ id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
 status: accepted
-version: 0.2.6
+version: 0.5.2
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/app_constants.dart
@@ -30,6 +30,7 @@ related:
   - ../features/settings/spec.md
   - ../features/news/spec.md
   - ../features/canteen-ratings/spec.md
+  - ../features/canteen-photos/spec.md
   - ../features/event-volunteers/spec.md
 ---
 
@@ -47,8 +48,12 @@ Dieses Dokument legt fest, welche Datenklassen die App verarbeitet, wo sie liege
 | Semesterticket-Bild | lokal, Gerät | ja, verpflichtend | dauerhaft, bis neues Ticket hinterlegt oder gelöscht | „Ticket löschen"; „Alle lokalen Daten löschen" | ja (Fahrausweis) |
 | Einstellungen | lokal, Gerät | nein | dauerhaft | „Alle lokalen Daten löschen"; Deinstallation | überwiegend nein |
 | Angepinnte News | lokal, Gerät | nein | dauerhaft, bis entpinnt | manuell entpinnen; „Alle lokalen Daten löschen" | nein |
+| Benachrichtigungsregeln für News (Positiv-/Sperrliste) | lokal, Gerät | nein | dauerhaft, bis geändert | Regel entfernen; „Alle lokalen Daten löschen" | ja (Regelinhalte können auf Interessen oder belegte Fächer hindeuten); ausschließlich geräteseitig, keine Übermittlung |
 | Zwischengespeicherte Fremddaten (Speisepläne, News, Raumbelegung, Wiki-Inhalte) | lokal, Gerät | nein | begrenzt, siehe Abschnitt 4 | automatischer Ablauf; „Alle lokalen Daten löschen" | nein |
-| Lieblingsgerichte | lokal, Gerät | nein | dauerhaft, bis Markierung aufgehoben | Markierung aufheben; „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben), siehe `../features/canteen/spec.md` MENSA-F-090 |
+| Lieblingsgerichte (abgeleitet aus den eigenen Höchstbewertungen) | lokal, Gerät — abgeleitet aus serverseitigen Bewertungen | nein | dauerhaft, bis die zugrunde liegende Bewertung geändert oder gelöscht wird | eigene Bewertung herabsetzen oder löschen (`../features/canteen-ratings/spec.md` RATE-F-070); „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben); seit 2026-09-04 **nicht mehr rein gerätelokal**, da die Höchstbewertung serverseitig liegt, siehe `../features/canteen/spec.md` MENSA-F-085/F-090 |
+| Gerätelokale Spiegelung der eigenen Bewertungen | lokal, Gerät | nein | bis Abmeldung oder nächster Abgleich | Abmeldung; „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben), siehe `../features/canteen-ratings/spec.md` RATE-F-100 |
+| Unverträglichkeiten-Filter (Mensaplan) | lokal, Gerät | nein | dauerhaft, bis geändert | Kennzeichnung entfernen; „Alle lokalen Daten löschen" | ja, besondere Kategorie nach Art. 9 DSGVO (Gesundheitsangabe); ausschließlich geräteseitig, keine Übermittlung, siehe `../features/canteen/spec.md` MENSA-F-170 bis F-215 |
+| Gerichtsfotos (hochgeladen) | serverseitig, Ablagebereich des Backends | nein (öffentlich sichtbarer Inhalt); Metadaten vor Übertragung entfernt | dauerhaft, bis Löschung durch die hochladende Person, Moderation oder Kontolöschung | eigenes Foto löschen; Moderationsentscheidung; Kontolöschung (`../features/canteen-photos/spec.md` FOTO-F-100/F-160) | ja (Beitrag ist einem Konto zugeordnet), siehe `../features/canteen-photos/spec.md` |
 | Prüfungsauswahl und Wahlpflicht-Planungsauswahl | lokal, Gerät | nein | dauerhaft, bis geändert | Bearbeitung im Stundenplan; „Alle lokalen Daten löschen" | ja (Studienverlauf) |
 | Ferngepflegte Stammdaten (Mensen, Räume, Links, Semestertermine) | lokal, Gerät | nein | bis zur nächsten Aktualisierung; Ausgangsbestand aus dem Anwendungspaket als Rückfall | automatischer Ersatz bei Aktualisierung; „Alle lokalen Daten löschen" | nein |
 | Offline-Warteschlange (Bewertungen, Helfer-Anmeldungen, Besetzt-Meldungen, E-Key-Schreibvorgänge) | lokal, Gerät | nein, außer personenbezogene Helfer- und E-Key-Angaben: ja | bis Übertragung oder Verfall, siehe Abschnitt 5 | automatisch nach Übertragung; Verfall; „Alle lokalen Daten löschen" | ja bei Helfer-Anmeldungen und E-Key-Verknüpfung |
@@ -84,7 +89,7 @@ Fachliche Bedeutung der acht Einstellungsschlüssel aus `app_constants.dart`, f�
 
 | Datenart | Gültigkeitsdauer | Quelle der Regel |
 |---|---|---|
-| Speisepläne | bis Tagesende | INT-015, Cache-Regel-Vorschlag |
+| Speisepläne | bis Tagesende, mit manueller Aktualisierung durch Herunterziehen (`features/canteen/spec.md` MENSA-F-240, `platform/ux-and-theming.md` UX-F-160) | INT-015, Cache-Regel-Vorschlag |
 | Öffnungszeiten, Gerichtskategorien, Zusatzstoffverzeichnis | ein Tag | INT-015, ändern sich selten |
 | News | 15 Minuten | INT-003/INT-010, Cache-Regel-Vorschlag |
 | Raumtermine | 15 Minuten | INT-009 über INT-008, gekoppelt an das Abrufintervall des Backends |
@@ -128,8 +133,11 @@ Es gibt keine Datenübernahme aus den Alt-Apps. Gründe: andere Plattform (Flutt
 | DATA-N-150 | Der Gesamtspeicherverbrauch aller Zwischenspeicher sollte eine Obergrenze von 50 MB nicht überschreiten. | NEU |
 | DATA-F-160 | Das System muss eine Nutzeraktion „Alle lokalen Daten löschen" bereitstellen, die alle in Abschnitt 2 gelisteten Datenklassen vom Gerät entfernt. | NEU |
 | DATA-F-170 | Das System muss alle in Abschnitt 2 gelisteten lokalen Daten ausschließlich im App-eigenen Speicherbereich ablegen, sodass eine Deinstallation sie vollständig entfernt. | NEU |
+| DATA-F-180 | Das System muss die Benachrichtigungsregeln für News (Positiv- und Sperrliste, siehe `../features/news/spec.md`) ausschließlich lokal auf dem Gerät speichern und nicht an das Backend oder Dritte übertragen. | NEU |
 
 Zu DATA-F-130: Ergänzt um die serverseitige Sitzungsinvalidierung beim Abmelden, siehe `identity-and-moderation.md` IDENT-F-140 — das lokale Entfernen allein reicht nicht aus, da ein entwendetes Token sonst serverseitig weiter gültig bliebe.
+
+Zu DATA-F-180: Verankert `../features/news/spec.md` NEWS-F-270 auf Datenhaltungsebene. Die Auswertung der Regeln geschieht geräteseitig auf zugestellten Meldungs-Metadaten (analog zum lokalen Prüfungsplan-Abgleich, SCHED-F-220); das Backend kennt weder die Regeln noch, welche Meldung bei einer einzelnen Nutzerin eine Benachrichtigung ausgelöst hat.
 
 ## 9. Offene Fragen
 

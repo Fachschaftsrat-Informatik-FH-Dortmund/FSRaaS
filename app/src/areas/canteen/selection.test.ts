@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
-import { readSelection, useCanteenSelection } from './selection';
+import { __resetSelectionForTest, readSelection, useCanteenSelection } from './selection';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
+  __resetSelectionForTest();
 });
 
 describe('MENSA-F-020 Auswahl einer oder mehrerer Mensen', () => {
@@ -35,6 +36,16 @@ describe('MENSA-F-025 Festlegen der Anzeigereihenfolge', () => {
     await waitFor(() => expect(result.current.ids).toEqual(['A', 'C', 'B']));
 
     expect(await readSelection()).toEqual(['A', 'C', 'B']);
+  });
+
+  it('teilt den Stand über alle Hook-Instanzen (Mensaplan sieht die Auswahl des Auswahl-Bildschirms)', async () => {
+    const auswahlBildschirm = renderHook(() => useCanteenSelection());
+    const mensaplan = renderHook(() => useCanteenSelection());
+    await waitFor(() => expect(mensaplan.result.current.loaded).toBe(true));
+
+    act(() => auswahlBildschirm.result.current.toggle('Mensa'));
+
+    await waitFor(() => expect(mensaplan.result.current.ids).toEqual(['Mensa']));
   });
 
   it('ignoriert eine Verschiebung über die Ränder hinaus', async () => {
