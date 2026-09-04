@@ -1,6 +1,6 @@
 ---
 status: draft
-version: 0.2.1
+version: 0.3.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 ---
@@ -9,7 +9,7 @@ last_reviewed: 2026-09-04
 
 Datum: 2026-09-03
 Prüfer: Umsetzung (technische Leitung)
-Grundlage: `../platform/backend-and-api.md` 3.3.0 Abschnitt 6, `../platform/api-contract.yaml` 0.5.1 (Server-URL), `../platform/quality-and-testing.md` Abschnitt 3, `../decisions/0017-zugriff-und-datensicherung-vps.md`
+Grundlage: `../platform/backend-and-api.md` Abschnitt 6 (API-N-200), `../platform/api-contract.yaml` (Server-URL `api.fb4.it`), `../decisions/0018-verwaltungsoberflaeche-react-native-web.md` (Web-Export unter /admin), `../platform/quality-and-testing.md` Abschnitt 3, `../decisions/0017-zugriff-und-datensicherung-vps.md`
 
 API-N-200 ist eine nicht-funktionale „muss"-Anforderung außerhalb der Sonderfälle
 von Abschnitt 3. Nachweis über dieses datierte Prüfprotokoll statt eines
@@ -42,7 +42,19 @@ Erstmals durchgeführt 2026-09-03 (VPS `ubuntu-4gb-nbg1-1`, Hetzner nbg1).
 | Erster INT-015-Job-Lauf füllt den Speiseplan-Zwischenspeicher, sichtbar im `/health` | Beobachtung nach dem Deployment | **bestanden** — `mensa-speiseplan` `succeeded: true`, `verwaltungsprotokoll-aufraeumen` `succeeded: true` |
 | Rollback (voriger Commit erneut ausgeliefert) getestet | `deploy/README.md` Abschnitt 7 | **ausstehend** |
 
-## 3. Sicherung (API-N-160 bis API-N-180)
+## 3. Verwaltungsoberfläche unter /admin (ADR 0018)
+
+| Prüfpunkt | Methode | Ergebnis |
+|---|---|---|
+| Web-Export trägt das `/admin`-Präfix | `app/app.json` `experiments.baseUrl='/admin'`; lokaler `npx expo export --platform web` am 2026-09-04 → `index.html` referenziert `/admin/_expo/static/js/web/entry-*.js` | **bestanden** |
+| Workflow baut den Export nach `wwwroot/admin` und prüft ihn | `.github/workflows/deploy.yml` Schritt „Verwaltungsoberfläche bauen" (+ `test -f index.html`, `grep /admin/_expo/`) | **bestanden** (statisch) |
+| `dotnet publish` nimmt `wwwroot/admin` auf | Web-SDK-Standard-Glob `wwwroot/**`, Export läuft vor `dotnet publish` | **bestanden** (statisch) |
+| Backend liefert die Seite aus | `Program.cs` — `UseDefaultFiles`/`UseStaticFiles`/`MapFallback` unter `RequestPath=/admin` wenn `wwwroot/admin` existiert | **bestanden** (statisch) |
+| Aufruf ohne Schrägstrich | `deploy/nginx-fsrfb4aas.conf` — `location = /admin { return 308 /admin/; }` | **bestanden** (statisch) |
+| `https://api.fb4.it/admin` lädt im Browser | Aufruf nach dem Deploy | **ausstehend** — nächster Deploy |
+| Browser-Anmeldung gegen Authentik | `https://api.fb4.it/admin` als Redirect-URI in der Authentik-Anwendung `fb4-app` eintragen, dann Login → Rolle → Rollenliste | **ausstehend** — Betriebseinstellung in Authentik |
+
+## 4. Sicherung (API-N-160 bis API-N-180)
 
 | Prüfpunkt | Methode | Ergebnis |
 |---|---|---|
@@ -52,5 +64,7 @@ Erstmals durchgeführt 2026-09-03 (VPS `ubuntu-4gb-nbg1-1`, Hetzner nbg1).
 Bewertung: Der automatisierte Auslieferungsweg ist im Repository beschrieben,
 statisch geprüft und am 2026-09-03 erstmals real ausgeführt — das Backend läuft
 unter `https://api.fb4.it` mit funktionierenden Hintergrund-Jobs. API-N-200 gilt
-als nachgewiesen; offen bleibt nur die Rollback-Probe (Abschnitt 2) und die
-Sicherung auf getrenntem Ziel (Abschnitt 3).
+als nachgewiesen. Die Verwaltungsoberfläche (Abschnitt 3) ist im Auslieferungsweg
+verdrahtet und der Export lokal verifiziert; die Browser-Abnahme folgt mit dem
+nächsten Deploy. Offen bleiben Rollback-Probe (Abschnitt 2), Authentik-Redirect-URI
+für den Admin-Login (Abschnitt 3) und die Sicherung auf getrenntem Ziel (Abschnitt 4).

@@ -9,6 +9,7 @@ import { logError } from '@/errors/AppError';
 import {
   readStartView, writeStartView, startViewOptions, type StartView,
 } from '@/navigation/startView';
+import { usePriceGroup, priceGroups, type PriceGroup } from '@/areas/canteen/priceGroup';
 import { useAppearanceMode, useTheme, appearanceModes, type AppearanceMode } from '@/theme';
 import { RadioList, SegmentedControl } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
@@ -22,6 +23,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const { mode, setMode } = useAppearanceMode();
   const { preference, setPreference } = useLanguage();
+  const { group, setGroup } = usePriceGroup();
 
   const [startView, setStartView] = useState<StartView>('schedule');
   useEffect(() => {
@@ -64,6 +66,16 @@ export function SettingsScreen() {
           value={startView}
           onChange={changeStartView}
           options={startViewOptions.map((v) => ({ value: v, label: startViewLabel(v) }))}
+        />
+      </View>
+
+      <View style={styles.group}>
+        <Text style={[styles.label, { color: colors.text }]}>{t('settings.priceGroupLabel')}</Text>
+        <SegmentedControl<PriceGroup>
+          label={t('settings.priceGroupLabel')}
+          value={group}
+          onChange={setGroup}
+          options={priceGroups.map((p) => ({ value: p, label: t(`priceGroup.${p}`) }))}
         />
       </View>
 

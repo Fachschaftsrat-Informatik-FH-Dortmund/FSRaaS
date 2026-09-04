@@ -226,13 +226,26 @@ sudo certbot --nginx -d api.fb4.it       # trägt ssl_* + http→https-Weiterlei
 | `SERVER_USER` | `deploy-fsrfb4aas` (oder das in 2.6 gewählte Konto) |
 | `SSH_PRIVATE_KEY` | privater Schlüssel des Deploy-Paars, vollständig mit `-----BEGIN…` / `-----END…` |
 
-Deploy-Schlüsselpaar lokal erzeugen (nicht der persönliche Schlüssel):
+Deploy-Schlüsselpaar lokal erzeugen — **ohne Passphrase** (die CI kann keine
+eingeben). Danach mit `ssh-keygen -y -f ./deploy-fsrfb4aas` prüfen: gibt es
+sofort den Public Key aus statt nach einer Passphrase zu fragen, ist er richtig.
 
 ```bash
-ssh-keygen -t ed25519 -f ./deploy-fsrfb4aas -C 'deploy@fsrfb4aas-ci' -N ''
-#  ./deploy-fsrfb4aas.pub  → authorized_keys von deploy-fsrfb4aas auf dem Server (Abschnitt 2.6)
-#  ./deploy-fsrfb4aas      → GitHub-Secret SSH_PRIVATE_KEY, danach lokal löschen
+# Linux / macOS / Git-Bash:
+ssh-keygen -t ed25519 -f ./deploy-fsrfb4aas -C deploy@fsrfb4aas-ci -N ''
 ```
+```cmd
+:: Windows cmd.exe — hier ist '' eine LITERALE Passphrase; doppelte Quotes nehmen:
+ssh-keygen -t ed25519 -f deploy-fsrfb4aas -C deploy@fsrfb4aas-ci -N ""
+```
+```
+  ./deploy-fsrfb4aas.pub  → authorized_keys von deploy-fsrfb4aas auf dem Server (Abschnitt 2.6)
+  ./deploy-fsrfb4aas      → GitHub-Secret SSH_PRIVATE_KEY, danach lokal löschen
+```
+
+Bei einem bereits erzeugten, passphrasegeschützten Schlüssel:
+`ssh-keygen -p -f ./deploy-fsrfb4aas` und bei „new passphrase" zweimal Enter —
+der Public Key bleibt gleich, nur das Secret muss neu gesetzt werden.
 
 Die Produktiv-Geheimnisse (DB-Passwort, Authentik-Token) gehören **nicht** zu
 GitHub — nur nach `/etc/fsrfb4aas/fsrfb4aas.env` und ins Vaultwarden-Depot
@@ -262,6 +275,20 @@ Der erste Mensa-Speiseplan-Lauf (INT-015) kann einige Minuten dauern.
 Die App zeigt standardmäßig auf `https://api.fb4.it/v1` (`app/src/config.ts`,
 `app/app.json`). Für lokale Tests gegen ein anderes Ziel:
 `EXPO_PUBLIC_API_BASE_URL=https://… npx expo start`.
+
+### 4.1 Verwaltungsoberfläche (ADR 0018)
+
+Der Deploy baut den Expo-Web-Export (`experiments.baseUrl='/admin'` in
+`app/app.json`) nach `wwwroot/admin`; das Backend liefert ihn unter
+`https://api.fb4.it/admin` aus, der Reverse-Proxy leitet `/admin` → `/admin/`.
+Kein zusätzlicher Schritt auf dem Server.
+
+Einmalig in **Authentik** nötig, damit der Browser-Login durchläuft: in der
+Anwendung `fb4-app` die Redirect-URI `https://api.fb4.it/admin` (und
+`https://api.fb4.it/admin/`) ergänzen — sonst bricht der OIDC-Rücksprung ab.
+
+Prüfen: `curl -fsS https://api.fb4.it/admin/ | grep -o '/admin/_expo[^"]*'` muss
+den JS-Pfad zeigen; im Browser lädt die Oberfläche.
 
 ---
 

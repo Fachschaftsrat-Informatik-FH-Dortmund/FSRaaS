@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import type { components } from '@/api/generated/schema';
@@ -64,6 +64,33 @@ export function useSpeiseplan(mensaId: string | undefined, datum: string) {
           params: { path: { mensaId: mensaId!, datum }, header: { 'Accept-Language': sprache } },
         }),
       ),
+  });
+}
+
+/** Query-Optionen für den Tagesplan einer Mensa — geteilt von Einzel-, Sammel- und Vorabruf. */
+export function speiseplanQueryOptions(mensaId: string, datum: string, sprache: 'de' | 'en') {
+  return {
+    queryKey: ['speiseplan', mensaId, datum, sprache] as const,
+    staleTime: staleTime('speiseplan'),
+    gcTime: gcTime('speiseplan'),
+    queryFn: async (): Promise<Speiseplan> =>
+      unwrap(
+        await api.GET('/mensen/{mensaId}/speiseplan/{datum}', {
+          params: { path: { mensaId, datum }, header: { 'Accept-Language': sprache } },
+        }),
+      ),
+  };
+}
+
+/**
+ * Tagespläne mehrerer Mensen für denselben Tag (MENSA-F-012): ein Query je
+ * gewählter Mensa. Die Zusammenfassung entsteht im Bildschirm aus den Ergebnissen.
+ */
+export function useSpeisepläne(mensaIds: string[], datum: string) {
+  const { i18n } = useTranslation();
+  const sprache = apiSprache(i18n.language);
+  return useQueries({
+    queries: mensaIds.map((mensaId) => speiseplanQueryOptions(mensaId, datum, sprache)),
   });
 }
 

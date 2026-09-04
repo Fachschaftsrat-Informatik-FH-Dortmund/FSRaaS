@@ -4,7 +4,7 @@ titel: Einstellungen
 praefix: SET
 status: accepted
 prioritaet: bestand
-version: 0.5.0
+version: 0.6.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 derived_from:
@@ -19,8 +19,8 @@ implemented_in:
   - app/src/theme           # SET-F-020 (Erscheinungsbild-Wahl, Schlüssel appearanceMode)
   - app/src/i18n            # SET-F-100/F-110 (Sprachwahl, Schlüssel uiLanguage)
   - app/src/navigation      # SET-F-160 (Startansicht-Wahl, Schlüssel startView)
-  - app/src/areas/settings  # Einstellungsbildschirm (Teilumfang: Erscheinungsbild, Sprache, Startansicht, Mensen-Auswahl-Einstieg)
-  - app/src/areas/canteen   # SET-F-030, SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen)
+  - app/src/areas/settings  # Einstellungsbildschirm (Teilumfang: Erscheinungsbild, Sprache, Startansicht, Preisgruppe SET-F-180/F-190, Mensen-Auswahl-Einstieg)
+  - app/src/areas/canteen   # SET-F-030, SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen), SET-F-180/F-190 (Preisgruppen-Speicher priceGroup, wirksam über MENSA-F-220)
 related:
   - ../canteen/spec.md
   - ../../platform/data-and-storage.md
@@ -99,7 +99,7 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 
 **`SET-F-160`** — Neu aus `../app-shell/nutzerfuehrung-konzept.md` Abschnitt 12. Voreinstellung ist der Stundenplan (`../app-shell/spec.md` SHELL-F-070). Die Option „zuletzt genutzt" merkt sich den zuletzt aktiven Tab lokal (Einstellungsschlüssel-Ergänzung, Abschnitt 5); die zuvor offene Frage nach ihrem Aufwand ist mit der Umsetzung beantwortet — ein zusätzlich vermerkter Tab-Schlüssel genügt.
 
-**Umsetzungsstand (Roadmap-Schritt 2, ergänzt Schritt 4).** Umgesetzt sind SET-F-020 (Erscheinungsbild), SET-F-100/F-110 (Sprachwahl) und SET-F-160 (Startansicht) aus Schritt 2 sowie SET-F-030 und SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen) aus Schritt 4; alle wirken sofort, ohne separaten Speichern-Schritt. Die Mensen-Auswahl liegt fachlich in `../canteen/spec.md` (MENSA-F-020/F-025) und ist sowohl aus den Einstellungen als auch aus dem Leerzustand des Mensaplans erreichbar. Die übrigen SET-Anforderungen folgen mit ihren jeweiligen Funktionen (Stundenplan-Schalter mit Schritt 5, Ticket-Helligkeit mit Schritt 8, Push mit der zweiten Ausbaustufe, Links/Downloads mit Schritt 7, Datenschutz-/Lösch-/Lizenz-/Rückmelde-Ansichten mit Schritt 10 bzw. den betroffenen Features). SET-F-170 (Lieblingsgericht-Benachrichtigung, ergänzt am 2026-09-04) folgt gemeinsam mit den Bewertungen in Roadmap-Schritt 9, weil erst dort ein Lieblingsgericht entstehen kann. SET-F-180/F-190 (Preisgruppe, ebenfalls ergänzt am 2026-09-04) hängen dagegen an keiner Bewertung und gehören zum Mensa-Nachlauf unabhängig von Schritt 9 (`../canteen/spec.md` Erläuterung „Umsetzungsstand"). `status` bleibt daher `accepted`.
+**Umsetzungsstand (Roadmap-Schritt 2, ergänzt Schritt 4).** Umgesetzt sind SET-F-020 (Erscheinungsbild), SET-F-100/F-110 (Sprachwahl) und SET-F-160 (Startansicht) aus Schritt 2 sowie SET-F-030 und SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen) aus Schritt 4; alle wirken sofort, ohne separaten Speichern-Schritt. Die Mensen-Auswahl liegt fachlich in `../canteen/spec.md` (MENSA-F-020/F-025) und ist sowohl aus den Einstellungen als auch aus dem Leerzustand des Mensaplans erreichbar. Die übrigen SET-Anforderungen folgen mit ihren jeweiligen Funktionen (Stundenplan-Schalter mit Schritt 5, Ticket-Helligkeit mit Schritt 8, Push mit der zweiten Ausbaustufe, Links/Downloads mit Schritt 7, Datenschutz-/Lösch-/Lizenz-/Rückmelde-Ansichten mit Schritt 10 bzw. den betroffenen Features). SET-F-170 (Lieblingsgericht-Benachrichtigung, ergänzt am 2026-09-04) folgt gemeinsam mit den Bewertungen in Roadmap-Schritt 9, weil erst dort ein Lieblingsgericht entstehen kann. SET-F-180/F-190 (Preisgruppe, ebenfalls ergänzt am 2026-09-04) hängen dagegen an keiner Bewertung und wurden mit dem Abschluss von Roadmap-Schritt 4 am 2026-09-04 umgesetzt (Segmentregler im Einstellungsbildschirm, Schlüssel `priceGroup`; wirksam über `../canteen/spec.md` MENSA-F-220). `status` bleibt `accepted`, weil die übrigen SET-Anforderungen noch offen sind.
 
 ## 5. Datenmodell
 

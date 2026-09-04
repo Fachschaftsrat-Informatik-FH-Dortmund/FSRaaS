@@ -4,11 +4,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 import i18n from '@/i18n';
 import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { readJson, clearAll } from '@/storage/kv';
+import { __resetPriceGroupForTest } from '@/areas/canteen/priceGroup';
 import { ThemeProvider, useTheme } from '@/theme';
 import { SettingsScreen } from './SettingsScreen';
 
 beforeEach(async () => {
   await clearAll();
+  __resetPriceGroupForTest();
   await i18n.changeLanguage('de');
 });
 
@@ -61,6 +63,21 @@ describe('SET-F-160 Wahl der Startansicht inklusive „zuletzt genutzt"', () => 
 
     fireEvent.press(screen.getByRole('radio', { name: 'News' }));
     await waitFor(async () => expect(await readJson('startView', 'schedule')).toBe('news'));
+  });
+});
+
+describe('SET-F-180 / SET-F-190 Wahl der eigenen Preisgruppe, Voreinstellung Studierende', () => {
+  it('bietet die drei Gruppen an, ist auf Studierende voreingestellt und speichert die Wahl', async () => {
+    render(<Harness />);
+    for (const name of ['Studierende', 'Mitarbeitende', 'Gäste']) {
+      expect(screen.getByRole('radio', { name })).toBeTruthy();
+    }
+    expect(screen.getByRole('radio', { name: 'Studierende' }).props.accessibilityState.selected).toBe(
+      true,
+    );
+
+    fireEvent.press(screen.getByRole('radio', { name: 'Mitarbeitende' }));
+    await waitFor(async () => expect(await readJson('priceGroup', 'student')).toBe('staff'));
   });
 });
 

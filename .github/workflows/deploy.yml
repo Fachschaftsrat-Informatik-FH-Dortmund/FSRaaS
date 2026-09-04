@@ -50,12 +50,16 @@ jobs:
           node tools/contract-codegen/src/generate.mjs
 
       # Verwaltungsoberfläche als Web-Export (ADR 0018). Landet direkt in
-      # wwwroot/admin und wird vom Backend unter /admin mitausgeliefert.
+      # wwwroot/admin und wird vom Backend unter /admin mitausgeliefert. Die
+      # Asset-Pfade tragen das /admin-Präfix (app.json experiments.baseUrl).
       - name: Verwaltungsoberfläche bauen
         working-directory: app
         run: |
           npm ci
           npx expo export --platform web --output-dir ../backend/src/Fb4.Backend/wwwroot/admin
+          # Absichern, dass der Export da ist und die Asset-Pfade das /admin-Präfix tragen.
+          test -f ../backend/src/Fb4.Backend/wwwroot/admin/index.html
+          grep -q '/admin/_expo/' ../backend/src/Fb4.Backend/wwwroot/admin/index.html
 
       - name: Build und Test
         working-directory: backend

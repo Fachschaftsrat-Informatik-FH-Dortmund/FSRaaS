@@ -19,7 +19,7 @@ implemented_in:
   - app/src/ui/state        # DATA-F-090 (Altershinweis, Test: AsyncStates.test.tsx)
   - app/src/state           # Zwischenspeicher-Persistenz (ADR 0013)
   - app/src/auth            # DATA-F-120, DATA-F-130 (Sitzungsmerkmal im gesicherten Systemspeicher, Entfernen bei Abmeldung)
-  - app/src/areas/canteen   # DATA-F-070 (Speiseplan-Zwischenspeicher je Mensa/Tag), Lieblingsgerichte-Liste (Schlüssel favoriteDishes), Mensaauswahl/-reihenfolge (Schlüssel selectedCanteens)
+  - app/src/areas/canteen   # DATA-F-070 (Speiseplan-Zwischenspeicher je Mensa/Tag), Lieblingsgerichte-Liste (Schlüssel favoriteDishes), Mensaauswahl/-reihenfolge (Schlüssel selectedCanteens), Preisgruppe (Schlüssel priceGroup), Unverträglichkeiten-Filter (Schlüssel dishIntolerances, MENSA-F-215 — nie ans Backend)
 related:
   - backend-and-api.md
   - security-and-privacy.md

@@ -3,9 +3,9 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: accepted
-version: 0.6.1
+version: 0.6.2
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib/config/themes/color_consts.dart
   - alte apps/fb4_app-main/fb4_app-main/lib/main.dart
@@ -22,6 +22,7 @@ implemented_in:
   - app/src/theme          # UX-F-010 (Akzentfarbe im Farbsystem), UX-F-020/F-030 (Laufzeitreaktion, manuelle Übersteuerung; Navigations-Theme-Brücke app/src/theme/navigationTheme.ts, Test navigationTheme.test.ts), UX-F-220 (Statusleiste: app/src/theme/statusBar.tsx, Test: app/src/theme/statusBar.test.tsx)
   - app/app                # UX-F-170 (Bildschirmtitel aus den _layout-Optionen), UX-F-200/UX-N-030 (Navigations-Werkzeug), UX-F-220 (ThemedStatusBar im Wurzel-Layout), UX-F-020/F-030 (Navigations-Theme im Wurzel-Layout gesetzt)
   - app/src/i18n           # UX-F-210 (Anrede „du" in de.json), Test: app/src/i18n/anrede.test.ts
+  - app/src/areas/canteen  # UX-F-160 (Aktualisierungsgeste: Herunterziehen im Mensaplan, MENSA-F-240) — erster Konsument, Test: screens/CanteenScreen.test.tsx
 related:
   - ../features/schedule/spec.md
   - ../features/canteen/spec.md
