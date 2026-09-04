@@ -3,9 +3,9 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.3.0
+version: 1.3.3
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/NetworkModule.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/
@@ -281,6 +281,8 @@ Grund für die Unterscheidung: F-Droid existiert ausschließlich für Android un
 
 **Antwortstruktur**
 Nicht abschließend bekannt: Die Alt-App verarbeitet eingehende Nachrichten nicht (der zugehörige Handler ist im Quellcode auskommentiert). Für die Neuentwicklung ist die Nutzlaststruktur einer eingehenden Nachricht (z. B. Verweis auf die zugehörige News-Meldung für Deep-Linking) für beide Zustellwege neu zu definieren.
+
+Die Nutzlast muss darüber hinaus die Metadaten mitführen, die die App für die geräteseitige Auswertung der Positiv- und Sperrliste braucht: Klassifizierung, Quelle/Verteiler und Titel der Meldung (`../features/news/spec.md` NEWS-F-250 ff.). Ohne diese Felder kann die App eine Benachrichtigung nicht regelkonform unterdrücken; sie benachrichtigt dann im Zweifel und protokolliert die Abweichung. Die Regeln selbst werden nicht übertragen und sind dem Backend nicht bekannt (NEWS-F-270).
 
 **Authentifizierung**
 Android: je registriertem UnifiedPush-Endpunkt eine vom Backend vergebene Endpunkt-Kennung, keine Firebase-Projektbindung. iOS: Geräteregistrierung über Firebase (projektgebunden über `google-services.json`/Firebase-Projektkonfiguration). In beiden Fällen keine Nutzerauthentifizierung.
@@ -771,7 +773,7 @@ Zu definieren: Aufruf-/Integrationsart (API vs. direkter DB-Zugriff), Antwortstr
 
 ## INT-015 — Mensa-API des ITMC (TU Dortmund)
 
-**Status: bestätigt, live erprobt (Feldstruktur verifiziert 2026-09-03).** Ersetzt INT-004 als Speiseplan-Quelle.
+**Status: bestätigt, live erprobt (Feldstruktur verifiziert 2026-09-03, Verbrauchsorte ohne Ausgabestellen-Gliederung geprüft 2026-09-04).** Ersetzt INT-004 als Speiseplan-Quelle.
 
 **Zweck**
 Liefert Speisepläne, Gerichtskategorien und Zusatzstoff-/Allergenschlüssel der Mensen des Studierendenwerks Dortmund. Grundlage für MENSA und, über die normalisierten Gerichtsbezeichnungen, für RATE.
@@ -782,6 +784,7 @@ GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}/{date}
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/canteens/{id}
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/types
 GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/additives
+GET https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/categories
 ```
 `{id}` ist die ITMC-Mensakennung (Feld `quelleId` der Mensa-Stammdaten, z. B. `341` für die Hauptmensa), `{date}` ein Datum `YYYY-MM-DD`.
 
@@ -796,14 +799,16 @@ Gericht-Objekt:
 | `title` | Objekt `{de, en}` | Bezeichnung des Gerichts. Zusatzstoff-/Allergen-Codes stehen zusätzlich inline in Klammern; mehrteilige Gerichte trennen die Komponenten mit ` \| ` (Beispiel: `"Bolognese (20a,28) \| Spaghetti (20a) \| Reibkäse (2,22,26)"`) |
 | `type` | Liste von Strings | Kennzeichnungen des Gerichts, Schlüssel aus `/types` (z. B. `A` Fleisch aus artgerechter Haltung, `B` Klimateller, `N` Vegan, `R`, `G`) |
 | `additives` | Liste von Strings | Zusatzstoff-/Allergen-Codes, Schlüssel aus `/additives` (z. B. `["2","20a","22"]`) |
-| `category` | String | numerischer Kategorie-Code (nicht anzeigetauglich; für die Anzeige dient `counterNames`) |
+| `category` | String | numerischer Kategorie-Code (nicht anzeigetauglich; für die Anzeige dient `counterNames`). Über `/categories` teilweise auflösbar, aber nicht vollständig — bei der Food Fakultät verwenden die Gerichte Codes (`20`, `21`, `30`, `32`), die im `/categories`-Verzeichnis fehlen (Prüfung 2026-09-04) |
 | `price` | Objekt `{student, staff, guest}` | Preise als **String** mit Komma-Dezimaltrennung und Euro-Zeichen, Beispiel `"3,30 €"` — clientseitig zu parsen |
-| `counter` | String | Ausgabestelle, unlokalisiert (z. B. `"Menü 1"`, `"Beilagen"`) |
-| `counterNames` | Objekt `{de, en}` | zweisprachige Anzeigekategorie; für die getrennte Beilagen-Darstellung (MENSA-F-040) maßgeblich |
+| `counter` | String \| fehlt | Ausgabestelle, unlokalisiert (z. B. `"Menü 1"`, `"Beilagen"`). Bei manchen Verbrauchsorten (Food Fakultät, Kennung 474) fehlt das Feld ganz |
+| `counterNames` | Objekt `{de, en}` \| `null` | zweisprachige Anzeigekategorie; für die getrennte Beilagen-Darstellung (MENSA-F-040) maßgeblich. Bei der Food Fakultät durchgängig `null` — die Neuentwicklung führt solche Gerichte dann ohne Kategorieüberschrift (`features/canteen/spec.md` MENSA-F-160) |
 | `dispoId` | String | interne Kennung des Dispositionssatzes |
 | `position` | Zahl | Sortierreihenfolge innerhalb des Tages |
 
-`GET /types` und `GET /additives` → je JSON-Liste von `{ "id": String, "name": { "de": String, "en": String } }`, Beispiel `{"id":"N","name":{"de":"Vegan","en":"Vegan"}}`. Damit trägt diese Quelle die Zweisprachigkeit aus NFR-F-115 ohne eigene Übersetzungsarbeit.
+`GET /types`, `GET /additives` und `GET /categories` → je JSON-Liste von `{ "id": String, "name": { "de": String, "en": String } }`, Beispiel `{"id":"N","name":{"de":"Vegan","en":"Vegan"}}`. Damit trägt diese Quelle die Zweisprachigkeit aus NFR-F-115 ohne eigene Übersetzungsarbeit. `/categories` (Stand 2026-09-04: elf Einträge, u. a. `1` „Menu", `61` „Speisen in der food fakultät") deckt die `category`-Codes der Food-Fakultät-Gerichte nicht ab und wird deshalb vorerst nicht als Kategoriequelle genutzt — die Anzeigekategorie kommt aus `counterNames`/`counter` (MENSA-F-030), fehlt beides, entfällt sie (MENSA-F-160).
+
+`GET /canteens/474` (Food Fakultät), Prüfung 2026-09-04: liefert für den aktuellen Tag 27 Gerichte mit vollständigen `title`, `type`, `additives`, `price` und `position`, aber ohne `counter` und mit `counterNames: null`. Die Daten kommen also vollständig an; lediglich die Ausgabestellen-Gliederung fehlt an der Quelle.
 
 `GET /canteens/{id}/openings/all` antwortete am 2026-09-03 mit **HTTP 500** und wird nicht verwendet. Die Öffnungszeiten je Mensa und Wochentag kommen aus den gepflegten Stammdaten (`features/admin/spec.md`, MENSA-F-047); die Android-Alt-App führt beide Quellen nebeneinander, für die Neuentwicklung sind die Stammdaten führend. Fällt eine künftige Auswertung von `openings/all` positiv aus, kann sie als zusätzliche Quelle nachgezogen werden, ohne dass MENSA-F-047 sich ändert.
 
@@ -819,6 +824,8 @@ Nicht vertraglich zugesagt, aber institutionell betrieben und produktiv von der 
 **Cache-Regel (Vorschlag)**
 Speiseplan je Mensa und Tag bis Tagesende (wie zuvor INT-004). Öffnungszeiten, Gerichtskategorien und Zusatzstoffverzeichnis ändern sich selten — Vorschlag: ein Tag, serverseitig im Backend (INT-008) vorgehalten.
 
+Der Backend-Abrufzeitplan ist an die studentischen Nutzungsspitzen angelehnt statt an ein starres Intervall ab Prozessstart: je eine Auffrischung vor der Morgen- und vor der Mittagsspitze (Ortszeit), ergänzt um weitere Läufe über den Tag (`platform/backend-and-api.md` API-F-076, `features/canteen/spec.md` MENSA-N-020). Die App ruft INT-015 nie selbst ab (`platform/architecture.md` ARCH-F-050); das Herunterziehen zum Aktualisieren in der App (MENSA-F-240) liest ausschließlich den Backend-Zwischenspeicher neu, nicht INT-015. Bei diesem Abrufvolumen (rund ein Dutzend Anfragen je Lauf, konstant und unabhängig von der Nutzerzahl der App) ist keine gesonderte Absprache mit dem ITMC nötig; der eigene `User-Agent` (`fb4-backend`) macht die Herkunft erkennbar.
+
 **Risiko**
 Gering bis mittel. Deutlich niedriger als INT-004: offizieller Hochschulbetreiber statt privater Vermittler, TLS statt Klartext, Primärquelle statt Weiterreichung. Verbleibend: keine erkennbare Versionszusage über `v3` hinaus, kein SLA.
 
@@ -828,7 +835,7 @@ OpenMensa als offenes Verzeichnisprojekt oder die Speiseplanseiten des Studieren
 **Zugehörige Stammdaten**
 Die Zuordnung von Mensa-Kennung zu ITMC-Kennung, Anzeigename, Öffnungszeiten, Standardauswahl und Anzeigereihenfolge ist **nicht** Teil dieser Schnittstelle, sondern wird vom eigenen Backend gepflegt (siehe INT-008 und `features/admin/spec.md`). Die Android-Alt-App führt dafür neun Mensen mit den Feldern `name`, `id`, `itmcId`, `url`, `pdfUrl`, `enabledDefault`, `openingTime` (fünf Werktagseinträge) und `defaultOrder`.
 
-Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java`, `module/NetworkModule.java`, `assets/canteens.json`; live abgefragt am 2026-08-25, Feldstruktur der Gerichts-, `types`- und `additives`-Antworten live verifiziert am 2026-09-03
+Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java`, `service/MenuService.java`, `module/NetworkModule.java`, `assets/canteens.json`; live abgefragt am 2026-08-25, Feldstruktur der Gerichts-, `types`- und `additives`-Antworten live verifiziert am 2026-09-03, `/categories` und die Food-Fakultät-Antwort (Kennung 474) verifiziert am 2026-09-04
 
 ---
 

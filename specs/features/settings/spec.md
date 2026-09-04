@@ -4,9 +4,9 @@ titel: Einstellungen
 praefix: SET
 status: accepted
 prioritaet: bestand
-version: 0.3.1
+version: 0.5.0
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from:
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/LinksDownloadsFragment.java
   - alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/fragments/UserSettingFragment.java
@@ -22,6 +22,7 @@ implemented_in:
   - app/src/areas/settings  # Einstellungsbildschirm (Teilumfang: Erscheinungsbild, Sprache, Startansicht, Mensen-Auswahl-Einstieg)
   - app/src/areas/canteen   # SET-F-030, SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen)
 related:
+  - ../canteen/spec.md
   - ../../platform/data-and-storage.md
   - ../../platform/security-and-privacy.md
   - ../../platform/ux-and-theming.md
@@ -40,6 +41,7 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 ### Scope
 
 - Push-Benachrichtigungs-Opt-in (INT-005).
+- Verweis auf die News-Benachrichtigungsregeln (Positiv-/Sperrliste), fachlich und datenseitig in `../news/spec.md` (NEWS-F-230 bis NEWS-F-290); ob sie hier auch bearbeitbar sind, ist offen (Abschnitt 13).
 - Erscheinungsbild (hell/dunkel/systemabhängig), siehe `platform/ux-and-theming.md` UX-F-030.
 - Wahl der Startansicht (siehe `features/app-shell/spec.md` SHELL-F-070).
 - Mensa-Auswahl (siehe `features/canteen/spec.md`).
@@ -79,6 +81,9 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 | SET-F-140 | Das System muss einen Rückmeldeweg an den FSR bereitstellen. | Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/more/screens/more_list_page.dart:47 |
 | SET-F-150 | Das System muss der Nutzerin das Festlegen der Reihenfolge der angezeigten Mensen ermöglichen (siehe `features/canteen/spec.md` MENSA-F-025). | Recherche: alte apps/android-fb4, activities/MenuSortActivity.java, 2026-08-25 |
 | SET-F-160 | Das System muss der Nutzerin die Wahl der Startansicht ermöglichen: einer der vier Tab-Bereiche oder „zuletzt genutzt". | NEU |
+| SET-F-170 | Das System muss der Nutzerin das Ein- und Ausschalten der Benachrichtigung über verfügbare Lieblingsgerichte ermöglichen (siehe `features/canteen/spec.md` MENSA-F-105). | NEU |
+| SET-F-180 | Das System muss der Nutzerin die Wahl der eigenen Preisgruppe (Studierende, Mitarbeitende, Gäste) ermöglichen. | NEU |
+| SET-F-190 | Solange die Nutzerin keine Preisgruppe gewählt hat, muss das System Studierende als Preisgruppe verwenden. | NEU |
 
 ### Erläuterungen
 
@@ -88,9 +93,13 @@ Bündelt gerätebezogene Voreinstellungen, Datenschutz-Einwilligung, Erscheinung
 
 **`SET-F-130`** — Die Flutter-Alt-App zeigt eine fest einprogrammierte Versionsnummer (`more_list_page.dart:157`, dokumentiert als M-006), die dadurch von der tatsächlich installierten Version abweichen kann. Da `platform/non-functional.md` NFR-N-230 verlangt, dass ein Fehlerbericht eindeutig einer Quellcode-Version zuordenbar ist, muss die angezeigte Version aus dem Build stammen.
 
+**`SET-F-180`/`SET-F-190`** — Aufgenommen am 2026-09-04. Wer sich als Studierende, Mitarbeitende oder Gast einordnet, will im Mensaplan nur den eigenen Preis sehen und nicht bei jedem Gericht drei Werte gegeneinander abgleichen; die Wahl wirkt über `../canteen/spec.md` MENSA-F-220 auf die Hauptansicht. SET-F-190 setzt die Voreinstellung auf Studierende, da das die Zielgruppe der App ist (`../../product/vision.md`); Mitarbeitende und Gäste treffen ihre abweichende Wahl einmalig hier. Die Ansicht aller Mensen (`../canteen/spec.md` MENSA-F-130) bleibt davon unberührt und zeigt unverändert alle drei Preise (MENSA-F-230) — dort steht der Vergleich zwischen Standorten im Vordergrund, nicht der eigene Preis.
+
+**`SET-F-170`** — Aufgenommen am 2026-09-04 aus der bis dahin offenen Frage in `../canteen/spec.md` Abschnitt 13. Bis dahin war das Setzen und Entfernen der Lieblingsgericht-Markierung selbst der Ein- und Ausschalter; das trug, solange die Markierung ein eigener Merker war (MENSA-F-080). Seit die Lieblingseigenschaft aus der eigenen Höchstbewertung folgt (MENSA-F-085), trägt es nicht mehr: Wer ein Gericht mit fünf Sternen bewertet, trifft damit eine Aussage über das Essen, nicht über seinen Benachrichtigungswunsch, und müsste seine Bewertung verfälschen, um die Benachrichtigung loszuwerden. Der Schalter wirkt global über MENSA-F-105 und ist von der Systemberechtigung für Benachrichtigungen unabhängig — er schaltet die Funktion ab, nicht die Berechtigung. Voreinstellung: eingeschaltet, da die Benachrichtigung ohnehin nur bei erteilter Systemberechtigung und vorhandener Höchstbewertung greift.
+
 **`SET-F-160`** — Neu aus `../app-shell/nutzerfuehrung-konzept.md` Abschnitt 12. Voreinstellung ist der Stundenplan (`../app-shell/spec.md` SHELL-F-070). Die Option „zuletzt genutzt" merkt sich den zuletzt aktiven Tab lokal (Einstellungsschlüssel-Ergänzung, Abschnitt 5); die zuvor offene Frage nach ihrem Aufwand ist mit der Umsetzung beantwortet — ein zusätzlich vermerkter Tab-Schlüssel genügt.
 
-**Umsetzungsstand (Roadmap-Schritt 2, ergänzt Schritt 4).** Umgesetzt sind SET-F-020 (Erscheinungsbild), SET-F-100/F-110 (Sprachwahl) und SET-F-160 (Startansicht) aus Schritt 2 sowie SET-F-030 und SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen) aus Schritt 4; alle wirken sofort, ohne separaten Speichern-Schritt. Die Mensen-Auswahl liegt fachlich in `../canteen/spec.md` (MENSA-F-020/F-025) und ist sowohl aus den Einstellungen als auch aus dem Leerzustand des Mensaplans erreichbar. Die übrigen SET-Anforderungen folgen mit ihren jeweiligen Funktionen (Stundenplan-Schalter mit Schritt 5, Ticket-Helligkeit mit Schritt 8, Push mit der zweiten Ausbaustufe, Links/Downloads mit Schritt 7, Datenschutz-/Lösch-/Lizenz-/Rückmelde-Ansichten mit Schritt 10 bzw. den betroffenen Features). `status` bleibt daher `accepted`.
+**Umsetzungsstand (Roadmap-Schritt 2, ergänzt Schritt 4).** Umgesetzt sind SET-F-020 (Erscheinungsbild), SET-F-100/F-110 (Sprachwahl) und SET-F-160 (Startansicht) aus Schritt 2 sowie SET-F-030 und SET-F-150 (Auswahl und Reihenfolge der angezeigten Mensen) aus Schritt 4; alle wirken sofort, ohne separaten Speichern-Schritt. Die Mensen-Auswahl liegt fachlich in `../canteen/spec.md` (MENSA-F-020/F-025) und ist sowohl aus den Einstellungen als auch aus dem Leerzustand des Mensaplans erreichbar. Die übrigen SET-Anforderungen folgen mit ihren jeweiligen Funktionen (Stundenplan-Schalter mit Schritt 5, Ticket-Helligkeit mit Schritt 8, Push mit der zweiten Ausbaustufe, Links/Downloads mit Schritt 7, Datenschutz-/Lösch-/Lizenz-/Rückmelde-Ansichten mit Schritt 10 bzw. den betroffenen Features). SET-F-170 (Lieblingsgericht-Benachrichtigung, ergänzt am 2026-09-04) folgt gemeinsam mit den Bewertungen in Roadmap-Schritt 9, weil erst dort ein Lieblingsgericht entstehen kann. SET-F-180/F-190 (Preisgruppe, ebenfalls ergänzt am 2026-09-04) hängen dagegen an keiner Bewertung und gehören zum Mensa-Nachlauf unabhängig von Schritt 9 (`../canteen/spec.md` Erläuterung „Umsetzungsstand"). `status` bleibt daher `accepted`.
 
 ## 5. Datenmodell
 
@@ -101,6 +110,8 @@ Einstellungsschlüssel: siehe `platform/data-and-storage.md` Abschnitt 3, ergän
 | `appearanceMode` | `system` \| `light` \| `dark` | Erscheinungsbild-Wahl (SET-F-020, `platform/ux-and-theming.md` UX-F-030); `system` folgt der Systemeinstellung zur Laufzeit (UX-F-020) |
 | `uiLanguage` | `system` \| `de` \| `en` | Oberflächensprache (SET-F-100); `system` folgt der Systemsprache (SET-F-110) |
 | `startView` | `schedule` \| `canteen` \| `news` \| `rooms` \| `last` | Startansicht beim regulären Start (SET-F-160, `../app-shell/spec.md` SHELL-F-070) |
+| `favoriteDishNotification` | `an` \| `aus` | Benachrichtigung über verfügbare Lieblingsgerichte (SET-F-170, wirksam über `../canteen/spec.md` MENSA-F-105); Voreinstellung `an` |
+| `priceGroup` | `student` \| `staff` \| `guest` | Eigene Preisgruppe im Mensaplan (SET-F-180, wirksam über `../canteen/spec.md` MENSA-F-220); Voreinstellung `student` (SET-F-190) |
 | `lastTab` | `schedule` \| `canteen` \| `news` \| `rooms` \| `more` | Zuletzt aktiver Tab, nur ausgewertet wenn `startView` = `last` |
 
 ## 6. Externe Schnittstellen
@@ -144,5 +155,6 @@ Keine über `platform/non-functional.md` hinausgehenden Anforderungen.
 
 ## 13. Offene Fragen
 
-- Ob ein zusätzlicher Schalter für Lieblingsgericht-Benachrichtigungen nötig ist (offene Frage aus `../canteen/spec.md` Abschnitt 13) — für den ersten Umfang genügt das Markieren und Entmarkieren einzelner Gerichte als Ein- und Ausschalter.
+- ~~Ob ein zusätzlicher Schalter für Lieblingsgericht-Benachrichtigungen nötig ist (offene Frage aus `../canteen/spec.md` Abschnitt 13).~~ Entschieden am 2026-09-04: aufgenommen als SET-F-170, siehe Erläuterung in Abschnitt 4.
+- Ob die News-Benachrichtigungsregeln (NEWS-F-230 bis NEWS-F-290) aus den Einstellungen heraus bearbeitbar sind oder ob von hier nur ein Verweis in den News-Bereich führt — Arbeitsziel ist die Bearbeitung im News-Bereich mit Einstiegspunkt hier; die Regeln liegen fachlich und datenseitig bei NEWS (`../news/spec.md`, `../../platform/data-and-storage.md` DATA-F-180).
 - Technische Orchestrierung der Kontolöschung (SET-F-090) über mehrere Backend-Ressourcen hinweg (Bewertungen, E-Key, Push-Kennung) — das Ergebnis ist bereits generisch festgelegt (`platform/identity-and-moderation.md` IDENT-F-130: alle personenbezogenen Daten der Person löschen, entkoppelte Bewertungsinhalte ausgenommen), offen ist nur die Umsetzung im Backend, keine Scope-Frage mehr.

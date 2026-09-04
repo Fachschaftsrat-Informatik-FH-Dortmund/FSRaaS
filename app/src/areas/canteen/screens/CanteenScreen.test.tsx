@@ -107,6 +107,44 @@ describe('MENSA-F-040 Beilagen getrennt und ans Ende gestellt', () => {
   });
 });
 
+describe('MENSA-F-160 Gerichte ohne Quell-Kategorie', () => {
+  it('zeigt alle Gerichte in einer Gruppe ohne Kategorieüberschrift und ohne Platzhalter', async () => {
+    mockSpeiseplan = query({
+      data: {
+        gerichte: [
+          gericht({ schluessel: 'pasta', kategorie: '', bezeichnung: 'Pasta Pesto' }),
+          gericht({ schluessel: 'pizza', kategorie: '', bezeichnung: 'Pizza Margherita' }),
+        ],
+        standAlter: { abgerufenAm: new Date().toISOString() },
+      },
+    });
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Pasta Pesto')).toBeTruthy());
+    expect(screen.getByText('Pizza Margherita')).toBeTruthy();
+    // Weder der em-dash-Platzhalter noch ein leerer Kategorietitel taucht auf.
+    expect(screen.queryByText('—')).toBeNull();
+  });
+
+  it('stellt die kategorielose Gruppe hinter benannte Kategorien und vor Beilagen', async () => {
+    mockSpeiseplan = query({
+      data: {
+        gerichte: [
+          gericht({ schluessel: 'ohne', kategorie: '', bezeichnung: 'Ohne Kategorie' }),
+          gericht({ schluessel: 'menue', kategorie: 'Menü 1', bezeichnung: 'Menü-Gericht' }),
+          gericht({ schluessel: 'pommes', kategorie: 'Beilagen', bezeichnung: 'Pommes' }),
+        ],
+        standAlter: { abgerufenAm: new Date().toISOString() },
+      },
+    });
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Menü-Gericht')).toBeTruthy());
+    const reihenfolge = screen
+      .getAllByText(/Menü-Gericht|Ohne Kategorie|Pommes/)
+      .map((n) => n.props.children);
+    expect(reihenfolge).toEqual(['Menü-Gericht', 'Ohne Kategorie', 'Pommes']);
+  });
+});
+
 describe('MENSA-F-045 Blättern zu benachbarten Tagen', () => {
   it('ein Tastendruck auf „Nächster Tag" ändert das angezeigte Datum', async () => {
     renderScreen();

@@ -2,9 +2,9 @@
 id: roadmap
 titel: Ausbaustufen und Umsetzungsreihenfolge
 status: accepted
-version: 0.1.4
+version: 0.2.0
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 related:
   - ../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md
   - ../decisions/0011-monorepo-und-openapi-vertrag.md
@@ -30,11 +30,12 @@ Randbedingung, die den Zuschnitt bestimmt: Die Umsetzung erfolgt nebenher durch 
 | Event-Kalender (EVENT), Helfer-Anmeldung (HELFER) | Freigabe-URL des ICS-Kalenders offen; HELFER hängt an EVENT | INT-011 |
 | Klassifizierung „FB-Aktuelles" in NEWS | Auswertung der Fachbereichsseite ist neu aufzubauen | INT-010 |
 | Prüfungsplan im Stundenplan (SCHED-F-190 bis F-220) | Excel-Format erst grob erfasst, Jahrgangsvarianz zu klären | INT-013 |
-| Push-Zustellung (NEWS-F-060/070, SET-F-010) | Zwei Zustellwege plus Fan-out im Backend; ersetzt durch In-App-Hinweise | INT-005, ADR 0008 |
+| Push-Zustellung samt Benachrichtigungsregeln (NEWS-F-060/070, NEWS-F-230 bis NEWS-F-290, SET-F-010) | Zwei Zustellwege plus Fan-out im Backend; ersetzt durch In-App-Hinweise, die dieselbe Positiv-/Sperrlisten-Auswertung tragen | INT-005, ADR 0008 |
 | Freitext-Kommentare und Meldeweg (RATE-F-020, RATE-F-060) | Ohne Moderationsoberfläche nicht rechtssicher betreibbar | IDENT-F-090 bis F-110 |
+| Gerichtsfotos (FOTO vollständig) | Vorabfreigabe setzt die Moderationsoberfläche voraus; zusätzlich Nutzungsrechte und Ablagebedarf ungeklärt | IDENT-F-090 bis F-110, `../features/canteen-photos/spec.md` Abschnitt 13 |
 | Automatischer Ticket-Bezug | Verfahren der Android-Alt-App sicherheitlich ausgeschlossen | INT-017 |
 
-Sechs dieser neun Punkte hängen an Klärungen außerhalb des Projekts. Sie laufen als Spikes parallel zur ersten Ausbaustufe (Abschnitt 5) und blockieren sie nicht.
+Sechs dieser zehn Punkte hängen an Klärungen außerhalb des Projekts. Sie laufen als Spikes parallel zur ersten Ausbaustufe (Abschnitt 5) und blockieren sie nicht.
 
 ## 3. Zuordnung je Feature
 
@@ -44,13 +45,14 @@ Anforderungen ohne Nennung gehören zur ersten Ausbaustufe.
 |---|---|---|
 | SHELL | vollständig | – |
 | SCHED | SCHED-F-010 bis F-180, F-230 bis F-260, F-270 bis F-450 | SCHED-F-190 bis F-220 (Prüfungsplan) |
-| MENSA | vollständig | – |
+| MENSA | vollständig; MENSA-F-085 bis F-110 erst mit Schritt 9, da an die Bewertung gekoppelt | – |
 | RAUM | vollständig | – |
-| NEWS | NEWS-F-010 bis F-050, F-080, F-110 bis F-140 | NEWS-F-060/F-070 (Push), NEWS-F-090 (FB-Aktuelles), NEWS-F-100 (Event-Erinnerungen) |
+| NEWS | NEWS-F-010 bis F-050, F-080, F-110 bis F-140, NEWS-F-150 bis NEWS-F-220 (Filter, Suche, erweiterte Suche) | NEWS-F-060/F-070 (Push), NEWS-F-090 (FB-Aktuelles), NEWS-F-100 (Event-Erinnerungen), NEWS-F-230 bis NEWS-F-290 mit NEWS-N-010 (Benachrichtigungsregeln, zusammen mit Push) |
 | RATE | RATE-F-010, F-030 bis F-050, F-070 bis F-090 | RATE-F-020 (Freitext), RATE-F-060 (Melden) |
 | TICKET | vollständig | – |
-| SET | SET-F-020 bis F-150 | SET-F-010 (Push-Schalter) |
+| SET | SET-F-020 bis F-170 (SET-F-170 mit Schritt 9) | SET-F-010 (Push-Schalter) |
 | ADMIN | ADMIN-F-010 bis F-110, ADMIN-N-010/020 | ADMIN-F-120 bis F-170 |
+| FOTO | – | vollständig |
 | EVENT, HELFER, WIKI, NOTEN, EKEY | – | vollständig |
 | IDENT | IDENT-F-012/015/020/030, F-040/045, F-050/060/065, F-120/130 | IDENT-F-070, F-080 bis F-110 (Moderation), IDENT-N-010/020 |
 | ARCH, API, DATA, SEC, UX, NFR, QA | tragend für beide Stufen, Umsetzung schrittweise mit den Features | – |
@@ -65,12 +67,12 @@ Vertikale Schnitte: Jeder Schritt umfasst Vertragsanteil, Backend, App und Tests
 | 1 | Querschnitt | Lade-, Leer-, Fehler- und Offline-Zustand als wiederverwendbare Grundstruktur (ARCH-F-130, ARCH-N-020), Fehlerformat (API-N-040), Zwischenspeicher-Schicht (DATA), Zustimmungs-Gate (SHELL-F-030, SEC-F-010) | Jede folgende Ansicht erbt Zustände und Fehlerbehandlung |
 | 2 | App-Rahmen | SHELL vollständig, Erscheinungsbild und Sprachwahl (UX-F-020/030, SET-F-020, SET-F-100/110) | Navigation steht, Bereiche sind leer aber erreichbar |
 | 3 | Stammdaten und Verwaltung | API-F-230 bis F-240, ADMIN-F-010 bis F-030, F-070 bis F-110, Anmeldung gegen Authentik | FSR kann Mensen, Räume und Links pflegen; Rollen greifen |
-| 4 | Mensaplan | MENSA vollständig, Zwischenspeicher von INT-015 | Erstes vollständiges Feature, kontofrei, ohne Schreibpfad |
+| 4 | Mensaplan | MENSA ohne die bewertungsgekoppelten Lieblingsgerichte (F-085 bis F-110), Zwischenspeicher von INT-015 | Erstes vollständiges Feature, kontofrei, ohne Schreibpfad |
 | 5 | Stundenplan | SCHED ohne Prüfungsplan und ohne Raumplan-Abgleich, einschließlich Gruppenlogik, Planungsmodus, Kalender-Export | Meistgenutzte Funktion beider Alt-Apps abgelöst |
 | 6 | Raumsuche | RAUM vollständig (einschließlich Raumübersicht, Ansicht laufender Veranstaltungen, Besetzt-Meldungen, Laufwege-Pflege in ADMIN) und der Stundenplan-Raumabgleich SCHED-F-410 bis F-450 | Erster kontofreier Schreibpfad, erste Offline-Warteschlange |
 | 7 | News | NEWS ohne Push und FB-Aktuelles, ADMIN-F-040 bis F-060 | Erste redaktionell gepflegte Inhalte |
 | 8 | Semesterticket | TICKET vollständig | Bestandsfunktion abgelöst |
-| 9 | Bewertungen | RATE ohne Freitext, Kontopflicht beim Schreiben | Erste kontogebundene Funktion |
+| 9 | Bewertungen | RATE ohne Freitext, Kontopflicht beim Schreiben, RATE-F-100 (lokale Spiegelung); daran gekoppelt MENSA-F-085 bis F-110 und SET-F-170 | Erste kontogebundene Funktion; Lieblingsgerichte entstehen hier |
 | 10 | Auslieferung | Store-Auflagen (NFR Abschnitt 9), F-Droid-Recipe, geschlossener Test bei Google Play | Erste Ausbaustufe veröffentlicht |
 
 Zu Schritt 0: Die vier Prüfskripte aus `../platform/quality-and-testing.md` Abschnitt 8 entstehen hier, nicht später — sie sind der Mechanismus, der den spec-anchored Ansatz trägt (NFR-N-140), und ohne sie läuft der Bestand ab dem ersten Merge auseinander.
@@ -79,7 +81,9 @@ Zu Schritt 3 vor Schritt 4: Der Mensaplan braucht die Mensa-Liste aus den Stammd
 
 Zu Schritt 6: Der Stundenplan-Raumabgleich (SCHED-F-410 bis F-450) gehört fachlich zum Stundenplan, wird aber hier umgesetzt, weil er den Raumplan-Zwischenspeicher aus RAUM voraussetzt. Vorab ist der Spike aus `../platform/integrations.md` INT-009 zu klären (bildet der Raumplan kurzfristige Ausfälle/Raumänderungen ab?); fällt er negativ aus, bleiben Ansicht laufender Veranstaltungen und Abgleichhinweis auf den Sollplan beschränkt.
 
-Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — MENSA-F-090 (Lieblingsgerichte) braucht denselben normalisierten Gerichtsschlüssel als Bindeglied, siehe `../features/canteen/spec.md` MENSA-F-090. Ebenfalls vorgezogen: API-F-235 (App-seitiger Stammdaten-Ausgangsbestand), da MENSA der erste Konsument der Stammdaten ist. Die Lieblingsgericht-Benachrichtigung (MENSA-F-100) läuft rein lokal über die betriebssystemeigene Hintergrundaufgabe plus lokale Benachrichtigungs-API (kein Firebase, kein UnifiedPush) — F-Droid-Tauglichkeit (NFR-N-170) bleibt gewahrt; die tatsächliche Vormittags-Ausführungszeit (MENSA-N-010) ist ein Zielwert, im Prüfprotokoll `../pruefprotokolle/2026-09-04-schritt-4-mensa.md` festgehalten.
+Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — sie trägt als Gerichtsschlüssel sowohl die Zusammenfassung der Gerichtsliste (MENSA-F-012) als auch später Lieblingsgerichte (MENSA-F-090) und Fotos (FOTO-F-130). Ebenfalls vorgezogen: API-F-235 (App-seitiger Stammdaten-Ausgangsbestand), da MENSA der erste Konsument der Stammdaten ist. Die Lieblingsgericht-Benachrichtigung (MENSA-F-100) läuft rein lokal über die betriebssystemeigene Hintergrundaufgabe plus lokale Benachrichtigungs-API (kein Firebase, kein UnifiedPush) — F-Droid-Tauglichkeit (NFR-N-170) bleibt gewahrt; die tatsächliche Vormittags-Ausführungszeit (MENSA-N-010) ist ein Zielwert, im Prüfprotokoll `../pruefprotokolle/2026-09-04-schritt-4-mensa.md` festgehalten.
+
+Zur Überarbeitung des Mensaplans vom 2026-09-04 (`../features/canteen/spec.md` Fassung 2.0.0): Schritt 4 ist damit nicht mehr abgeschlossen. Der Nachlauf zerfällt in zwei Teile. **Teil A, unabhängig von Schritt 9 und als nächster Mensa-Schnitt einzuplanen:** zusammengefasste Gerichtsliste (MENSA-F-012 bis F-018), Datumsgrenzen und Wischen (MENSA-F-042 bis F-046), Geschlossen-Hinweis (MENSA-F-049) und die Ansicht aller Mensen (MENSA-F-120 bis F-150) — alles kontofrei, ohne Backend-Änderung, da die Zusammenfassung in der App entsteht. **Teil B, gebunden an Schritt 9:** MENSA-F-085/F-087 (Lieblingsgericht aus der Höchstbewertung), MENSA-F-105 mit SET-F-170 (Abschalter) und die Nachführung von MENSA-F-100/F-110 auf die neue Quelle. Bis Teil B liegt der in Schritt 4 gelieferte Stern-Merker nach MENSA-F-080 im Code, obwohl die Anforderung entfallen ist; das ist bewusst und in der MENSA-Spec unter „Umsetzungsstand" festgehalten, damit der Rückstand nicht als Versehen gelesen wird.
 
 Zu Schritt 10: Die Testauflage bei Google Play (NFR-N-200: zwölf Testende über vierzehn zusammenhängende Tage) erzeugt allein zwei Wochen Vorlauf und ist bereits während Schritt 8 anzustoßen, nicht erst in Schritt 10.
 

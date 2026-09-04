@@ -16,7 +16,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.5.1
+  version: 0.5.2
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -907,7 +907,12 @@ components:
           description: Normalisierte Bezeichnung nach RATE-F-050; Bindeglied zu Bewertungen und Lieblingsgerichten (MENSA-F-090).
         kategorie:
           type: string
-          description: Anzeigekategorie in der über Accept-Language gewählten Sprache (INT-015 `counterNames`); `Beilagen` wird von der App abgesetzt dargestellt (MENSA-F-040).
+          description: >-
+            Anzeigekategorie in der über Accept-Language gewählten Sprache
+            (INT-015 `counterNames`, ersatzweise `counter`). Leerer String, wenn
+            die Quelle zu diesem Gericht keine Kategorie liefert (Food Fakultät) —
+            die App führt solche Gerichte ohne Kategorieüberschrift (MENSA-F-160).
+            `Beilagen` wird von der App abgesetzt dargestellt (MENSA-F-040).
         bezeichnung:
           type: string
           description: Gerichtsbezeichnung in der gewählten Sprache (INT-015 `title`), ohne die inline stehenden Zusatzstoff-Codes.

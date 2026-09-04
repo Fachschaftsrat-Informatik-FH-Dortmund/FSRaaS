@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
+import { AppButton } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates } from '@/ui/state/AsyncStates';
 import { useMensen, type Mensa } from '../api';
@@ -13,6 +15,7 @@ import { useCanteenSelection } from '../selection';
 
 export function CanteenSelectionScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { mensen, istAusgangsbestand, query } = useMensen();
   const { ids, toggle, move } = useCanteenSelection();
 
@@ -56,6 +59,12 @@ export function CanteenSelectionScreen() {
           </Zeile>
         ))}
       </Abschnitt>
+
+      {gewaehlt.length > 0 ? (
+        <View style={styles.fertig}>
+          <AppButton label={t('common.done')} onPress={() => router.back()} />
+        </View>
+      ) : null}
     </Screen>
   );
 
@@ -157,4 +166,5 @@ const styles = StyleSheet.create({
   ordnenKnopf: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hinweis: { padding: 10, borderRadius: 8 },
   hinweisText: { fontSize: 13 },
+  fertig: { marginTop: 8 },
 });

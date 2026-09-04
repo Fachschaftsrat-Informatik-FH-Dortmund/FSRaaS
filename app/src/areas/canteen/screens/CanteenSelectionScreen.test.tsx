@@ -7,9 +7,11 @@ let mockMensen: any;
 let mockSelection: any;
 const toggle = jest.fn();
 const move = jest.fn();
+const mockBack = jest.fn();
 
 jest.mock('../api', () => ({ useMensen: () => mockMensen }));
 jest.mock('../selection', () => ({ useCanteenSelection: () => mockSelection }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack, push: jest.fn(), replace: jest.fn() }) }));
 
 const mensa = (id: string, name: string, reihenfolge: number) => ({
   id,
@@ -57,5 +59,19 @@ describe('MENSA-F-075 Hinweis auf den Ausgangsbestand', () => {
     mockMensen = { ...mockMensen, istAusgangsbestand: true };
     renderScreen();
     expect(screen.getByText(/Ausgangsbestand/)).toBeTruthy();
+  });
+});
+
+describe('MENSA-F-020 Rückkehr zum Speiseplan nach der Auswahl', () => {
+  it('zeigt bei mindestens einer gewählten Mensa eine „Fertig"-Schaltfläche zurück zum Plan', () => {
+    renderScreen();
+    fireEvent.press(screen.getByText('Fertig'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  it('blendet „Fertig" aus, solange keine Mensa gewählt ist', () => {
+    mockSelection = { ids: [], loaded: true, toggle, move };
+    renderScreen();
+    expect(screen.queryByText('Fertig')).toBeNull();
   });
 });

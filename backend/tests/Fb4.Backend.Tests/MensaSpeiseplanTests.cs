@@ -103,6 +103,38 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
     }
 
     [Fact]
+    public async Task MENSA_F_160_Gerichte_ohne_Quell_Kategorie_werden_mit_leerer_Kategorie_ausgeliefert()
+    {
+        // „Foodfakultaet" ist über den Seed bereits als Mensa bekannt; hier nur den
+        // Zwischenspeicher-Tag mit kategorielosen Gerichten füllen (MENSA-F-160).
+        using (var scope = factory.NewScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Fb4DbContext>();
+            db.Speiseplaene.RemoveRange(db.Speiseplaene.Where(t => t.MensaId == "Foodfakultaet").ToList());
+            var gerichte = new List<GerichtCache>
+            {
+                new() { Schluessel = "pasta pesto", BezeichnungDe = "Pasta Pesto", BezeichnungEn = "Pasta Pesto",
+                        KategorieDe = "", KategorieEn = "", PreisStudierende = 4.50m, Position = 0 },
+                new() { Schluessel = "pizza margherita", BezeichnungDe = "Pizza Margherita", BezeichnungEn = "Pizza Margherita",
+                        KategorieDe = "", KategorieEn = "", PreisStudierende = 4.00m, Position = 1 },
+            };
+            db.Speiseplaene.Add(new SpeiseplanTag
+            {
+                MensaId = "Foodfakultaet", Datum = Tag,
+                GerichteJson = JsonSerializer.Serialize(gerichte, Json),
+                AbgerufenAm = DateTimeOffset.UtcNow,
+            });
+            db.SaveChanges();
+        }
+        var client = factory.CreateClient();
+
+        var antwort = await client.GetFromJsonAsync<SpeiseplanAntwort>($"/v1/mensen/Foodfakultaet/speiseplan/{Tag:yyyy-MM-dd}");
+
+        Assert.Equal(2, antwort!.Gerichte.Count);
+        Assert.All(antwort.Gerichte, g => Assert.Equal("", g.Kategorie));
+    }
+
+    [Fact]
     public async Task MENSA_F_048_Accept_Language_en_schaltet_Bezeichnungen_um()
     {
         Seed();
