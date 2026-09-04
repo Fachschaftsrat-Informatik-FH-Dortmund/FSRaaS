@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Fb4.Backend.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Fb4.Backend.Infrastructure.Mensa;
 
@@ -11,14 +12,23 @@ namespace Fb4.Backend.Infrastructure.Mensa;
 /// Fehler-Isolation und Health-Status ueber <see cref="PeriodicJobService"/>
 /// (API-N-110, API-F-260); je Mensa gekapselt, damit eine einzelne fehlerhafte
 /// Mensa die uebrigen nicht blockiert.
+///
+/// Der Zeitplan folgt <see cref="SpeiseplanAbrufZeitplan"/>: Ortszeit-Laeufe vor
+/// den studentischen Nutzungsspitzen und nach Mensaschluss statt eines starren
+/// Intervalls ab Prozessstart (API-F-076, MENSA-N-020).
 /// </summary>
 public sealed class SpeiseplanAktualisierungJob(
     IServiceScopeFactory scopes,
     JobStatusRegistry registry,
+    IConfiguration konfiguration,
     ILogger<SpeiseplanAktualisierungJob> logger)
-    : PeriodicJobService("mensa-speiseplan", TimeSpan.FromHours(6), registry, logger)
+    : PeriodicJobService("mensa-speiseplan", SpeiseplanAbrufZeitplan.StandardGrundintervall, registry, logger)
 {
     static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    readonly SpeiseplanAbrufZeitplan zeitplan = SpeiseplanAbrufZeitplan.AusKonfiguration(konfiguration, logger);
+
+    protected override TimeSpan BisZumNaechstenLauf(DateTimeOffset jetzt) => zeitplan.BisZumNaechstenLauf(jetzt);
 
     protected override async Task RunOnceAsync(CancellationToken ct)
     {

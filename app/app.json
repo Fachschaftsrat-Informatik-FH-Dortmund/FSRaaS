@@ -10,6 +10,9 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "experiments": {
+      "baseUrl": "/admin"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "de.fsrfb4.app",

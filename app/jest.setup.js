@@ -46,6 +46,7 @@ jest.mock('expo-router', () => {
     Redirect: () => null,
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
     usePathname: () => '/',
+    useLocalSearchParams: () => ({}),
   };
 });
 

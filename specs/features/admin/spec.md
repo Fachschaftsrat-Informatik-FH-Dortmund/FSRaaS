@@ -4,9 +4,9 @@ titel: Verwaltung und Redaktion
 praefix: ADMIN
 status: accepted
 prioritaet: kern
-version: 0.3.2
+version: 0.3.3
 owner: FSR FB4
-last_reviewed: 2026-09-03
+last_reviewed: 2026-09-04
 derived_from: []
 implemented_in:
   - backend/src/Fb4.Backend/Endpoints          # ADMIN-F-010/020/070/080/090/100/180/190
@@ -210,3 +210,4 @@ Nicht zutreffend — keine der Alt-Apps bietet Verwaltungs- oder Redaktionsfunkt
 | ADMIN-N-010 | **teilweise** — Schwellwertlogik (1024 px) festgelegt und getestet; die Kartenliste ist auf breiten Bildschirmen bereits vollständig bedienbar. Das eigene **mehrspaltige Tabellen-Rendering** ab 1024 px steht noch aus (Prüfprotokoll `../pruefprotokolle/2026-09-02-schritt-3-verwaltung.md`). |
 | ADMIN-F-040 bis ADMIN-F-060 | offen — News-Redaktion, Roadmap-Schritt 7 (NEWS) |
 | ADMIN-F-120 bis ADMIN-F-170 | offen — zweite Ausbaustufe |
+| Web-Export-Auslieferung (ADR 0018) | umgesetzt — der Deploy-Workflow baut den Expo-Web-Export mit `experiments.baseUrl='/admin'` nach `wwwroot/admin`, das Backend liefert ihn unter `https://api.fb4.it/admin` aus (`Program.cs`, `deploy/nginx-fsrfb4aas.conf`). Erstmals real 2026-09-04. **Ausstehend:** `https://api.fb4.it/admin` als Redirect-URI in der Authentik-Anwendung eintragen, damit der Browser-Anmeldevorgang durchläuft (Betriebseinstellung); danach der erste schreibende Rollenwechsel über den Browser. |

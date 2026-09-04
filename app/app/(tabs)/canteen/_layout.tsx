@@ -26,6 +26,11 @@ export default function CanteenLayout() {
     >
       <Stack.Screen name="index" options={{ title: t('nav.canteen') }} />
       <Stack.Screen name="auswahl" options={{ title: t('mensa.mensenWaehlen') }} />
+      <Stack.Screen name="alle" options={{ title: t('mensa.alleMensenTitel') }} />
+      <Stack.Screen
+        name="unvertraeglichkeiten"
+        options={{ title: t('mensa.unvertraeglichkeitenTitel') }}
+      />
     </Stack>
   );
 }

@@ -4,6 +4,7 @@ using Fb4.Backend.Domain;
 using Fb4.Backend.Infrastructure;
 using Fb4.Backend.Infrastructure.Mensa;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -73,6 +74,7 @@ public class SpeiseplanAktualisierungJobTests
         var job = new SpeiseplanAktualisierungJob(
             provider.GetRequiredService<IServiceScopeFactory>(),
             provider.GetRequiredService<JobStatusRegistry>(),
+            new ConfigurationBuilder().Build(),
             NullLogger<SpeiseplanAktualisierungJob>.Instance);
         await job.RunOnceForTestAsync();
 
@@ -94,6 +96,7 @@ public class SpeiseplanAktualisierungJobTests
         var job = new SpeiseplanAktualisierungJob(
             provider.GetRequiredService<IServiceScopeFactory>(),
             provider.GetRequiredService<JobStatusRegistry>(),
+            new ConfigurationBuilder().Build(),
             NullLogger<SpeiseplanAktualisierungJob>.Instance);
 
         await job.RunOnceForTestAsync();
