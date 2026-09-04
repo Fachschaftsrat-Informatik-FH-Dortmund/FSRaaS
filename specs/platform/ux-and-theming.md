@@ -3,7 +3,7 @@ id: ux-and-theming
 titel: Gestaltung und Barrierefreiheit
 praefix: UX
 status: accepted
-version: 0.6.2
+version: 0.7.1
 owner: FSR FB4
 last_reviewed: 2026-09-04
 derived_from:
@@ -20,7 +20,9 @@ implemented_in:
   - app/src/ui             # UX-F-100, UX-F-110, UX-F-130, UX-F-140 (Grundstruktur); UX-F-070, UX-F-180/F-185, UX-N-020 (Bedienelemente); UX-F-190 (Einführungshinweis)
   - app/src/ui/primitives.test.tsx   # UX-F-070, UX-F-130, UX-F-140, UX-F-180/F-185, UX-N-020
   - app/src/theme          # UX-F-010 (Akzentfarbe im Farbsystem), UX-F-020/F-030 (Laufzeitreaktion, manuelle Übersteuerung; Navigations-Theme-Brücke app/src/theme/navigationTheme.ts, Test navigationTheme.test.ts), UX-F-220 (Statusleiste: app/src/theme/statusBar.tsx, Test: app/src/theme/statusBar.test.tsx)
-  - app/app                # UX-F-170 (Bildschirmtitel aus den _layout-Optionen), UX-F-200/UX-N-030 (Navigations-Werkzeug), UX-F-220 (ThemedStatusBar im Wurzel-Layout), UX-F-020/F-030 (Navigations-Theme im Wurzel-Layout gesetzt)
+  - app/app                # UX-F-170 (Bildschirmtitel aus den _layout-Optionen), UX-F-200/UX-N-030 (Navigations-Werkzeug), UX-F-220 (ThemedStatusBar im Wurzel-Layout), UX-F-020/F-030 (Navigations-Theme im Wurzel-Layout gesetzt), UX-F-150 (Ionicons-Tab-Symbole eingebunden in (tabs)/_layout.tsx; Font-Vorladen per useFonts im Wurzel-Layout)
+  - app/src/navigation/tabIcons.tsx  # UX-F-150 (Symboltabelle je Tab, gefüllt bei aktivem Tab), Test: tabIcons.test.tsx
+  - app/assets/fonts       # UX-F-150 (ionicons.ttf, fest eingebettet über das expo-font-Config-Plugin in app.json — kein Laufzeit-Nachladen auf Android/iOS mehr)
   - app/src/i18n           # UX-F-210 (Anrede „du" in de.json), Test: app/src/i18n/anrede.test.ts
   - app/src/areas/canteen  # UX-F-160 (Aktualisierungsgeste: Herunterziehen im Mensaplan, MENSA-F-240) — erster Konsument, Test: screens/CanteenScreen.test.tsx
 related:
@@ -100,6 +102,8 @@ Umgesetzt (Roadmap-Schritt 2) über `app/src/theme`: ein `ThemeProvider` löst b
 
 Das Navigations-Werkzeug (Expo Router / React Navigation) führt über einen internen Container ein eigenes Theme, das ohne Zutun auf der hellen Voreinstellung bleibt. Damit das wirksame Farbschema auch für die vom Navigator gezeichneten Flächen gilt — Navigator- und Szenengrund, Kopf- und Tab-Leiste, die Fläche hinter Szenenübergängen —, überführt `app/src/theme/navigationTheme.ts` das Farbsystem in ein React-Navigation-Theme, das das Wurzel-Layout `app/app/_layout.tsx` setzt (ergänzt um einen `contentStyle`-Grund am Wurzel-Stack, wie ihn die verschachtelten Stacks bereits tragen). Vor dieser Brücke blitzte beim Tab-Wechsel im Dunkelmodus kurz ein heller Rand durch die während des Übergangs teiltransparenten Szenen; der Befund ist im selben Prüfprotokoll festgehalten (visuelle Bestätigung am Gerät ausstehend).
 
+**Zu UX-F-170 / UX-N-030 — ruhiger Titelwechsel beim Tab-Wechsel (2026-09-04).** Der Tab-Navigator lief zunächst mit der Übergangsart `shift`, die die ein- und ausgehende Szene samt ihrer Kopfzeile waagerecht verschiebt. Weil die Bereiche unterschiedliche Kopfzeilen führen — die meisten die Tab-eigene, der Mensaplan die seines verschachtelten Stapels — wirkte der gleichzeitige Auf- und Abbau zweier verschiedener Kopfzeilen beim Umschalten unruhig („Titel verhält sich komisch"). Der Navigator nutzt daher jetzt `fade` (bzw. `none` bei aktiver Systemeinstellung „Bewegung reduzieren", UX-N-030): die Kopfzeile blendet an Ort und Stelle über, statt zu wandern. `app/app/(tabs)/_layout.tsx`.
+
 **Zu UX-F-220 (Statusleiste).** Die App zeichnet ihre Ansichten themengefärbt, die Betriebssystem-Statusleiste (Uhr, Akku, Empfang) bleibt davon aber unberührt, solange sie nicht ausdrücklich gesetzt wird. Der native Android-Rahmen liefert eine hell voreingestellte Statusleiste; im Dunkelmodus zeichnet das System dort helle Symbole auf hellen Grund, sodass die gesamte Statuszeile unsichtbar wird — ein Befund aus der Geräteprüfung des App-Rahmens. UX-F-220 verlangt daher, die Statusleiste dem wirksamen Erscheinungsbild anzugleichen. Umgesetzt über `app/src/theme/statusBar.tsx` (`ThemedStatusBar`), einmalig im Wurzel-Layout `app/app/_layout.tsx` gerendert: die Symbolfarbe folgt dem vom `ThemeProvider` aufgelösten Schema (also auch einer manuellen Übersteuerung, UX-F-030), der Hintergrund bleibt durchscheinend, sodass der themengefärbte Hintergrund der jeweiligen Ansicht trägt. Die Sichtprüfung in hellem und dunklem Erscheinungsbild ist im Prüfprotokoll `specs/pruefprotokolle/2026-09-02-app-rahmen.md` festgehalten.
 
 **Zu UX-F-070 / UX-F-080 (Farbe als alleiniger Bedeutungsträger).** Menschen mit Farbsinnstörung oder in hellem Umgebungslicht können eine reine Opazitätsabstufung derselben Farbe nicht zuverlässig von der Vollfarbe unterscheiden. Der konkrete Befund in `schedule_card.dart:52-54` — Gruppenzugehörigkeit wird ausschließlich über `mainOrange.withAlpha(168)` signalisiert — ist ein Beispiel für diesen allgemeinen Mangel und wird in UX-F-080 gezielt adressiert.
@@ -110,19 +114,23 @@ Das Navigations-Werkzeug (Expo Router / React Navigation) führt über einen int
 
 **Zu UX-F-160 (Aktualisierungsgeste).** Die Flutter-Alt-App bot Pull-to-Refresh (`product/legacy-inventory.md`, L-034); für die Neuentwicklung war dafür bislang keine Anforderung mehr formuliert, obwohl mehrere Ansichten (NEWS, MENSA, EVENT) direkt abrufbare entfernte Daten zeigen. Ergänzt das bisher nur im Fehlerzustand vorgesehene „Wiederholen" (siehe jeweilige Feature-Spec, Abschnitt 7) um eine reguläre, jederzeit verfügbare Aktualisierungsmöglichkeit.
 
-**Zu UX-F-150 (Symbolsystem, entschieden).** Bestehende Open-Source-Icon-Bibliothek statt eigener Schriftart oder eigenem SVG-Set — Entscheidung FSR FB4, 2026-08-25. Konkrete Bibliothek (z. B. Lucide, Material Symbols, Phosphor) wählt die technische Leitung bei Umsetzung; Kriterium ist lediglich Verfügbarkeit unter offener Lizenz und Abdeckung der benötigten fachlichen Symbole (Essen, Vegetarisch u. a.).
+**Zu UX-F-150 (Symbolsystem, entschieden und begonnen).** Bestehende Open-Source-Icon-Bibliothek statt eigener Schriftart oder eigenem SVG-Set — Entscheidung FSR FB4, 2026-08-25. Konkrete Wahl der technischen Leitung, 2026-09-04: **Ionicons** über das mit dem Expo-SDK mitgelieferte Paket `@expo/vector-icons` (Icon-Schrift lokal im Anwendungspaket, MIT-Lizenz, kein Netz- oder Fremddienstabruf — verträglich mit NFR-N-170/210). Erste Nutzung: die Tab-Leiste (Symboltabelle in `app/src/navigation/tabIcons.tsx`, eingebunden in `app/app/(tabs)/_layout.tsx`) und der Zugang zum Filtermenü des Mensaplans (`funnel`); fachliche Symbole (Essen, Vegetarisch u. a.) folgen mit den jeweiligen Features aus derselben Bibliothek.
 
-Fachliche Symbolzuordnung der Tab-Leiste (Bedeutung, nicht konkrete Glyphe — `../features/app-shell/nutzerfuehrung-konzept.md` Abschnitt 3.1):
+Die Icon-Schrift liegt als `app/assets/fonts/ionicons.ttf` (unveränderte Kopie aus `@expo/vector-icons`, Dateiname absichtlich kleingeschrieben — siehe `assets/fonts/README.md`) im Repo und wird über das `expo-font`-Config-Plugin (`app.json`) fest in den nativen Build von Android und iOS eingebettet. Grund der Korrektur, 2026-09-04: Der zunächst gewählte Weg — kein separater Font im Repo, stattdessen `Font.loadAsync(Ionicons.font)` einmalig im Wurzel-Layout — lud die Schrift zur Laufzeit über Metro nach; auf einem Android-Dev-Client blieben die Tab-Symbole dadurch leer, sobald Metro nicht erreichbar war oder — reproduzierbar auch bei laufendem Metro — die Schrift nicht rechtzeitig vor dem ersten Rendern eines `Text`-Knotens mit `fontFamily: 'ionicons'` angewendet war (Geräteprüfung, Android-Emulator, 2026-09-04: Tab-Symbole vollständig leer, `TextView`-Breite der Glyphe nahe null statt der erwarteten Symbolbreite — Systemschrift statt Ionicons wurde verwendet). Die feste Einbettung macht die Schrift beim allerersten Rendern verfügbar, unabhängig von Metro oder dem Netz.
 
-| Tab | Bedeutung des Symbols |
-|---|---|
-| Stundenplan | Kalender / Raster |
-| Mensaplan | Besteck |
-| News | Sprechblase / Zeitung |
-| Raumsuche | Lupe / Grundriss |
-| Mehr | Punkte-Menü |
+Im Wurzel-Layout (`app/app/_layout.tsx`) lädt `useFonts(Ionicons.font)` aus `expo-font` die Schrift weiterhin einmalig vor dem ersten Rendern der eigentlichen App — auf Android/iOS kehrt der Aufruf dank der Einbettung sofort zurück (kein Netzabruf); im Web-Export, den das Config-Plugin nicht abdeckt, lädt derselbe Aufruf die Schrift wie zuvor zur Laufzeit nach und erzeugt den nötigen `@font-face`-Block. Ein Ladefehler wird protokolliert (SEC-F-060), blockiert den Start aber nicht.
 
-Der aktive Tab ist zusätzlich zur Akzentfarbe durch das gefüllte (statt umrissene) Symbol markiert (UX-F-070).
+Fachliche Symbolzuordnung der Tab-Leiste (Bedeutung, dahinter die umgesetzte Ionicons-Glyphe — `../features/app-shell/nutzerfuehrung-konzept.md` Abschnitt 3.1):
+
+| Tab | Bedeutung des Symbols | Glyphe (umrissen / gefüllt) |
+|---|---|---|
+| Stundenplan | Kalender / Raster | `calendar-outline` / `calendar` |
+| Mensaplan | Besteck | `restaurant-outline` / `restaurant` |
+| News | Sprechblase / Zeitung | `newspaper-outline` / `newspaper` |
+| Raumsuche | Lupe / Grundriss | `search-outline` / `search` |
+| Mehr | Punkte-Menü | `ellipsis-horizontal-outline` / `ellipsis-horizontal` |
+
+Der aktive Tab ist zusätzlich zur Akzentfarbe durch das gefüllte (statt umrissene) Symbol markiert (UX-F-070). Die Beschriftung bleibt immer sichtbar (kein reines Icon-Tab). Ebenfalls aus Ionicons: der Zugang zum Filtermenü des Mensaplans (`funnel` / `funnel-outline`, `../features/canteen/spec.md` MENSA-F-170).
 
 **Zu UX-F-170 bis UX-F-210, UX-N-030 (Nutzerführung).** Diese Anforderungen entstammen dem Konzept `../features/app-shell/nutzerfuehrung-konzept.md` Abschnitt 12 (2026-09-02) und ergänzen die Führung im Rahmen der App: ein Bildschirm ist an seinem Titel wiedererkennbar (UX-F-170), trägt höchstens eine hervorgehobene Aktion (UX-F-180), und eine zerstörende Aktion wird nie hervorgehoben, damit sie nicht versehentlich als der erwartete nächste Schritt wirkt (UX-F-185, verwandt mit UX-F-120). Statt eines Onboarding-Karussells — das in beiden Alt-Apps fehlte bzw. übersprungen worden wäre — erklärt die App eine Funktion höchstens mit einem einzigen, schließbaren Hinweis im Bereich selbst (UX-F-190). UX-F-200 (Vorlesefokus auf den neuen Titel) und UX-N-030 („Bewegung reduzieren") sind Barrierefreiheits-Anforderungen, die das Navigations-Werkzeug (Expo Router / React Navigation) weitgehend selbst erfüllt; ihre Wirkung wird per Prüfprotokoll am Gerät bestätigt (QA-F-020). UX-F-210 schreibt die Anrede „du" verbindlich fest (Entscheidung FSR FB4, 2026-09-02, Begründung im Konzept Abschnitt 10) — im Englischen ohnehin „you", die Anforderung betrifft daher die deutschen Kataloge.
 

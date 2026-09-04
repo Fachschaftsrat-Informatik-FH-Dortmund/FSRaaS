@@ -15,6 +15,15 @@ describe('SEC-F-060 Fehler werden nicht stillschweigend verschluckt', () => {
     expect(spy.mock.calls[0]?.[0]).not.toContain('geheim@example.com');
     spy.mockRestore();
   });
+
+  it('logError nennt zusätzlich den Konstruktornamen der Ursache, nie ihre Meldung (SEC-N-120)', () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    logError('bootstrap.fonts', new TypeError('geheim@example.com ist keine Funktion'));
+    const logged = spy.mock.calls[0]?.[0] as string;
+    expect(logged).toContain('TypeError');
+    expect(logged).not.toContain('geheim@example.com');
+    spy.mockRestore();
+  });
 });
 
 describe('NFR-F-070 Zeitüberschreitung wird als wiederholbarer Fehler gemeldet', () => {

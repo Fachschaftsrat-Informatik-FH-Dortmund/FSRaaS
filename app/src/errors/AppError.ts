@@ -67,7 +67,12 @@ export class AppError extends Error {
  */
 export function logError(context: string, error: unknown): AppError {
   const appError = AppError.from(error);
+  // Zusätzlich zu Kontext und Fehlerform den Konstruktornamen der ursprünglichen
+  // Ursache (z. B. "TypeError", "CodedError") — das grenzt die Fehlerklasse ein,
+  // ohne Nutzdaten preiszugeben. Nie die Meldung selbst (appError.message oder
+  // cause.message): beide können freien Text enthalten (SEC-N-120).
+  const causeName = appError.cause instanceof Error ? ` — ${appError.cause.constructor.name}` : '';
   // console.error ist hier bewusst gewollt (SEC-F-060) und in eslint.config.js erlaubt.
-  console.error(`[${context}] ${appError.kind}${appError.code ? ` (${appError.code})` : ''}`);
+  console.error(`[${context}] ${appError.kind}${appError.code ? ` (${appError.code})` : ''}${causeName}`);
   return appError;
 }
