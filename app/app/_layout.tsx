@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 
 // Registriert die Hintergrundaufgabe für den Lieblingsgericht-Abgleich
@@ -19,7 +21,19 @@ import { useReducedMotion } from '@/ui/reducedMotion';
 // Fachlogik.
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
+  const [i18nReady, setI18nReady] = useState(false);
+
+  // Icon-Schrift der Tab-Leiste und der Kopfzeilen-Symbole (UX-F-150). Auf
+  // Android und iOS ist sie über das expo-font-Config-Plugin fest in den Build
+  // eingebettet (`app.json`, `assets/fonts/ionicons.ttf`) — `useFonts` kehrt
+  // dort sofort zurück, ohne Metro oder das Netz zu brauchen. Im Web-Export
+  // greift das Plugin nicht; dort lädt der Hook die Schrift wie dokumentiert
+  // zur Laufzeit nach. Ein Ladefehler darf den Start nicht blockieren.
+  const [fontsLoaded, fontError] = useFonts(Ionicons.font);
+
+  useEffect(() => {
+    if (fontError) logError('bootstrap.fonts', fontError);
+  }, [fontError]);
 
   useEffect(() => {
     readLanguagePreference()
@@ -28,10 +42,10 @@ export default function RootLayout() {
         logError('bootstrap.i18n', error);
         return initI18n();
       })
-      .finally(() => setReady(true));
+      .finally(() => setI18nReady(true));
   }, []);
 
-  if (!ready) return null;
+  if (!i18nReady || (!fontsLoaded && !fontError)) return null;
 
   return (
     <Providers>

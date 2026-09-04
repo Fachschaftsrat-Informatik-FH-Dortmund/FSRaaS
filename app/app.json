@@ -36,6 +36,7 @@
       "expo-router",
       "expo-quick-actions",
       "expo-secure-store",
+      ["expo-font", { "fonts": ["./assets/fonts/ionicons.ttf"] }],
       "./plugins/withNotifeeMaven"
     ],
     "extra": {
