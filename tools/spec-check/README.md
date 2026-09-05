@@ -23,6 +23,24 @@ node tools/spec-check/src/cli.js --json     # maschinenlesbar
 node tools/spec-check/src/cli.js --root .   # andere Repo-Wurzel
 ```
 
+## Herkunftsbericht
+
+Keine Prüfung, sondern eine Auswertung — sie bricht nie ab und ändert nichts:
+
+```bash
+node tools/spec-check/src/cli.js --herkunft       # Verteilung über den Bestand
+node tools/spec-check/src/cli.js --herkunft NEU   # betroffene Requirements je Capability
+```
+
+Wozu: Die Herkunftsmarkierung sagt, worauf sich ein Requirement stützt. `Alt:`
+und `Recherche:` verweisen auf etwas außerhalb der Spec, das man nachschlagen
+kann. `NEU` verweist auf nichts — solche Requirements sind gesetzt worden, weil
+jemand sie für richtig hielt, und sind damit das, was am ehesten unbemerkt
+falsch ist. Stand 2026-09-05 tragen 397 von 570 Requirements (70 %) die
+Markierung `NEU`. Der Bericht ist der Einstieg in eine Durchsprache je
+Capability; was sich dabei als überflüssig erweist, wird als REMOVED-Delta
+geführt, nicht gelöscht.
+
 ## Tests
 
 ```bash
