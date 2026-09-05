@@ -5,10 +5,10 @@ status: vorgeschlagen
 datum: 2026-08-24
 zuletzt_ergaenzt: 2026-08-26
 betrifft:
-  - features/canteen/spec.md
-  - features/news/spec.md
-  - platform/backend-and-api.md
-  - platform/integrations.md
+  - ../../openspec/specs/canteen/spec.md
+  - ../../openspec/specs/news/spec.md
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/integrations/spec.md
 ---
 
 # ADR 0007: Datenquellen für Mensa und News

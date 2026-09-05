@@ -4,7 +4,7 @@ titel: Zugriffsverwaltung und Datensicherung auf dem Hetzner-VPS
 status: angenommen
 datum: 2026-08-26
 betrifft:
-  - ../platform/backend-and-api.md
+  - ../../openspec/specs/backend-and-api/spec.md
   - 0003-eigenes-backend-fuer-community-funktionen.md
 ---
 
