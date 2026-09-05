@@ -44,9 +44,9 @@ Stand 2026-09-05, 570 Requirements:
 | `Android: unbekannt` | 1 | Verhalten der Alt-App war nicht ermittelbar |
 
 **`NEU` heißt nicht „erfunden".** Ein Teil dieser Anforderungen geht auf
-ausdrückliche Entscheidungen zurück — im Bestand stehen 53 Belege der Form
-„Entscheidung FSR FB4, <Datum>" in 17 Capabilities, meist im Abschnitt
-`Erläuterungen`. Die Durchsprache trennt genau diese beiden Fälle:
+ausdrückliche Entscheidungen zurück — im Bestand stehen rund 50 datierte Belege
+in 17 Capabilities, meist im Abschnitt `Erläuterungen`. Die Durchsprache trennt
+genau diese beiden Fälle:
 
 - **`NEU` mit Beleg** — eine Entscheidung ist dokumentiert. Prüfen, ob sie noch
   gilt; im Zweifel stehen lassen.
@@ -79,8 +79,15 @@ Nützliche Nachfragen, wenn die Antwort unsicher ist:
 ## Was mit dem Ergebnis geschieht
 
 - **Bleibt** → Beleg nachtragen, wenn einer fehlt: ein Satz in `Erläuterungen`
-  mit „Entscheidung FSR FB4, <Datum>". Damit fällt es beim nächsten Durchgang
-  nicht wieder auf.
+  mit „Entschieden <Datum>." Damit fällt es beim nächsten Durchgang nicht
+  wieder auf.
+
+  **Keine Zuschreibung an ein Gremium** (präzisiert 2026-09-05). Ältere Belege
+  lauten „Entscheidung FSR FB4, <Datum>" und behaupten damit ein
+  Rückfrageverfahren, das es nicht gab: die Festlegungen stammen vom einzigen
+  Entwickler des Projekts, der zugleich FSR-Mitglied ist. Das Datum trägt die
+  Information, die ein Nachfolger braucht, der Beschlussweg nicht. In den drei
+  Mensa-Capabilities ist das umgestellt, im übrigen Bestand steht es aus.
 - **Fällt weg** → als `REMOVED`-Delta über einen OpenSpec-Change führen, **nie
   löschen**. Die ID bleibt für immer vergeben; `spec-check` liest den Abschnitt
   `## Entfallene Anforderungen` und hält Verweise darauf weiterhin für gültig.
