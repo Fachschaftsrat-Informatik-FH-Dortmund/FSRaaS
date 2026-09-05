@@ -4,20 +4,23 @@ App des Fachschaftsrats Informatik (FB4) der FH Dortmund. Löst zwei Alt-Apps ab
 
 ## Das Wichtigste zuerst
 
-Dieses Projekt arbeitet **spec-anchored**: Die Specs unter `specs/` sind die Quelle der Wahrheit, nicht der Code. Sie entstehen vor dem Code und bleiben danach bestehen.
+Dieses Projekt arbeitet **spec-anchored**: Der Anforderungsbestand ist die Quelle der Wahrheit, nicht der Code. Er entsteht vor dem Code und bleibt danach bestehen. Seit ADR 0019 (2026-09-05) liegt der fachliche Anforderungsbestand unter `openspec/specs/` (aktueller Stand) und `openspec/changes/` (laufende Vorschläge), verwaltet mit dem OpenSpec-CLI; Entscheidungen (ADRs) und Produkt-/Prozessdokumente bleiben unter `specs/`.
 
 Daraus folgt eine Regel, die alles andere bestimmt:
 
-> **Keine Verhaltensänderung ohne Spec-Änderung im selben Merge.**
+> **Keine Verhaltensänderung ohne Spec-Delta im selben Merge.**
 
-Wer Verhalten ändert, ändert zuerst die Spec. Wer eine Anforderung umsetzt, schreibt einen Test, dessen Name ihre ID trägt. Wer eine Anforderung nicht mehr braucht, setzt sie auf „entfallen" — löschen ist nie richtig.
+Wer Verhalten ändert, legt zuerst einen `openspec/changes/<name>/`-Vorschlag mit Spec-Delta an. Wer eine Anforderung umsetzt, schreibt einen Test, dessen Name den Requirement-Titel trägt. Wer eine Anforderung nicht mehr braucht, führt sie als REMOVED-Delta — löschen ist nie richtig.
 
-Der Grund steht in `specs/decisions/0002-spec-anchored-arbeitsweise.md`: Beide Vorgängerprojekte sind an fehlender Übergabe gescheitert. Bei der Android-App war der Quellcode jahrelang nicht auffindbar; das Backend `app.fsrfb4.de` läuft bis heute mit Daten aus dem Wintersemester 2023/24, weil niemand mehr wusste, wie man sie pflegt. Der FSR wechselt seine Aktiven jährlich.
+Der Grund steht in `specs/decisions/0002-spec-anchored-arbeitsweise.md` (Grundsatzentscheidung) und `specs/decisions/0019-umstellung-auf-openspec.md` (Umstellung auf OpenSpec als Werkzeug): Beide Vorgängerprojekte sind an fehlender Übergabe gescheitert. Bei der Android-App war der Quellcode jahrelang nicht auffindbar; das Backend `app.fsrfb4.de` läuft bis heute mit Daten aus dem Wintersemester 2023/24, weil niemand mehr wusste, wie man sie pflegt. Der FSR wechselt seine Aktiven jährlich.
 
 ## Struktur
 
 ```
-specs/          Quelle der Wahrheit — hier zuerst lesen und zuerst ändern
+openspec/       Fachlicher Anforderungsbestand — hier zuerst lesen und zuerst ändern (ADR 0019)
+  specs/          aktueller Stand je Capability
+  changes/        laufende Änderungsvorschläge (Proposal → Spec-Delta → Design → Tasks → Archive)
+specs/          Entscheidungen (ADRs) und Produkt-/Prozessdokumente — weiterhin Quelle der Wahrheit für diese Themen
 app/            React Native (Expo), iOS, Android und PC-Verwaltungsoberfläche (Web-Export, ADR 0018)
 backend/        ASP.NET Core, PostgreSQL, Entity Framework Core
 tools/          Prüfskripte für den Spec-Bestand, Codeerzeugung aus dem Vertrag
@@ -29,28 +32,28 @@ resources/      Reale Beispieldateien (Prüfungspläne)
 
 | Frage | Antwort steht in |
 |---|---|
-| Wie schreibe ich eine Anforderung? | `specs/README.md`, Abschnitte 4 bis 6 und 9 |
-| Was soll Feature X tun? | `specs/features/<feature>/spec.md` |
-| Wie rufe ich ein Fremdsystem auf? | `specs/platform/integrations.md` — **ausschließlich dort**, nie in einer Feature-Spec |
-| Wie rufe ich das eigene Backend auf? | `specs/platform/api-contract.yaml` |
-| Was gilt querschnittlich? | `specs/platform/` — Architektur, Daten, Sicherheit, Gestaltung, Qualität |
+| Wie schreibe ich eine Anforderung? | `specs/README.md`, Abschnitte 5, 6, 9 und 11 |
+| Was soll Feature X tun? | `openspec/specs/<feature>/spec.md` |
+| Wie rufe ich ein Fremdsystem auf? | `openspec/specs/integrations/spec.md` — **ausschließlich dort**, nie in einer Feature-Capability |
+| Wie rufe ich das eigene Backend auf? | `openspec/specs/api-contract.yaml` |
+| Was gilt querschnittlich? | `openspec/specs/` — Architektur, Daten, Sicherheit, Gestaltung, Qualität |
 | Warum wurde etwas so entschieden? | `specs/decisions/` |
 | Was kommt wann? | `specs/product/roadmap.md` |
 | Was konnten die Alt-Apps? | `specs/product/legacy-inventory.md` |
 
 ## Regeln, die beim Arbeiten greifen
 
-**Anforderungs-IDs.** Muster `<PRÄFIX>-F-###` funktional, `<PRÄFIX>-N-###` nicht-funktional, in Zehnerschritten ab `010`. Nie umnummerieren, nie wiederverwenden. Neue Anforderungen zählen `-F-` und `-N-` getrennt.
+**Anforderungs-IDs (historisch).** Bestehende Verweise wie `<PRÄFIX>-F-###`/`<PRÄFIX>-N-###` (Zehnerschritte ab `010`, nie umnummeriert) stehen weiterhin in Testnamen und Git-Historie und werden dort vorerst nicht angetastet (ADR 0019, offener Punkt). Neue Anforderungen unter `openspec/specs/` bekommen keine ID mehr, sondern einen capability-basierten Requirement-Titel.
 
-**Herkunft.** Jede Anforderung trägt genau eine Markierung: `Alt: <pfad>:<zeile>`, `NEU`, `Android: unbekannt`, `Alt: bewusst verworfen` oder `Recherche: <quelle>, <datum>`. Das macht sichtbar, welche Anforderung aus Code rückwärts erschlossen wurde und damit unsicher ist.
+**Herkunft bleibt Pflicht.** Jede Anforderung trägt genau eine Markierung: `Alt: <pfad>:<zeile>`, `NEU`, `Android: unbekannt`, `Alt: bewusst verworfen` oder `Recherche: <quelle>, <datum>`. In OpenSpec-Requirements steht sie als abschließender Satz „Herkunft: …" im Requirement-Text. Das macht sichtbar, welche Anforderung aus Code rückwärts erschlossen wurde und damit unsicher ist.
 
-**Tests tragen die ID.** `describe('SCHED-F-080 Gruppenzuordnung bei Bereichsangabe', …)`. Ein Test ohne zugehörige Anforderung ist ein Signal, dass Spec und Code auseinanderlaufen.
+**Tests tragen den Requirement-Bezug.** Bestehend: `describe('SCHED-F-080 Gruppenzuordnung bei Bereichsangabe', …)`. Neu: Requirement-Titel statt ID, z. B. `describe('Gruppenzuordnung bei Bereichsangabe', …)`. Ein Test ohne zugehörige Anforderung ist ein Signal, dass Spec und Code auseinanderlaufen.
 
-**Endpunktdetails nur im Register.** Eine Feature-Spec nennt `INT-009` und beschreibt die fachliche Nutzung. URL, Feldnamen und Antwortstruktur stehen nur in `integrations.md`. Ändert sich ein Endpunkt, ändert sich genau eine Datei.
+**Endpunktdetails nur im Register.** Eine Feature-Capability nennt die Schnittstelle und beschreibt die fachliche Nutzung. URL, Feldnamen und Antwortstruktur stehen nur in `openspec/specs/integrations/spec.md`. Ändert sich ein Endpunkt, ändert sich genau eine Datei.
 
-**Der Vertrag kommt vor dem Code.** Ein neuer Aufruf zwischen App und Backend wird zuerst in `api-contract.yaml` beschrieben (API-N-035), Typen werden daraus erzeugt, nicht von Hand geschrieben.
+**Der Vertrag kommt vor dem Code.** Ein neuer Aufruf zwischen App und Backend wird zuerst in `openspec/specs/api-contract.yaml` beschrieben, Typen werden daraus erzeugt, nicht von Hand geschrieben.
 
-**Fassung und Datum pflegen.** Bei jeder inhaltlichen Änderung an einer Spec: `version` nach `specs/README.md` Abschnitt 8 erhöhen, `last_reviewed` auf das Änderungsdatum setzen.
+**Fassung und Datum pflegen.** Bei jeder inhaltlichen Änderung an einem verbliebenen `specs/`-Dokument (ADRs, Produkt-/Prozessdokumente): `version` nach `specs/README.md` Abschnitt 8 erhöhen, `last_reviewed` auf das Änderungsdatum setzen. Für Capability-Specs unter `openspec/specs/` ersetzt der archivierte Change (`openspec/changes/archive/`) diese Historie.
 
 ## Technische Festlegungen
 
@@ -74,14 +77,12 @@ Beide Alt-Apps enthalten belegte Mängel, vollständig gelistet in `specs/produc
 
 ## Definition of Done
 
-Eine Anforderung gilt als umgesetzt, wenn alle sechs Punkte erfüllt sind (`specs/platform/quality-and-testing.md` Abschnitt 7):
+Eine Anforderung gilt als umgesetzt, wenn alle Punkte erfüllt sind (`openspec/specs/quality-and-testing/spec.md`, vormals `specs/platform/quality-and-testing.md` Abschnitt 7):
 
-1. In einer Spec mit eindeutiger ID, EARS-Formulierung und Herkunftsmarkierung spezifiziert
+1. Als Requirement mit EARS-Formulierung, Herkunftsmarkierung und mindestens einem Scenario in einem archivierten OpenSpec-Change spezifiziert
 2. Der Code setzt sie um
-3. Mindestens ein automatisierter Test trägt die ID im Namen — oder ein datiertes Prüfprotokoll liegt vor, wo Abschnitt 3 das zulässt
-4. `implemented_in:` im Frontmatter nennt die zuständigen Quellverzeichnisse
-5. `status` der Spec ist fortgeschrieben
-6. `last_reviewed` steht auf dem Änderungsdatum
+3. Mindestens ein automatisierter Test trägt den Requirement-Bezug im Namen — oder ein datiertes Prüfprotokoll liegt vor, wo Abschnitt 3 das zulässt
+4. Der Change ist archiviert (`openspec archive`), das Spec-Delta ist in `openspec/specs/` übernommen
 
 ## Sprache
 
