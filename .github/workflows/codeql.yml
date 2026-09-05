@@ -24,6 +24,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
         with:
-          language: ${{ matrix.language }}
+          # Schlüssel heißt „languages", nicht „language". Mit dem falschen
+          # Namen verwirft die Action die Eingabe kommentarlos (nur eine
+          # Warnung im Protokoll), erkennt alle Sprachen selbst — darunter
+          # Swift — und bricht ab: „Swift analysis is only supported on macOS
+          # runner images."
+          languages: ${{ matrix.language }}
       - uses: github/codeql-action/autobuild@v3
       - uses: github/codeql-action/analyze@v3
