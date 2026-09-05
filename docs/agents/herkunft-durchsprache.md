@@ -44,9 +44,9 @@ Stand 2026-09-05, 570 Requirements:
 | `Android: unbekannt` | 1 | Verhalten der Alt-App war nicht ermittelbar |
 
 **`NEU` heißt nicht „erfunden".** Ein Teil dieser Anforderungen geht auf
-ausdrückliche Entscheidungen zurück — im Bestand stehen 53 Belege der Form
-„Entscheidung FSR FB4, <Datum>" in 17 Capabilities, meist im Abschnitt
-`Erläuterungen`. Die Durchsprache trennt genau diese beiden Fälle:
+ausdrückliche Entscheidungen zurück — im Bestand stehen rund 50 datierte Belege
+in 17 Capabilities, meist im Abschnitt `Erläuterungen`. Die Durchsprache trennt
+genau diese beiden Fälle:
 
 - **`NEU` mit Beleg** — eine Entscheidung ist dokumentiert. Prüfen, ob sie noch
   gilt; im Zweifel stehen lassen.
@@ -79,8 +79,15 @@ Nützliche Nachfragen, wenn die Antwort unsicher ist:
 ## Was mit dem Ergebnis geschieht
 
 - **Bleibt** → Beleg nachtragen, wenn einer fehlt: ein Satz in `Erläuterungen`
-  mit „Entscheidung FSR FB4, <Datum>". Damit fällt es beim nächsten Durchgang
-  nicht wieder auf.
+  mit „Entschieden <Datum>." Damit fällt es beim nächsten Durchgang nicht
+  wieder auf.
+
+  **Keine Zuschreibung an ein Gremium** (präzisiert 2026-09-05). Ältere Belege
+  lauten „Entscheidung FSR FB4, <Datum>" und behaupten damit ein
+  Rückfrageverfahren, das es nicht gab: die Festlegungen stammen vom einzigen
+  Entwickler des Projekts, der zugleich FSR-Mitglied ist. Das Datum trägt die
+  Information, die ein Nachfolger braucht, der Beschlussweg nicht. In den drei
+  Mensa-Capabilities ist das umgestellt, im übrigen Bestand steht es aus.
 - **Fällt weg** → als `REMOVED`-Delta über einen OpenSpec-Change führen, **nie
   löschen**. Die ID bleibt für immer vergeben; `spec-check` liest den Abschnitt
   `## Entfallene Anforderungen` und hält Verweise darauf weiterhin für gültig.
@@ -102,3 +109,36 @@ Danach nach Anzahl: `canteen` (56), `backend-and-api` (53), `schedule` (29),
 
 Nicht sinnvoll: `integrations`. Dessen Einträge sind an echten Endpunkten
 gemessen und tragen fast durchgehend `Recherche:`.
+
+## Was der erste Durchgang gezeigt hat
+
+`canteen`, `canteen-photos` und `canteen-ratings` am 2026-09-05 (Changes
+`herkunft-canteen-durchsprache` und `canteen-durchsprache-inhalt`). Vier
+Dinge, die beim nächsten Mal Zeit sparen:
+
+**Die Frontier nicht von Hand zählen.** `grep` über die Spec zählt auch die
+`Herkunft:`-Zeilen im Abschnitt „Entfallene Anforderungen" mit und liefert
+daher zu hohe Werte. `--herkunft NEU` zählt richtig — 56 für `canteen`, nicht
+58.
+
+**Umgesetzte Requirements sind eine andere Frage.** Wo Code und Tests laufen,
+lautet die Leitfrage faktisch nicht mehr „würde man das heute noch
+beschließen", sondern „ist die laufende Umsetzung in Ordnung" — die Antwort
+liegt dann meist schon vor. Solche Requirements gesammelt bestätigen, aber im
+Beleg festhalten, **worauf** sich die Bestätigung stützt: eine laufende
+Implementierung ist ein schwächerer Beleg als eine Nutzerbeobachtung, und der
+Unterschied entscheidet, wie fest die Anforderung beim nächsten Durchgang
+steht.
+
+**Der Ertrag liegt in den Erläuterungen, nicht in den Requirements.** Von 56
+durchgesprochenen Requirements entfiel keines und drei änderten sich. Die
+eigentlichen Funde standen daneben: eine Erläuterung, die ein Requirement
+still um einen Fall erweiterte, den es nicht nennt; eine Begründung, die im
+nächsten Satz das Gegenteil ihrer selbst festlegte. Beim Lesen also nicht bei
+`## Requirements` aufhören.
+
+**Widersprüche zu querschnittlichen Regeln laut sagen.** Der Wochenend-Fall
+stand gegen SEC-F-060 („keine stillen Fehler"). Er wurde bewusst beibehalten —
+aber erst, nachdem der Konflikt benannt war, und mit einer Begründung, die
+vorher nirgends stand. Das ist der Normalfall, nicht die Ausnahme: die
+Durchsprache produziert seltener Streichungen als nachgetragene Gründe.
