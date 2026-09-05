@@ -1,5 +1,5 @@
 // Schlanker Direktabruf gegen den FBWS-Dienst der FH Dortmund (INT-001, INT-002,
-// `specs/platform/integrations.md`). FBWS steht — anders als das eigene Backend
+// `openspec/specs/integrations/spec.md`). FBWS steht — anders als das eigene Backend
 // (INT-008) — nicht im OpenAPI-Vertrag; `openapi-fetch`/`@/net/client`s `api`
 // greift dort nicht. Dieses Modul nutzt daher `fetchWithTimeout` unmittelbar
 // (NFR-F-070 bleibt dadurch gewahrt) und wirft bei jeder Fehlerantwort einen

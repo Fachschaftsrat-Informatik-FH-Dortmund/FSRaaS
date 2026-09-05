@@ -1,6 +1,6 @@
 // SCHED-F-050 bis SCHED-F-090: Gruppenzuordnung. Prüft, ob ein `studentSet`-Wert
 // aus INT-002 eine Gruppenkennung (Muster `^[A-Z][0-9]+$`, SCHED-F-040) einschließt.
-// Die Beispieltabelle in `specs/features/schedule/spec.md` Abschnitt 4 ist die
+// Die Beispieltabelle in `openspec/specs/schedule/spec.md` Abschnitt 4 ist die
 // verbindliche Testvorgabe (QA-F-030) — siehe `groupMatch.test.ts`. Reine Funktion
 // ohne React.
 //

@@ -10,7 +10,7 @@ import type { PlanEntry, PlanEntryStatus, Weekday } from './typen';
 // `canteen/selection.ts`.
 //
 // DATA-F-020 (ausdrücklich verworfenes Altverhalten der Flutter-App, siehe
-// `specs/platform/data-and-storage.md`): Ein inkonsistenter gespeicherter
+// `openspec/specs/data-and-storage/spec.md`): Ein inkonsistenter gespeicherter
 // Bestand wird NICHT kommentarlos gelöscht. Jeder Eintrag wird einzeln
 // geprüft; ein Eintrag, der nicht dem erwarteten Schema entspricht, wird
 // protokolliert und übersprungen, der lesbare Rest bleibt erhalten. Die Zahl
