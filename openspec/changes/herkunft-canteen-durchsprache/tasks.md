@@ -22,9 +22,9 @@
 
 ## 4. Befunde als Issues
 
-- [ ] 4.1 Stern-Prototyp in `favorites.ts` — entfällt mit der Einführung der Daumen-Bewertung
-- [ ] 4.2 `openspec/changes/archive/` ist leer — DoD-Punkt 4 für den gesamten Bestand unerfüllt
-- [ ] 4.3 Rund 45 gleichartige Zuschreibungen in 14 weiteren Capabilities
+- [x] 4.1 Stern-Prototyp in `favorites.ts` → Issue #19
+- [x] 4.2 Leeres `openspec/changes/archive/`, DoD-Punkt 4 → Issue #20
+- [x] 4.3 42 gleichartige Zuschreibungen in 15 Capabilities → Issue #21
 
 ## 5. Prüfwerkzeug
 
