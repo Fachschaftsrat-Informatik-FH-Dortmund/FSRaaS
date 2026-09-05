@@ -6,7 +6,7 @@ Ermöglicht Studierenden, Gerichte des Mensaplans zu bewerten, und anderen Studi
 
 ### Requirement: Bewertung eines Gerichts in drei Stufen
 
-Das System muss der Nutzerin eine Bewertung eines einzelnen Gerichts in einer der drei Stufen schlecht, gut oder sehr gut ermöglichen. Herkunft: NEU (vormals RATE-F-010). Entscheidung FSR FB4 (geändert am 2026-09-04): Statt einer feinen Sterneskala nutzt die Bewertung drei grobe Stufen nach dem Vorbild von Streaming-Diensten (Netflix) — ein Daumen nach unten für schlecht, ein Daumen nach oben für gut, zwei Daumen nach oben für sehr gut. Für Berechnungen, die einen Zahlenwert benötigen, zählen die Stufen als 1 (schlecht), 2 (gut) und 3 (sehr gut). Die Gesamtbewertung in der Übersicht zeigt die gerundete Stufe als Symbol zusammen mit der Anzahl der Bewertungen; eine Verteilung nach Stufen ist nicht gefordert.
+Das System muss der Nutzerin eine Bewertung eines einzelnen Gerichts in einer der drei Stufen schlecht, gut oder sehr gut ermöglichen. Herkunft: NEU (vormals RATE-F-010). Entschieden 2026-09-04: Statt einer feinen Sterneskala nutzt die Bewertung drei grobe Stufen nach dem Vorbild von Streaming-Diensten (Netflix) — ein Daumen nach unten für schlecht, ein Daumen nach oben für gut, zwei Daumen nach oben für sehr gut. Für Berechnungen, die einen Zahlenwert benötigen, zählen die Stufen als 1 (schlecht), 2 (gut) und 3 (sehr gut). Die Gesamtbewertung in der Übersicht zeigt die gerundete Stufe als Symbol zusammen mit der Anzahl der Bewertungen; eine Verteilung nach Stufen ist nicht gefordert.
 
 #### Scenario: Bewertung mit höchster Stufe
 - **WHEN** eine Nutzerin ein Gericht mit „sehr gut" bewertet
@@ -78,7 +78,7 @@ Das System muss die Eingabe einer eigenen Bewertung ausschließlich in der Detai
 
 ### Requirement: Kontofreies Lesen, Konto nur beim Schreibpfad
 
-Das System muss das Lesen von Bewertungen ohne Konto ermöglichen und ein Konto ausschließlich beim Verfassen, Bearbeiten oder Löschen einer eigenen Bewertung verlangen. Herkunft: NEU (vormals RATE-F-090). Entscheidung FSR FB4, 2026-08-25 (`specs/decisions/0004-identitaet-und-anmeldung.md`): Vor dieser Entscheidung genügte für jede Bewertung ein reines, gerätegebundenes Pseudonym, auch zum Verfassen. Ersetzt durch eine Kontopflicht ausschließlich für den Schreibpfad — Lesen bleibt uneingeschränkt kontofrei. Ein Konto ist nicht gerätegebunden, damit ist die Einmal-pro-Tag-Sperre nicht durch Gerätewechsel umgehbar.
+Das System muss das Lesen von Bewertungen ohne Konto ermöglichen und ein Konto ausschließlich beim Verfassen, Bearbeiten oder Löschen einer eigenen Bewertung verlangen. Herkunft: NEU (vormals RATE-F-090). Entschieden 2026-08-25 (`specs/decisions/0004-identitaet-und-anmeldung.md`): Vor dieser Entscheidung genügte für jede Bewertung ein reines, gerätegebundenes Pseudonym, auch zum Verfassen. Ersetzt durch eine Kontopflicht ausschließlich für den Schreibpfad — Lesen bleibt uneingeschränkt kontofrei. Ein Konto ist nicht gerätegebunden, damit ist die Einmal-pro-Tag-Sperre nicht durch Gerätewechsel umgehbar.
 
 #### Scenario: Bewertungen ohne Anmeldung lesen
 - **WHEN** eine nicht angemeldete Nutzerin die Bewertungen eines Gerichts ansieht
@@ -90,7 +90,7 @@ Das System muss das Lesen von Bewertungen ohne Konto ermöglichen und ein Konto 
 
 ### Requirement: Gerätelokale Spiegelung der eigenen Bewertungen
 
-Das System muss die eigenen Bewertungen der angemeldeten Person gerätelokal spiegeln, damit der Lieblingsgericht-Abgleich (Capability `canteen`, MENSA-F-100) ohne Netzzugriff möglich ist. Herkunft: NEU (vormals RATE-F-100). Entscheidung FSR FB4, 2026-09-04: Die beste Bewertungsstufe (sehr gut) gilt zugleich als Lieblingsgericht-Markierung; der zuvor eigenständige Merker im Mensaplan entfällt (Capability `canteen`, MENSA-F-080 entfallen, ersetzt durch MENSA-F-085/F-087). Gespiegelt wird ausschließlich die eigene Bewertung (Gerichtsschlüssel und Bewertungsstufe), nicht die fremder Personen; die Spiegelung wird bei jeder eigenen Bewertung und bei jedem erfolgreichen Abruf fortgeschrieben und bei Abmeldung gelöscht (Capability `data-and-storage`, Abschnitt 2). Beim Bewerten ist die Nutzerin darauf hinzuweisen, dass die beste Bewertungsstufe eine Benachrichtigung nach sich zieht; abschalten lässt sie sich über SET-F-170 (Capability `settings`).
+Das System muss die eigenen Bewertungen der angemeldeten Person gerätelokal spiegeln, damit der Lieblingsgericht-Abgleich (Capability `canteen`, MENSA-F-100) ohne Netzzugriff möglich ist. Herkunft: NEU (vormals RATE-F-100). Entschieden 2026-09-04: Die beste Bewertungsstufe (sehr gut) gilt zugleich als Lieblingsgericht-Markierung; der zuvor eigenständige Merker im Mensaplan entfällt (Capability `canteen`, MENSA-F-080 entfallen, ersetzt durch MENSA-F-085/F-087). Gespiegelt wird ausschließlich die eigene Bewertung (Gerichtsschlüssel und Bewertungsstufe), nicht die fremder Personen; die Spiegelung wird bei jeder eigenen Bewertung und bei jedem erfolgreichen Abruf fortgeschrieben und bei Abmeldung gelöscht (Capability `data-and-storage`, Abschnitt 2). Beim Bewerten ist die Nutzerin darauf hinzuweisen, dass die beste Bewertungsstufe eine Benachrichtigung nach sich zieht; abschalten lässt sie sich über SET-F-170 (Capability `settings`).
 
 #### Scenario: Lieblingsgericht ohne Netzzugriff abgleichen
 - **WHEN** eine Hintergrundaufgabe den Tagesplan ohne verlässlichen Netzzugriff gegen die eigenen Bewertungen abgleicht
@@ -123,7 +123,7 @@ Das System muss die Normalisierung von Gerichtsbezeichnungen automatisiert teste
 ### Nicht-Scope
 
 - Bewertung der Mensa als Ganzes (Ambiente, Service) — Scope ist ausschließlich das einzelne Gericht.
-- Separate Bewertung je Mensa-Standort für dasselbe Gericht — als Idee erkannt (Entscheidung FSR FB4, 2026-08-25), aber bewusst nicht in diesem Umfang; siehe Abschnitt „Offene Fragen".
+- Separate Bewertung je Mensa-Standort für dasselbe Gericht — als Idee erkannt (Entschieden 2026-08-25, aber bewusst nicht in diesem Umfang; siehe Abschnitt „Offene Fragen".
 - Konto-Erstellung/-Verwaltung selbst (Anmeldeweg, SSO-Anbindung) — Capability `identity-and-moderation`, Capability `integrations` (INT-012).
 - Die Lieblingsgericht-Funktion und ihre Benachrichtigung selbst — Capability `canteen`, MENSA-F-085 bis F-110. Diese Capability liefert dafür nur die Höchstbewertung und deren lokale Spiegelung (RATE-F-100).
 - Fotos zu Gerichten — Capability `canteen-photos`; ein Foto ist ein eigener Beitrag, keine Bewertung, auch wenn beide dieselbe Detailansicht teilen (RATE-F-080).
@@ -187,4 +187,4 @@ Nicht zutreffend — keine der beiden Alt-Apps bietet Bewertungen. Bestätigt f�
 
 - Speicherdauer/Löschverhalten von Bewertungen nach Kontolöschung — bereits in Capability `identity-and-moderation` (IDENT-F-120/130) geregelt, hier nur referenziert.
 - Freitext-Kommentare und Meldeweg sind der zweiten Ausbaustufe zugeordnet, gemeinsam mit der Moderationsoberfläche — ohne sie wären die Moderationspflichten aus Capability `identity-and-moderation` (IDENT-F-090 bis F-110, IDENT-N-010) nicht erfüllbar. Siehe `specs/decisions/0012-zuschnitt-der-ersten-ausbaustufe.md` und `specs/product/roadmap.md`.
-- Standortbezogene Bewertung (dasselbe Gericht unterschiedlich je Mensa-Standort bewertet): vom FSR FB4 am 2026-08-25 als mögliche künftige Erweiterung benannt, aber ausdrücklich nicht in diesem Umfang zu implementieren. Bei künftiger Aufnahme: eigenes Requirement und Datenmodell-Erweiterung (Mensa-Referenz je Bewertung) nötig, kein Nachtrag zur Detailansicht.
+- Standortbezogene Bewertung (dasselbe Gericht unterschiedlich je Mensa-Standort bewertet): am 2026-08-25 als mögliche künftige Erweiterung benannt, aber ausdrücklich nicht in diesem Umfang zu implementieren. Bei künftiger Aufnahme: eigenes Requirement und Datenmodell-Erweiterung (Mensa-Referenz je Bewertung) nötig, kein Nachtrag zur Detailansicht.
