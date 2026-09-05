@@ -42,6 +42,21 @@ Each capability spec has the same shape: `## Purpose`, then `## Requirements`
   per roadmap step over opening the whole tree.
 - `openspec context --json` prints a compact brief instead of the full files.
 
+## How this corpus came to be — read this before trusting it
+
+The requirements were not gathered from users. They were reverse-engineered
+from two predecessor apps under `alte apps/`, then written up over long
+assistant sessions, then reformatted into OpenSpec (ADR 0019). 397 of 570
+requirements (70 %) carry the provenance marker `NEU`, meaning nothing outside
+the spec backs them.
+
+That does not make them wrong — many record real decisions — but it does mean
+**a requirement's existence is not evidence that anyone chose it**. When a
+requirement looks odd, say so rather than implementing around it.
+
+`docs/agents/herkunft-durchsprache.md` describes the review that works through
+these, capability by capability.
+
 ## Requirement provenance
 
 Every requirement in `openspec/specs/` carries exactly one provenance marker, given as a closing "Herkunft: …" sentence in the requirement text: `Alt: <pfad>:<zeile>`, `NEU`, `Android: unbekannt`, `Alt: bewusst verworfen`, or `Recherche: <quelle>, <datum>`. When citing or writing a requirement, preserve or add this marker — it signals how trustworthy the requirement is.

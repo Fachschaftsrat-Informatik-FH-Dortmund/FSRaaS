@@ -37,7 +37,11 @@ jobs:
   # Bestand unter openspec/, die Entscheidungen und Produktdokumente unter
   # specs/ — beide Bäume zählen.
   spec-delta:
-    if: github.event_name == 'pull_request'
+    # Dependabot ausgenommen: Eine Abhängigkeitsaktualisierung ändert kein
+    # Verhalten der App und kann kein Spec-Delta tragen. Ohne diese Ausnahme
+    # steht jede Dependabot-PR dauerhaft rot, und das Label spec-unchanged
+    # müsste jedes Mal von Hand gesetzt werden.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
