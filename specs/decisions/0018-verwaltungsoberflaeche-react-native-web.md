@@ -4,8 +4,8 @@ titel: Vereinheitlichung der Verwaltungsoberfläche über React Native Web
 status: angenommen
 datum: 2026-08-26
 betrifft:
-  - ../features/admin/spec.md
-  - ../platform/ux-and-theming.md
+  - ../../openspec/specs/admin/spec.md
+  - ../../openspec/specs/ux-and-theming/spec.md
   - 0011-monorepo-und-openapi-vertrag.md
   - 0013-zustand-navigation-und-netzwerkschicht.md
 ---

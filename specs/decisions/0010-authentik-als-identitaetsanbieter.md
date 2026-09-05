@@ -4,13 +4,13 @@ titel: Authentik als Identitätsanbieter mit Federation zur FH
 status: angenommen
 datum: 2026-08-25
 betrifft:
-  - ../platform/identity-and-moderation.md
-  - ../platform/integrations.md
-  - ../platform/security-and-privacy.md
-  - ../platform/backend-and-api.md
-  - ../features/canteen-ratings/spec.md
-  - ../features/e-key/spec.md
-  - ../features/admin/spec.md
+  - ../../openspec/specs/identity-and-moderation/spec.md
+  - ../../openspec/specs/integrations/spec.md
+  - ../../openspec/specs/security-and-privacy/spec.md
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/canteen-ratings/spec.md
+  - ../../openspec/specs/e-key/spec.md
+  - ../../openspec/specs/admin/spec.md
   - 0004-identitaet-und-anmeldung.md
 ---
 
@@ -20,7 +20,7 @@ betrifft:
 
 `0004-identitaet-und-anmeldung.md` legt fest, dass ein Konto für zwei Funktionen nötig ist — das Verfassen von Mensa-Bewertungen (RATE) und die E-Key-Verwaltung (EKEY) —, lässt aber offen, wie dieses Konto entsteht. Bevorzugt wurde „Hochschul-SSO, sofern verfügbar" (INT-012, Status „zu verifizieren"), mit einem eigenen, vom Backend verwalteten Konto als Ersatzoption. Solange diese Frage offen blieb, hing der gesamte Schreibpfad von RATE an einer Klärung außerhalb des Projekts.
 
-Drei Kräfte wirken auf die Auflösung. Erstens ist die Verfügbarkeit eines Hochschul-Anmeldewegs für Drittanwendungen nicht vom Projekt zu entscheiden, sondern von der Hochschul-IT — eine Abhängigkeit mit unbekannter Laufzeit. Zweitens darf die App nach `platform/security-and-privacy.md` (SEC-F-040) unter keinen Umständen Hochschul-Zugangsdaten entgegennehmen; jeder Weg muss über einen Redirect-Fluss im Systembrowser laufen. Drittens braucht auch die Admin-Oberfläche (`../features/admin/spec.md`) eine Rollenverwaltung — FSR-Redaktion und Moderation nach `platform/identity-and-moderation.md` (IDENT-F-040) —, und es wäre doppelte Arbeit, dafür ein zweites, unabhängiges Konto-System zu bauen.
+Drei Kräfte wirken auf die Auflösung. Erstens ist die Verfügbarkeit eines Hochschul-Anmeldewegs für Drittanwendungen nicht vom Projekt zu entscheiden, sondern von der Hochschul-IT — eine Abhängigkeit mit unbekannter Laufzeit. Zweitens darf die App nach `platform/security-and-privacy.md` (SEC-F-040) unter keinen Umständen Hochschul-Zugangsdaten entgegennehmen; jeder Weg muss über einen Redirect-Fluss im Systembrowser laufen. Drittens braucht auch die Admin-Oberfläche (`../../openspec/specs/admin/spec.md`) eine Rollenverwaltung — FSR-Redaktion und Moderation nach `platform/identity-and-moderation.md` (IDENT-F-040) —, und es wäre doppelte Arbeit, dafür ein zweites, unabhängiges Konto-System zu bauen.
 
 ## Entscheidung
 

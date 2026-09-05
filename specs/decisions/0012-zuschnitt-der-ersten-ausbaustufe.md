@@ -5,14 +5,14 @@ status: angenommen
 datum: 2026-08-25
 betrifft:
   - ../product/roadmap.md
-  - ../features/canteen-ratings/spec.md
-  - ../features/news/spec.md
-  - ../features/schedule/spec.md
-  - ../features/room-finder/spec.md
-  - ../features/settings/spec.md
-  - ../features/admin/spec.md
-  - ../platform/identity-and-moderation.md
-  - ../platform/integrations.md
+  - ../../openspec/specs/canteen-ratings/spec.md
+  - ../../openspec/specs/news/spec.md
+  - ../../openspec/specs/schedule/spec.md
+  - ../../openspec/specs/room-finder/spec.md
+  - ../../openspec/specs/settings/spec.md
+  - ../../openspec/specs/admin/spec.md
+  - ../../openspec/specs/identity-and-moderation/spec.md
+  - ../../openspec/specs/integrations/spec.md
 ---
 
 # ADR 0012: Zuschnitt der ersten Ausbaustufe

@@ -4,8 +4,8 @@ titel: Wiki-Anbindung an BookStack
 status: vorgeschlagen
 datum: 2026-08-24
 betrifft:
-  - features/wiki/spec.md
-  - platform/integrations.md
+  - ../../openspec/specs/wiki/spec.md
+  - ../../openspec/specs/integrations/spec.md
 ---
 
 # ADR 0005: Wiki-Anbindung an BookStack

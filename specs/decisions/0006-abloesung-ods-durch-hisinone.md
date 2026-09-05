@@ -4,8 +4,8 @@ titel: Ablösung des ODS-Verfahrens durch HISinOne
 status: vorgeschlagen
 datum: 2026-08-24
 betrifft:
-  - features/grades/spec.md
-  - platform/integrations.md
+  - ../../openspec/specs/grades/spec.md
+  - ../../openspec/specs/integrations/spec.md
 ---
 
 # ADR 0006: Ablösung des ODS-Verfahrens durch HISinOne

@@ -1,10 +1,16 @@
-// Die vier Prüfungen am Spec-Bestand aus
-// specs/platform/quality-and-testing.md Abschnitt 8.
+// Die drei Prüfungen am Anforderungsbestand aus
+// openspec/specs/quality-and-testing/spec.md, Abschnitt „Prüfungen am
+// Anforderungsbestand selbst":
 //
-//   QA-N-080  keine doppelten Anforderungs-IDs
-//   QA-N-090  jede Anforderung trägt genau eine Herkunftsmarkierung
-//   QA-N-100  alle Frontmatter-Pflichtfelder vorhanden
-//   QA-N-110  jeder Verweis zeigt auf ein existierendes Ziel
+//   Keine doppelten Anforderungs-Titel im Bestand   (vormals QA-N-080)
+//   Herkunftsnachweis ist Pflicht                   (vormals QA-N-090)
+//   Referenzen zeigen auf existierende Ziele        (vormals QA-N-110)
+//
+// Die vierte Prüfung des Vorgängerstands (Frontmatter-Pflichtfelder, vormals
+// QA-N-100) ist mit ADR 0019 entfallen: OpenSpec-Specs tragen kein Frontmatter,
+// und die Anforderungstabelle der Capability führt sie nicht mehr. Struktur-
+// prüfungen an Proposal, Spec-Delta, Design und Tasks übernimmt `openspec
+// validate`.
 //
 // Jede Funktion nimmt das eingelesene Modell (siehe collect()) und gibt eine
 // Liste von Befunden { file, line, message } zurück. Eine leere Liste = bestanden.
@@ -12,165 +18,190 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  listSpecFiles, relPath, readSpec, frontmatterValue, frontmatterList,
+  listMarkdownFiles, relPath, readDoc, frontmatterList, bodyOffset,
   extractRequirements, isValidHerkunft, REQ_ID, INT_ID,
 } from './parse.js';
 
-// Frontmatter-Pflichtfelder je Dateiart (Feldlisten aus specs/_templates/).
-const FIELDS = {
-  adr: ['nummer', 'titel', 'status', 'datum', 'betrifft'],
-  feature: ['id', 'titel', 'praefix', 'status', 'prioritaet', 'version', 'owner',
-    'last_reviewed', 'derived_from', 'implemented_in', 'related'],
-  // platform/-Specs folgen der Feature-Vorlage ohne prioritaet.
-  platform: ['id', 'titel', 'praefix', 'status', 'version', 'owner',
-    'last_reviewed', 'derived_from', 'implemented_in', 'related'],
-  // Produkt-/Prozessdokumente ohne Präfix (README, roadmap, glossary, …).
-  doc: ['status', 'version', 'owner', 'last_reviewed'],
-};
+/** Liest beide Bäume einmal ein: openspec/specs/ und specs/. */
+export function collect(root) {
+  const openspecDir = join(root, 'openspec', 'specs');
+  const specsDir = join(root, 'specs');
 
-function classify(rel, spec) {
-  if (rel.startsWith('decisions/')) return 'adr';
-  if (/^features\/[^/]+\/spec\.md$/.test(rel)) return 'feature';
-  if (spec.keys.has('praefix')) return 'platform';
-  return 'doc';
-}
-
-/** Liest den gesamten Bestand einmal ein. */
-export function collect(specsDir) {
-  const files = listSpecFiles(specsDir);
-  const specs = files.map((file) => {
-    const rel = relPath(specsDir, file);
-    const spec = readSpec(file);
-    const kind = classify(rel, spec);
-    return { file, rel, spec, kind };
-  });
-
-  // Anforderungen werden nur aus Dateien mit Präfix gelesen (Feature- und
-  // platform/-Specs). README, Vorlagen und Produktdokumente definieren keine.
-  const requirements = [];
-  for (const s of specs) {
-    if (!s.spec.keys.has('praefix')) continue;
-    requirements.push(...extractRequirements(s.spec, s.rel));
+  const docs = [];
+  for (const [dir, tree] of [[openspecDir, 'openspec'], [specsDir, 'specs']]) {
+    if (!existsSync(dir)) continue;
+    for (const file of listMarkdownFiles(dir)) {
+      docs.push({ file, rel: relPath(root, file), tree, doc: readDoc(file) });
+    }
   }
 
-  const definedReqIds = new Set(requirements.map((r) => r.id));
-  const intFile = specs.find((s) => s.rel === 'platform/integrations.md');
+  // Anforderungen werden ausschließlich aus den Capability-Specs gelesen.
+  const requirements = [];
+  for (const d of docs) {
+    if (d.tree !== 'openspec' || !/\/spec\.md$/.test(d.rel)) continue;
+    requirements.push(...extractRequirements(d.doc, d.rel));
+  }
+
+  // Historische IDs gelten als definiert, wenn sie als „(vormals <ID>)" an
+  // einem Requirement hängen — so bleibt die Rückverfolgbarkeit aus Testnamen
+  // und Prüfprotokollen prüfbar (ADR 0019, offener Punkt).
+  const definedLegacyIds = new Set();
+  for (const r of requirements) for (const id of r.legacyIds) definedLegacyIds.add(id);
+
+  // Entfallene Anforderungen bleiben vergeben: Eine zurückgezogene ID wird nie
+  // neu verwendet, und Prüfprotokolle wie Erläuterungen verweisen weiterhin
+  // auf sie. Der Vorgängerstand hielt das über durchgestrichene Tabellenzeilen
+  // fest, die Capability-Specs über einen Abschnitt „Entfallene Anforderungen".
+  for (const d of docs) {
+    if (d.tree !== 'openspec') continue;
+    for (const section of retiredSections(d.doc.body)) {
+      for (const m of section.matchAll(REQ_ID)) definedLegacyIds.add(m[0]);
+    }
+  }
+
+  // Das Schnittstellenregister führt seine Einträge als Requirement-Titel
+  // „INT-### — <Name>".
   const definedIntIds = new Set();
-  if (intFile) {
-    for (const m of intFile.spec.body.matchAll(/^\|\s*(INT-\d{3})\s*\|/gm)) {
+  const intDoc = docs.find((d) => d.rel === 'openspec/specs/integrations/spec.md');
+  if (intDoc) {
+    for (const m of intDoc.doc.body.matchAll(/^### Requirement:\s*(INT-\d{3})\b/gm)) {
       definedIntIds.add(m[1]);
     }
   }
 
-  return { specsDir, specs, requirements, definedReqIds, definedIntIds };
+  return { root, docs, requirements, definedLegacyIds, definedIntIds };
 }
 
-// ---------------------------------------------------------------- QA-N-080
-export function checkDuplicateIds(model) {
-  const seen = new Map();
+// ------------------------------------- Keine doppelten Anforderungs-Titel
+export function checkDuplicateTitles(model) {
+  const findings = [];
+  const perFile = new Map();
   for (const r of model.requirements) {
-    if (!seen.has(r.id)) seen.set(r.id, []);
-    seen.get(r.id).push(r);
+    if (!perFile.has(r.file)) perFile.set(r.file, new Map());
+    const seen = perFile.get(r.file);
+    if (!seen.has(r.title)) seen.set(r.title, []);
+    seen.get(r.title).push(r);
   }
-  const findings = [];
-  for (const [id, rows] of seen) {
-    if (rows.length < 2) continue;
-    const where = rows.map((r) => `${r.file}:${r.line}`).join(', ');
-    findings.push({
-      file: rows[0].file,
-      line: rows[0].line,
-      message: `Anforderungs-ID ${id} ${rows.length}-mal definiert: ${where}`,
-    });
-  }
-  return findings;
-}
-
-// ---------------------------------------------------------------- QA-N-090
-export function checkHerkunft(model) {
-  const findings = [];
-  for (const r of model.requirements) {
-    if (isValidHerkunft(r.herkunft)) continue;
-    findings.push({
-      file: r.file,
-      line: r.line,
-      message: `Anforderung ${r.id}: Herkunftsmarkierung "${r.herkunft}" entspricht keinem der `
-        + 'zulässigen Muster (Alt: <pfad>, NEU, Android: unbekannt, Alt: bewusst verworfen, '
-        + 'Recherche: <quelle>, <datum>).',
-    });
-  }
-  return findings;
-}
-
-// ---------------------------------------------------------------- QA-N-100
-export function checkFrontmatter(model) {
-  const findings = [];
-  for (const s of model.specs) {
-    if (!s.spec.hasFrontmatter) {
-      findings.push({ file: s.rel, line: 1, message: 'Kein YAML-Frontmatter gefunden.' });
-      continue;
-    }
-    const required = FIELDS[s.kind];
-    const missing = required.filter((f) => !s.spec.keys.has(f));
-    if (missing.length) {
+  for (const [file, seen] of perFile) {
+    for (const [title, rows] of seen) {
+      if (rows.length < 2) continue;
       findings.push({
-        file: s.rel,
-        line: 1,
-        message: `Frontmatter (${s.kind}) fehlen Pflichtfelder: ${missing.join(', ')}`,
+        file,
+        line: rows[0].line,
+        message: `Requirement-Titel „${title}" ${rows.length}-mal in derselben Capability `
+          + `definiert (Zeilen ${rows.map((r) => r.line).join(', ')}).`,
       });
     }
   }
   return findings;
 }
 
-// ---------------------------------------------------------------- QA-N-110
+// ------------------------------------------- Herkunftsnachweis ist Pflicht
+export function checkHerkunft(model) {
+  const findings = [];
+  for (const r of model.requirements) {
+    if (r.herkunftCount === 0) {
+      findings.push({
+        file: r.file,
+        line: r.line,
+        message: `Requirement „${r.title}": kein Herkunftssatz („Herkunft: …") im Requirement-Text.`,
+      });
+      continue;
+    }
+    if (r.herkunftCount > 1) {
+      findings.push({
+        file: r.file,
+        line: r.line,
+        message: `Requirement „${r.title}": ${r.herkunftCount} Herkunftssätze, genau einer ist zulässig.`,
+      });
+      continue;
+    }
+    if (!isValidHerkunft(r.herkunft)) {
+      findings.push({
+        file: r.file,
+        line: r.line,
+        message: `Requirement „${r.title}": Herkunft „${r.herkunft ?? '—'}" entspricht keinem der `
+          + 'fünf zulässigen Muster (Alt: <pfad>, NEU, Android: unbekannt, '
+          + 'Alt: bewusst verworfen, Recherche: <quelle>, <datum>).',
+      });
+    }
+  }
+  return findings;
+}
+
+// -------------------------------- Referenzen zeigen auf existierende Ziele
 export function checkReferences(model) {
   const findings = [];
 
-  for (const s of model.specs) {
-    // (a) related: / betrifft: -> Zieldatei muss existieren.
-    const refKey = s.kind === 'adr' ? 'betrifft' : 'related';
-    for (const ref of frontmatterList(s.spec, refKey)) {
-      if (!ref || ref.startsWith('#')) continue;
-      const fromDir = join(model.specsDir, dirname(s.rel), ref);
-      const fromRoot = join(model.specsDir, ref);
-      if (!existsSync(fromDir) && !existsSync(fromRoot)) {
-        findings.push({
-          file: s.rel,
-          line: 1,
-          message: `${refKey}: Verweis "${ref}" zeigt auf keine existierende Datei.`,
-        });
+  for (const d of model.docs) {
+    const offset = bodyOffset(d.doc);
+
+    // (a) related: / betrifft: im Frontmatter -> Zieldatei muss existieren.
+    for (const key of ['related', 'betrifft']) {
+      for (const ref of frontmatterList(d.doc, key)) {
+        if (!ref || ref.startsWith('#') || /^https?:/.test(ref)) continue;
+        const candidates = [
+          join(model.root, dirname(d.rel), ref),
+          join(model.root, 'specs', ref),
+          join(model.root, 'openspec', 'specs', ref),
+          join(model.root, ref),
+        ];
+        if (!candidates.some((c) => existsSync(c))) {
+          findings.push({
+            file: d.rel,
+            line: 1,
+            message: `${key}: Verweis „${ref}" zeigt auf keine existierende Datei.`,
+          });
+        }
       }
     }
 
-    // (b) INT-### im Rumpf -> muss im Register definiert sein.
-    for (const m of s.spec.body.matchAll(INT_ID)) {
-      const id = m[0];
-      if (!model.definedIntIds.has(id)) {
-        findings.push({
-          file: s.rel,
-          line: lineOf(s.spec.body, m.index) + bodyOffset(s.spec),
-          message: `Verweis auf ${id}, aber kein solcher Eintrag in platform/integrations.md.`,
-        });
-      }
-    }
-
-    // (c) Requirement-ID im Rumpf -> muss irgendwo definiert sein.
-    for (const m of s.spec.body.matchAll(REQ_ID)) {
-      const id = m[0];
-      if (model.definedReqIds.has(id)) continue;
+    // (b) INT-### im Rumpf -> muss im Schnittstellenregister definiert sein.
+    for (const m of d.doc.body.matchAll(INT_ID)) {
+      if (model.definedIntIds.has(m[0])) continue;
       findings.push({
-        file: s.rel,
-        line: lineOf(s.spec.body, m.index) + bodyOffset(s.spec),
-        message: `Verweis auf Anforderung ${id}, die in keiner Spec definiert ist.`,
+        file: d.rel,
+        line: lineOf(d.doc.body, m.index) + offset,
+        message: `Verweis auf ${m[0]}, aber kein solcher Eintrag in `
+          + 'openspec/specs/integrations/spec.md.',
+      });
+    }
+
+    // (c) Historische Anforderungs-ID im Rumpf -> muss als „(vormals <ID>)"
+    //     an einem Requirement hängen.
+    for (const m of d.doc.body.matchAll(REQ_ID)) {
+      if (model.definedLegacyIds.has(m[0])) continue;
+      findings.push({
+        file: d.rel,
+        line: lineOf(d.doc.body, m.index) + offset,
+        message: `Verweis auf Anforderung ${m[0]}, die an keinem Requirement als `
+          + '„(vormals …)" geführt wird.',
       });
     }
   }
   return dedupe(findings);
 }
 
-function bodyOffset(spec) {
-  return spec.hasFrontmatter ? spec.frontmatterEndLine + 2 : 1;
+/**
+ * Die Abschnitte „Entfallene Anforderungen …" einer Capability-Spec, jeweils
+ * bis zur nächsten Überschrift gleicher Ebene.
+ */
+function retiredSections(body) {
+  const out = [];
+  const lines = body.split('\n');
+  let buf = null;
+  for (const line of lines) {
+    if (/^## /.test(line)) {
+      if (buf) { out.push(buf.join('\n')); buf = null; }
+      if (/^## Entfallene Anforderungen/.test(line)) buf = [];
+      continue;
+    }
+    if (buf) buf.push(line);
+  }
+  if (buf) out.push(buf.join('\n'));
+  return out;
 }
+
 function lineOf(text, index) {
   let n = 0;
   for (let i = 0; i < index; i++) if (text[i] === '\n') n++;
@@ -187,8 +218,11 @@ function dedupe(findings) {
 }
 
 export const CHECKS = [
-  { id: 'QA-N-080', title: 'Keine doppelten Anforderungs-IDs', run: checkDuplicateIds },
-  { id: 'QA-N-090', title: 'Genau eine Herkunftsmarkierung je Anforderung', run: checkHerkunft },
-  { id: 'QA-N-100', title: 'Frontmatter-Pflichtfelder vollständig', run: checkFrontmatter },
-  { id: 'QA-N-110', title: 'Verweise zeigen auf existierende Ziele', run: checkReferences },
+  {
+    id: 'Keine doppelten Anforderungs-Titel im Bestand',
+    vormals: 'QA-N-080',
+    run: checkDuplicateTitles,
+  },
+  { id: 'Herkunftsnachweis ist Pflicht', vormals: 'QA-N-090', run: checkHerkunft },
+  { id: 'Referenzen zeigen auf existierende Ziele', vormals: 'QA-N-110', run: checkReferences },
 ];

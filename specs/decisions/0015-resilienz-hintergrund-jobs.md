@@ -4,8 +4,8 @@ titel: Resilienz periodischer Hintergrund-Jobs
 status: angenommen
 datum: 2026-08-26
 betrifft:
-  - ../platform/backend-and-api.md
-  - ../platform/non-functional.md
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/non-functional/spec.md
   - 0011-monorepo-und-openapi-vertrag.md
 ---
 

@@ -11,7 +11,7 @@ derived_from:
 related:
   - vision.md
   - glossary.md
-  - ../platform/integrations.md
+  - ../../openspec/specs/integrations/spec.md
   - ../open-questions.md
 ---
 
@@ -171,7 +171,7 @@ Alle vorgegebenen Befunde wurden am Quellcode nachvollzogen und bestätigt; M-00
 
 ### 4.2 Funktionsinventar
 
-Pfade relativ ab `alte apps/android-fb4/FB4/fB4/src/main/`. Die Spalte „Flutter" hält fest, ob die Funktion dort eine Entsprechung hat (L-Nummer) oder nicht. Endpunktdetails stehen ausschließlich in `../platform/integrations.md`.
+Pfade relativ ab `alte apps/android-fb4/FB4/fB4/src/main/`. Die Spalte „Flutter" hält fest, ob die Funktion dort eine Entsprechung hat (L-Nummer) oder nicht. Endpunktdetails stehen ausschließlich in `../../openspec/specs/integrations/spec.md`.
 
 | Nr | Bereich | Funktion | Quelle | Zielspec | Flutter |
 |---|---|---|---|---|---|
@@ -212,7 +212,7 @@ Pfade relativ ab `alte apps/android-fb4/FB4/fB4/src/main/`. Die Spalte „Flutte
 | AND-035 | Betrieb | Zusätzliche Trust-Anchor für Hochschulzertifikate, ohne die Prüfung abzuschalten | `java/…/util/AdditionalKeyStoresSSLSocketFactory.java`, `assets/fh.cer`, `assets/dst.cer` | SEC | – |
 | AND-036 | Einstellungen | „Feedback" im Seitenmenü öffnet den Mail-Client mit vorausgefüllter Empfängeradresse `app@fsrfb4.de`, Betreff und App-Version/API-Level im Text | `java/…/activities/MainActivity.java:340-342,555-578` | SET | L-074 |
 
-**Zu AND-036, Abgrenzung vom Backend-Befund.** Das im ehemaligen Backend `app.fsrfb4.de` vorhandene Formular `feedback/feedback.php` (Felder `Name`, `Feedback`, `Api`, `VersionCode`, Ablage in Tabelle `app_feedback`) ist ein eigener, technisch funktionsfähiger Weg, wird aber von keiner der beiden Alt-Apps aufgerufen — beide senden Feedback ausschließlich per Mail-Intent (AND-036, L-074). Der Endpunkt ist damit verwaistes Altbestandteil ohne Client, siehe `../platform/integrations.md` INT-008.
+**Zu AND-036, Abgrenzung vom Backend-Befund.** Das im ehemaligen Backend `app.fsrfb4.de` vorhandene Formular `feedback/feedback.php` (Felder `Name`, `Feedback`, `Api`, `VersionCode`, Ablage in Tabelle `app_feedback`) ist ein eigener, technisch funktionsfähiger Weg, wird aber von keiner der beiden Alt-Apps aufgerufen — beide senden Feedback ausschließlich per Mail-Intent (AND-036, L-074). Der Endpunkt ist damit verwaistes Altbestandteil ohne Client, siehe `../../openspec/specs/integrations/spec.md` INT-008.
 
 ### 4.3 Beantwortung der vormals offenen Fragen
 
@@ -248,7 +248,7 @@ Nach demselben Muster wie Abschnitt 3 für die Flutter-App. Diese Befunde dürfe
 | N-003 | Das Ticket-PDF liegt unverschlüsselt im externen App-Verzeichnis | `util/TicketUtil.java` | Verschlüsselte Ablage, siehe DATA-F-040 — derselbe Mangel wie M-009 bei der Flutter-App |
 | N-004 | Die Endezeit eines freien Raums fällt ohne weiteren Termin auf einen fest eingetragenen Wert von 21:30 Uhr zurück, im Quellcode als offener Punkt markiert | `service/RoomService.java` | Gebäudeöffnungszeiten als pflegbare Angabe führen, nicht als Konstante |
 | N-005 | Die Fernkonfiguration verweist für Prüfungs- und Zeitplan auf die private Domain `hoolycraap.de`, unverschlüsselt | live abgefragt 2026-08-25, Schlüssel `examplan`, `timeplan` | Zweite Fremdabhängigkeit neben `hemacode.de`, mit abzulösen, siehe INT-008 |
-| N-006 | Der Datenbestand der Fernkonfiguration ist seit dem Wintersemester 2023/24 nicht mehr gepflegt | live abgefragt 2026-08-25, Schlüssel `semester_end` = `19.01.2024` | Pflege muss über eine Oberfläche möglich sein, die der FSR ohne Serverzugang bedienen kann, siehe `../features/admin/spec.md` |
+| N-006 | Der Datenbestand der Fernkonfiguration ist seit dem Wintersemester 2023/24 nicht mehr gepflegt | live abgefragt 2026-08-25, Schlüssel `semester_end` = `19.01.2024` | Pflege muss über eine Oberfläche möglich sein, die der FSR ohne Serverzugang bedienen kann, siehe `../../openspec/specs/admin/spec.md` |
 | N-007 | Ein Wildcard-Gruppenwert `*` im Feld `studentSet` wird bei gesetzter Gruppenkennung nicht als „gilt für alle" erkannt, sondern führt zum Ausschluss des Termins | `util/GroupLetterUtil.java` | Wildcard ausdrücklich behandeln, siehe SCHED-F-060 |
 | N-008 | Absturzberichte und Nutzungsereignisse gehen an einen Drittanbieterdienst | `util/FirebaseAnalyticsEvents.java`, Crashlytics-Aufrufe | Mit F-Droid unvereinbar (NFR-N-170) und im Verarbeitungsverzeichnis nicht vorgesehen; nicht übernehmen |
 | N-009 | Die Zeitüberschreitung für Netzaufrufe liegt bei 30 Sekunden | `FB4.java`, `callTimeout(30, TimeUnit.SECONDS)` | Deutlich kürzer ansetzen, siehe NFR-F-070 |

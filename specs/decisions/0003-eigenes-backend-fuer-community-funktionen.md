@@ -4,20 +4,20 @@ titel: Eigenes Backend für Community-Funktionen
 status: angenommen
 datum: 2026-08-24
 betrifft:
-  - ../platform/backend-and-api.md
-  - ../platform/architecture.md
-  - ../platform/integrations.md
-  - ../features/canteen-ratings/spec.md
-  - ../features/events/spec.md
-  - ../features/event-volunteers/spec.md
-  - ../features/room-finder/spec.md
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/architecture/spec.md
+  - ../../openspec/specs/integrations/spec.md
+  - ../../openspec/specs/canteen-ratings/spec.md
+  - ../../openspec/specs/events/spec.md
+  - ../../openspec/specs/event-volunteers/spec.md
+  - ../../openspec/specs/room-finder/spec.md
 ---
 
 # ADR 0003: Eigenes Backend für Community-Funktionen
 
 ## Kontext
 
-Aus einem reinen Lese-Client über öffentliche Hochschul-Schnittstellen wird eine Anwendung mit nutzergenerierten Inhalten, personenbezogenen Daten und Schreibpfaden. Vier voneinander unabhängige Anforderungen lassen sich mit der bisherigen Architektur (App ruft externe Quellen direkt auf) nicht erfüllen: Mensa-Bewertungen und Helfer-Anmeldungen brauchen serverseitige Persistenz, Identitätsprüfung und Moderation; die Raumsuche braucht eine Aggregation der FBWS-Termine über alle Studiengang/Semester-Kombinationen, die der FBWS selbst nicht anbietet; News (INT-003) und Mensa (INT-004) hängen an `fb4app.hemacode.de`, privater Infrastruktur unklarer Trägerschaft, beim Mensa-Aufruf zusätzlich unverschlüsselt; Events und FSR-News müssen redaktionell gepflegt werden. Details: `../platform/backend-and-api.md`, Abschnitt 1.
+Aus einem reinen Lese-Client über öffentliche Hochschul-Schnittstellen wird eine Anwendung mit nutzergenerierten Inhalten, personenbezogenen Daten und Schreibpfaden. Vier voneinander unabhängige Anforderungen lassen sich mit der bisherigen Architektur (App ruft externe Quellen direkt auf) nicht erfüllen: Mensa-Bewertungen und Helfer-Anmeldungen brauchen serverseitige Persistenz, Identitätsprüfung und Moderation; die Raumsuche braucht eine Aggregation der FBWS-Termine über alle Studiengang/Semester-Kombinationen, die der FBWS selbst nicht anbietet; News (INT-003) und Mensa (INT-004) hängen an `fb4app.hemacode.de`, privater Infrastruktur unklarer Trägerschaft, beim Mensa-Aufruf zusätzlich unverschlüsselt; Events und FSR-News müssen redaktionell gepflegt werden. Details: `../../openspec/specs/backend-and-api/spec.md`, Abschnitt 1.
 
 ## Entscheidung
 
@@ -38,8 +38,8 @@ Das Projekt übernimmt Betrieb, Kosten und Verantwortung für eine zusätzliche 
 
 ## Offene Punkte
 
-- ~~Betreiber~~ — geklärt: FSR FB4 selbst, siehe `../platform/backend-and-api.md` Abschnitt 6.
+- ~~Betreiber~~ — geklärt: FSR FB4 selbst, siehe `../../openspec/specs/backend-and-api/spec.md` Abschnitt 6.
 - ~~Hosting~~ — geklärt: eigener Hetzner-VPS.
-- ~~Technologie~~ — geklärt: .NET/C#, siehe `../platform/backend-and-api.md` Abschnitt 8.
+- ~~Technologie~~ — geklärt: .NET/C#, siehe `../../openspec/specs/backend-and-api/spec.md` Abschnitt 8.
 - Finanzierung
 - Konkreter Server-Zuschnitt, Zugriffsverwaltung und Backup-Ziel auf dem Hetzner-VPS

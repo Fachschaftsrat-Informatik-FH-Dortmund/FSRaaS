@@ -4,8 +4,8 @@ titel: API-Versionierungs- und Deprecation-Politik
 status: angenommen
 datum: 2026-08-26
 betrifft:
-  - ../platform/backend-and-api.md
-  - ../platform/api-contract.yaml
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/api-contract.yaml
   - 0011-monorepo-und-openapi-vertrag.md
   - 0008-vertrieb-ueber-drei-app-stores.md
 ---

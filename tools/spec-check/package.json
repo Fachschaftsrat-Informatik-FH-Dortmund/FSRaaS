@@ -2,7 +2,7 @@
   "name": "@fb4/spec-check",
   "version": "0.1.0",
   "private": true,
-  "description": "Prüfungen am Spec-Bestand (specs/platform/quality-and-testing.md Abschnitt 8): QA-N-080, QA-N-090, QA-N-100, QA-N-110.",
+  "description": "Prüfungen am Anforderungsbestand (openspec/specs/quality-and-testing): Titeleindeutigkeit, Herkunftsnachweis, Verweise.",
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "check": "node src/cli.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/"
   },
   "engines": {
     "node": ">=20"
