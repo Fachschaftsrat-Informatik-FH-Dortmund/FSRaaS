@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
   security-events: write
+  # CodeQL liest Angaben zum Workflow-Lauf; ohne dieses Recht bricht init@v3 mit
+  # „Resource not accessible by integration" ab.
+  actions: read
 
 jobs:
   analyze:
@@ -22,6 +25,17 @@ jobs:
         language: [javascript-typescript, csharp]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Vertragstypen erzeugen (API-N-035). backend/src/Fb4.Backend/Contract/Generated/
+      # steht in .gitignore und entsteht erst hier; ohne diesen Schritt scheitert
+      # der C#-Autobuild an fehlenden Typen (CS0234 „Fb4.Backend.Contract").
+      - name: contract types
+        if: matrix.language == 'csharp'
+        run: |
+          npm --prefix tools/contract-codegen ci
+          node tools/contract-codegen/src/generate.mjs
       - uses: github/codeql-action/init@v3
         with:
           # Schlüssel heißt „languages", nicht „language". Mit dem falschen
