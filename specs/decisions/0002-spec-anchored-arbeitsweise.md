@@ -6,7 +6,7 @@ datum: 2026-08-24
 zuletzt_ergaenzt: 2026-09-05   # abgelöst durch ADR 0019 (Umstellung auf OpenSpec)
 betrifft:
   - ../README.md
-  - ../platform/quality-and-testing.md
+  - ../../openspec/specs/quality-and-testing/spec.md
 ---
 
 # ADR 0002: Spec-anchored Arbeitsweise

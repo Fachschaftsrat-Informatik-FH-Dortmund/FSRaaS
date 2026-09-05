@@ -13,6 +13,26 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## Triage labels
+
+The canonical triage roles map one-to-one onto these labels; they exist on the
+repo and `/triage` should use them as given.
+
+| Role | Label |
+|---|---|
+| Needs triage | `needs-triage` |
+| Needs info from reporter | `needs-info` |
+| Ready for an agent | `ready-for-agent` |
+| Ready for a human | `ready-for-human` |
+| Won't fix | `wontfix` |
+
+An unlabeled issue is one nobody has triaged yet — treat it as `needs-triage`.
+
+Two labels outside the triage flow: `spec-unchanged` tells the CI gate
+`spec-delta` that a pull request deliberately carries no spec change
+(`.github/workflows/ci.yml`), and the `wayfinder:*` set is described under
+_Wayfinding operations_ below.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_

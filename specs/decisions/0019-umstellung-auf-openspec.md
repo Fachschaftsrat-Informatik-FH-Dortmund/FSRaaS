@@ -5,8 +5,8 @@ status: angenommen
 datum: 2026-09-05
 betrifft:
   - ../README.md
-  - ../platform/quality-and-testing.md
-  - ../platform/integrations.md
+  - ../../openspec/specs/quality-and-testing/spec.md
+  - ../../openspec/specs/integrations/spec.md
   - 0002-spec-anchored-arbeitsweise.md
 ---
 

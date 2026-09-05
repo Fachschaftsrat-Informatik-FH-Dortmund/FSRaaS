@@ -1,4 +1,4 @@
-// Gemeinsame Typen des Stundenplans (`specs/features/schedule/spec.md` Abschnitt 5).
+// Gemeinsame Typen des Stundenplans (`openspec/specs/schedule/spec.md` Abschnitt 5).
 // Reine Typdeklarationen, keine Logik.
 
 /** Wochentag als englisches Dreibuchstaben-Kürzel. Schließt das Wochenende ein,

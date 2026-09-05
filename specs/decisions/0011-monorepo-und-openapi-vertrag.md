@@ -5,11 +5,11 @@ status: angenommen
 datum: 2026-08-25
 zuletzt_ergaenzt: 2026-08-26
 betrifft:
-  - ../platform/backend-and-api.md
-  - ../platform/integrations.md
-  - ../platform/quality-and-testing.md
-  - ../platform/architecture.md
-  - ../features/admin/spec.md
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/integrations/spec.md
+  - ../../openspec/specs/quality-and-testing/spec.md
+  - ../../openspec/specs/architecture/spec.md
+  - ../../openspec/specs/admin/spec.md
   - 0002-spec-anchored-arbeitsweise.md
   - 0008-vertrieb-ueber-drei-app-stores.md
 ---
@@ -24,7 +24,7 @@ Erstens ist der Vertrag des eigenen Backends nirgends festgelegt. `platform/inte
 
 Zweitens existiert kein Code-Repository. `0008-vertrieb-ueber-drei-app-stores.md` benennt als Konsequenz mehrere Artefakte, die eines voraussetzen: `LICENSE` im Wurzelverzeichnis, ein F-Droid-Metadata-Recipe mit `subdir`-Direktive, getrennte CI-Pipelines je Vertriebsweg. `platform/non-functional.md` (NFR-N-140) verlangt zusätzlich, dass die Merge-Regel aus `README.md` Abschnitt 7 — keine Verhaltensänderung ohne Spec-Änderung — durch eine automatisierte Pipeline durchgesetzt wird, und `platform/quality-and-testing.md` Abschnitt 8 beschreibt vier Prüfskripte am Spec-Bestand, die es noch nicht gibt.
 
-Erschwerend kommt hinzu, dass drei Auslieferungseinheiten zu bedienen sind: die React-Native-App, das .NET-Backend und eine Admin-Oberfläche, die es sowohl in der App als auch als eigenständige Weboberfläche für die Bedienung am PC geben soll (`../features/admin/spec.md`).
+Erschwerend kommt hinzu, dass drei Auslieferungseinheiten zu bedienen sind: die React-Native-App, das .NET-Backend und eine Admin-Oberfläche, die es sowohl in der App als auch als eigenständige Weboberfläche für die Bedienung am PC geben soll (`../../openspec/specs/admin/spec.md`).
 
 ## Entscheidung
 

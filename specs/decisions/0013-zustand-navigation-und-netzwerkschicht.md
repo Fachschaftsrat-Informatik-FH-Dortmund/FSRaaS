@@ -4,8 +4,8 @@ titel: Zustands-, Navigations- und Netzwerkschicht der App
 status: angenommen
 datum: 2026-08-26
 betrifft:
-  - ../platform/architecture.md
-  - ../features/app-shell/spec.md
+  - ../../openspec/specs/architecture/spec.md
+  - ../../openspec/specs/app-shell/spec.md
   - 0001-react-native-als-plattform.md
   - 0009-expo-werkzeugkasten.md
 ---

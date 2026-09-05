@@ -2,7 +2,7 @@
 // INT-001 gelieferte `grades`-Liste des gewählten Studiengangs gegen den
 // zuletzt gespeicherten Stand gehalten wird — zuverlässiger als ein festes
 // Kalenderdatum, da Semesterstart-Termine variieren (siehe Erläuterung zu
-// SCHED-F-180 in `specs/features/schedule/spec.md` Abschnitt 13). Reine
+// SCHED-F-180 in `openspec/specs/schedule/spec.md` Abschnitt 13). Reine
 // Funktion ohne React; welche Liste als „zuletzt gespeichert" gilt, legt die
 // aufrufende Stelle fest (`einrichtung.ts`/Bildschirm).
 

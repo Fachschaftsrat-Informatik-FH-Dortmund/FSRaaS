@@ -4,9 +4,9 @@ titel: Selbstbetriebene Fehlertelemetrie statt Firebase
 status: angenommen
 datum: 2026-08-26
 betrifft:
-  - ../platform/security-and-privacy.md
-  - ../platform/backend-and-api.md
-  - ../platform/integrations.md
+  - ../../openspec/specs/security-and-privacy/spec.md
+  - ../../openspec/specs/backend-and-api/spec.md
+  - ../../openspec/specs/integrations/spec.md
   - 0003-eigenes-backend-fuer-community-funktionen.md
 ---
 
