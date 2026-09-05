@@ -36,7 +36,7 @@ jobs:
         run: |
           npm --prefix tools/contract-codegen ci
           node tools/contract-codegen/src/generate.mjs
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           # Schlüssel heißt „languages", nicht „language". Mit dem falschen
           # Namen verwirft die Action die Eingabe kommentarlos (nur eine
@@ -44,5 +44,5 @@ jobs:
           # Swift — und bricht ab: „Swift analysis is only supported on macOS
           # runner images."
           languages: ${{ matrix.language }}
-      - uses: github/codeql-action/autobuild@v3
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/autobuild@v4
+      - uses: github/codeql-action/analyze@v4
