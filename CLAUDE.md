@@ -14,6 +14,16 @@ Wer Verhalten ändert, legt zuerst einen `openspec/changes/<name>/`-Vorschlag mi
 
 Der Grund steht in `specs/decisions/0002-spec-anchored-arbeitsweise.md` (Grundsatzentscheidung) und `specs/decisions/0019-umstellung-auf-openspec.md` (Umstellung auf OpenSpec als Werkzeug): Beide Vorgängerprojekte sind an fehlender Übergabe gescheitert. Bei der Android-App war der Quellcode jahrelang nicht auffindbar; das Backend `app.fsrfb4.de` läuft bis heute mit Daten aus dem Wintersemester 2023/24, weil niemand mehr wusste, wie man sie pflegt. Der FSR wechselt seine Aktiven jährlich.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`Fachschaftsrat-Informatik-FH-Dortmund/FSRaaS`), via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context, but adapted to this repo's own spec-anchored system rather than the generic `CONTEXT.md`/`docs/adr/` convention — points skills at `openspec/specs/`, `openspec/changes/`, and `specs/decisions/`. See `docs/agents/domain.md`.
+
 ## Struktur
 
 ```
