@@ -109,3 +109,36 @@ Danach nach Anzahl: `canteen` (56), `backend-and-api` (53), `schedule` (29),
 
 Nicht sinnvoll: `integrations`. Dessen Einträge sind an echten Endpunkten
 gemessen und tragen fast durchgehend `Recherche:`.
+
+## Was der erste Durchgang gezeigt hat
+
+`canteen`, `canteen-photos` und `canteen-ratings` am 2026-09-05 (Changes
+`herkunft-canteen-durchsprache` und `canteen-durchsprache-inhalt`). Vier
+Dinge, die beim nächsten Mal Zeit sparen:
+
+**Die Frontier nicht von Hand zählen.** `grep` über die Spec zählt auch die
+`Herkunft:`-Zeilen im Abschnitt „Entfallene Anforderungen" mit und liefert
+daher zu hohe Werte. `--herkunft NEU` zählt richtig — 56 für `canteen`, nicht
+58.
+
+**Umgesetzte Requirements sind eine andere Frage.** Wo Code und Tests laufen,
+lautet die Leitfrage faktisch nicht mehr „würde man das heute noch
+beschließen", sondern „ist die laufende Umsetzung in Ordnung" — die Antwort
+liegt dann meist schon vor. Solche Requirements gesammelt bestätigen, aber im
+Beleg festhalten, **worauf** sich die Bestätigung stützt: eine laufende
+Implementierung ist ein schwächerer Beleg als eine Nutzerbeobachtung, und der
+Unterschied entscheidet, wie fest die Anforderung beim nächsten Durchgang
+steht.
+
+**Der Ertrag liegt in den Erläuterungen, nicht in den Requirements.** Von 56
+durchgesprochenen Requirements entfiel keines und drei änderten sich. Die
+eigentlichen Funde standen daneben: eine Erläuterung, die ein Requirement
+still um einen Fall erweiterte, den es nicht nennt; eine Begründung, die im
+nächsten Satz das Gegenteil ihrer selbst festlegte. Beim Lesen also nicht bei
+`## Requirements` aufhören.
+
+**Widersprüche zu querschnittlichen Regeln laut sagen.** Der Wochenend-Fall
+stand gegen SEC-F-060 („keine stillen Fehler"). Er wurde bewusst beibehalten —
+aber erst, nachdem der Konflikt benannt war, und mit einer Begründung, die
+vorher nirgends stand. Das ist der Normalfall, nicht die Ausnahme: die
+Durchsprache produziert seltener Streichungen als nachgetragene Gründe.
