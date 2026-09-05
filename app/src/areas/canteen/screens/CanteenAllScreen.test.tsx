@@ -84,11 +84,12 @@ function renderScreen() {
 }
 
 describe('MENSA-F-130 Ansicht aller Mensen nach Mensa getrennt', () => {
-  it('zeigt je anbietende Mensa einen Abschnitt untereinander', async () => {
+  it('zeigt je anbietende Mensa einen Abschnitt (Chip + Überschrift) untereinander', async () => {
     renderScreen();
-    await waitFor(() => expect(screen.getByText('Hauptmensa')).toBeTruthy());
-    expect(screen.getByText('Mensa Nord')).toBeTruthy();
-    expect(screen.getByText('Bolognese')).toBeTruthy();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    // Je Mensa: ein Chip in der Ankerleiste und eine Abschnittsüberschrift.
+    expect(screen.getAllByText('Hauptmensa').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Mensa Nord').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Curry')).toBeTruthy();
   });
 });
@@ -96,7 +97,7 @@ describe('MENSA-F-130 Ansicht aller Mensen nach Mensa getrennt', () => {
 describe('MENSA-F-140 Mensen ohne Angebot am Tag auslassen', () => {
   it('lässt eine Mensa ohne Gerichte aus', async () => {
     renderScreen();
-    await waitFor(() => expect(screen.getByText('Hauptmensa')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.queryByText('Mensa Süd')).toBeNull();
   });
 });

@@ -22,7 +22,9 @@ export type CachedResource =
   | 'stammdaten'
   | 'events'
   | 'ekeyStatus'
-  | 'wiki';
+  | 'wiki'
+  | 'studiengaenge'
+  | 'stundenplanTermine';
 
 type Ttl = number | (() => number);
 
@@ -35,6 +37,11 @@ const TTL: Record<CachedResource, Ttl> = {
   events: DAY,
   ekeyStatus: 15 * MINUTE,
   wiki: DAY,
+  // INT-001/INT-002 (`platform/integrations.md`): beide schlagen als
+  // Cache-Regel-Vorschlag einen Tag vor — Studiengänge/Fachsemester ändern
+  // sich selten, der Terminbestand innerhalb eines Semesters kaum.
+  studiengaenge: DAY,
+  stundenplanTermine: DAY,
 };
 
 /** staleTime in ms für eine Datenart. */

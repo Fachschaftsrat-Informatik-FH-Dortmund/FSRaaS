@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { FilterResetAction } from '@/areas/canteen/ui/FilterResetAction';
+import { FilterZugang } from '@/areas/canteen/ui/FilterZugang';
 import { useTheme } from '@/theme';
 import { useReducedMotion } from '@/ui/reducedMotion';
 
@@ -24,12 +26,15 @@ export default function CanteenLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('nav.canteen') }} />
+      <Stack.Screen
+        name="index"
+        options={{ title: t('nav.canteen'), headerRight: () => <FilterZugang /> }}
+      />
       <Stack.Screen name="auswahl" options={{ title: t('mensa.mensenWaehlen') }} />
       <Stack.Screen name="alle" options={{ title: t('mensa.alleMensenTitel') }} />
       <Stack.Screen
-        name="unvertraeglichkeiten"
-        options={{ title: t('mensa.unvertraeglichkeitenTitel') }}
+        name="filter"
+        options={{ title: t('mensa.filterTitel'), headerRight: () => <FilterResetAction /> }}
       />
     </Stack>
   );

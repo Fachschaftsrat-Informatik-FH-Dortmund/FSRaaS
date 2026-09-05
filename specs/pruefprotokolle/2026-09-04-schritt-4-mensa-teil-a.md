@@ -1,6 +1,6 @@
 ---
 status: draft
-version: 0.1.0
+version: 0.2.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 ---
@@ -82,6 +82,19 @@ Preisgruppe) ist über ID-tragende Einheitentests abgesichert (siehe Abschnitt 5
 
 iOS-Prebuild und alle iOS-Geräteprüfungen **ausstehend** — auf diesem Rechner (Windows) nicht
 durchführbar, benötigt macOS. Gilt unverändert seit Schritt 2.
+
+## 9. Gestaltungs-Überarbeitung 2026-09-04 (canteen 2.7.0)
+
+Nachtrag auf Wunsch des FSR FB4 („Layout sieht nicht clean aus").
+
+| Prüfpunkt | Methode | Ergebnis |
+|---|---|---|
+| MENSA-F-250/F-260 — Lebensstil-Vorgabe (UND) und Ausschluss über die Kennzeichnungen | Einheitentest `dietFilter.test.ts` (`MENSA-F-250`, `MENSA-F-260`) | **bestanden** |
+| MENSA-F-275 — Lebensstil-Vorgabe/​Ausschluss werden nie übertragen | Quelltextprüfung `dietPreference.test.ts` (`MENSA-F-275`) | **bestanden** |
+| MENSA-F-270 — Lebensstil, Ausschluss und Unverträglichkeiten in einer Ansicht | Komponententest `IntoleranceScreen.test.tsx` (`MENSA-F-270`) | **bestanden** |
+| MENSA-F-170/F-280 — Filterzugang in der Kopfzeile (headerRight), nicht in der Datumszeile | Komponententest `FilterZugang.test.tsx` (`MENSA-F-170`), `CanteenScreen.test.tsx` (`MENSA-F-280`) | **bestanden** |
+| MENSA-F-290 — geschlossene Mensa ohne Öffnungszeit-Zeile | Komponententest `CanteenScreen.test.tsx` (`MENSA-F-290`) | **bestanden** |
+| MENSA-F-280/F-285 — Leerraum Titel↔Datum, mittige Datumszeile, einzeilige Chip-Leiste; ruhiger Titelwechsel beim Tab-Wechsel (UX-F-170) | Sichtprüfung am Gerät | **ausstehend Gerät** |
 
 ## Bewertung
 

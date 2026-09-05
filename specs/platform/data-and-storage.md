@@ -3,7 +3,7 @@ id: data-and-storage
 titel: Daten und Persistenz
 praefix: DATA
 status: accepted
-version: 0.5.2
+version: 0.7.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 derived_from:
@@ -19,7 +19,8 @@ implemented_in:
   - app/src/ui/state        # DATA-F-090 (Altershinweis, Test: AsyncStates.test.tsx)
   - app/src/state           # Zwischenspeicher-Persistenz (ADR 0013)
   - app/src/auth            # DATA-F-120, DATA-F-130 (Sitzungsmerkmal im gesicherten Systemspeicher, Entfernen bei Abmeldung)
-  - app/src/areas/canteen   # DATA-F-070 (Speiseplan-Zwischenspeicher je Mensa/Tag), Lieblingsgerichte-Liste (Schlüssel favoriteDishes), Mensaauswahl/-reihenfolge (Schlüssel selectedCanteens), Preisgruppe (Schlüssel priceGroup), Unverträglichkeiten-Filter (Schlüssel dishIntolerances, MENSA-F-215 — nie ans Backend)
+  - app/src/areas/canteen   # DATA-F-070 (Speiseplan-Zwischenspeicher je Mensa/Tag), Lieblingsgerichte-Liste (Schlüssel favoriteDishes), Mensaauswahl/-reihenfolge (Schlüssel selectedCanteens), Preisgruppe (Schlüssel priceGroup), Unverträglichkeiten-Filter (Schlüssel dishIntolerances, MENSA-F-215 — nie ans Backend), Lebensstil-/Ausschluss-Vorgabe (Schlüssel dishDietPreference, MENSA-F-275 — nie ans Backend), Preisfilter-Höchstpreis (Schlüssel maxPrice, MENSA-F-235/F-275 — nie ans Backend)
+  - app/src/areas/schedule  # DATA-F-010 (Stundenplan-Persistenz, Schlüssel scheduleEntries, mit Rückhalt des lesbaren Teils bei inkonsistentem Bestand statt Löschung, DATA-F-020, seit SCHED-F-730 zusätzlich mit Feld wiederkehrend je eigenem Eintrag); Einrichtung — Studiengang, Fachsemester, Gruppenkennung, zusätzlich abgerufene Fachsemester, per INT-019 ermittelter, noch nicht bestätigter Gruppenkennungs-Vorschlag (Schlüssel scheduleSetup, SCHED-F-020/F-040/F-640/F-700); Matrikelnummer für die Ermittlung der Gruppenkennung über INT-019 — eigener Schlüssel, getrennt von scheduleSetup, ausschließlich lokal, kein Ziel außer INT-019 (Schlüssel scheduleMatrikelnummer, SCHED-F-690/F-710); Ansichtseinstellungen — Zeitachse/Liste, Gruppenfremde-ausblenden-Schalter, Sprung zu Heute (Schlüssel scheduleViewSettings, SCHED-F-530/F-145/F-150)
 related:
   - backend-and-api.md
   - security-and-privacy.md
@@ -45,6 +46,7 @@ Dieses Dokument legt fest, welche Datenklassen die App verarbeitet, wo sie liege
 | Datenklasse | Speicherort | Verschlüsselung | Lebensdauer | Löschweg | Personenbezogen |
 |---|---|---|---|---|---|
 | Stundenplan der Nutzerin | lokal, Gerät | nein | dauerhaft, bis manuell geändert | Bearbeitung im Stundenplan; „Alle lokalen Daten löschen" | ja (Kursauswahl, optionale Gruppenkennung) |
+| Matrikelnummer (Ermittlung der Gruppenkennung, SCHED-F-690) | lokal, Gerät | nein | dauerhaft, bis geändert oder entfernt | Eingabe entfernen; „Alle lokalen Daten löschen" | ja (Matrikelnummer); ausschließlich geräteseitig, geht an kein anderes Ziel als INT-019, insbesondere nicht an das eigene Backend (SCHED-F-710, API-F-100) |
 | Semesterticket-Bild | lokal, Gerät | ja, verpflichtend | dauerhaft, bis neues Ticket hinterlegt oder gelöscht | „Ticket löschen"; „Alle lokalen Daten löschen" | ja (Fahrausweis) |
 | Einstellungen | lokal, Gerät | nein | dauerhaft | „Alle lokalen Daten löschen"; Deinstallation | überwiegend nein |
 | Angepinnte News | lokal, Gerät | nein | dauerhaft, bis entpinnt | manuell entpinnen; „Alle lokalen Daten löschen" | nein |
@@ -53,6 +55,9 @@ Dieses Dokument legt fest, welche Datenklassen die App verarbeitet, wo sie liege
 | Lieblingsgerichte (abgeleitet aus den eigenen Höchstbewertungen) | lokal, Gerät — abgeleitet aus serverseitigen Bewertungen | nein | dauerhaft, bis die zugrunde liegende Bewertung geändert oder gelöscht wird | eigene Bewertung herabsetzen oder löschen (`../features/canteen-ratings/spec.md` RATE-F-070); „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben); seit 2026-09-04 **nicht mehr rein gerätelokal**, da die Höchstbewertung serverseitig liegt, siehe `../features/canteen/spec.md` MENSA-F-085/F-090 |
 | Gerätelokale Spiegelung der eigenen Bewertungen | lokal, Gerät | nein | bis Abmeldung oder nächster Abgleich | Abmeldung; „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben), siehe `../features/canteen-ratings/spec.md` RATE-F-100 |
 | Unverträglichkeiten-Filter (Mensaplan) | lokal, Gerät | nein | dauerhaft, bis geändert | Kennzeichnung entfernen; „Alle lokalen Daten löschen" | ja, besondere Kategorie nach Art. 9 DSGVO (Gesundheitsangabe); ausschließlich geräteseitig, keine Übermittlung, siehe `../features/canteen/spec.md` MENSA-F-170 bis F-215 |
+| Lebensstil-/Ausschluss-Vorgabe (Mensaplan) | lokal, Gerät | nein | dauerhaft, bis geändert | Kennzeichnung entfernen; „Alle lokalen Daten löschen" | ja (Ernährungsvorlieben), keine besondere Kategorie; ausschließlich geräteseitig, keine Übermittlung, siehe `../features/canteen/spec.md` MENSA-F-250 bis F-275 |
+| Preisfilter-Höchstpreis (Mensaplan) | lokal, Gerät | nein | dauerhaft, bis geändert | Höchstpreis auf „Kein Limit" senken; „Alle lokalen Daten löschen" | nein (reine Anzeigeeinstellung); ausschließlich geräteseitig, keine Übermittlung, siehe `../features/canteen/spec.md` MENSA-F-235/F-275 |
+| Sortier-/Gruppierpresets (Mensaplan), vordefiniert + eigene, aktives Preset | lokal, Gerät | nein | dauerhaft, bis geändert/gelöscht | eigenes Preset löschen; „Alle lokalen Daten löschen" | nein (reine Anzeigeeinstellung); ausschließlich geräteseitig, siehe `../features/canteen/spec.md` MENSA-F-300 bis F-370 |
 | Gerichtsfotos (hochgeladen) | serverseitig, Ablagebereich des Backends | nein (öffentlich sichtbarer Inhalt); Metadaten vor Übertragung entfernt | dauerhaft, bis Löschung durch die hochladende Person, Moderation oder Kontolöschung | eigenes Foto löschen; Moderationsentscheidung; Kontolöschung (`../features/canteen-photos/spec.md` FOTO-F-100/F-160) | ja (Beitrag ist einem Konto zugeordnet), siehe `../features/canteen-photos/spec.md` |
 | Prüfungsauswahl und Wahlpflicht-Planungsauswahl | lokal, Gerät | nein | dauerhaft, bis geändert | Bearbeitung im Stundenplan; „Alle lokalen Daten löschen" | ja (Studienverlauf) |
 | Ferngepflegte Stammdaten (Mensen, Räume, Links, Semestertermine) | lokal, Gerät | nein | bis zur nächsten Aktualisierung; Ausgangsbestand aus dem Anwendungspaket als Rückfall | automatischer Ersatz bei Aktualisierung; „Alle lokalen Daten löschen" | nein |
