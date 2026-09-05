@@ -109,6 +109,31 @@ const leer = () => qr([]);
 
 let client: QueryClient;
 
+// Der Bildschirm leitet den angezeigten Tag aus `isoHeute()` ab, und
+// `oeffnungszeitFuer` liefert an Samstagen und Sonntagen bewusst keine
+// Öffnungszeit (MENSA-F-042). Ohne feste Uhr hingen die Erwartungen dieser
+// Datei am Wochentag des Testlaufs: an Wochenenden rot, sonst grün.
+//
+// Festgehalten wird ausschließlich `Date`. Alle Zeitgeber bleiben echt, damit
+// `waitFor` und TanStack Query unverändert arbeiten.
+const MONTAG = new Date(2026, 8, 7, 12, 0, 0);
+
+beforeAll(() => {
+  jest.useFakeTimers({
+    now: MONTAG,
+    doNotFake: [
+      'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+      'setImmediate', 'clearImmediate', 'nextTick', 'queueMicrotask',
+      'performance', 'requestAnimationFrame', 'cancelAnimationFrame',
+      'requestIdleCallback', 'cancelIdleCallback', 'hrtime',
+    ],
+  });
+});
+
+afterAll(() => {
+  jest.useRealTimers();
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockHas = jest.fn(() => false);
