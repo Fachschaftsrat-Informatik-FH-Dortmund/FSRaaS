@@ -17,6 +17,31 @@ This repo does **not** use the generic `CONTEXT.md` / `docs/adr/` convention. It
 
 If a spec, ADR, or the glossary doesn't have an answer, **proceed silently** — don't flag the absence or suggest creating generic `CONTEXT.md`/`docs/adr/` files instead; that would create a second, competing source of truth. Use the `openspec-propose` / `opsx:propose` skill (or `/schnitt`) to add missing specs the way this repo already does it.
 
+## Read narrowly — the specs do not fit in one context
+
+`openspec/specs/` is about 89 000 words (~130 000 tokens) in total. Two single
+files, `schedule/spec.md` and `canteen/spec.md`, are ~13 000 words each. Reading
+the tree wholesale burns an entire context window before any work starts, so
+don't.
+
+Each capability spec has the same shape: `## Purpose`, then `## Requirements`
+(the in-force requirements, ~57 % of the text), then trailing sections
+(`Erläuterungen`, `Scope / Nicht-Scope`, `Datenmodell`, `UI-Flows & Zustände`,
+`Offline-Verhalten`, `Fehlerfälle`, `Akzeptanzkriterien`, `Umsetzungsstand`,
+`Entfallene Anforderungen`, `Offene Fragen`).
+
+- To learn **what the system must do**, read from `## Requirements` to the next
+  `## ` heading. That is usually enough.
+- Read a trailing section only when you need what it holds: `Erläuterungen` for
+  why a requirement is worded the way it is, `Umsetzungsstand` for what is
+  already built, `Entfallene Anforderungen` for a requirement that was withdrawn
+  (its ID stays assigned forever and is still referenced elsewhere).
+- `openspec workset create` composes a named, local view of just the folders one
+  job needs (e.g. `schedule` + `integrations` + `api-contract.yaml`);
+  `openspec workset open <name>` starts a session against it. Prefer one workset
+  per roadmap step over opening the whole tree.
+- `openspec context --json` prints a compact brief instead of the full files.
+
 ## Requirement provenance
 
 Every requirement in `openspec/specs/` carries exactly one provenance marker, given as a closing "Herkunft: …" sentence in the requirement text: `Alt: <pfad>:<zeile>`, `NEU`, `Android: unbekannt`, `Alt: bewusst verworfen`, or `Recherche: <quelle>, <datum>`. When citing or writing a requirement, preserve or add this marker — it signals how trustworthy the requirement is.
