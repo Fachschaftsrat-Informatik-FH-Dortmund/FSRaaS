@@ -1,0 +1,189 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
+
+import { writeJson } from '@/storage/kv';
+import { __resetScheduleEntriesForTest, einmaligerGueltigkeitszeitraum, readScheduleEntries, useScheduleEntries } from './planStore';
+import type { CustomPlanEntry } from './typen';
+
+function eigenerTermin(überschreibung: Partial<CustomPlanEntry> = {}): CustomPlanEntry {
+  return {
+    kind: 'eigen',
+    id: 'e1',
+    status: 'fest',
+    color: '#1E88E5',
+    weekday: 'Mon',
+    timeBeginMin: 480,
+    timeEndMin: 570,
+    gruppenzugehoerig: true,
+    abweichendeGruppe: false,
+    akzeptierterKonflikt: false,
+    istPruefung: false,
+    gueltigVon: null,
+    gueltigBis: null,
+    title: 'Lerngruppe',
+    wiederkehrend: true,
+    ...überschreibung,
+  };
+}
+
+beforeEach(async () => {
+  await AsyncStorage.clear();
+  __resetScheduleEntriesForTest();
+});
+
+describe('DATA-F-010 der Stundenplan wird ausschließlich lokal persistiert', () => {
+  it('legt einen Eintrag an, ändert ihn und entfernt ihn wieder, persistiert dabei', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin()));
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+    expect(await readScheduleEntries()).toHaveLength(1);
+
+    act(() => result.current.aktualisieren('e1', { title: 'Geänderter Titel' } as Partial<CustomPlanEntry>));
+    await waitFor(() =>
+      expect((result.current.entries[0] as CustomPlanEntry).title).toBe('Geänderter Titel'),
+    );
+
+    act(() => result.current.entfernen('e1'));
+    await waitFor(() => expect(result.current.entries).toHaveLength(0));
+    expect(await readScheduleEntries()).toHaveLength(0);
+  });
+
+  it('teilt den Stand über alle Hook-Instanzen', async () => {
+    const a = renderHook(() => useScheduleEntries());
+    const b = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(b.result.current.loaded).toBe(true));
+
+    act(() => a.result.current.hinzufuegen(eigenerTermin()));
+    await waitFor(() => expect(b.result.current.entries).toHaveLength(1));
+  });
+});
+
+describe('SCHED-F-570 Status fest/vorgemerkt wechseln', () => {
+  it('wechselt den Status eines Eintrags zwischen fest und vorgemerkt', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ status: 'fest' })));
+    await waitFor(() => expect(result.current.entries[0]!.status).toBe('fest'));
+
+    act(() => result.current.statusUmschalten('e1'));
+    await waitFor(() => expect(result.current.entries[0]!.status).toBe('vorgemerkt'));
+
+    act(() => result.current.statusUmschalten('e1'));
+    await waitFor(() => expect(result.current.entries[0]!.status).toBe('fest'));
+  });
+});
+
+describe('SCHED-F-247 Farbe eines einzelnen Termins ändern', () => {
+  it('überschreibt die Farbe eines einzelnen Eintrags, ohne andere zu verändern', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'a', color: '#1E88E5' })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'b', color: '#43A047' })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+
+    act(() => result.current.farbeSetzen('a', '#D81B60'));
+    await waitFor(() => expect(result.current.entries.find((e) => e.id === 'a')!.color).toBe('#D81B60'));
+    expect(result.current.entries.find((e) => e.id === 'b')!.color).toBe('#43A047');
+  });
+});
+
+describe('DATA-F-020 inkonsistenter gespeicherter Bestand wird nicht kommentarlos gelöscht', () => {
+  it('behält gültige Einträge und verwirft nur die ungültigen, mit Protokoll und Zähler', async () => {
+    await writeJson('scheduleEntries', [
+      eigenerTermin({ id: 'gueltig' }),
+      { id: 'kaputt' }, // fehlt fast alles
+      'ganz-falscher-typ',
+    ]);
+    __resetScheduleEntriesForTest();
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]!.id).toBe('gueltig');
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(2);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('verwirft den Bestand nicht, wenn der gespeicherte Wert überhaupt keine Liste ist', async () => {
+    await writeJson('scheduleEntries', { irgendwas: true });
+    __resetScheduleEntriesForTest();
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toEqual([]);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('verwirft einen eigenen Eintrag ohne das Feld wiederkehrend als ungültig (SCHED-F-730)', async () => {
+    const ohneWiederkehrend: Record<string, unknown> = { ...eigenerTermin() };
+    delete ohneWiederkehrend.wiederkehrend;
+    await writeJson('scheduleEntries', [ohneWiederkehrend]);
+    __resetScheduleEntriesForTest();
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toEqual([]);
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(1);
+    errorSpy.mockRestore();
+  });
+});
+
+describe('SCHED-F-730 eigener Eintrag: wöchentlich wiederkehrend oder einmalig an einem Datum', () => {
+  it('speichert und lädt einen wöchentlich wiederkehrenden eigenen Eintrag', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'lerngruppe', wiederkehrend: true })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+
+    const geladen = await readScheduleEntries();
+    expect((geladen[0] as CustomPlanEntry).wiederkehrend).toBe(true);
+  });
+
+  it('speichert einen einmaligen eigenen Eintrag mit gleichem gueltigVon und gueltigBis', async () => {
+    const datum = 1_760_000_000; // beliebiger fester Unix-Sekunden-Zeitpunkt
+    const { gueltigVon, gueltigBis } = einmaligerGueltigkeitszeitraum(datum);
+    expect(gueltigVon).toBe(datum);
+    expect(gueltigBis).toBe(datum);
+
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() =>
+      result.current.hinzufuegen(
+        eigenerTermin({ id: 'beratung', wiederkehrend: false, gueltigVon, gueltigBis, title: 'Beratungstermin' }),
+      ),
+    );
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+
+    const geladen = (await readScheduleEntries())[0] as CustomPlanEntry;
+    expect(geladen.wiederkehrend).toBe(false);
+    expect(geladen.gueltigVon).toBe(geladen.gueltigBis);
+  });
+
+  it('unterscheidet einen einmaligen von einem wiederkehrenden Eintrag anhand des Felds wiederkehrend', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'a', wiederkehrend: true })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'b', wiederkehrend: false })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+
+    const a = result.current.entries.find((e) => e.id === 'a') as CustomPlanEntry;
+    const b = result.current.entries.find((e) => e.id === 'b') as CustomPlanEntry;
+    expect(a.wiederkehrend).toBe(true);
+    expect(b.wiederkehrend).toBe(false);
+  });
+});

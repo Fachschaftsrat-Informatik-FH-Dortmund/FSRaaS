@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export const symbole: Record<string, { aktiv: IoniconName; inaktiv: IoniconName }> = {
-  index: { aktiv: 'calendar', inaktiv: 'calendar-outline' }, // Stundenplan
+  '(schedule)': { aktiv: 'calendar', inaktiv: 'calendar-outline' }, // Stundenplan (verschachtelter Stack seit Etappe 2b)
   canteen: { aktiv: 'restaurant', inaktiv: 'restaurant-outline' }, // Mensa: Gabel & Messer
   news: { aktiv: 'newspaper', inaktiv: 'newspaper-outline' }, // Aktuelles: Zeitung
   rooms: { aktiv: 'search', inaktiv: 'search-outline' }, // Raumsuche: Lupe (ux-and-theming.md)

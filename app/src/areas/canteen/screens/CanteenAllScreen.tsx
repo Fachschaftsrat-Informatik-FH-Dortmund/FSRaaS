@@ -6,18 +6,19 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
-import { useMensaVerzeichnisse, useMensen, useSpeisepläne, type Gericht } from '../api';
-import { gerichtBetroffen } from '../intoleranceFilter';
-import { useIntolerances } from '../intolerances';
+import { useMensen, useSpeisepläne, type Gericht } from '../api';
+import { useGerichtFilter, type GerichtKennzeichen } from '../filter';
 import { gruppiereNachKategorie } from '../consolidate';
+import { preisText } from '../preise';
 import { isoHeute } from '../tageswahl';
+import { AnkerListe } from '../ui/AnkerListe';
 
 // MENSA-F-130 bis F-150: Ansicht aller vom Backend gelieferten Mensen für den aus
-// der Hauptansicht übernommenen Tag, nach Mensa getrennt untereinander. Reine
-// Leseansicht — ändert weder Mensaauswahl noch Reihenfolge noch aktive Mensa
-// (MENSA-F-150). Alle drei Preise unabhängig von der Preisgruppe (MENSA-F-230);
-// Gerichte mit festgelegter Unverträglichkeit ausgegraut statt ausgeblendet
-// (MENSA-F-210).
+// der Hauptansicht übernommenen Tag, nach Mensa getrennt untereinander mit
+// derselben Ankernavigation wie die Hauptansicht (MENSA-F-016/F-017/F-019).
+// Reine Leseansicht — ändert weder Mensaauswahl noch Reihenfolge (MENSA-F-150).
+// Alle drei Preise unabhängig von der Preisgruppe (MENSA-F-230); Gerichte mit
+// festgelegter Filtervorgabe ausgegraut statt ausgeblendet (MENSA-F-210).
 
 export function CanteenAllScreen() {
   const { t } = useTranslation();
@@ -27,21 +28,7 @@ export function CanteenAllScreen() {
   const { mensen } = useMensen();
   const ids = useMemo(() => mensen.map((m) => m.id), [mensen]);
   const ergebnisse = useSpeisepläne(ids, datum);
-  const { codes } = useIntolerances();
-  const verzeichnisse = useMensaVerzeichnisse();
-
-  const ausgewaehlt = useMemo(() => {
-    const labelVon = new Map(
-      (verzeichnisse.data?.zusatzstoffe ?? []).map((z) => [z.id, z.bezeichnung]),
-    );
-    const menge = new Set<string>();
-    for (const code of codes) {
-      menge.add(code);
-      const label = labelVon.get(code);
-      if (label) menge.add(label);
-    }
-    return menge;
-  }, [codes, verzeichnisse.data]);
+  const { betroffen } = useGerichtFilter();
 
   const abschnitte = ids
     .map((id, i) => ({
@@ -68,9 +55,11 @@ export function CanteenAllScreen() {
     refetch: () => Promise.all(ergebnisse.map((r) => r.refetch())),
   };
 
+  const { colors } = useTheme();
+
   return (
-    <Screen scroll>
-      <Text style={styles.datum}>{datum}</Text>
+    <Screen tight>
+      <Text style={[styles.datum, { color: colors.textMuted }]}>{datum}</Text>
       <AsyncStates
         query={aggregat}
         isEmpty={(d) => d.abschnitte.length === 0}
@@ -78,11 +67,17 @@ export function CanteenAllScreen() {
         emptyNextStep={t('mensa.alleMensenLeerHinweis')}
       >
         {(d) => (
-          <View style={styles.liste}>
-            {d.abschnitte.map((a) => (
-              <MensaAbschnitt key={a.id} name={a.name} gerichte={a.gerichte} ausgewaehlt={ausgewaehlt} />
-            ))}
-          </View>
+          <AnkerListe
+            chips={d.abschnitte.map((a) => ({ id: a.id, titel: a.name }))}
+            contentContainerStyle={styles.liste}
+            scrollProps={{ showsVerticalScrollIndicator: false }}
+            abschnitte={d.abschnitte.map((a) => ({
+              id: a.id,
+              inhalt: (
+                <MensaAbschnitt name={a.name} gerichte={a.gerichte} betroffen={betroffen} />
+              ),
+            }))}
+          />
         )}
       </AsyncStates>
     </Screen>
@@ -92,11 +87,11 @@ export function CanteenAllScreen() {
 function MensaAbschnitt({
   name,
   gerichte,
-  ausgewaehlt,
+  betroffen,
 }: {
   name: string;
   gerichte: Gericht[];
-  ausgewaehlt: ReadonlySet<string>;
+  betroffen: (g: GerichtKennzeichen) => boolean;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -111,13 +106,17 @@ function MensaAbschnitt({
             <Text style={[styles.gruppeTitel, { color: colors.textMuted }]}>{kategorie}</Text>
           ) : null}
           {gs.map((g, i) => {
-            const betroffen = gerichtBetroffen(g.zusatzstoffe, ausgewaehlt);
+            const istBetroffen = betroffen(g);
             return (
               <View
                 key={`${g.schluessel}-${i}`}
-                style={[styles.karte, { borderColor: colors.border }, betroffen && styles.ausgegraut]}
-                accessibilityState={betroffen ? { disabled: true } : undefined}
-                accessibilityHint={betroffen ? t('mensa.durchFilterBetroffen') : undefined}
+                style={[
+                  styles.karte,
+                  { borderColor: colors.border },
+                  istBetroffen && styles.ausgegraut,
+                ]}
+                accessibilityState={istBetroffen ? { disabled: true } : undefined}
+                accessibilityHint={istBetroffen ? t('mensa.durchFilterBetroffen') : undefined}
               >
                 <Text style={[styles.bezeichnung, { color: colors.text }]}>{g.bezeichnung}</Text>
                 {g.kennzeichnungen && g.kennzeichnungen.length > 0 ? (
@@ -146,13 +145,9 @@ function MensaAbschnitt({
   );
 }
 
-function preisText(n: number | null | undefined): string {
-  return n == null ? '–' : `${n.toFixed(2).replace('.', ',')} €`;
-}
-
 const styles = StyleSheet.create({
   datum: { fontSize: 15, fontWeight: '600' },
-  liste: { gap: 20 },
+  liste: { gap: 20, paddingBottom: 24 },
   abschnitt: { gap: 8 },
   mensaName: { fontSize: 17, fontWeight: '700' },
   gruppe: { gap: 6 },

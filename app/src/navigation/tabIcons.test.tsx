@@ -6,7 +6,7 @@ import { symbole, tabIcon } from './tabIcons';
 // Text aus, dadurch per getByText prüfbar.
 
 describe('UX-F-150 Symbole der Tab-Leiste', () => {
-  const tabs = ['index', 'canteen', 'news', 'rooms', 'more'];
+  const tabs = ['(schedule)', 'canteen', 'news', 'rooms', 'more'];
 
   it('definiert für jeden der fünf Tabs ein aktives und ein inaktives Symbol', () => {
     expect(Object.keys(symbole).sort()).toEqual([...tabs].sort());

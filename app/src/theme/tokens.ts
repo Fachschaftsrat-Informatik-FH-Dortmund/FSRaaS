@@ -48,3 +48,26 @@ export const darkColors: ThemeColors = {
 export function colorsFor(scheme: Scheme): ThemeColors {
   return scheme === 'dark' ? darkColors : lightColors;
 }
+
+/**
+ * SCHED-F-660: feste Farbpalette für die selbsttätige Veranstaltungsfarbvergabe
+ * im Stundenplan (`areas/schedule/farbe.ts`). Ein Satz kräftiger, voneinander
+ * unterscheidbarer Farbtöne, der in hellem wie dunklem Erscheinungsbild als
+ * Terminfläche trägt — die Textfarbe wird je Verwendung aus der Helligkeit des
+ * gewählten Farbtons abgeleitet (UX-F-040), nicht aus dem Schema selbst, daher
+ * genügt eine einzige Palette für beide Schemata.
+ */
+export const SCHEDULE_PALETTE: readonly string[] = [
+  '#1E88E5', // Blau
+  '#43A047', // Grün
+  '#8E24AA', // Violett
+  '#FB8C00', // Orange
+  '#00897B', // Petrol
+  '#D81B60', // Magenta
+  '#6D4C41', // Braun
+  '#3949AB', // Indigo
+  '#7CB342', // Hellgrün
+  '#F4511E', // Ziegelrot
+  '#00ACC1', // Türkis
+  '#5E35B1', // Lila
+];

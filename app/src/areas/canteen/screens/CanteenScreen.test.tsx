@@ -17,6 +17,7 @@ let mockPlaene: Record<string, any>;
 let mockVerzeichnisse: any;
 let mockGroup: 'student' | 'staff' | 'guest';
 let mockCodes: string[];
+let mockLimit: number | null;
 let mockHas: jest.Mock;
 const mockToggle = jest.fn();
 
@@ -28,7 +29,13 @@ const mockMensen = [
     reihenfolge: 10,
     oeffnungszeiten: ['11:30 - 14:45', 'a', 'b', 'c', 'd'],
   },
-  { id: 'Sued', name: 'Mensa Süd', standardAuswahl: false, reihenfolge: 20 },
+  {
+    id: 'Sued',
+    name: 'Mensa Süd',
+    standardAuswahl: false,
+    reihenfolge: 20,
+    oeffnungszeiten: ['12:00 - 14:00', 'a', 'b', 'c', 'd'],
+  },
 ];
 
 jest.mock('../selection', () => ({ useCanteenSelection: () => mockSelection }));
@@ -40,6 +47,11 @@ jest.mock('../priceGroup', () => ({
 }));
 jest.mock('../intolerances', () => ({
   useIntolerances: () => ({ codes: mockCodes, loaded: true, toggle: jest.fn(), clear: jest.fn() }),
+}));
+jest.mock('../priceLimit', () => ({
+  PREIS_MIN: 1,
+  PREIS_MAX: 10,
+  usePriceLimit: () => ({ limit: mockLimit, loaded: true, erhoehen: jest.fn(), senken: jest.fn(), clear: jest.fn() }),
 }));
 jest.mock('../api', () => ({
   apiSprache: () => 'de',
@@ -105,6 +117,7 @@ beforeEach(() => {
   mockVerzeichnisse = { data: { kategorien: [], zusatzstoffe: [], kennzeichnungen: [] } };
   mockGroup = 'student';
   mockCodes = [];
+  mockLimit = null;
   client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: Infinity } },
   });
@@ -164,18 +177,41 @@ describe('MENSA-F-012 / MENSA-F-014 zusammengefasste Liste über die gewählten 
   });
 });
 
-describe('MENSA-F-018 maßgebliche Mensa bestimmt die angezeigten Angaben', () => {
-  it('wechselt den Preis, wenn die aktive Mensa gewechselt wird', async () => {
+describe('MENSA-F-013 Gliederung primär nach Mensa-Auswahlreihenfolge', () => {
+  it('zeigt je gewählter Mensa einen Abschnitt mit Überschrift in Auswahlreihenfolge', async () => {
+    mockSelection = { ids: ['Sued', 'Mensa'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Sued: qr([gericht({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+      Mensa: qr([gericht()]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Curry')).toBeTruthy());
+
+    // Abschnittsüberschrift zusätzlich zum Chip → je Mensa zweimal im Baum.
+    expect(screen.getAllByText('Mensa Süd').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Hauptmensa').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Curry')).toBeTruthy();
+    expect(screen.getByText('Bolognese')).toBeTruthy();
+  });
+});
+
+describe('MENSA-F-018 / MENSA-F-025 Abschnitt je Mensa, Angaben der Abschnitts-Mensa', () => {
+  it('zeigt je Abschnitt den Preis der eigenen Mensa; der Mensa-Wechsel verschiebt kein Gericht', async () => {
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
     mockPlaene = {
       Mensa: qr([gericht({ preisStudierende: 3.3 })]),
-      Sued: qr([gericht({ preisStudierende: 9.9 })]),
+      Sued: qr([gericht({ schluessel: 'curry', bezeichnung: 'Curry', preisStudierende: 9.9 })]),
     };
     renderScreen();
-    await waitFor(() => expect(screen.getByText('Studierende 3,30 €')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    // Bolognese im Hauptmensa-Abschnitt (3,30), Curry im Süd-Abschnitt (9,90) — beide gleichzeitig.
+    expect(screen.getByText('Studierende 3,30 €')).toBeTruthy();
+    expect(screen.getByText('Studierende 9,90 €')).toBeTruthy();
 
+    // Aktive Mensa wechseln ändert die Preise/Positionen nicht.
     fireEvent.press(screen.getByLabelText('Mensa Süd'));
     await waitFor(() => expect(screen.getByText('Studierende 9,90 €')).toBeTruthy());
+    expect(screen.getByText('Studierende 3,30 €')).toBeTruthy();
   });
 });
 
@@ -187,6 +223,23 @@ describe('MENSA-F-045 Blättern zu benachbarten Tagen', () => {
     await waitFor(() =>
       expect(screen.getByText(/\d{2}\.\d{2}\.\d{4}/).props.children).not.toEqual(vorher),
     );
+  });
+
+  it('MENSA-F-043 „Zu heute" stellt die Tagesauswahl auf den aktuellen Tag zurück', async () => {
+    renderScreen();
+    const heute = screen.getByText(/\d{2}\.\d{2}\.\d{4}/).props.children;
+    expect(screen.queryByText('Zurücksetzen')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Nächster Tag'));
+    await waitFor(() =>
+      expect(screen.getByText(/\d{2}\.\d{2}\.\d{4}/).props.children).not.toEqual(heute),
+    );
+
+    fireEvent.press(screen.getByText('Zurücksetzen'));
+    await waitFor(() =>
+      expect(screen.getByText(/\d{2}\.\d{2}\.\d{4}/).props.children).toEqual(heute),
+    );
+    expect(screen.queryByText('Zurücksetzen')).toBeNull();
   });
 
   it('„Tag zurück" ist am heutigen Tag nicht auslösbar (MENSA-F-042)', async () => {
@@ -204,6 +257,31 @@ describe('MENSA-F-049 geschlossene Mensa am Seitenende', () => {
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText('Mensa Süd hat an diesem Tag geschlossen.')).toBeTruthy();
   });
+
+  it('MENSA-F-290 zeigt für die geschlossene Mensa keine Öffnungszeit-Zeile', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText(/Mensa Süd: geöffnet/)).toBeNull();
+    expect(screen.getByText(/Hauptmensa: geöffnet/)).toBeTruthy();
+  });
+});
+
+describe('MENSA-F-295 / MENSA-F-297 geschlossene Mensa im Wechsler', () => {
+  it('deaktiviert den Chip der geschlossenen Mensa und rückt die aktive Mensa auf eine offene', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([]), Sued: qr([gericht()]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+
+    const zu = screen.getByLabelText('Hauptmensa (an diesem Tag geschlossen)');
+    expect(zu.props.accessibilityState.disabled).toBe(true);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Mensa Süd').props.accessibilityState.selected).toBe(true),
+    );
+  });
 });
 
 describe('MENSA-F-120 Handlung „Alle Mensen anzeigen" am Seitenende', () => {
@@ -215,12 +293,12 @@ describe('MENSA-F-120 Handlung „Alle Mensen anzeigen" am Seitenende', () => {
   });
 });
 
-describe('MENSA-F-170 Zugang zu den Unverträglichkeiten oben rechts', () => {
-  it('öffnet den Unverträglichkeiten-Bildschirm', async () => {
+describe('MENSA-F-280 Zugang zum Ernährungsfilter auf Titelhöhe', () => {
+  it('rendert den Filterzugang nicht mehr in der Datumszeile des Bildschirms', async () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
-    fireEvent.press(screen.getByLabelText('Unverträglichkeiten festlegen'));
-    expect(mockRouter.push).toHaveBeenCalledWith('/canteen/unvertraeglichkeiten');
+    // Der Zugang sitzt jetzt in der Kopfzeile (headerRight, siehe FilterZugang.test.tsx).
+    expect(screen.queryByLabelText('Ernährungsfilter öffnen')).toBeNull();
   });
 });
 
@@ -239,7 +317,21 @@ describe('MENSA-F-190 / MENSA-F-200 Unverträglichkeiten-Filter blendet Gerichte
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.queryByText('Fischfilet')).toBeNull();
-    expect(screen.getByText('1 Gericht wegen deiner Unverträglichkeiten ausgeblendet')).toBeTruthy();
+    expect(screen.getByText('1 Gericht wegen deiner Filter ausgeblendet')).toBeTruthy();
+  });
+
+  it('MENSA-F-235 blendet Gerichte über dem Höchstpreis aus und zählt sie', async () => {
+    mockPlaene = {
+      Mensa: qr([
+        gericht({ preisStudierende: 3.3 }),
+        gericht({ schluessel: 'teuer', bezeichnung: 'Steak', preisStudierende: 9.9 }),
+      ]),
+    };
+    mockLimit = 4;
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText('Steak')).toBeNull();
+    expect(screen.getByText('1 Gericht wegen deiner Filter ausgeblendet')).toBeTruthy();
   });
 
   it('ohne festgelegte Unverträglichkeit verhält sich die Liste unverändert', async () => {

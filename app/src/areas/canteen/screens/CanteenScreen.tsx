@@ -15,8 +15,6 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
 import { useConsent } from '@/consent/ConsentProvider';
-import { logError } from '@/errors/AppError';
-import { readJson, writeJson } from '@/storage/kv';
 import { useTheme } from '@/theme';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
@@ -24,7 +22,6 @@ import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
 import {
   apiSprache,
   speiseplanQueryOptions,
-  useMensaVerzeichnisse,
   useMensen,
   useSpeisepläne,
   type Gericht,
@@ -32,12 +29,12 @@ import {
 } from '../api';
 import { konsolidiere, type KonsolidiertesGericht } from '../consolidate';
 import { useFavorites } from '../favorites';
-import { teileNachUnvertraeglichkeit } from '../intoleranceFilter';
-import { useIntolerances } from '../intolerances';
+import { useGerichtFilter } from '../filter';
 import {
   benachrichtigungBerechtigungAnfragen,
   benachrichtigungErlaubt,
 } from '../notifications';
+import { preisFuer, preisText } from '../preise';
 import { usePriceGroup, type PriceGroup } from '../priceGroup';
 import {
   fuehreLieblingsgerichtAbgleichAus,
@@ -45,6 +42,7 @@ import {
   nachholenBeimAppStart,
 } from '../registerBackgroundTask';
 import { useCanteenSelection } from '../selection';
+import { AnkerListe } from '../ui/AnkerListe';
 import { wischRichtung } from '../gesten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 
@@ -56,8 +54,6 @@ import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 // Spec entfallen) bleibt bewusst bis Roadmap-Schritt 9 im Code — siehe
 // canteen/spec.md „Umsetzungsstand".
 
-const AKTIVE_MENSA_KEY = 'lastViewedCanteen';
-
 export function CanteenScreen() {
   const { t, i18n } = useTranslation();
   const { colors } = useTheme();
@@ -66,24 +62,11 @@ export function CanteenScreen() {
   const sprache = apiSprache(i18n.language);
   const { ids, loaded } = useCanteenSelection();
   const { mensen } = useMensen();
-  const { codes } = useIntolerances();
   const [datum, setDatum] = useState(isoHeute);
-  const [aktiv, setAktiv] = useState<string | null>(null);
 
   useEffect(() => {
     void nachholenBeimAppStart();
   }, []);
-
-  // Aktive Mensa: gemerkte Wahl, sonst die erste der Auswahl (MENSA-F-016).
-  useEffect(() => {
-    if (!loaded || ids.length === 0) {
-      setAktiv(null);
-      return;
-    }
-    readJson<string>(AKTIVE_MENSA_KEY, '')
-      .then((gemerkt) => setAktiv(ids.includes(gemerkt) ? gemerkt : ids[0]!))
-      .catch(() => setAktiv(ids[0]!));
-  }, [loaded, ids]);
 
   // Nachbartage vorab laden, damit das Überspringen leerer Wochenenden
   // (MENSA-F-044) gegen echten Bestand entscheidet statt „unbekannt".
@@ -115,11 +98,6 @@ export function CanteenScreen() {
   const blaettern = (richtung: -1 | 1) => {
     const ziel = naechsterTag(datum, richtung, hatAngebot);
     if (ziel) setDatum(ziel);
-  };
-
-  const waehleMensa = (id: string) => {
-    setAktiv(id);
-    writeJson(AKTIVE_MENSA_KEY, id).catch((error) => logError('canteen.lastViewed', error));
   };
 
   if (!loaded) {
@@ -158,7 +136,9 @@ export function CanteenScreen() {
   const amAnfang = datum <= isoHeute();
 
   return (
-    <Screen>
+    <Screen tight>
+      {/* MENSA-F-280: Datumsauswahl mittig; der Filterzugang sitzt in der
+          Kopfzeile (app/(tabs)/canteen/_layout.tsx), nicht hier. */}
       <View style={styles.kopf}>
         <Pressable
           accessibilityRole="button"
@@ -170,7 +150,19 @@ export function CanteenScreen() {
         >
           <Text style={[styles.pfeilGlyph, { color: amAnfang ? colors.border : colors.text }]}>◀</Text>
         </Pressable>
-        <Text style={[styles.datum, { color: colors.text }]}>{formatDatum(datum, t)}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={amAnfang ? formatDatum(datum, t) : t('mensa.zuHeuteHinweis')}
+          accessibilityState={{ disabled: amAnfang }}
+          disabled={amAnfang}
+          onPress={() => setDatum(isoHeute())}
+          style={styles.datumFeld}
+        >
+          <Text style={[styles.datum, { color: colors.text }]}>{formatDatum(datum, t)}</Text>
+          {!amAnfang ? (
+            <Text style={[styles.zuHeute, { color: colors.accent }]}>{t('mensa.zuHeute')}</Text>
+          ) : null}
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('mensa.tagVor')}
@@ -179,51 +171,9 @@ export function CanteenScreen() {
         >
           <Text style={[styles.pfeilGlyph, { color: colors.text }]}>▶</Text>
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('mensa.unvertraeglichkeiten')}
-          onPress={() => router.push('/canteen/unvertraeglichkeiten')}
-          style={styles.pfeil}
-        >
-          <Text style={[styles.filterGlyph, { color: codes.length > 0 ? colors.accent : colors.text }]}>
-            ⚗
-          </Text>
-        </Pressable>
       </View>
 
-      {ids.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.wechsler}
-          accessibilityRole="tablist"
-        >
-          {ids.map((id) => {
-            const name = mensen.find((m) => m.id === id)?.name ?? id;
-            const on = id === aktiv;
-            return (
-              <Pressable
-                key={id}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={name}
-                onPress={() => waehleMensa(id)}
-                style={[
-                  styles.chip,
-                  { borderColor: colors.border },
-                  on && { backgroundColor: colors.accent, borderColor: colors.accent },
-                ]}
-              >
-                <Text style={[styles.chipText, { color: on ? colors.onAccent : colors.text }]}>
-                  {name}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      ) : null}
-
-      <MensaListe ids={ids} datum={datum} aktiv={aktiv} mensen={mensen} onBlaettern={blaettern} />
+      <MensaListe ids={ids} datum={datum} mensen={mensen} onBlaettern={blaettern} />
     </Screen>
   );
 }
@@ -231,13 +181,11 @@ export function CanteenScreen() {
 function MensaListe({
   ids,
   datum,
-  aktiv,
   mensen,
   onBlaettern,
 }: {
   ids: string[];
   datum: string;
-  aktiv: string | null;
   mensen: Mensa[];
   onBlaettern: (richtung: -1 | 1) => void;
 }) {
@@ -275,7 +223,6 @@ function MensaListe({
         <GerichtListe
           proMensa={data.proMensa}
           datum={datum}
-          aktiv={aktiv}
           mensen={mensen}
           onBlaettern={onBlaettern}
           onAktualisieren={() => void aggregat.refetch()}
@@ -289,7 +236,6 @@ function MensaListe({
 function GerichtListe({
   proMensa,
   datum,
-  aktiv,
   mensen,
   onBlaettern,
   onAktualisieren,
@@ -297,7 +243,6 @@ function GerichtListe({
 }: {
   proMensa: { mensaId: string; gerichte: Gericht[] }[];
   datum: string;
-  aktiv: string | null;
   mensen: Mensa[];
   onBlaettern: (richtung: -1 | 1) => void;
   onAktualisieren: () => void;
@@ -308,46 +253,42 @@ function GerichtListe({
   const favorites = useFavorites();
   const consent = useConsent();
   const { group } = usePriceGroup();
-  const { codes } = useIntolerances();
-  const verzeichnisse = useMensaVerzeichnisse();
+  const { betroffen } = useGerichtFilter();
 
   const nameVon = useMemo(() => {
     const map = new Map(mensen.map((m) => [m.id, m.name]));
     return (id: string) => map.get(id) ?? id;
   }, [mensen]);
 
-  // Ausgewählte Kennzeichnungen als Menge aus Id UND aufgelöstem Anzeigenamen
-  // (das Backend liefert die Gerichts-Zusatzstoffe bereits als Anzeigenamen).
-  const ausgewaehlt = useMemo(() => {
-    const labelVon = new Map(
-      (verzeichnisse.data?.zusatzstoffe ?? []).map((z) => [z.id, z.bezeichnung]),
-    );
-    const menge = new Set<string>();
-    for (const code of codes) {
-      menge.add(code);
-      const label = labelVon.get(code);
-      if (label) menge.add(label);
-    }
-    return menge;
-  }, [codes, verzeichnisse.data]);
+  const { sektionen, geschlossene } = useMemo(() => konsolidiere(proMensa), [proMensa]);
 
-  const { gruppen, geschlossene } = useMemo(() => konsolidiere(proMensa, aktiv), [proMensa, aktiv]);
-
+  // Ernährungsfilter (MENSA-F-190/F-200): betroffene Gerichte ausblenden, zählen.
   const gefiltert = useMemo(() => {
     let ausgeblendet = 0;
-    const sichtbareGruppen = gruppen
-      .map((g) => {
-        const teil = teileNachUnvertraeglichkeit(
-          g.gerichte,
-          (e) => e.massgeblich.zusatzstoffe,
-          ausgewaehlt,
-        );
-        ausgeblendet += teil.ausgeblendet.length;
-        return { kategorie: g.kategorie, gerichte: teil.sichtbar };
+    const sichtbareSektionen = sektionen
+      .map((s) => {
+        const gruppen = s.gruppen
+          .map((g) => {
+            const sichtbar = g.gerichte.filter((e) => !betroffen(e.massgeblich));
+            ausgeblendet += g.gerichte.length - sichtbar.length;
+            return { kategorie: g.kategorie, gerichte: sichtbar };
+          })
+          .filter((g) => g.gerichte.length > 0);
+        return { ...s, gruppen };
       })
-      .filter((g) => g.gerichte.length > 0);
-    return { sichtbareGruppen, ausgeblendet };
-  }, [gruppen, ausgewaehlt]);
+      .filter((s) => s.gruppen.length > 0);
+    return { sichtbareSektionen, ausgeblendet };
+  }, [sektionen, betroffen]);
+
+  const sichtbareIds = new Set(gefiltert.sichtbareSektionen.map((s) => s.mensaId));
+  const mehrereSektionen = gefiltert.sichtbareSektionen.length > 1;
+  // Chip-Leiste (MENSA-F-016/F-017/F-019): alle gewählten Mensen in Auswahlreihenfolge;
+  // Mensen ohne (sichtbaren) Abschnitt — geschlossen oder ganz weggefiltert — deaktiviert.
+  const chips = proMensa.map((p) => ({
+    id: p.mensaId,
+    titel: nameVon(p.mensaId),
+    deaktiviert: !sichtbareIds.has(p.mensaId),
+  }));
 
   const swipe = useRef(
     PanResponder.create({
@@ -360,7 +301,10 @@ function GerichtListe({
     }),
   ).current;
 
+  // MENSA-F-290: für eine Mensa ohne Angebot am Tag keine Öffnungszeit-Zeile —
+  // sie steht dann allein im Geschlossen-Hinweis (MENSA-F-049).
   const oeffnungszeilen = proMensa
+    .filter((p) => !geschlossene.includes(p.mensaId))
     .map((p) => {
       const zeit = oeffnungszeitFuer(
         mensen.find((m) => m.id === p.mensaId),
@@ -398,7 +342,11 @@ function GerichtListe({
   );
 
   // Alle Gerichte durch den Filter ausgeblendet — eigener Leerzustand (Abschnitt 7).
-  if (gruppen.length > 0 && gefiltert.sichtbareGruppen.length === 0 && gefiltert.ausgeblendet > 0) {
+  if (
+    sektionen.length > 0 &&
+    gefiltert.sichtbareSektionen.length === 0 &&
+    gefiltert.ausgeblendet > 0
+  ) {
     return (
       <ScrollView
         contentContainerStyle={styles.liste}
@@ -416,7 +364,7 @@ function GerichtListe({
   }
 
   // Keine der gewählten Mensen führt ein Angebot.
-  if (gruppen.length === 0) {
+  if (sektionen.length === 0) {
     return (
       <ScrollView
         contentContainerStyle={styles.liste}
@@ -461,31 +409,46 @@ function GerichtListe({
   }
 
   return (
-    <ScrollView
+    <AnkerListe
+      chips={chips}
       contentContainerStyle={styles.liste}
-      refreshControl={refreshControl}
-      {...swipe.panHandlers}
-    >
-      {gefiltert.sichtbareGruppen.map(({ kategorie, gerichte }) => (
-        <View key={kategorie || ' ohne'} style={styles.gruppe}>
-          {kategorie ? (
-            <Text style={[styles.gruppeTitel, { color: colors.textMuted }]}>{kategorie}</Text>
-          ) : null}
-          {gerichte.map((g) => (
-            <GerichtKarte
-              key={g.schluessel}
-              eintrag={g}
-              zeigeAnbieter={proMensa.length > 1}
-              nameVon={nameVon}
-              group={group}
-              favorit={favorites.has(g.schluessel)}
-              onStern={() => void markiere(g)}
-            />
-          ))}
-        </View>
-      ))}
-      {fuss}
-    </ScrollView>
+      scrollProps={{
+        refreshControl,
+        showsVerticalScrollIndicator: false,
+        ...swipe.panHandlers,
+      }}
+      fuss={fuss}
+      abschnitte={gefiltert.sichtbareSektionen.map((sektion) => ({
+        id: sektion.mensaId,
+        inhalt: (
+          <View style={styles.sektion}>
+            {mehrereSektionen ? (
+              <Text style={[styles.sektionTitel, { color: colors.text }]}>
+                {nameVon(sektion.mensaId)}
+              </Text>
+            ) : null}
+            {sektion.gruppen.map(({ kategorie, gerichte }) => (
+              <View key={kategorie || ' ohne'} style={styles.gruppe}>
+                {kategorie ? (
+                  <Text style={[styles.gruppeTitel, { color: colors.textMuted }]}>{kategorie}</Text>
+                ) : null}
+                {gerichte.map((g) => (
+                  <GerichtKarte
+                    key={g.schluessel}
+                    eintrag={g}
+                    zeigeAnbieter={g.anbieter.length > 1}
+                    nameVon={nameVon}
+                    group={group}
+                    favorit={favorites.has(g.schluessel)}
+                    onStern={() => void markiere(g)}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        ),
+      }))}
+    />
   );
 }
 
@@ -513,7 +476,6 @@ function GerichtKarte({
       style={[
         styles.karte,
         { borderColor: colors.border },
-        eintrag.anAktiver && { borderColor: colors.accent, borderWidth: 2 },
         favorit && { backgroundColor: colors.surface },
       ]}
     >
@@ -533,9 +495,7 @@ function GerichtKarte({
       </View>
 
       {zeigeAnbieter ? (
-        <Text
-          style={[styles.anbieter, { color: eintrag.anAktiver ? colors.accent : colors.textMuted }]}
-        >
+        <Text style={[styles.anbieter, { color: colors.textMuted }]}>
           {t('mensa.angebotIn', { mensen: eintrag.anbieter.map(nameVon).join(', ') })}
         </Text>
       ) : null}
@@ -576,16 +536,6 @@ function AlleMensenKnopf({ datum }: { datum: string }) {
 
 // -------------------------------------------------------------------- Helfer
 
-export function preisFuer(g: Gericht, group: PriceGroup): number | null | undefined {
-  if (group === 'staff') return g.preisMitarbeitende;
-  if (group === 'guest') return g.preisGaeste;
-  return g.preisStudierende;
-}
-
-function preisText(n: number | null | undefined): string {
-  return n == null ? '–' : `${n.toFixed(2).replace('.', ',')} €`;
-}
-
 function oeffnungszeitFuer(mensa: Mensa | undefined, datum: string): string | null {
   const zeiten = mensa?.oeffnungszeiten;
   if (!zeiten || zeiten.length < 5) return null;
@@ -605,19 +555,13 @@ const styles = StyleSheet.create({
   kopf: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pfeil: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pfeilGlyph: { fontSize: 18 },
-  filterGlyph: { fontSize: 20 },
-  datum: { fontSize: 16, fontWeight: '600', flex: 1, textAlign: 'center' },
+  datumFeld: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  datum: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  zuHeute: { fontSize: 12, fontWeight: '600', marginTop: 1 },
   leerAktionen: { gap: 8 },
-  wechsler: { gap: 8, paddingVertical: 4 },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  chipText: { fontSize: 14, fontWeight: '600' },
   liste: { gap: 16, paddingBottom: 24 },
+  sektion: { gap: 10 },
+  sektionTitel: { fontSize: 17, fontWeight: '700' },
   gruppe: { gap: 8 },
   gruppeTitel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   karte: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 4 },

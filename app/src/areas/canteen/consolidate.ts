@@ -3,8 +3,11 @@ import type { Gericht } from './api';
 // MENSA-F-012 bis F-018: Die Gerichte der gewählten Mensen eines Tages werden zu
 // genau einem Eintrag je Gericht zusammengefasst (Schlüssel: der vom Backend
 // gelieferte normalisierte `schluessel`, RATE-F-050 — kein eigener Normalisierer
-// in der App). Reine Fachlogik ohne React, damit sie einzeln testbar ist
-// (`platform/quality-and-testing.md` Abschnitt 5).
+// in der App) und **primär nach der Mensa-Auswahlreihenfolge (MENSA-F-025)**
+// gruppiert: je gewählter Mensa mit Angebot ein Abschnitt, in Auswahlreihenfolge;
+// ein an mehreren Mensen angebotenes Gericht steht im Abschnitt der ersten
+// anbietenden Mensa. Reine Fachlogik ohne React (`platform/quality-and-testing.md`
+// Abschnitt 5).
 
 /** Ein Gericht mit der Angabe, welche Mensa es führt. */
 export interface AnbieterGericht extends Gericht {
@@ -17,16 +20,20 @@ export interface KonsolidiertesGericht {
   anbieter: string[];
   /**
    * Die Mensa, deren Preis-/Kennzeichnungs-/Zusatzstoffangaben angezeigt werden
-   * (MENSA-F-018): die aktive Mensa, sofern sie das Gericht führt, sonst die in
-   * der Reihenfolge erste anbietende Mensa.
+   * (MENSA-F-018): die Mensa des Abschnitts, in dem das Gericht steht — also die
+   * in der Auswahlreihenfolge erste anbietende Mensa.
    */
   massgeblich: AnbieterGericht;
-  /** Die aktive Mensa führt dieses Gericht (MENSA-F-016, Hervorhebung). */
-  anAktiver: boolean;
+}
+
+export interface KonsolidierteSektion {
+  mensaId: string;
+  gruppen: { kategorie: string; gerichte: KonsolidiertesGericht[] }[];
 }
 
 export interface Konsolidierung {
-  gruppen: { kategorie: string; gerichte: KonsolidiertesGericht[] }[];
+  /** Ein Abschnitt je gewählter Mensa mit Angebot, in Auswahlreihenfolge (MENSA-F-025). */
+  sektionen: KonsolidierteSektion[];
   /** Gewählte Mensen ohne Angebot am Tag (MENSA-F-049); Quelle unterscheidet nicht „zu" von „keine Daten". */
   geschlossene: string[];
 }
@@ -66,58 +73,51 @@ export function gruppiereNachKategorie<T extends { kategorie: string }>(
 }
 
 /**
- * Fasst die je Mensa gelieferten Tagespläne zu einer Liste zusammen.
+ * Fasst die je Mensa gelieferten Tagespläne zu Abschnitten je Mensa zusammen.
  * `proMensa` ist in Auswahlreihenfolge (MENSA-F-025) zu übergeben.
  */
-export function konsolidiere(
-  proMensa: MensaTagesplan[],
-  aktiveMensaId: string | null,
-): Konsolidierung {
+export function konsolidiere(proMensa: MensaTagesplan[]): Konsolidierung {
   const geschlossene = proMensa.filter((p) => p.gerichte.length === 0).map((p) => p.mensaId);
 
   const eintraege = new Map<string, KonsolidiertesGericht>();
-  const reihenfolge: string[] = [];
+  // je Mensa die Schlüssel der Gerichte, für die sie die erste anbietende Mensa ist,
+  // in der von der Quelle gelieferten Reihenfolge dieser Mensa.
+  const schluesselJeMensa = new Map<string, string[]>();
 
   for (const { mensaId, gerichte } of proMensa) {
     for (const g of gerichte) {
       const vorhanden = eintraege.get(g.schluessel);
       if (vorhanden) {
         if (!vorhanden.anbieter.includes(mensaId)) vorhanden.anbieter.push(mensaId);
-      } else {
-        eintraege.set(g.schluessel, {
-          schluessel: g.schluessel,
-          anbieter: [mensaId],
-          massgeblich: { ...g, mensaId },
-          anAktiver: false,
-        });
-        reihenfolge.push(g.schluessel);
+        continue;
       }
+      eintraege.set(g.schluessel, {
+        schluessel: g.schluessel,
+        anbieter: [mensaId],
+        massgeblich: { ...g, mensaId },
+      });
+      if (!schluesselJeMensa.has(mensaId)) schluesselJeMensa.set(mensaId, []);
+      schluesselJeMensa.get(mensaId)!.push(g.schluessel);
     }
   }
 
-  // Maßgebliche Mensa und Aktiv-Kennzeichen auflösen (MENSA-F-016/F-018).
-  for (const eintrag of eintraege.values()) {
-    eintrag.anAktiver = aktiveMensaId !== null && eintrag.anbieter.includes(aktiveMensaId);
-    const massgeblicheMensa =
-      aktiveMensaId !== null && eintrag.anbieter.includes(aktiveMensaId)
-        ? aktiveMensaId
-        : eintrag.anbieter[0]!;
-    if (massgeblicheMensa !== eintrag.massgeblich.mensaId) {
-      const plan = proMensa.find((p) => p.mensaId === massgeblicheMensa);
-      const gericht = plan?.gerichte.find((g) => g.schluessel === eintrag.schluessel);
-      if (gericht) eintrag.massgeblich = { ...gericht, mensaId: massgeblicheMensa };
-    }
-  }
+  const sektionen: KonsolidierteSektion[] = proMensa
+    .filter((p) => p.gerichte.length > 0)
+    .map((p) => {
+      const flach = (schluesselJeMensa.get(p.mensaId) ?? []).map((s) => {
+        const eintrag = eintraege.get(s)!;
+        return { kategorie: eintrag.massgeblich.kategorie?.trim() ?? '', eintrag };
+      });
+      const gruppen = gruppiereNachKategorie(flach).map(({ kategorie, gerichte }) => ({
+        kategorie,
+        gerichte: gerichte.map((x) => x.eintrag),
+      }));
+      return { mensaId: p.mensaId, gruppen };
+    })
+    // Ein Abschnitt kann leer sein, wenn alle seine Gerichte schon in einem
+    // früheren Abschnitt stehen (dieselbe Mensa früher in der Auswahl → nie;
+    // ein Gericht nur an einer später gewählten Mensa → eigener Abschnitt).
+    .filter((s) => s.gruppen.length > 0);
 
-  // Nach Kategorie der maßgeblichen Mensa gruppieren (MENSA-F-040/F-160), Reihenfolge stabil.
-  const flach = reihenfolge.map((schluessel) => {
-    const eintrag = eintraege.get(schluessel)!;
-    return { kategorie: eintrag.massgeblich.kategorie?.trim() ?? '', eintrag };
-  });
-  const gruppen = gruppiereNachKategorie(flach).map(({ kategorie, gerichte }) => ({
-    kategorie,
-    gerichte: gerichte.map((x) => x.eintrag),
-  }));
-
-  return { gruppen, geschlossene };
+  return { sektionen, geschlossene };
 }

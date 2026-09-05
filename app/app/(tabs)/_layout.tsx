@@ -38,9 +38,12 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
+      {/* Stundenplan ist seit Etappe 2b (Roadmap-Schritt 5) ein verschachtelter
+          Stack (Übersicht + Einrichtung + Kursauswahl) und zeigt seine eigenen
+          Kopfzeilen — wie Mensaplan und „Mehr". */}
       <Tabs.Screen
-        name="index"
-        options={{ title: t('nav.schedule'), tabBarIcon: tabIcon('index') }}
+        name="(schedule)"
+        options={{ title: t('nav.schedule'), headerShown: false, tabBarIcon: tabIcon('(schedule)') }}
       />
       {/* Mensaplan ist ein verschachtelter Stack (Speiseplan + Mensenauswahl) und
           zeigt seine eigenen Kopfzeilen. */}

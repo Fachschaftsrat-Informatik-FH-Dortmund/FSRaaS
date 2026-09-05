@@ -2,7 +2,7 @@
 id: roadmap
 titel: Ausbaustufen und Umsetzungsreihenfolge
 status: accepted
-version: 0.2.1
+version: 0.3.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 related:
@@ -44,7 +44,7 @@ Anforderungen ohne Nennung gehören zur ersten Ausbaustufe.
 | Spec | Erste Ausbaustufe | Zweite Ausbaustufe |
 |---|---|---|
 | SHELL | vollständig | – |
-| SCHED | SCHED-F-010 bis F-180, F-230 bis F-260, F-270 bis F-450 | SCHED-F-190 bis F-220 (Prüfungsplan) |
+| SCHED | SCHED-F-010 bis F-180, F-230 bis F-260, F-270 bis F-450, F-460 bis F-680 | SCHED-F-190 bis F-220 (Prüfungsplan) |
 | MENSA | vollständig; MENSA-F-085 bis F-110 erst mit Schritt 9, da an die Bewertung gekoppelt | – |
 | RAUM | vollständig | – |
 | NEWS | NEWS-F-010 bis F-050, F-080, F-110 bis F-140, NEWS-F-150 bis NEWS-F-220 (Filter, Suche, erweiterte Suche) | NEWS-F-060/F-070 (Push), NEWS-F-090 (FB-Aktuelles), NEWS-F-100 (Event-Erinnerungen), NEWS-F-230 bis NEWS-F-290 mit NEWS-N-010 (Benachrichtigungsregeln, zusammen mit Push) |
@@ -68,7 +68,7 @@ Vertikale Schnitte: Jeder Schritt umfasst Vertragsanteil, Backend, App und Tests
 | 2 | App-Rahmen | SHELL vollständig, Erscheinungsbild und Sprachwahl (UX-F-020/030, SET-F-020, SET-F-100/110) | Navigation steht, Bereiche sind leer aber erreichbar |
 | 3 | Stammdaten und Verwaltung | API-F-230 bis F-240, ADMIN-F-010 bis F-030, F-070 bis F-110, Anmeldung gegen Authentik | FSR kann Mensen, Räume und Links pflegen; Rollen greifen |
 | 4 | Mensaplan | MENSA ohne die bewertungsgekoppelten Lieblingsgerichte (F-085 bis F-110), Zwischenspeicher von INT-015 | Erstes vollständiges Feature, kontofrei, ohne Schreibpfad |
-| 5 | Stundenplan | SCHED ohne Prüfungsplan und ohne Raumplan-Abgleich, einschließlich Gruppenlogik, Planungsmodus, Kalender-Export | Meistgenutzte Funktion beider Alt-Apps abgelöst |
+| 5 | Stundenplan | SCHED ohne Prüfungsplan und ohne Raumplan-Abgleich, einschließlich Gruppenlogik, kursbasierter Einrichtung, Datumsbezug, Planungsmodus und Kalender-Export | Meistgenutzte Funktion beider Alt-Apps abgelöst |
 | 6 | Raumsuche | RAUM vollständig (einschließlich Raumübersicht, Ansicht laufender Veranstaltungen, Besetzt-Meldungen, Laufwege-Pflege in ADMIN) und der Stundenplan-Raumabgleich SCHED-F-410 bis F-450 | Erster kontofreier Schreibpfad, erste Offline-Warteschlange |
 | 7 | News | NEWS ohne Push und FB-Aktuelles, ADMIN-F-040 bis F-060 | Erste redaktionell gepflegte Inhalte |
 | 8 | Semesterticket | TICKET vollständig | Bestandsfunktion abgelöst |
@@ -84,6 +84,8 @@ Zu Schritt 6: Der Stundenplan-Raumabgleich (SCHED-F-410 bis F-450) gehört fachl
 Zu Schritt 4: Die Normalisierung der Gerichtsbezeichnungen (RATE-F-050) wird hier bereits mitgezogen, obwohl RATE selbst erst Schritt 9 ist — sie trägt als Gerichtsschlüssel sowohl die Zusammenfassung der Gerichtsliste (MENSA-F-012) als auch später Lieblingsgerichte (MENSA-F-090) und Fotos (FOTO-F-130). Ebenfalls vorgezogen: API-F-235 (App-seitiger Stammdaten-Ausgangsbestand), da MENSA der erste Konsument der Stammdaten ist. Die Lieblingsgericht-Benachrichtigung (MENSA-F-100) läuft rein lokal über die betriebssystemeigene Hintergrundaufgabe plus lokale Benachrichtigungs-API (kein Firebase, kein UnifiedPush) — F-Droid-Tauglichkeit (NFR-N-170) bleibt gewahrt; die tatsächliche Vormittags-Ausführungszeit (MENSA-N-010) ist ein Zielwert, im Prüfprotokoll `../pruefprotokolle/2026-09-04-schritt-4-mensa.md` festgehalten.
 
 Zur Überarbeitung des Mensaplans vom 2026-09-04 (`../features/canteen/spec.md` Fassung 2.6.0): Schritt 4 war damit vorübergehend nicht mehr abgeschlossen. Der Nachlauf zerfällt in zwei Teile. **Teil A, unabhängig von Schritt 9, umgesetzt am 2026-09-04 als Abschluss von Schritt 4:** zusammengefasste Gerichtsliste (MENSA-F-012 bis F-018), Datumsgrenzen und Wischen (MENSA-F-042 bis F-046), Geschlossen-Hinweis (MENSA-F-049), die Ansicht aller Mensen (MENSA-F-120 bis F-150), der Unverträglichkeiten-Filter (MENSA-F-170 bis F-215), die Preisgruppe (MENSA-F-220/F-230 mit SET-F-180/F-190) und das Herunterziehen zum Aktualisieren (MENSA-F-240). Bis auf den serverseitigen Job-Zeitplan (MENSA-N-020 über API-F-076: Ortszeit-Läufe vor den Nutzungsspitzen und nach Mensaschluss statt starrem Intervall) kontofrei und ohne Vertragsänderung, da Zusammenfassung, Filter und Preisanzeige in der App entstehen. Die allgemeinen Lese-Endpunkt-Härtungen API-N-016 (HTTP-Cache-Header/304) und API-N-017 (Ratenbegrenzung kontofreier Leseanfragen) sind bewusst **nicht** Teil dieses Schnitts, sondern ein eigener API-Härtungs-Schnitt. **Teil B, gebunden an Schritt 9:** MENSA-F-085/F-087 (Lieblingsgericht aus der Höchstbewertung), MENSA-F-105 mit SET-F-170 (Abschalter) und die Nachführung von MENSA-F-100/F-110 auf die neue Quelle. Bis Teil B liegt der in Schritt 4 gelieferte Stern-Merker nach MENSA-F-080 im Code, obwohl die Anforderung entfallen ist; das ist bewusst und in der MENSA-Spec unter „Umsetzungsstand" festgehalten, damit der Rückstand nicht als Versehen gelesen wird.
+
+Zum Umfang von Schritt 5 (2026-09-04): Die SCHED-Spec wurde nach Rücksprache mit einer studierenden Person und einem Live-Abgleich gegen FBWS auf Fassung 3.0.0 gehoben — dreizehn Anforderungen geändert, dreiundzwanzig neu (SCHED-F-460 bis F-680). Der Schritt umfasst damit rund siebzig Anforderungen und ist der bislang größte. Erwogen und verworfen wurde, den Planungsmodus als eigenen Schritt abzutrennen; Begründung der Entscheidung: die Terminkollision einer Wiederholerin zwischen zwei Fachsemestern ist dasselbe Problem wie die eines Wahlpflichtmoduls, eine Trennung würde die gemeinsame Konfliktlogik zweimal bauen. Der Schritt wird stattdessen intern in fünf Etappen abgearbeitet (reine Logik, Einrichtung, Plan, Export, Planung), jede für sich mit grünen Tests abgeschlossen.
 
 Zu Schritt 10: Die Testauflage bei Google Play (NFR-N-200: zwölf Testende über vierzehn zusammenhängende Tage) erzeugt allein zwei Wochen Vorlauf und ist bereits während Schritt 8 anzustoßen, nicht erst in Schritt 10.
 

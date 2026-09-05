@@ -29,7 +29,7 @@ export function MoreScreen() {
     .filter((section) => section.areas.length > 0);
 
   return (
-    <Screen scroll>
+    <Screen scroll tight hideScrollbar>
       {sichtbareGruppen.map((section) => (
         <Fragment key={section.group}>
           <Text style={[styles.groupHeader, { color: colors.textMuted }]}>

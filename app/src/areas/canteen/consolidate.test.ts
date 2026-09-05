@@ -1,4 +1,10 @@
-import { gruppiereNachKategorie, konsolidiere, type MensaTagesplan } from './consolidate';
+import {
+  gruppiereNachKategorie,
+  konsolidiere,
+  type Konsolidierung,
+  type KonsolidiertesGericht,
+  type MensaTagesplan,
+} from './consolidate';
 import type { Gericht } from './api';
 
 const g = (over: Partial<Gericht> = {}): Gericht => ({
@@ -15,93 +21,83 @@ const g = (over: Partial<Gericht> = {}): Gericht => ({
 
 const plan = (mensaId: string, gerichte: Gericht[]): MensaTagesplan => ({ mensaId, gerichte });
 
+const alleGerichte = (k: Konsolidierung): KonsolidiertesGericht[] =>
+  k.sektionen.flatMap((s) => s.gruppen.flatMap((gr) => gr.gerichte));
+
 describe('MENSA-F-012 Gerichte der gewählten Mensen zu einem Eintrag je Gericht zusammengefasst', () => {
   it('führt dasselbe Gericht an zwei Mensen nur einmal in der Liste', () => {
-    const { gruppen } = konsolidiere(
-      [plan('Mensa', [g()]), plan('Sued', [g()])],
-      'Mensa',
-    );
-    const alle = gruppen.flatMap((k) => k.gerichte);
-    expect(alle).toHaveLength(1);
-    expect(alle[0]!.schluessel).toBe('bolognese');
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [g()])]);
+    expect(alleGerichte(k)).toHaveLength(1);
+    expect(alleGerichte(k)[0]!.schluessel).toBe('bolognese');
   });
 });
 
 describe('MENSA-F-014 Ausweis der anbietenden Mensen je zusammengefasstem Gericht', () => {
   it('nennt beide anbietenden Mensen in Auswahlreihenfolge', () => {
-    const { gruppen } = konsolidiere([plan('Mensa', [g()]), plan('Sued', [g()])], 'Mensa');
-    expect(gruppen[0]!.gerichte[0]!.anbieter).toEqual(['Mensa', 'Sued']);
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [g()])]);
+    expect(alleGerichte(k)[0]!.anbieter).toEqual(['Mensa', 'Sued']);
   });
 
   it('führt ein nur an einer Mensa angebotenes Gericht mit genau dieser Mensa', () => {
-    const { gruppen } = konsolidiere(
-      [plan('Mensa', [g()]), plan('Sued', [g({ schluessel: 'curry', bezeichnung: 'Curry' })])],
-      'Mensa',
-    );
-    const curry = gruppen.flatMap((k) => k.gerichte).find((x) => x.schluessel === 'curry')!;
+    const k = konsolidiere([
+      plan('Mensa', [g()]),
+      plan('Sued', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    ]);
+    const curry = alleGerichte(k).find((x) => x.schluessel === 'curry')!;
     expect(curry.anbieter).toEqual(['Sued']);
   });
 });
 
-describe('MENSA-F-016 Gericht der aktiven Mensa unterscheidbar von den übrigen', () => {
-  it('markiert nur Gerichte, welche die aktive Mensa führt, als anAktiver', () => {
-    const { gruppen } = konsolidiere(
-      [
-        plan('Mensa', [g()]),
-        plan('Sued', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
-      ],
-      'Mensa',
-    );
-    const alle = gruppen.flatMap((k) => k.gerichte);
-    expect(alle.find((x) => x.schluessel === 'bolognese')!.anAktiver).toBe(true);
-    expect(alle.find((x) => x.schluessel === 'curry')!.anAktiver).toBe(false);
+describe('MENSA-F-013 / MENSA-F-025 primär nach Mensa-Auswahlreihenfolge gruppiert', () => {
+  it('bildet je Mensa mit Angebot einen Abschnitt in Auswahlreihenfolge', () => {
+    const k = konsolidiere([
+      plan('Sued', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+      plan('Mensa', [g()]),
+    ]);
+    expect(k.sektionen.map((s) => s.mensaId)).toEqual(['Sued', 'Mensa']);
+  });
+
+  it('stellt ein an mehreren Mensen angebotenes Gericht in den Abschnitt der ersten anbietenden Mensa', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+      plan('Sued', [g(), g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    ]);
+    const mensaAbschnitt = k.sektionen.find((s) => s.mensaId === 'Mensa')!;
+    const suedAbschnitt = k.sektionen.find((s) => s.mensaId === 'Sued')!;
+    expect(mensaAbschnitt.gruppen.flatMap((gr) => gr.gerichte).map((x) => x.schluessel)).toEqual([
+      'curry',
+    ]);
+    expect(suedAbschnitt.gruppen.flatMap((gr) => gr.gerichte).map((x) => x.schluessel)).toEqual([
+      'bolognese',
+    ]);
   });
 });
 
-describe('MENSA-F-018 Angaben der maßgeblichen Mensa', () => {
-  it('zeigt die Angaben der aktiven Mensa, wenn diese das Gericht führt', () => {
-    const { gruppen } = konsolidiere(
-      [
-        plan('Mensa', [g({ preisStudierende: 3.3 })]),
-        plan('Sued', [g({ preisStudierende: 9.9 })]),
-      ],
-      'Mensa',
-    );
-    expect(gruppen[0]!.gerichte[0]!.massgeblich.preisStudierende).toBe(3.3);
-  });
-
-  it('fällt auf die erste anbietende Mensa zurück, wenn die aktive das Gericht nicht führt', () => {
-    const { gruppen } = konsolidiere(
-      [
-        plan('Mensa', []),
-        plan('Sued', [g({ preisStudierende: 9.9 })]),
-        plan('Nord', [g({ preisStudierende: 4.4 })]),
-      ],
-      'Mensa',
-    );
-    // Aktiv = Mensa (kein Angebot) → maßgeblich ist Sued (erste anbietende in Reihenfolge).
-    expect(gruppen[0]!.gerichte[0]!.massgeblich.mensaId).toBe('Sued');
-    expect(gruppen[0]!.gerichte[0]!.massgeblich.preisStudierende).toBe(9.9);
+describe('MENSA-F-018 Angaben der maßgeblichen (Abschnitts-)Mensa', () => {
+  it('zeigt die Angaben der Mensa, in deren Abschnitt das Gericht steht', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g({ preisStudierende: 3.3 })]),
+      plan('Sued', [g({ preisStudierende: 9.9 })]),
+    ]);
+    expect(alleGerichte(k)[0]!.massgeblich.mensaId).toBe('Mensa');
+    expect(alleGerichte(k)[0]!.massgeblich.preisStudierende).toBe(3.3);
   });
 
   it('bleibt bei abweichenden Preisen ein Eintrag, ohne Aufspaltung oder Durchschnitt', () => {
-    const { gruppen } = konsolidiere(
-      [plan('Mensa', [g({ preisStudierende: 3 })]), plan('Sued', [g({ preisStudierende: 5 })])],
-      'Sued',
-    );
-    const alle = gruppen.flatMap((k) => k.gerichte);
-    expect(alle).toHaveLength(1);
-    expect(alle[0]!.massgeblich.preisStudierende).toBe(5);
+    const k = konsolidiere([
+      plan('Mensa', [g({ preisStudierende: 3 })]),
+      plan('Sued', [g({ preisStudierende: 5 })]),
+    ]);
+    expect(alleGerichte(k)).toHaveLength(1);
+    expect(alleGerichte(k)[0]!.massgeblich.preisStudierende).toBe(3);
   });
 });
 
 describe('MENSA-F-049 geschlossene Mensen ohne Angebot am Tag', () => {
-  it('listet gewählte Mensen ohne Gerichte als geschlossen', () => {
-    const { geschlossene } = konsolidiere(
-      [plan('Mensa', [g()]), plan('Sued', []), plan('Nord', [])],
-      'Mensa',
-    );
-    expect(geschlossene).toEqual(['Sued', 'Nord']);
+  it('listet gewählte Mensen ohne Gerichte als geschlossen und ohne Abschnitt', () => {
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', []), plan('Nord', [])]);
+    expect(k.geschlossene).toEqual(['Sued', 'Nord']);
+    expect(k.sektionen.map((s) => s.mensaId)).toEqual(['Mensa']);
   });
 });
 

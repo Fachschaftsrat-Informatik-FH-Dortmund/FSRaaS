@@ -3,7 +3,7 @@ id: integrations
 titel: Schnittstellenregister
 praefix: INT
 status: accepted
-version: 1.3.3
+version: 1.5.0
 owner: FSR FB4
 last_reviewed: 2026-09-04
 derived_from:
@@ -114,15 +114,43 @@ Die Antwort ist eine JSON-**Liste**.
 
 | Feld | Typ | Bedeutung |
 |---|---|---|
-| `name` | String | Bezeichnung der Veranstaltung |
-| `courseType` | String | Veranstaltungsart, siehe `product/glossary.md` |
+| `name` | String | Bezeichnung der Veranstaltung; bei `WFPB` zusätzlich die zulässigen Studiengänge als `[StgPO: …]` im Text |
+| `courseId` | String | **Modulnummer des Fachbereichs**, z. B. `42012`; identisch mit der Modul-Nr. im Curricula-Bestand und mit `courseId` in INT-009. Kann leer sein |
+| `courseType` | String | Veranstaltungsart, siehe `product/glossary.md`. Beobachtete Werte: `V`, `Ü`, `ÜPP`, `P`, `SV`, `T` |
+| `eventType` | String | `Course` für Lehrveranstaltungen; siehe INT-009 für den zweiten Wert `Event` |
+| `courseOfStudy` | String | Kurzname des Studiengangs, entspricht `{sname}` |
+| `examinationReg` | String | Prüfungsordnung, z. B. `2019 84 079 PR`; bei Wahlpflicht oft mit Suffix ` WP`, aber uneinheitlich |
+| `termId` | String | Semesterkennung, z. B. `SS 26` |
+| `grade` | String oder Zahl | Fachsemester des Eintrags; bei `WFPB` durchgängig `0` |
+| `description` | String oder null | Freitext, meist leer |
+| `note` | String oder null | Bemerkung, meist leer; anzeigbar |
 | `lecturerId` | String | Kennung der lehrenden Person |
 | `lecturerName` | String | Name der lehrenden Person |
-| `studentSet` | String | Gültigkeitsbereich für Studierendengruppen, siehe `product/glossary.md` |
+| `lecturerSurname` | String | Nachname der lehrenden Person |
+| `studentSet` | String | Gültigkeitsbereich für Studierendengruppen, siehe `product/glossary.md` und den Formen-Befund unten |
 | `timeBegin` | Zahl oder String, Format `HHmm` | Beginnzeit; **linksseitig mit `0` auf vier Stellen aufzufüllen** (aus `800` wird `0800`) |
 | `timeEnd` | Zahl oder String, Format `HHmm` | Endzeit; gleiche Auffüllregel wie `timeBegin` |
-| `weekday` | String | Wochentag als englisches Dreibuchstaben-Kürzel: `Mon`, `Tue`, `Wed`, `Thu`, `Fri` — nur die fünf Werktage, keine Wochenendwerte |
+| `dateBegin` | Zahl (Unix-Sekunden) | Beginn des Gültigkeitszeitraums der Veranstaltung |
+| `dateEnd` | Zahl (Unix-Sekunden) | Ende des Gültigkeitszeitraums |
+| `timestampBegin` | Zahl (Unix-Sekunden) | Erster tatsächlicher Terminzeitpunkt |
+| `timestampEnd` | Zahl (Unix-Sekunden) | Letzter tatsächlicher Terminzeitpunkt |
+| `timeSlotBegin` | Zahl oder null | Index des Zeitrasters, Bedeutung nicht untersucht |
+| `timeSlotDuration` | Zahl oder null | Länge in Zeitrastereinheiten, Bedeutung nicht untersucht |
+| `timeSlotColum` | Zahl | Spaltenindex im Zeitraster (Schreibweise so im Original), Bedeutung nicht untersucht |
+| `interval` | String | Rhythmus; im geprüften Bestand ausnahmslos `"weekly"`. **Achtung:** INT-009 führt dasselbe Feld als **Zahl** |
+| `weekday` | String | Wochentag als englisches Dreibuchstaben-Kürzel: `Mon`, `Tue`, `Wed`, `Thu`, `Fri` — im gesamten geprüften Bestand keine Wochenendwerte |
 | `roomId` | String | Kennung des Raums |
+| `id` | String oder Zahl | Satzkennung; in INT-002 leer beobachtet |
+
+**Live-Verifikation 2026-09-04 (Feldbestand).** Abruf von `INPBPI/2` (121 Einträge) und `WFPB/*` (161 Einträge). Die vorige Fassung dieser Tabelle führte neun Felder; tatsächlich liefert der Endpunkt die oben vollständig aufgenommenen 26. Drei Korrekturen sind für die Feature-Specs erheblich:
+
+| Korrektur | Auswirkung |
+|---|---|
+| `courseId` ist vorhanden | Die Annahme in `features/schedule/spec.md`, INT-002 und INT-009 teilten keine gemeinsame Veranstaltungskennung, ist widerlegt. SCHED-F-410 nutzt `courseId` als vorrangigen Schlüssel |
+| `dateBegin`/`dateEnd` sind vorhanden | Der Gültigkeitszeitraum je Veranstaltung ist bekannt; ein Plan mit echtem Datumsbezug braucht dafür keine zusätzliche Quelle (SCHED-F-500) |
+| `grades` je Studiengang sind grob | INT-001 liefert für die Bachelor-Studiengänge nur `2`, `4`, `6` (bzw. `*`), nicht jedes Fachsemester einzeln |
+
+**Befund zu den `studentSet`-Formen (2026-09-04).** Der Bestand `INPBPI/2` führt 21 verschiedene Werte: `A-P`, `M-N`, `I-J`, `K-L`, `O-P`, `E-F`, `C-D`, `A-B`, `G-H`, `G-I`, `K-M`, `N-P`, `C5-E`, `M5-P`, `J-M4`, `H5-J`, `F-H4`, `A`, `B`, `C`, `D`. Bereiche ohne Zahlen an beiden Grenzen sind der Normalfall, Einzelwerte bestehen aus einem Buchstaben ohne Zahl, gemischte Grenzen kommen vor. Die Wildcard `*` trat im gesamten geprüften Bestand **nicht** als Feldwert auf — sie bleibt als Abrufparameter bestehen. Die Zuordnungsregeln in `features/schedule/spec.md` Abschnitt 4 tragen alle beobachteten Formen; die dortige Beispieltabelle wurde am selben Tag um sie ergänzt.
 
 **Authentifizierung**
 Keine.
@@ -152,9 +180,9 @@ Für die Raumsuche wird dieser Endpunkt **nicht** mehr verwendet. Maßgeblich is
 
 **Live-Verifikation 2026-08-26 (Rhythmus-Feld `interval`).** Abfrage aller aktuell angebotenen Studiengang/Fachsemester-Kombinationen (35 Paare, gesamter aktueller Bestand) zeigt `interval` ausnahmslos als `"weekly"` — kein einziges Vorkommen eines anderen Werts. Ob das Feld überhaupt einen anderen Wert kennt (z. B. für zweiwöchentliche Veranstaltungen) oder im aktuellen Semester schlicht keine solche Veranstaltung angeboten wird, bleibt offen. Die als Beispiel genannte Veranstaltung „Lern- und Arbeitstechniken" (`INPBPI`/`INPBTI`/`INPBDS`, Fachsemester 2, `courseId` `411031`) erwies sich als **wöchentlich**, kein Beleg für den Zweiwochen-Fall: ein rund dreieinviertelstündiger Block (16:00–19:20 Uhr, vier Viertelstunden-Zeitfenster), parallel in zwei Räumen (`A.2.03`, `lecturerId LUA` und `A.3.03`, `lecturerId LUA2`) angeboten, beide mit identischem `studentSet` (`A-P`).
 
-**Neuer Befund: Parallelangebote ohne Gruppenunterscheidung im `studentSet`.** Die beiden Raum-Varianten derselben Veranstaltung tragen identische Zeit- und `studentSet`-Werte; aus den Rohdaten allein ist nicht erkennbar, welcher der beiden Räume für eine einzelne Studierende vorgesehen ist. Relevant für `features/schedule/spec.md`, dort als offene Frage aufgenommen.
+**Befund: Parallelangebote ohne Gruppenunterscheidung im `studentSet` — aufgelöst 2026-09-04.** Die beiden Raum-Varianten tragen identische Zeit- und `studentSet`-Werte; aus den Rohdaten allein ist nicht erkennbar, welcher Raum für eine einzelne Studierende vorgesehen ist. Der Curricula-Bestand des Fachbereichs (`resources/Curricula.pdf`, Stand 24.07.2026) erklärt das: Modulnummer `411031` heißt dort „Lern- u. Arbeitstechniken/Studium Generale/Mentoring" und bündelt drei verschiedene Angebote unter einer Nummer. Die zwei Räume sind also zwei Angebote, kein Datenfehler. Die Konsequenz für den Stundenplan steht in `features/schedule/spec.md` Abschnitt 13.
 
-**Nutzungshinweis für den Wahlpflicht-Planungsmodus (SCHED) — Live-Verifikation 2026-08-26.** Für SCHED-F-400 ruft die App diesen Endpunkt mit `{sname}=WFPB`, `{grade}=*` ab. `WFPB` ist eine eigene, in `CourseOfStudy` geführte Pseudo-Studiengangskennung („Bachelor Wahlpflichtfächer WPF") — kein regulärer Studiengang, sondern eine vom Fachbereich gepflegte Sammelkategorie, die alle aktuell angebotenen Wahlpflichtmodule direkt bündelt (Live-Abfrage: 27 distinkte Module, Beispiele: „Data Mining in Industrie und Wirtschaft", „Moderne Datenbanken", „Künstliche Intelligenz"). Jeder Eintrag trägt im Feld `name` die zulässigen Studiengänge/Vertiefungsrichtungen als `[StgPO: ...]`-Angabe (z. B. `PI/TI/DS-19, MI/MID-19/21, WI-18, INF-ST/NSD/DM-22`), unstrukturiert im Text, nicht als eigenes Feld. Die meisten, aber nicht alle Einträge tragen zusätzlich `examinationReg` mit dem Suffix ` WP`; das Muster ist uneinheitlich genug (bei regulären Pflichtveranstaltungen z. B. `2019 84 079 PR`, bei einem Master-Beispiel ganz ohne Suffix beobachtet), um nicht als alleiniges Erkennungsmerkmal zu dienen — maßgeblich ist die Zugehörigkeit zu `WFPB`, nicht der Inhalt von `examinationReg`.
+**Nutzungshinweis für den Wahlpflicht-Planungsmodus (SCHED) — Live-Verifikation 2026-08-26.** Für SCHED-F-400 ruft die App diesen Endpunkt mit `{sname}=WFPB`, `{grade}=*` ab. `WFPB` ist eine eigene, in `CourseOfStudy` geführte Pseudo-Studiengangskennung („Bachelor Wahlpflichtfächer WPF") — kein regulärer Studiengang, sondern eine vom Fachbereich gepflegte Sammelkategorie, die alle aktuell angebotenen Wahlpflichtmodule direkt bündelt (Live-Abfrage 2026-08-26: 27 distinkte Module; Nachprüfung 2026-09-04: 161 Termineinträge auf rund 20 distinkte Module — die Zahl schwankt mit dem Angebot des Semesters. Beispiele: „Data Mining in Industrie und Wirtschaft", „Moderne Datenbanken", „Künstliche Intelligenz"). Jeder Eintrag trägt im Feld `name` die zulässigen Studiengänge/Vertiefungsrichtungen als `[StgPO: ...]`-Angabe (z. B. `PI/TI/DS-19, MI/MID-19/21, WI-18, INF-ST/NSD/DM-22`), unstrukturiert im Text, nicht als eigenes Feld. Die meisten, aber nicht alle Einträge tragen zusätzlich `examinationReg` mit dem Suffix ` WP`; das Muster ist uneinheitlich genug (bei regulären Pflichtveranstaltungen z. B. `2019 84 079 PR`, bei einem Master-Beispiel ganz ohne Suffix beobachtet), um nicht als alleiniges Erkennungsmerkmal zu dienen — maßgeblich ist die Zugehörigkeit zu `WFPB`, nicht der Inhalt von `examinationReg`.
 
 Löst die zuvor offene Frage aus `features/schedule/spec.md` Abschnitt 13 auf, ersetzt aber auch die bisherige Annahme dort (manuelle Fachsemester-Auswahl, vormals SCHED-F-270): Ein Abruf über ein abweichendes `{grade}` des eigenen Studiengangs ist nicht mehr nötig, da `WFPB` bereits die vollständige, aktuelle Liste liefert. **Unverifiziert bleibt, ob `WFPB` auch Master-Wahlpflichtfächer abdeckt** — laut Namensgebung ausdrücklich nur Bachelor; keine äquivalente Kategorie für `INPM`/`MIPM`/`WIPM` in der Studiengangsliste gefunden.
 
@@ -517,6 +545,18 @@ Die Antwort ist eine JSON-Liste. Datensätze enthalten deutlich mehr Felder als 
 | `interval` | Zahl oder String | Wiederholungsintervall — nach einem Hinweis des FSR FB4 (2026-08-25) vermutlich Rhythmus in Wochen (z. B. `2` für zweiwöchentlich); unverifiziert, siehe `features/schedule/spec.md` Abschnitt 13 |
 | `note` | String | Freitext, bei Prüfungen z. B. `Bitte nicht stören!` |
 | `flags` | Zahl | unklare Bedeutung, nicht weiter untersucht |
+| `creator` | String oder null | Urheber des Eintrags, meist leer |
+| `created` | Zahl | Anlagezeitpunkt bzw. -zähler, Bedeutung unklar (Wert `19` beobachtet — keine plausible Unix-Zeit) |
+| `modified` | Zahl (Unix-Sekunden) | Zeitpunkt der letzten Änderung des Datensatzes |
+| `termId`, `grade`, `description`, `timeSlotBegin`, `timeSlotDuration`, `timeSlotColum` | wie INT-002 | bei `eventType: "Event"` durchgängig leer oder `null` |
+
+**Nachprüfung 2026-09-04.** Drei Ergänzungen zum Stand vom 2026-08-24:
+
+1. **`modified` ist vorhanden.** Damit lässt sich serverseitig erkennen, welche Raumplan-Termine sich seit dem letzten Abruf geändert haben — relevant für den Spike zu Schritt 6 (Frage nach der Abbildung kurzfristiger Änderungen) und für einen sparsamen Abgleich.
+2. **`interval` ist bei `eventType: "Event"` die Zahl `0`**, während INT-002 dasselbe Feld als Zeichenkette `"weekly"` führt. Beim Parsen ist beides zu behandeln; ein gemeinsamer Typ existiert nicht.
+3. **Prüfungen tragen ein erkennbares Namensmuster.** Beobachtet: `"Prüfung 42032 Rechnerstrukturen und Betriebssysteme 2"` — also `Prüfung <courseId> <Bezeichnung>` mit Raum, Datum und Uhrzeit, bei leerem `courseId`-Feld. Ob dieser Bestand vollständig und rechtzeitig gepflegt wird, ist ungeprüft; falls ja, wäre er eine Quelle für Prüfungstermine **ohne** den in INT-013 beschriebenen manuellen Intranet-Import. Als offene Frage in `features/schedule/spec.md` Abschnitt 13 aufgenommen, nicht in Roadmap-Schritt 5 umzusetzen.
+
+**Befund zur Vollständigkeit (2026-09-04, offen).** Ein Abruf von `Room/A.2.02/AllEvents` lieferte lediglich zwei Einträge, beide `eventType: "Event"` — obwohl `A.2.02` in INT-002 als Raum regulärer Lehrveranstaltungen geführt wird. Ob die raumbezogene Form nur Einzelbuchungen ausweist, ob die Raumkennung dort anders geschrieben wird oder ob der Wildcard-Aufruf einen anderen Bestand liefert, ist ungeklärt. Das verstärkt den ohnehin für Schritt 6 vorgesehenen Spike; der Abgleich aus SCHED-F-410 ist erst danach belastbar.
 
 **Authentifizierung**
 Keine.
@@ -963,6 +1003,57 @@ Quelle: `decisions/0014-selbstbetriebene-fehlertelemetrie.md`
 
 ---
 
+## INT-019 — FBWS Gruppenkennung zur Matrikelnummer
+
+**Zweck**
+Liefert zu einer Matrikelnummer die vom Fachbereich zugeteilte Gruppenkennung (`studentSet`). Damit muss die Nutzerin ihre Kennung nicht kennen oder von Hand eintippen — Grundlage für SCHED-F-690.
+
+**Aufruf**
+```
+GET https://ws.inf.fh-dortmund.de/timetable/current/rest/Student/{matrikelnummer}/Set?Accept=application/json
+```
+`{matrikelnummer}` ist die Matrikelnummer der Nutzerin. **Der Kopf `Accept: application/json` oder der gleichnamige Abfrageparameter ist zwingend** — ohne ihn antwortet der Dienst mit `501 Not Implemented`. Beide Pfadpräfixe (`/fbws/` und `/timetable/`) liefern dasselbe Ergebnis; für die Neuentwicklung gilt wie bei INT-001/INT-002 einheitlich `/timetable/`.
+
+**Antwortstruktur**
+
+Der Endpunkt kennt **drei** Antwortgestalten, alle mit Status 200:
+
+| Fall | Antwort | Auswertung |
+|---|---|---|
+| Kennung hinterlegt | Objekt mit `fhDoStudentSet` als **Zeichenkette**, z. B. `{"fhDoStudentSet":"O7"}` | Kennung übernehmen (nach Bestätigung, SCHED-F-700) |
+| Keine Kennung hinterlegt | Objekt mit `fhDoStudentSet` als **`false`**, also `{"fhDoStudentSet":false}` | Wie „nicht gefunden" behandeln |
+| Kein Datensatz | leere **Liste** `[]` | Wie „nicht gefunden" behandeln |
+
+Alle drei liefern Status 200; der Unterschied steckt allein in der Gestalt. Ein Client muss daher **auf eine nicht-leere Zeichenkette prüfen**, nicht auf Vorhandensein des Feldes und nicht auf Wahrheitswert — `false` und `undefined` sind beide falsy, aber nur ein String ist eine Kennung. Stillschweigendes Durchreichen eines leeren Werts ist nach SEC-F-060 unzulässig.
+
+**Authentifizierung**
+Keine.
+
+**Eigentümer/Betreiber**
+Fachbereich Informatik, FH Dortmund (dieselbe FBWS-Infrastruktur wie INT-001/INT-002/INT-009).
+
+**Verfügbarkeit**
+Nicht dokumentiert, kein bekanntes SLA.
+
+**Cache-Regel (Vorschlag)**
+Nicht zwischenspeichern. Der Abruf erfolgt einmalig bei der Einrichtung; das Ergebnis wird als Gruppenkennung gespeichert, nicht die Antwort selbst.
+
+**Risiko und Datenschutz**
+Der Endpunkt ist unauthentifiziert und beantwortet **jede** übergebene Matrikelnummer. Daraus folgen zwei Dinge:
+
+1. **Der Endpunkt taugt nicht zur Prüfung der Matrikelnummer.** Mehrere offensichtlich ungültige Nummern lieferten am 2026-09-04 plausibel aussehende Kennungen (`0000000` → `B3`, `9999999` → `A9`), während zwei benachbarte, plausibel gebildete Nummern `false` ergaben. Eine erfolgreiche Antwort belegt also **nicht**, dass die eingegebene Nummer die eigene ist. Die App darf die ermittelte Kennung deshalb nicht stillschweigend übernehmen, sondern legt sie der Nutzerin zur Bestätigung vor (SCHED-F-700).
+2. **Personenbeziehbare Zuordnung ohne Zugangsschutz.** Wer eine Matrikelnummer kennt, erfährt die zugehörige Gruppe. Das ist eine Eigenschaft des Hochschulsystems, nicht dieser App. Für die App gilt daraus abgeleitet: Die Matrikelnummer wird ausschließlich für den Abruf der **eigenen** Kennung verwendet, verlässt das Gerät nur an diesen Endpunkt und niemals an das eigene Backend (SCHED-F-710, API-F-100); es findet kein Durchprobieren und keine Abfrage fremder Nummern statt.
+
+**Ersatzoption**
+Manuelle Eingabe der Gruppenkennung (SCHED-F-040/F-720) — bleibt ohnehin als gleichwertiger Weg bestehen, da nicht jede Person ihre Matrikelnummer eingeben möchte.
+
+**Status**
+Bestätigt, live erprobt am 2026-09-04.
+
+Quelle: Hinweis des Nutzers (studierende Person) mit Beispielaufruf, 2026-09-04; live nachgeprüft am selben Tag gegen beide Pfadpräfixe sowie gegen eine unbekannte und eine ungültige Nummer.
+
+---
+
 ## Übersicht
 
 | ID | System | Status | Risiko | Abhängige Feature-Specs |
@@ -985,3 +1076,4 @@ Quelle: `decisions/0014-selbstbetriebene-fehlertelemetrie.md`
 | INT-016 | Nachrichten des Fachbereichs Wirtschaft (FB9) | bestätigt, nicht im Umfang | mittel | – |
 | INT-017 | HIS-Portal (Semesterticket-Bezug) | Verfahren bekannt, Nutzung ausgeschlossen | hoch | TICKET |
 | INT-018 | GlitchTip (Fehlertelemetrie) | geplant | gering | – |
+| INT-019 | FBWS Gruppenkennung zur Matrikelnummer | bestätigt, live erprobt | mittel (unauthentifiziert, personenbeziehbar) | SCHED |
