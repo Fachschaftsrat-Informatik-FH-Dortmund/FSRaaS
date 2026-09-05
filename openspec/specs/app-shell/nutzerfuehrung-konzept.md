@@ -6,8 +6,8 @@ owner: FSR FB4
 last_reviewed: 2026-09-02
 related:
   - spec.md
-  - ../../platform/ux-and-theming.md
-  - ../../decisions/0013-zustand-navigation-und-netzwerkschicht.md
+  - ../ux-and-theming/spec.md
+  - ../../../specs/decisions/0013-zustand-navigation-und-netzwerkschicht.md
 zweck: >
   Vorüberlegung zu Roadmap-Schritt 2 (App-Rahmen). Kein akzeptierter
   Anforderungsbestand: Dieses Dokument definiert keine Anforderungen und
@@ -26,7 +26,7 @@ sind, wie sie erfahren, was als Nächstes zu tun ist, und wie die App auf
 ihre Handlungen antwortet.
 
 Es erfindet die Navigationsstruktur nicht neu — die ist in
-`spec.md` (SHELL-F-010/060) und `../../decisions/0013-zustand-navigation-und-netzwerkschicht.md`
+`spec.md` (SHELL-F-010/060) und `../../../specs/decisions/0013-zustand-navigation-und-netzwerkschicht.md`
 entschieden: Tab-Leiste mit vier Bereichen plus „Mehr", datei-basiert über
 Expo Router. Das Konzept füllt die Lücke zwischen dieser Grobstruktur und
 der Bildschirmgestaltung der einzelnen Features.
@@ -128,7 +128,7 @@ verkürzt.
    Der Stundenplan ohne gewählte Gruppe zeigt „Studiengang und Semester
    wählen" mit Knopf; der Mensaplan ohne gewählte Mensa zeigt „Mensa in
    den Einstellungen auswählen" mit Direktlink (Muster aus UX-F-110,
-   Vorbild L-Befund in `../../platform/ux-and-theming.md`).
+   Vorbild L-Befund in `../ux-and-theming/spec.md`).
 
 ### 4.2 Was bewusst nicht passiert
 
@@ -270,7 +270,7 @@ Abschnitt 5) — die Spalte „Slot" nennt nur die voraussichtliche Nummer.
 | F-100 | Wenn ein Bereich über Schnellzugriff oder Deep Link geöffnet wird, muss das System einen Navigations-Stack aufbauen, der einen Rückweg in die reguläre Struktur bietet. | Alt: quick_actions_manager.dart (L-004) |
 | F-110 | Wenn eine Ansicht wegen fehlender Einwilligung oder fehlender Anmeldung gesperrt ist, muss das System den Grund nennen, einen direkten Weg zur Freischaltung anbieten und danach an die ursprüngliche Stelle zurückkehren. | NEU |
 
-### Neu in `../../platform/ux-and-theming.md` (Präfix UX)
+### Neu in `../ux-and-theming/spec.md` (Präfix UX)
 
 | Slot | Anforderung (EARS, Kurzfassung) | Herkunft |
 |---|---|---|
@@ -291,7 +291,7 @@ Abschnitt 5) — die Spalte „Slot" nennt nur die voraussichtliche Nummer.
 
 - `spec.md` Abschnitt 7: „konfigurierte Startansicht" mit der neuen
   Startansicht-Anforderung (Slot F-070) verknüpfen.
-- `../../platform/ux-and-theming.md`: Symbolzuordnung der Tabs unter
+- `../ux-and-theming/spec.md`: Symbolzuordnung der Tabs unter
   der bestehenden Symbolsystem-Anforderung (UX, Symbolsystem) als
   Beispieltabelle ergänzen.
 - Betroffene Specs: `version` erhöhen (README Abschnitt 8),

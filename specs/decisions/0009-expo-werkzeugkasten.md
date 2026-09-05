@@ -4,11 +4,11 @@ titel: Expo als Werkzeugkasten, ohne Cloud-Dienste
 status: angenommen
 datum: 2026-08-25
 betrifft:
-  - ../platform/architecture.md
-  - ../platform/non-functional.md
-  - ../features/semester-ticket/spec.md
-  - ../features/canteen/spec.md
-  - ../features/app-shell/spec.md
+  - ../../openspec/specs/architecture/spec.md
+  - ../../openspec/specs/non-functional/spec.md
+  - ../../openspec/specs/semester-ticket/spec.md
+  - ../../openspec/specs/canteen/spec.md
+  - ../../openspec/specs/app-shell/spec.md
   - 0001-react-native-als-plattform.md
   - 0008-vertrieb-ueber-drei-app-stores.md
 ---

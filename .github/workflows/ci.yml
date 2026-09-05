@@ -9,7 +9,9 @@ permissions:
   contents: read
 
 jobs:
-  # Prüfungen am Spec-Bestand (QA-N-080 bis QA-N-110). Ein Verstoß blockiert den Merge.
+  # Prüfungen am Anforderungsbestand (openspec/specs/quality-and-testing,
+  # Abschnitt „Prüfungen am Anforderungsbestand selbst"). Ein Verstoß blockiert
+  # den Merge.
   spec-check:
     runs-on: ubuntu-latest
     steps:
@@ -18,10 +20,22 @@ jobs:
         with:
           node-version: 20
       - run: node tools/spec-check/src/cli.js
-      - run: node --test tools/spec-check/test/*.test.js
+      - run: node --test tools/spec-check/test/
+      # Struktur von Proposal, Spec-Delta, Design und Tasks (ADR 0019).
+      # Bewusst ohne --strict: die Strict-Stufe verlangt die englischen
+      # RFC-2119-Wörter SHALL/MUST und meldet damit jedes deutsche „muss"
+      # als Verstoß (openspec 1.12). Fehler der Stufe ERROR blockieren auch
+      # ohne --strict.
+      # Paketname ist @fission-ai/openspec; das npm-Paket „openspec" ist ein
+      # unbeteiligter Platzhalter (0.0.0). Version fest, damit eine neue
+      # Prüfregel nicht unangekündigt die CI bricht.
+      - run: npx --yes @fission-ai/openspec@1.12.0 validate --specs
 
-  # Keine Verhaltensänderung ohne Spec-Änderung (NFR-N-140, README.md Abschnitt 7):
-  # eine PR ändert etwas unter specs/ ODER trägt das Label spec-unchanged.
+  # Keine Verhaltensänderung ohne Spec-Delta im selben Merge (NFR-N-140,
+  # README.md Abschnitt 7): eine PR ändert etwas unter openspec/ oder specs/
+  # ODER trägt das Label spec-unchanged. Seit ADR 0019 liegt der fachliche
+  # Bestand unter openspec/, die Entscheidungen und Produktdokumente unter
+  # specs/ — beide Bäume zählen.
   spec-delta:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -29,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: specs/ geändert oder Label spec-unchanged gesetzt?
+      - name: openspec/ oder specs/ geändert oder Label spec-unchanged gesetzt?
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -39,11 +53,11 @@ jobs:
             echo "Label spec-unchanged gesetzt — Spec-Delta nicht erforderlich."
             exit 0
           fi
-          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -q '^specs/'; then
-            echo "specs/ geändert — Spec-anchored Merge-Regel erfüllt."
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -qE '^(openspec|specs)/'; then
+            echo "openspec/ oder specs/ geändert — Spec-anchored Merge-Regel erfüllt."
             exit 0
           fi
-          echo "::error::Weder eine Änderung unter specs/ noch das Label spec-unchanged. Siehe README.md Abschnitt 7."
+          echo "::error::Weder eine Änderung unter openspec/ oder specs/ noch das Label spec-unchanged. Siehe README.md Abschnitt 7."
           exit 1
 
   # Typen werden aus dem Vertrag erzeugt, nicht von Hand geschrieben (API-N-035).

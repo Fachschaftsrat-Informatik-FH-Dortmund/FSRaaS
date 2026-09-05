@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Erzeugt Typen aus specs/platform/api-contract.yaml (API-N-035, ADR 0011):
+// Erzeugt Typen aus openspec/specs/api-contract.yaml (API-N-035, ADR 0011):
 //   - TypeScript für App und Verwaltungsoberfläche  (openapi-typescript)
 //   - C#-Records für das Backend                    (dieser Emitter)
 //
@@ -21,7 +21,7 @@ const VALUE_TYPES = new Set(['int', 'long', 'decimal', 'bool', 'Guid', 'DateTime
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../../..');
-const CONTRACT = resolve(REPO, 'specs/platform/api-contract.yaml');
+const CONTRACT = resolve(REPO, 'openspec/specs/api-contract.yaml');
 
 const check = process.argv.includes('--check');
 const outDir = check ? resolve(tmpdir(), `fb4-codegen-${Date.now()}`) : REPO;
@@ -30,7 +30,7 @@ const csOut = resolve(outDir, check ? 'Contract.cs' : 'backend/src/Fb4.Backend/C
 
 // ------------------------------------------------------------------ TypeScript
 const ast = await openapiTS(new URL(`file://${CONTRACT}`));
-const ts = `// ERZEUGT aus specs/platform/api-contract.yaml — nicht von Hand bearbeiten (API-N-035).\n\n${astToString(ast)}`;
+const ts = `// ERZEUGT aus openspec/specs/api-contract.yaml — nicht von Hand bearbeiten (API-N-035).\n\n${astToString(ast)}`;
 write(tsOut, ts);
 
 // -------------------------------------------------------------------------- C#
@@ -47,7 +47,7 @@ function write(path, content) {
 function emitCSharp(spec) {
   const schemas = spec.components?.schemas ?? {};
   const lines = [
-    '// ERZEUGT aus specs/platform/api-contract.yaml — nicht von Hand bearbeiten (API-N-035).',
+    '// ERZEUGT aus openspec/specs/api-contract.yaml — nicht von Hand bearbeiten (API-N-035).',
     '#nullable enable',
     'using System.Text.Json.Serialization;',
     '',

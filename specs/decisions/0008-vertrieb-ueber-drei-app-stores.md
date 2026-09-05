@@ -4,13 +4,13 @@ titel: Vertrieb über Apple App Store, Google Play Store und F-Droid
 status: angenommen
 datum: 2026-08-25
 betrifft:
-  - ../platform/non-functional.md
-  - ../platform/integrations.md
-  - ../platform/architecture.md
-  - ../platform/security-and-privacy.md
-  - ../features/settings/spec.md
-  - ../features/canteen/spec.md
-  - ../features/news/spec.md
+  - ../../openspec/specs/non-functional/spec.md
+  - ../../openspec/specs/integrations/spec.md
+  - ../../openspec/specs/architecture/spec.md
+  - ../../openspec/specs/security-and-privacy/spec.md
+  - ../../openspec/specs/settings/spec.md
+  - ../../openspec/specs/canteen/spec.md
+  - ../../openspec/specs/news/spec.md
   - 0001-react-native-als-plattform.md
 ---
 

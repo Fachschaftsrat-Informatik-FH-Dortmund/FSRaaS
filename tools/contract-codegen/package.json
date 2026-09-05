@@ -2,7 +2,7 @@
   "name": "@fb4/contract-codegen",
   "version": "0.1.0",
   "private": true,
-  "description": "Erzeugt Typen aus specs/platform/api-contract.yaml (API-N-035, ADR 0011). Von Hand geschriebene Anfrage-/Antworttypen sind untersagt.",
+  "description": "Erzeugt Typen aus openspec/specs/api-contract.yaml (API-N-035, ADR 0011). Von Hand geschriebene Anfrage-/Antworttypen sind untersagt.",
   "license": "MIT",
   "type": "module",
   "bin": {

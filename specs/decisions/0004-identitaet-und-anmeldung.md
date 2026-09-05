@@ -4,11 +4,11 @@ titel: Identität und Anmeldung
 status: angenommen
 datum: 2026-08-25
 betrifft:
-  - ../platform/identity-and-moderation.md
-  - ../platform/integrations.md
-  - ../features/canteen-ratings/spec.md
-  - ../features/event-volunteers/spec.md
-  - ../features/e-key/spec.md
+  - ../../openspec/specs/identity-and-moderation/spec.md
+  - ../../openspec/specs/integrations/spec.md
+  - ../../openspec/specs/canteen-ratings/spec.md
+  - ../../openspec/specs/event-volunteers/spec.md
+  - ../../openspec/specs/e-key/spec.md
 ---
 
 # ADR 0004: Identität und Anmeldung

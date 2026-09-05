@@ -1,5 +1,7 @@
-// Tests für die vier Prüfungen aus specs/platform/quality-and-testing.md
-// Abschnitt 8. Jeder Test trägt die Anforderungs-ID im Namen (QA-F-010).
+// Tests für die drei Prüfungen aus openspec/specs/quality-and-testing/spec.md,
+// Abschnitt „Prüfungen am Anforderungsbestand selbst". Jeder Test trägt den
+// Requirement-Titel im Namen (Requirement „Testnachweis für nicht-funktionale
+// Anforderungen mit ‚muss'", vormals QA-F-010).
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,12 +9,20 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  collect, checkDuplicateIds, checkHerkunft, checkFrontmatter, checkReferences,
+  collect, checkDuplicateTitles, checkHerkunft, checkReferences,
 } from '../src/checks.js';
 
-/** Baut einen Mini-Spec-Bestand aus { relPfad: inhalt } und gibt das Modell zurück. */
+/**
+ * Baut einen Mini-Bestand aus { relPfad: inhalt } unterhalb einer Repo-Wurzel
+ * und gibt das eingelesene Modell zurück. Pfade sind repo-relativ, also z. B.
+ * `openspec/specs/demo/spec.md` oder `specs/decisions/0099-test.md`.
+ */
 function build(files) {
   const dir = mkdtempSync(join(tmpdir(), 'speccheck-'));
+  // Beide Bäume existieren immer, damit collect() nicht an fehlenden Ordnern
+  // vorbeiläuft und ein Test versehentlich leer bestanden wird.
+  mkdirSync(join(dir, 'openspec', 'specs'), { recursive: true });
+  mkdirSync(join(dir, 'specs'), { recursive: true });
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
     mkdirSync(join(full, '..'), { recursive: true });
@@ -22,182 +32,180 @@ function build(files) {
   return { dir, model, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
-const FM_PLATFORM = (praefix) => `---
-id: x
-titel: X
-praefix: ${praefix}
-status: accepted
-version: 0.1.0
-owner: FSR FB4
-last_reviewed: 2026-08-27
-derived_from: []
-implemented_in: []
-related: []
----
-`;
+/** Eine Capability-Spec in OpenSpec-Form aus fertigen Requirement-Blöcken. */
+function spec(...bloecke) {
+  return `## Purpose\n\nTestbestand.\n\n## Requirements\n\n${bloecke.join('\n\n')}\n`;
+}
 
-const REG = `---
-id: integrations
-titel: Schnittstellenregister
-praefix: INT
-status: accepted
-version: 0.1.0
-owner: FSR FB4
-last_reviewed: 2026-08-27
-derived_from: []
-implemented_in: []
-related: []
----
+/** Ein Requirement mit Titel, Text (inkl. Herkunftssatz) und einem Scenario. */
+function req(titel, text) {
+  return `### Requirement: ${titel}\n\n${text}\n\n`
+    + `#### Scenario: Regelfall\n- **WHEN** etwas geschieht\n- **THEN** geschieht etwas anderes`;
+}
 
-| ID | Zweck |
-|---|---|
-| INT-001 | FBWS |
-`;
+const REGISTER = spec(
+  req('INT-001 — FBWS', 'Das System muss FBWS aufrufen. Herkunft: NEU.'),
+);
 
-// ------------------------------------------------------------------ QA-N-080
-test('QA-N-080 meldet eine über zwei Dateien doppelt vergebene Anforderungs-ID', () => {
+// ------------------------- Keine doppelten Anforderungs-Titel im Bestand
+test('Keine doppelten Anforderungs-Titel im Bestand: meldet zwei gleiche Titel in derselben Capability', () => {
   const { model, cleanup } = build({
-    'platform/a.md': FM_PLATFORM('AAA') + '\n| AAA-F-010 | Das System muss X. | NEU |\n',
-    'platform/b.md': FM_PLATFORM('BBB') + '\n| AAA-F-010 | Das System muss Y. | NEU |\n',
+    'openspec/specs/demo/spec.md': spec(
+      req('Gleicher Titel', 'Das System muss X. Herkunft: NEU.'),
+      req('Gleicher Titel', 'Das System muss Y. Herkunft: NEU.'),
+    ),
   });
-  const findings = checkDuplicateIds(model);
+  const findings = checkDuplicateTitles(model);
   cleanup();
   assert.equal(findings.length, 1);
-  assert.match(findings[0].message, /AAA-F-010/);
+  assert.match(findings[0].message, /Gleicher Titel/);
 });
 
-test('QA-N-080 ist still, wenn jede Anforderungs-ID nur einmal vorkommt', () => {
+test('Keine doppelten Anforderungs-Titel im Bestand: ist still bei durchweg eigenen Titeln', () => {
   const { model, cleanup } = build({
-    'platform/a.md': FM_PLATFORM('AAA')
-      + '\n| AAA-F-010 | Das System muss X. | NEU |\n| AAA-F-020 | Das System muss Y. | NEU |\n',
+    'openspec/specs/demo/spec.md': spec(
+      req('Erster Titel', 'Das System muss X. Herkunft: NEU.'),
+      req('Zweiter Titel', 'Das System muss Y. Herkunft: NEU.'),
+    ),
   });
-  const findings = checkDuplicateIds(model);
+  const findings = checkDuplicateTitles(model);
   cleanup();
   assert.deepEqual(findings, []);
 });
 
-test('QA-N-080 zählt eine als entfallen markierte Anforderung weiterhin als vergeben', () => {
+test('Keine doppelten Anforderungs-Titel im Bestand: derselbe Titel in zwei Capabilities ist zulässig', () => {
   const { model, cleanup } = build({
-    'platform/a.md': FM_PLATFORM('AAA') + '\n| ~~AAA-F-010~~ | ~~Das System muss X.~~ — entfallen | NEU |\n',
-    'platform/b.md': FM_PLATFORM('BBB') + '\n| AAA-F-010 | Das System muss X neu. | NEU |\n',
+    'openspec/specs/a/spec.md': spec(req('Offline-Zustand', 'Das System muss X. Herkunft: NEU.')),
+    'openspec/specs/b/spec.md': spec(req('Offline-Zustand', 'Das System muss Y. Herkunft: NEU.')),
   });
-  const findings = checkDuplicateIds(model);
+  const findings = checkDuplicateTitles(model);
   cleanup();
-  assert.equal(findings.length, 1);
+  assert.deepEqual(findings, []);
 });
 
-// ------------------------------------------------------------------ QA-N-090
-test('QA-N-090 akzeptiert alle fünf zulässigen Herkunftsmuster', () => {
-  const rows = [
-    '| AAA-F-010 | Das System muss A. | NEU |',
-    '| AAA-F-020 | Das System muss B. | Alt: lib/main.dart:37 |',
-    '| AAA-F-030 | Das System muss C. | Android: unbekannt |',
-    '| AAA-F-040 | Das System muss D. | Alt: bewusst verworfen |',
-    '| AAA-F-050 | Das System muss E. | Recherche: f-droid.org/docs, 2026-08-25 |',
-  ].join('\n');
-  const { model, cleanup } = build({ 'platform/a.md': FM_PLATFORM('AAA') + '\n' + rows + '\n' });
+// ------------------------------------------- Herkunftsnachweis ist Pflicht
+test('Herkunftsnachweis ist Pflicht: akzeptiert alle fünf zulässigen Muster', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/demo/spec.md': spec(
+      req('A', 'Das System muss A. Herkunft: NEU.'),
+      req('B', 'Das System muss B. Herkunft: Alt: lib/main.dart:37.'),
+      req('C', 'Das System muss C. Herkunft: Android: unbekannt.'),
+      req('D', 'Das System muss D. Herkunft: Alt: bewusst verworfen.'),
+      req('E', 'Das System muss E. Herkunft: Recherche: f-droid.org/docs, 2026-08-25.'),
+    ),
+  });
   const findings = checkHerkunft(model);
   cleanup();
   assert.deepEqual(findings, []);
 });
 
-test('QA-N-090 meldet eine Anforderung ohne erkennbare Herkunftsmarkierung', () => {
+test('Herkunftsnachweis ist Pflicht: akzeptiert Quellen mit Punkt und nachgestellte Erläuterung', () => {
+  // Regressionsfall: Ein Muster, das an der ersten Satzgrenze endet, schneidet
+  // `wiki.fsrfb4.de` und den erläuternden Folgesatz falsch ab.
   const { model, cleanup } = build({
-    'platform/a.md': FM_PLATFORM('AAA') + '\n| AAA-F-010 | Das System muss A. | irgendwas |\n',
+    'openspec/specs/demo/spec.md': spec(
+      req('A', 'Das System muss A. Herkunft: Recherche: wiki.fsrfb4.de, 2026-08-24. (vormals WIKI-F-050)'),
+      req('B', 'Das System muss B. Herkunft: NEU (vormals SCHED-F-060). Die Alt-App tat das anders.'),
+      req('C', 'Das System muss C. Herkunft: Alt: lib/areas/schedule/viewmodels/v.dart:218-249 (vormals SCHED-F-080).'),
+    ),
   });
   const findings = checkHerkunft(model);
-  cleanup();
-  assert.equal(findings.length, 1);
-  assert.match(findings[0].message, /AAA-F-010/);
-});
-
-test('QA-N-090 meldet eine Zelle mit zwei Markierungen', () => {
-  const { model, cleanup } = build({
-    'platform/a.md': FM_PLATFORM('AAA') + '\n| AAA-F-010 | Das System muss A. | NEU, Android: unbekannt |\n',
-  });
-  const findings = checkHerkunft(model);
-  cleanup();
-  assert.equal(findings.length, 1);
-});
-
-// ------------------------------------------------------------------ QA-N-100
-test('QA-N-100 meldet ein fehlendes Frontmatter-Pflichtfeld einer Feature-Spec', () => {
-  const spec = `---
-id: demo
-titel: Demo
-praefix: DEMO
-status: draft
-version: 0.1.0
-owner: FSR FB4
-last_reviewed: 2026-08-27
-derived_from: []
-implemented_in: []
-related: []
----
-`; // prioritaet fehlt
-  const { model, cleanup } = build({ 'features/demo/spec.md': spec });
-  const findings = checkFrontmatter(model);
-  cleanup();
-  assert.equal(findings.length, 1);
-  assert.match(findings[0].message, /prioritaet/);
-});
-
-test('QA-N-100 meldet ein ADR ohne betrifft', () => {
-  const adr = `---
-nummer: 0099
-titel: Test
-status: angenommen
-datum: 2026-08-27
----
-`;
-  const { model, cleanup } = build({ 'decisions/0099-test.md': adr });
-  const findings = checkFrontmatter(model);
-  cleanup();
-  assert.equal(findings.length, 1);
-  assert.match(findings[0].message, /betrifft/);
-});
-
-test('QA-N-100 ist still bei vollständigem Frontmatter', () => {
-  const { model, cleanup } = build({ 'platform/a.md': FM_PLATFORM('AAA') });
-  const findings = checkFrontmatter(model);
   cleanup();
   assert.deepEqual(findings, []);
 });
 
-// ------------------------------------------------------------------ QA-N-110
-test('QA-N-110 meldet einen related-Verweis auf eine fehlende Datei', () => {
-  const spec = FM_PLATFORM('AAA').replace('related: []', 'related:\n  - ../platform/gibtsnicht.md');
-  const { model, cleanup } = build({ 'platform/a.md': spec });
+test('Herkunftsnachweis ist Pflicht: meldet ein Requirement ganz ohne Herkunftssatz', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/demo/spec.md': spec(req('Ohne', 'Das System muss A.')),
+  });
+  const findings = checkHerkunft(model);
+  cleanup();
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /kein Herkunftssatz/);
+});
+
+test('Herkunftsnachweis ist Pflicht: meldet eine nicht zulässige Markierung', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/demo/spec.md': spec(req('Falsch', 'Das System muss A. Herkunft: irgendwas.')),
+  });
+  const findings = checkHerkunft(model);
+  cleanup();
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /entspricht keinem/);
+});
+
+test('Herkunftsnachweis ist Pflicht: meldet zwei Herkunftssätze in einem Requirement', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/demo/spec.md': spec(
+      req('Doppelt', 'Das System muss A. Herkunft: NEU.\n\nNachtrag. Herkunft: Android: unbekannt.'),
+    ),
+  });
+  const findings = checkHerkunft(model);
+  cleanup();
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].message, /2 Herkunftssätze/);
+});
+
+test('Herkunftsnachweis ist Pflicht: wertet nur den Requirement-Text, nicht die Scenarios', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/demo/spec.md': '## Purpose\n\nT.\n\n## Requirements\n\n'
+      + '### Requirement: Nur im Scenario\n\nDas System muss A.\n\n'
+      + '#### Scenario: Regelfall\n- **WHEN** x\n- **THEN** y. Herkunft: NEU.\n',
+  });
+  const findings = checkHerkunft(model);
+  cleanup();
+  assert.equal(findings.length, 1, 'Herkunft im Scenario darf nicht als Nachweis zählen');
+});
+
+// -------------------------------- Referenzen zeigen auf existierende Ziele
+test('Referenzen zeigen auf existierende Ziele: meldet einen related-Verweis ins Leere', () => {
+  const { model, cleanup } = build({
+    'specs/product/x.md': '---\nstatus: draft\nrelated:\n  - ../gibtsnicht.md\n---\n\nText.\n',
+  });
   const findings = checkReferences(model);
   cleanup();
   assert.ok(findings.some((f) => /gibtsnicht\.md/.test(f.message)));
 });
 
-test('QA-N-110 meldet einen Verweis auf eine nicht definierte Anforderungs-ID', () => {
+test('Referenzen zeigen auf existierende Ziele: meldet eine nirgends geführte Anforderungs-ID', () => {
   const { model, cleanup } = build({
-    'platform/a.md': FM_PLATFORM('AAA')
-      + '\n| AAA-F-010 | Das System muss A. | NEU |\n\nSiehe auch BBB-F-999 dazu.\n',
+    'openspec/specs/demo/spec.md': spec(req('A', 'Das System muss A. Herkunft: NEU (vormals DEMO-F-010).')),
+    'specs/pruefprotokolle/2026-01-01-test.md': '# Protokoll\n\nGeprüft: BBB-F-999.\n',
   });
   const findings = checkReferences(model);
   cleanup();
   assert.ok(findings.some((f) => /BBB-F-999/.test(f.message)));
 });
 
-test('QA-N-110 meldet einen Verweis auf einen nicht existierenden INT-Eintrag', () => {
+test('Referenzen zeigen auf existierende Ziele: eine als entfallen geführte ID gilt weiterhin als vergeben', () => {
   const { model, cleanup } = build({
-    'platform/integrations.md': REG,
-    'platform/a.md': FM_PLATFORM('AAA') + '\nNutzt INT-042 fuer irgendwas.\n',
+    'openspec/specs/demo/spec.md': spec(req('A', 'Das System muss A. Herkunft: NEU.'))
+      + '\n## Entfallene Anforderungen (historisch)\n\n'
+      + '### Ehemals DEMO-F-020: Alter Merker\n\nStatus: entfallen.\n',
+    'specs/pruefprotokolle/2026-01-01-test.md': '# Protokoll\n\nGeprüft: DEMO-F-020.\n',
+  });
+  const findings = checkReferences(model);
+  cleanup();
+  assert.deepEqual(findings, []);
+});
+
+test('Referenzen zeigen auf existierende Ziele: meldet einen nicht registrierten INT-Eintrag', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/integrations/spec.md': REGISTER,
+    'openspec/specs/demo/spec.md': spec(req('A', 'Das System muss INT-042 nutzen. Herkunft: NEU.')),
   });
   const findings = checkReferences(model);
   cleanup();
   assert.ok(findings.some((f) => /INT-042/.test(f.message)));
 });
 
-test('QA-N-110 ist still, wenn Anforderungs- und INT-Verweise aufgehen', () => {
+test('Referenzen zeigen auf existierende Ziele: ist still, wenn alle Verweise aufgehen', () => {
   const { model, cleanup } = build({
-    'platform/integrations.md': REG,
-    'platform/a.md': FM_PLATFORM('AAA')
-      + '\n| AAA-F-010 | Das System muss A. | NEU |\n\nAAA-F-010 nutzt INT-001.\n',
+    'openspec/specs/integrations/spec.md': REGISTER,
+    'openspec/specs/demo/spec.md': spec(
+      req('A', 'Das System muss INT-001 nutzen. Herkunft: NEU (vormals DEMO-F-010).'),
+    ),
+    'specs/pruefprotokolle/2026-01-01-test.md': '# Protokoll\n\nGeprüft: DEMO-F-010 über INT-001.\n',
   });
   const findings = checkReferences(model);
   cleanup();

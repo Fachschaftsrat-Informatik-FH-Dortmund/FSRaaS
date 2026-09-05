@@ -4,9 +4,9 @@ titel: React Native als Plattform
 status: angenommen
 datum: 2026-08-24
 betrifft:
-  - ../platform/architecture.md
-  - ../platform/non-functional.md
-  - ../platform/quality-and-testing.md
+  - ../../openspec/specs/architecture/spec.md
+  - ../../openspec/specs/non-functional/spec.md
+  - ../../openspec/specs/quality-and-testing/spec.md
 ---
 
 # ADR 0001: React Native als Plattform
