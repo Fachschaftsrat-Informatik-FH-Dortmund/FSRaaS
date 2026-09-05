@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Den exakt getesteten Stand ausliefern (bei workflow_run), sonst main.
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
