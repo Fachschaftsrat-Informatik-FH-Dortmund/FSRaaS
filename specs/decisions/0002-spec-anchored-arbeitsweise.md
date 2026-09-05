@@ -1,8 +1,9 @@
 ---
 nummer: 0002
 titel: Spec-anchored Arbeitsweise
-status: angenommen
+status: abgelöst
 datum: 2026-08-24
+zuletzt_ergaenzt: 2026-09-05   # abgelöst durch ADR 0019 (Umstellung auf OpenSpec)
 betrifft:
   - ../README.md
   - ../platform/quality-and-testing.md
@@ -30,6 +31,8 @@ Dauerhafte Specs unter `specs/` sind die Quelle der Wahrheit über die gesamte L
 ## Konsequenzen
 
 Mehraufwand bei jeder Änderung — jede Verhaltensänderung ändert Spec und Code im selben Merge (siehe `README.md`, Abschnitt 7, Merge-Regel). Im Gegenzug bleibt die Übergabe an neue FSR-Aktive belastbar: Wer eine Spec liest, kennt Verhalten, Herkunft und Umsetzungsstand eines Features, ohne den gesamten Code durchsuchen zu müssen.
+
+**Abgelöst (2026-09-05).** Die hier getroffene Grundsatzentscheidung — dauerhafte Specs als Quelle der Wahrheit, verankert über Tests und Frontmatter — bleibt inhaltlich gültig. Der konkrete Mechanismus (Eigenbau-Format unter `specs/features/` und `specs/platform/` mit `<PRÄFIX>-F-###`-IDs) wird durch ADR 0019 auf das CLI-Werkzeug OpenSpec umgestellt: Feature- und Querschnittsanforderungen ziehen nach `openspec/specs/` um, Anforderungs-IDs entfallen zugunsten capability-basierter Requirement-Titel, Herkunftsnachweis bleibt als Textkonvention erhalten. ADRs und Produktdokumente bleiben unverändert im bisherigen Format unter `specs/`.
 
 ## Offene Punkte
 

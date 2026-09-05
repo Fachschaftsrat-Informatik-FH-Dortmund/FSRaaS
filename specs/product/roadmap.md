@@ -75,7 +75,7 @@ Vertikale Schnitte: Jeder Schritt umfasst Vertragsanteil, Backend, App und Tests
 | 9 | Bewertungen | RATE ohne Freitext, Kontopflicht beim Schreiben, RATE-F-100 (lokale Spiegelung); daran gekoppelt MENSA-F-085 bis F-110 und SET-F-170 | Erste kontogebundene Funktion; Lieblingsgerichte entstehen hier |
 | 10 | Auslieferung | Store-Auflagen (NFR Abschnitt 9), F-Droid-Recipe, geschlossener Test bei Google Play | Erste Ausbaustufe veröffentlicht |
 
-Zu Schritt 0: Die vier Prüfskripte aus `../platform/quality-and-testing.md` Abschnitt 8 entstehen hier, nicht später — sie sind der Mechanismus, der den spec-anchored Ansatz trägt (NFR-N-140), und ohne sie läuft der Bestand ab dem ersten Merge auseinander.
+Zu Schritt 0: Die vier Prüfskripte aus `openspec/specs/quality-and-testing/spec.md` entstehen hier, nicht später — sie sind der Mechanismus, der den spec-anchored Ansatz trägt (NFR-N-140), und ohne sie läuft der Bestand ab dem ersten Merge auseinander.
 
 Zu Schritt 3 vor Schritt 4: Der Mensaplan braucht die Mensa-Liste aus den Stammdaten, die Raumsuche die Raumliste. Die Verwaltungsoberfläche kommt deshalb vor den Features, die von ihr abhängen — nicht als Kür am Ende.
 
@@ -114,6 +114,7 @@ Sie geht auch **nicht** davon aus, dass alles in dieser Reihenfolge fertig wird.
 
 ## 7. Offene Fragen
 
+- Umbenennung der bestehenden Anforderungs-ID-Verweise in Testnamen (`app/`, `backend/`, z. B. `describe('SCHED-F-080 …')`) auf die neuen OpenSpec-Requirement-Titel nach der Umstellung auf OpenSpec (ADR 0019) — eigener, separater Schritt, Umfang und Zeitpunkt noch offen.
 - Zeitpunkt der ersten Auslieferung. Eine Kopplung an den Semesterbeginn liegt nahe, da Erstsemester laut `vision.md` die Zielgruppe mit dem höchsten Informationsbedarf sind — das setzt allerdings voraus, dass die Google-Play-Testauflage rechtzeitig davor abgeschlossen ist.
 - Ob die zweite Ausbaustufe als eine Auslieferung erfolgt oder je Feature, sobald dessen Klärung vorliegt.
 - Ob die Android-Alt-App bis zur Auslieferung der ersten Ausbaustufe weitergepflegt wird oder unverändert im Store bleibt.
