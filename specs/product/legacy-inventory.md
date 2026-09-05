@@ -2,9 +2,9 @@
 id: legacy-inventory
 titel: Funktionsinventar der Alt-Apps
 status: accepted
-version: 1.1.0
+version: 1.2.0
 owner: FSR FB4
-last_reviewed: 2026-08-26
+last_reviewed: 2026-09-05
 derived_from:
   - alte apps/fb4_app-main/fb4_app-main/lib
   - alte apps/android-fb4/FB4/fB4/src/main
@@ -255,7 +255,9 @@ Nach demselben Muster wie Abschnitt 3 für die Flutter-App. Diese Befunde dürfe
 
 ## 5. Abdeckungsübersicht
 
-Grundlage der späteren Vollständigkeitsprüfung: wie viele Inventarzeilen jede Feature-Spec abzudecken hat, getrennt nach Herkunft aus der Flutter-App (`L-###`, Abschnitt 2) und der Android-App (`AND-###`, Abschnitt 4.2). Nur wo **beide** Spalten `0` zeigen, ist ein Feature tatsächlich ohne Vorbild und trägt in seiner Spec durchgängig die Herkunftsmarkierung `NEU`.
+Grundlage der späteren Vollständigkeitsprüfung: wie viele Inventarzeilen jede Feature-Spec abzudecken hat, getrennt nach Herkunft aus der Flutter-App (`L-###`, Abschnitt 2) und der Android-App (`AND-###`, Abschnitt 4.2).
+
+**Verhältnis zur Herkunftsmarkierung `NEU` (präzisiert 2026-09-05).** Diese Übersicht sagt, ob ein Feature ein Vorbild in den Alt-Apps *hat* — nicht, welche Markierung seine Anforderungen tragen. `NEU` bedeutet nicht „ohne Vorbild", sondern „vorwärts entschieden statt aus Altcode rückwärts erschlossen": die Markierung misst, wie sicher eine Anforderung ist, nicht wie neu (`CLAUDE.md`, Herkunft bleibt Pflicht). Eine vorwärts entschiedene Anforderung bleibt deshalb auch dann `NEU`, wenn diese Übersicht für ihr Feature Vorbilder ausweist; das Vorbild wird ihr als `vgl. <Inventar-ID>` im Herkunftssatz beigegeben. Wo **beide** Spalten `0` zeigen, kann es solche Rückverweise gar nicht geben.
 
 | Zielspec | Flutter (L) | Android (AND) | Anmerkung |
 |---|---|---|---|
@@ -268,6 +270,7 @@ Grundlage der späteren Vollständigkeitsprüfung: wie viele Inventarzeilen jede
 | SET | 6 | 3 | Android führt Links und Downloads ferngepflegt statt fest hinterlegt (AND-032); Feedback per Mail-Intent (AND-036) bestätigt L-074 unverändert |
 | RAUM | 0 | 3 | **Korrektur 2026-08-25:** zuvor als „ohne Entsprechung in den Alt-Apps" geführt. Die Android-App enthält eine vollwertige Raumsuche (AND-014 bis AND-016) einschließlich Raumgröße und E-Key-Eignung |
 | RATE | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
+| FOTO | 0 | 0 | Ohne Vorbild in beiden Alt-Apps; Zeile ergänzt 2026-09-05, zuvor fehlend. Weder Kamera-, Bildwahl- noch Upload-Code in einer der Alt-Apps auffindbar |
 | EVENT | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
 | HELFER | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
 | WIKI | 0 | 0 | Ohne Vorbild in beiden Alt-Apps |
