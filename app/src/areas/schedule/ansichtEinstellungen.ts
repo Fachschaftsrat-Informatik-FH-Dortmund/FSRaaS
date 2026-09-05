@@ -3,7 +3,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { logError } from '@/errors/AppError';
 import { readJson, writeJson } from '@/storage/kv';
 
-// Ansichtseinstellungen des Stundenplans (`specs/features/schedule/spec.md`
+// Ansichtseinstellungen des Stundenplans (`openspec/specs/schedule/spec.md`
 // Abschnitt 5): proportionale Zeitachse oder kompakte Liste (SCHED-F-530),
 // gruppenfremde Termine ausblenden (SCHED-F-145) und Sprung zum aktuellen
 // Wochentag beim Öffnen (SCHED-F-150). Rein gerätelokal. Reaktiver

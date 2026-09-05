@@ -3,7 +3,7 @@
 // `name`, `courseType`, `studentSet`, `weekday`, `timeBegin`, `timeEnd` als sicher
 // vorhanden behandelt — alles andere optional. Fehlt eines der sechs sicheren Felder
 // oder trägt einen Typ, der sich nicht auswerten lässt, wird der Satz übersprungen
-// (Vorbild: `specs/features/room-finder/spec.md` Abschnitt 9, „Raumplan-Termin ohne
+// (Vorbild: `openspec/specs/room-finder/spec.md` Abschnitt 9, „Raumplan-Termin ohne
 // auswertbare Zeitangabe … überspringen"); jede optionale Abweichung wird protokolliert,
 // nie stillschweigend verschluckt (SEC-F-060). Reine Funktion ohne React.
 
