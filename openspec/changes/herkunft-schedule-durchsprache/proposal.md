@@ -38,9 +38,11 @@ Zwei Befunde gleich zu Beginn korrigieren das Bild, das die Anleitung zeichnet.
 - **Wildcard-Behandlung, Ausblende-Schalter, automatische Farbzuweisung** — drei billige, schwer zu bereuende Festlegungen ohne Umsetzungsdeckung.
 - **Auswahl der Terminarten beim Export.**
 
-## Zwei Erläuterungen werden berichtigt
+## Drei Erläuterungen werden berichtigt
 
 **Die Begründung der Wildcard-Anforderung trug nicht.** Sie stützte sich darauf, dass die Capability `integrations` den Abrufparameter `studentSet=*` führe — das ist ein Anfrageparameter, kein Feldwert in der Antwort, und begründet nicht, warum ein Termin mit dem Wert `*` erwartet werden muss. Die tragende Begründung ist eine andere und stand schon daneben: `*` bedeutet unstrittig „gilt für alle Gruppen", und die Android-Alt-App kehrt diese Bedeutung um (N-007). Drei Zeilen Logik, die einen Bedeutungsfehler ausschließen, brauchen keinen Vorkommensnachweis.
+
+**Die Erläuterung zur Export-Ausgestaltung trug noch die alte Rangfolge.** Der Absatz vom 2026-08-25 führte den Schreibzugriff als Hauptweg und den Datei-Export als Rückfallweg — genau die Rangfolge, die das geänderte Requirement aufhebt. Er fasste dabei zwei ungleiche Fälle unter „Rückfall": die verweigerte Berechtigung (ein Fehlerfall) und einen Kalender außerhalb des Geräts (der reguläre Fall jeder Nutzerin mit Web- oder Desktop-Kalender). Berichtigt durch einen datierten Nachtrag im selben Abschnitt, der zugleich die entfallene Festlegung „keine wiederholte Nachfrage" festhält.
 
 **Eine „Offene Frage" war durch die eigene Erläuterung überholt.** Die Korrektur vom 2026-09-04 stellt fest, dass INT-002 und INT-009 beide `courseId` führen. Die Frageliste behauptete weiterhin, INT-002 führe „kein `courseId` für alle Fälle, ein exakter Schlüssel fehlt teils". Die Frage wird auf das reduziert, was tatsächlich offen ist: die Trennschärfe des Merkmalssatzes für Einträge *ohne* `courseId`.
 
