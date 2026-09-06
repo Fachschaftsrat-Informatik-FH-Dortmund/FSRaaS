@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -14,8 +14,8 @@ import { zaehleGruppenTreffer } from '../groupMatch';
 
 // Einrichtungs-Bildschirm des Stundenplans (Etappe 2b, Roadmap-Schritt 5):
 // Studiengang/Fachsemester (SCHED-F-020), Gruppenkennung (SCHED-F-040/F-720)
-// auf zwei gleichwertigen Wegen — über die Matrikelnummer (SCHED-F-690/F-700)
-// oder manuell über eine Buchstabenauswahl —, weitere Fachsemester
+// auf zwei Wegen — voreingestellt über die Matrikelnummer (SCHED-F-690/F-700),
+// daneben manuell über Buchstabenauswahl und Zahl —, weitere Fachsemester
 // (SCHED-F-640) und die Rückmeldung, wie viele Termine eine Kennung einschließt
 // (SCHED-F-650). Die gesamte Fachlogik liegt bereits in `einrichtung.ts`,
 // `api.ts` und `groupMatch.ts` — dieser Bildschirm bindet sie nur an.
@@ -26,11 +26,19 @@ const BUCHSTABEN = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 +
 
 type GruppenkennungModus = 'matrikelnummer' | 'manuell';
 
+/**
+ * Zerlegt eine gespeicherte Kennung in die zwei Eingabefelder. Ein unvollständiger
+ * Altbestand (`H`, vor dem 2026-09-06 zulässig) wird dabei nicht verworfen, sondern
+ * als Buchstabe ohne Zahl angeboten — so lässt sich die fehlende Zahl nachtragen,
+ * statt die Eingabe kommentarlos zurückzusetzen (Fehlerfälle, `schedule/spec.md`).
+ */
 function splitKennung(kennung: string | null): { buchstabe: string; zahl: string } {
   if (!kennung) return { buchstabe: '', zahl: '' };
-  const treffer = GRUPPENKENNUNG_MUSTER.exec(kennung);
-  if (!treffer) return { buchstabe: '', zahl: '' };
-  return { buchstabe: treffer[0]!.charAt(0), zahl: kennung.slice(1) };
+  if (GRUPPENKENNUNG_MUSTER.test(kennung)) {
+    return { buchstabe: kennung.charAt(0), zahl: kennung.slice(1) };
+  }
+  if (/^[A-Z]$/.test(kennung)) return { buchstabe: kennung, zahl: '' };
+  return { buchstabe: '', zahl: '' };
 }
 
 export function SetupScreen() {
@@ -71,6 +79,21 @@ export function SetupScreen() {
   const ermitteln = useGruppenkennungErmitteln();
   const [modus, setModus] = useState<GruppenkennungModus>('matrikelnummer');
 
+  // SCHED-F-040: Buchstabe und Zahl sind beide verpflichtend. Die Eingabe wird
+  // deshalb lokal gehalten und erst gespeichert, wenn beide Teile vorliegen —
+  // sonst ließe sich über die Buchstabenauswahl eine unvollständige Kennung
+  // ablegen. Solange sie unvollständig ist, gilt keine Gruppenkennung (`null`).
+  const [entwurf, setEntwurf] = useState(() => splitKennung(einrichtung.gruppenkennung));
+  const gespeicherteKennung = einrichtung.gruppenkennung;
+
+  // Übernimmt eine von außen gesetzte Kennung, etwa einen bestätigten
+  // INT-019-Vorschlag. `gespeicherteKennung` steht bewusst als eigene Konstante
+  // im Abhängigkeitsfeld: ein Feldzugriff darin lässt eslint-plugin-react-hooks
+  // abstürzen statt zu warnen.
+  useEffect(() => {
+    setEntwurf(splitKennung(gespeicherteKennung));
+  }, [gespeicherteKennung]);
+
   const termineQuery = useTermine(einrichtung.sname ?? undefined, einrichtung.grade ?? undefined);
   const kandidat = einrichtung.gruppenkennungVorschlag ?? einrichtung.gruppenkennung;
   const treffer = useMemo(
@@ -97,19 +120,21 @@ export function SetupScreen() {
     });
   }
 
-  const { buchstabe, zahl } = splitKennung(einrichtung.gruppenkennung);
+  const { buchstabe, zahl } = entwurf;
+  const unvollstaendig = buchstabe !== '' && zahl === '';
+
+  function uebernimm(naechster: { buchstabe: string; zahl: string }) {
+    setEntwurf(naechster);
+    const vollstaendig = naechster.buchstabe !== '' && naechster.zahl !== '';
+    setGruppenkennung(vollstaendig ? naechster.buchstabe + naechster.zahl : null);
+  }
 
   function waehleBuchstabe(b: string) {
-    if (buchstabe === b) {
-      setGruppenkennung(null);
-      return;
-    }
-    setGruppenkennung(b + zahl);
+    uebernimm(buchstabe === b ? { buchstabe: '', zahl: '' } : { buchstabe: b, zahl });
   }
 
   function aendereZahl(text: string) {
-    if (!buchstabe) return;
-    setGruppenkennung(buchstabe + text.replace(/[^0-9]/g, ''));
+    uebernimm({ buchstabe, zahl: text.replace(/[^0-9]/g, '') });
   }
 
   return (
@@ -308,14 +333,23 @@ export function SetupScreen() {
               </View>
 
               {buchstabe ? (
-                <TextInput
-                  accessibilityLabel={t('schedule.zahlLabel')}
-                  placeholder={t('schedule.zahlLabel')}
-                  keyboardType="number-pad"
-                  value={zahl}
-                  onChangeText={aendereZahl}
-                  style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-                />
+                <>
+                  <TextInput
+                    accessibilityLabel={t('schedule.zahlLabel')}
+                    placeholder={t('schedule.zahlLabel')}
+                    keyboardType="number-pad"
+                    value={zahl}
+                    onChangeText={aendereZahl}
+                    style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                  />
+                  {/* SCHED-F-040: die Eingabe wird als unvollständig zurückgewiesen und
+                      benennt ausdrücklich, welcher Teil fehlt. */}
+                  {unvollstaendig ? (
+                    <Text style={[styles.hinweisKlein, { color: colors.danger }]}>
+                      {t('schedule.gruppenkennungZahlFehlt')}
+                    </Text>
+                  ) : null}
+                </>
               ) : null}
             </View>
           )}

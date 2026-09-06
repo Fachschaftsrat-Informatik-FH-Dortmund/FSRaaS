@@ -29,21 +29,27 @@ export type GeparstesStudentSet =
 
 interface GeparsteGruppenkennung {
   buchstabe: string;
-  zahl: number;
+  /** `null` = Kennung ohne Zahl, also unvollständig — die Zahl wird nicht angenommen. */
+  zahl: number | null;
 }
 
 const MUSTER_EINZELWERT = /^([A-Za-z])([0-9]*)$/;
 const MUSTER_BEREICH = /^([A-Za-z])([0-9]*)-([A-Za-z])([0-9]*)$/;
-// SCHED-F-040/F-720 (Fassung 3.0.0, 2026-09-04): der Buchstabe ist die
-// maßgebliche Angabe, die Zahl ist freiwillig — eine Gruppenkennung ohne Zahl
-// (`C`) ist damit ebenso gültig wie `C8`. Ohne die Erweiterung `[0-9]*` (statt
-// `[0-9]+`) würde eine reine Buchstaben-Kennung hier nicht geparst und über
-// den „unbekanntes Muster"-Rückfall fälschlich als zu jedem Termin zugehörig
-// behandelt — das Gegenteil des mit SCHED-F-140/F-720 beabsichtigten
-// Verhaltens. Fehlt die Zahl, wird sie als `0` geführt (kleinstmöglicher
-// Wert); das entscheidet nur an einer Bereichsgrenze mit, an der die Zahl
-// laut Spec „so gut wie nie gebraucht" wird.
-const MUSTER_GRUPPENKENNUNG = /^([A-Za-z])([0-9]*)$/;
+// SCHED-F-040/F-720 (entschieden 2026-09-06): Buchstabe und Zahl sind beide
+// verpflichtend. Die zwischenzeitliche Erweiterung auf eine freiwillige Zahl
+// (`[0-9]*`, 2026-09-04) ist zurückgenommen — fünf der 21 real vorkommenden
+// `studentSet`-Werte tragen eine Zahl an einer Bereichsgrenze (`C5-E`, `M5-P`,
+// `J-M4`, `H5-J`, `F-H4`), an der sie mitentscheidet.
+//
+// Eine Kennung ohne Zahl kann die Eingabe deshalb nicht mehr erzeugen, aus
+// einem älteren gerätelokalen Stand oder einer unerwarteten INT-019-Antwort
+// aber weiterhin vorliegen. Sie wird als unvollständig geführt (`zahl: null`)
+// statt die fehlende Zahl als `0` zu lesen: `Number('')` ergab 0, wodurch eine
+// Kennung `H` an der Grenze `H5-J` wegen 0 < 5 fälschlich als gruppenfremd
+// galt und bei aktivem Ausblenden-Schalter aus dem Plan verschwand.
+const MUSTER_GRUPPENKENNUNG = /^([A-Za-z])([0-9]+)$/;
+/** Restfall einer Kennung ohne Zahl — seit dem 2026-09-06 unzulässig, aber nicht ausgeschlossen. */
+const MUSTER_GRUPPENKENNUNG_UNVOLLSTAENDIG = /^([A-Za-z])$/;
 
 function alsZahlOderOffen(text: string): number | null {
   return text === '' ? null : Number(text);
@@ -72,13 +78,36 @@ export function parseStudentSet(roh: string): GeparstesStudentSet {
 
 function parseGruppenkennung(kennung: string): GeparsteGruppenkennung | null {
   const treffer = MUSTER_GRUPPENKENNUNG.exec(kennung);
-  if (!treffer) return null;
-  return { buchstabe: treffer[1]!.toUpperCase(), zahl: Number(treffer[2]!) };
+  if (treffer) return { buchstabe: treffer[1]!.toUpperCase(), zahl: Number(treffer[2]!) };
+
+  const unvollstaendig = MUSTER_GRUPPENKENNUNG_UNVOLLSTAENDIG.exec(kennung);
+  if (unvollstaendig) return { buchstabe: unvollstaendig[1]!.toUpperCase(), zahl: null };
+
+  return null;
 }
 
-/** SCHED-F-080/090: liegt (Buchstabe, Zahl) im durch `von`/`bis` aufgespannten Bereich? */
+/**
+ * SCHED-F-080/090: liegt (Buchstabe, Zahl) im durch `von`/`bis` aufgespannten Bereich?
+ *
+ * Der Buchstabe entscheidet zuerst und allein, wenn er außerhalb liegt — auch bei
+ * einer unvollständigen Kennung. Erst danach kommt die Zahl ins Spiel. Fehlt sie,
+ * ist eine Grenze *mit* Zahl nicht entscheidbar: Der Termin gilt dann als zugehörig
+ * und der Vorfall wird protokolliert (SEC-F-060, „sichtbar statt fälschlich als
+ * fremd markiert"), statt eine Zahl anzunehmen.
+ */
 function liegtImBereich(gruppe: GeparsteGruppenkennung, von: Grenze, bis: Grenze): boolean {
   if (gruppe.buchstabe < von.buchstabe || gruppe.buchstabe > bis.buchstabe) return false;
+
+  if (gruppe.zahl === null) {
+    const grenzeMitZahl =
+      (gruppe.buchstabe === von.buchstabe && von.zahl !== null) ||
+      (gruppe.buchstabe === bis.buchstabe && bis.zahl !== null);
+    if (grenzeMitZahl) {
+      logError('groupMatch.gruppenkennung', new Error('unvollständige Gruppenkennung an einer Grenze mit Zahl'));
+    }
+    return true;
+  }
+
   if (gruppe.buchstabe === von.buchstabe && von.zahl !== null && gruppe.zahl < von.zahl) return false;
   if (gruppe.buchstabe === bis.buchstabe && bis.zahl !== null && gruppe.zahl > bis.zahl) return false;
   return true;

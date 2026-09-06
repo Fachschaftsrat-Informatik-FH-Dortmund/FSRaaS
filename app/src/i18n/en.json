@@ -136,8 +136,8 @@
     "vorschlagText": "Found: {{kennung}}. Is that your group?",
     "vorschlagUebernehmen": "Use it",
     "vorschlagAblehnen": "That's not me",
-    "buchstabeLabel": "Letter (decisive)",
-    "zahlLabel": "Number (optional)",
+    "buchstabeLabel": "Letter",
+    "zahlLabel": "Number",
     "treffer": "{{eingeschlossen}} of {{gesamt}} sessions apply to you",
     "weiterZurKursauswahl": "Continue to course selection",
     "kurseSuchePlatzhalter": "Search by title, module number or lecturer",
@@ -165,7 +165,8 @@
       "Fri": "Fri",
       "Sat": "Sat",
       "Sun": "Sun"
-    }
+    },
+    "gruppenkennungZahlFehlt": "Incomplete — please also enter the number (e.g. C8)."
   },
   "appearance": {
     "system": "System",

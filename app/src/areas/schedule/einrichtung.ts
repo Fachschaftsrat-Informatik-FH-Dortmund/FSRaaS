@@ -5,8 +5,8 @@ import { readJson, writeJson } from '@/storage/kv';
 
 // SCHED-F-020/F-040/F-640: die einmalig gewählte Einrichtung des Stundenplans —
 // Studiengang (`sname`) mit Fachsemester (`grade`), optionale Gruppenkennung
-// (SCHED-F-040, Muster `^[A-Z][0-9]*$` — Buchstabe verpflichtend, Zahl
-// freiwillig, SCHED-F-720) und die zusätzlich abgerufenen Fachsemester
+// (SCHED-F-040, Muster `^[A-Z][0-9]+$` — Buchstabe und Zahl beide
+// verpflichtend, SCHED-F-720) und die zusätzlich abgerufenen Fachsemester
 // desselben Studiengangs (SCHED-F-640, z. B. für Wiederholerinnen oder
 // Vorzieherinnen). Rein gerätelokal (DATA-F-010). Reaktiver Modul-Speicher wie
 // `canteen/selection.ts`, damit alle Stundenplan-Bildschirme denselben Stand
@@ -20,8 +20,13 @@ import { readJson, writeJson } from '@/storage/kv';
 
 const KEY = 'scheduleSetup';
 
-/** SCHED-F-040/F-720: verbindliches Muster einer Gruppenkennung — der Buchstabe ist verpflichtend, die Zahl freiwillig. */
-export const GRUPPENKENNUNG_MUSTER = /^[A-Z][0-9]*$/;
+/**
+ * SCHED-F-040/F-720: verbindliches Muster einer Gruppenkennung — Buchstabe und
+ * Zahl sind beide verpflichtend (entschieden 2026-09-06). Eine Eingabe ohne Zahl
+ * wird zurückgewiesen; der voreingestellte Weg über die Matrikelnummer (INT-019)
+ * liefert die vollständige Kennung, ohne dass die Nutzerin sie kennen muss.
+ */
+export const GRUPPENKENNUNG_MUSTER = /^[A-Z][0-9]+$/;
 
 export interface Einrichtung {
   sname: string | null;

@@ -136,8 +136,8 @@
     "vorschlagText": "Gefunden: {{kennung}}. Ist das deine Gruppe?",
     "vorschlagUebernehmen": "Übernehmen",
     "vorschlagAblehnen": "Das bin nicht ich",
-    "buchstabeLabel": "Buchstabe (maßgeblich)",
-    "zahlLabel": "Zahl (freiwillig)",
+    "buchstabeLabel": "Buchstabe",
+    "zahlLabel": "Zahl",
     "treffer": "{{eingeschlossen}} von {{gesamt}} Terminen betreffen dich",
     "weiterZurKursauswahl": "Weiter zur Kursauswahl",
     "kurseSuchePlatzhalter": "Suche nach Bezeichnung, Modulnummer oder Lehrperson",
@@ -165,7 +165,8 @@
       "Fri": "Fr",
       "Sat": "Sa",
       "Sun": "So"
-    }
+    },
+    "gruppenkennungZahlFehlt": "Unvollständig — bitte auch die Zahl angeben (z. B. C8)."
   },
   "appearance": {
     "system": "System",
