@@ -33,6 +33,7 @@
 - [x] 5.3 „Offene Fragen": überholte Aussage zur fehlenden `courseId` in INT-002 auf den tatsächlich offenen Teil reduziert
 - [x] 5.4 Domänenwissen ergänzt: Studierende mischen Gruppen, der Fachbereich duldet das bei nicht überfüllten Gruppen
 - [x] 5.5 Raumplan-Abgleich ausdrücklich als experimentelles Feature geführt
+- [x] 5.6 Erläuterung „Export-Ausgestaltung": datierter Nachtrag zur aufgehobenen Rangfolge Hauptweg/Rückfallweg und zur entfallenen Festlegung „keine wiederholte Nachfrage"
 
 ## 6. Umsetzung
 
