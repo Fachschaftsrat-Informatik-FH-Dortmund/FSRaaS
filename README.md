@@ -14,7 +14,7 @@ selben Merge. Details: [`CLAUDE.md`](CLAUDE.md) und [`specs/README.md`](specs/RE
 | `app/` | React-Native-App (iOS, Android) und PC-Verwaltungsoberfläche als Web-Export | Expo (Prebuild + Dev-Client, ohne EAS/`expo-updates`, ADR 0009) |
 | `backend/` | Eigenes Backend (INT-008): Schreibpfade, Zwischenspeicher, Stammdaten, Redaktion | ASP.NET Core, PostgreSQL, EF Core (ADR 0011) |
 | `tools/spec-check/` | Prüfungen am Spec-Bestand (QA §8), CI-Gate | Node, ohne Fremdabhängigkeit |
-| `tools/contract-codegen/` | Erzeugt Typen aus `specs/platform/api-contract.yaml` (API-N-035) | Node |
+| `tools/contract-codegen/` | Erzeugt Typen aus `openspec/specs/api-contract.yaml` (API-N-035) | Node |
 
 ## Umsetzungsstand
 
