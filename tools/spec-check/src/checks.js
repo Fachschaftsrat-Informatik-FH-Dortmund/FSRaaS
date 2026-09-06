@@ -67,6 +67,14 @@ export function collect(root) {
     for (const m of intDoc.doc.body.matchAll(/^### Requirement:\s*(INT-\d{3})\b/gm)) {
       definedIntIds.add(m[1]);
     }
+    // Eine entfallene Integration bleibt vergeben, genau wie eine entfallene
+    // Anforderungs-ID: ADRs und Protokolle verweisen weiterhin auf sie, und die
+    // Kennung wird nie neu vergeben. Ohne diese Zeile bräche jeder historische
+    // Verweis, sobald ein Registereintrag in den Abschnitt „Entfallene
+    // Anforderungen" wandert (Befund 2026-09-06 beim Wegfall von INT-013).
+    for (const section of retiredSections(intDoc.doc.body)) {
+      for (const m of section.matchAll(/\bINT-\d{3}\b/g)) definedIntIds.add(m[0]);
+    }
   }
 
   return { root, docs, requirements, definedLegacyIds, definedIntIds };
