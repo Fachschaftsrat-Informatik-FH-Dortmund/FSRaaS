@@ -6,7 +6,6 @@ import {
   __resetMatrikelnummerForTest,
   GRUPPENKENNUNG_MUSTER,
   readEinrichtung,
-  readMatrikelnummer,
   useEinrichtung,
   useMatrikelnummer,
 } from './einrichtung';
@@ -129,11 +128,10 @@ describe('SCHED-F-720 Gruppenkennung ohne Matrikelnummer: manuelle Angabe verlan
     const einrichtung = renderHook(() => useEinrichtung());
     await waitFor(() => expect(einrichtung.result.current.loaded).toBe(true));
     act(() => einrichtung.result.current.setStudiengangUndFachsemester('INPBPI', '2'));
-    act(() => einrichtung.result.current.setGruppenkennung('C'));
-    await waitFor(() => expect(einrichtung.result.current.einrichtung.gruppenkennung).toBe('C'));
+    act(() => einrichtung.result.current.setGruppenkennung('C8'));
+    await waitFor(() => expect(einrichtung.result.current.einrichtung.gruppenkennung).toBe('C8'));
 
     const matrikelnummer = renderHook(() => useMatrikelnummer());
-    await waitFor(() => expect(matrikelnummer.result.current.loaded).toBe(true));
     expect(matrikelnummer.result.current.matrikelnummer).toBeNull();
   });
 });
@@ -176,20 +174,43 @@ describe('SCHED-F-700 eine per Matrikelnummer ermittelte Gruppenkennung wird ers
   });
 });
 
-describe('SCHED-F-710 Matrikelnummer wird ausschließlich lokal gespeichert', () => {
-  it('speichert die Matrikelnummer und liest sie nach einem Neuladen zurück', async () => {
+describe('Keine Speicherung der Matrikelnummer', () => {
+  it('hält sie für die Dauer der Eingabe, schreibt sie aber nirgends auf die Platte', async () => {
     const { result } = renderHook(() => useMatrikelnummer());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
 
     act(() => result.current.setMatrikelnummer(PLATZHALTER_MATRIKELNUMMER));
     await waitFor(() => expect(result.current.matrikelnummer).toBe(PLATZHALTER_MATRIKELNUMMER));
 
-    expect(await readMatrikelnummer()).toBe(PLATZHALTER_MATRIKELNUMMER);
+    // Nachweis statt Behauptung: kein Schlüssel des Speichers trägt sie.
+    const schluessel = await AsyncStorage.getAllKeys();
+    const werte = await AsyncStorage.multiGet(schluessel);
+    for (const [, wert] of werte) {
+      expect(wert ?? '').not.toContain(PLATZHALTER_MATRIKELNUMMER);
+    }
+  });
+
+  it('überlebt keinen Neustart — nach dem Zurücksetzen des Moduls ist sie fort', async () => {
+    const erst = renderHook(() => useMatrikelnummer());
+    act(() => erst.result.current.setMatrikelnummer(PLATZHALTER_MATRIKELNUMMER));
+    await waitFor(() => expect(erst.result.current.matrikelnummer).toBe(PLATZHALTER_MATRIKELNUMMER));
+
+    __resetMatrikelnummerForTest(); // entspricht einem App-Neustart
+    const danach = renderHook(() => useMatrikelnummer());
+    expect(danach.result.current.matrikelnummer).toBeNull();
+  });
+
+  it('löscht einen vor dem 2026-09-06 gespeicherten Altbestand beim ersten Zugriff', async () => {
+    await AsyncStorage.setItem('fb4:scheduleMatrikelnummer', JSON.stringify(PLATZHALTER_MATRIKELNUMMER));
+
+    renderHook(() => useMatrikelnummer());
+
+    await waitFor(async () => {
+      expect(await AsyncStorage.getItem('fb4:scheduleMatrikelnummer')).toBeNull();
+    });
   });
 
   it('entfernt die Matrikelnummer wieder mit null', async () => {
     const { result } = renderHook(() => useMatrikelnummer());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
 
     act(() => result.current.setMatrikelnummer(PLATZHALTER_MATRIKELNUMMER));
     await waitFor(() => expect(result.current.matrikelnummer).toBe(PLATZHALTER_MATRIKELNUMMER));
@@ -198,9 +219,8 @@ describe('SCHED-F-710 Matrikelnummer wird ausschließlich lokal gespeichert', ()
     await waitFor(() => expect(result.current.matrikelnummer).toBeNull());
   });
 
-  it('liegt unter einem eigenen Speicherschlüssel, getrennt vom übrigen scheduleSetup-Bestand', async () => {
+  it('hinterlässt sie auch nicht im übrigen scheduleSetup-Bestand', async () => {
     const matrikelnummer = renderHook(() => useMatrikelnummer());
-    await waitFor(() => expect(matrikelnummer.result.current.loaded).toBe(true));
     act(() => matrikelnummer.result.current.setMatrikelnummer(PLATZHALTER_MATRIKELNUMMER));
     await waitFor(() => expect(matrikelnummer.result.current.matrikelnummer).toBe(PLATZHALTER_MATRIKELNUMMER));
 
@@ -209,13 +229,8 @@ describe('SCHED-F-710 Matrikelnummer wird ausschließlich lokal gespeichert', ()
     act(() => einrichtung.result.current.setStudiengangUndFachsemester('INPBPI', '2'));
     await waitFor(() => expect(einrichtung.result.current.einrichtung.sname).toBe('INPBPI'));
 
-    // Nachweis statt Behauptung: der unter `scheduleSetup` gespeicherte
-    // Bestand enthält an keiner Stelle die Matrikelnummer.
     const roh = await AsyncStorage.getItem('fb4:scheduleSetup');
     expect(roh).not.toBeNull();
     expect(roh!).not.toContain(PLATZHALTER_MATRIKELNUMMER);
-
-    const rohMatrikelnummer = await AsyncStorage.getItem('fb4:scheduleMatrikelnummer');
-    expect(rohMatrikelnummer).toContain(PLATZHALTER_MATRIKELNUMMER);
   });
 });
