@@ -98,12 +98,16 @@ describe('SCHED-F-640 zusätzlich abgerufene Fachsemester desselben Studiengangs
   });
 });
 
-describe('SCHED-F-720 Gruppenkennung auch ohne Matrikelnummer festlegbar, Buchstabe verpflichtend, Zahl freiwillig', () => {
-  it('nimmt eine Gruppenkennung aus nur einem Buchstaben an', () => {
-    expect(GRUPPENKENNUNG_MUSTER.test('C')).toBe(true);
+describe('SCHED-F-720 Gruppenkennung ohne Matrikelnummer: manuelle Angabe verlangt Buchstabe und Zahl', () => {
+  it('weist eine Gruppenkennung aus nur einem Buchstaben zurück', () => {
+    // Umkehr der Festlegung vom 2026-09-04: Fünf der 21 real vorkommenden
+    // studentSet-Werte tragen eine Zahl an einer Bereichsgrenze, an der sie
+    // mitentscheidet (C5-E, M5-P, J-M4, H5-J, F-H4).
+    expect(GRUPPENKENNUNG_MUSTER.test('C')).toBe(false);
+    expect(GRUPPENKENNUNG_MUSTER.test('H')).toBe(false);
   });
 
-  it('nimmt weiterhin eine Gruppenkennung mit Zahl an', () => {
+  it('nimmt eine Gruppenkennung mit Zahl an', () => {
     expect(GRUPPENKENNUNG_MUSTER.test('O7')).toBe(true);
     expect(GRUPPENKENNUNG_MUSTER.test('C8')).toBe(true);
   });
@@ -113,12 +117,12 @@ describe('SCHED-F-720 Gruppenkennung auch ohne Matrikelnummer festlegbar, Buchst
     expect(GRUPPENKENNUNG_MUSTER.test('')).toBe(false);
   });
 
-  it('speichert eine Gruppenkennung aus nur einem Buchstaben über den Hook', async () => {
+  it('speichert eine vollständige Gruppenkennung über den Hook', async () => {
     const { result } = renderHook(() => useEinrichtung());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
-    act(() => result.current.setGruppenkennung('c'));
-    await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBe('C'));
+    act(() => result.current.setGruppenkennung('c8'));
+    await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBe('C8'));
   });
 
   it('lässt die Einrichtung vollständig ohne Angabe einer Matrikelnummer abschließen', async () => {

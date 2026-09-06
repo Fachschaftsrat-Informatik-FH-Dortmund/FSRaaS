@@ -18,9 +18,11 @@ Entschieden 2026-09-06: Die Zahl wird wieder verpflichtend.
 
 **Die Beispieltabelle bekommt die fehlenden Prüffälle.** Vier Zeilen für eine Kennung ohne Zahl gegen Grenzen mit Zahl — der Fall, der den Defekt trug und den bisher kein Test abdeckte.
 
-## Warum es keine neue Rückfallregel braucht
+## Wie ein Restbestand ohne Zahl behandelt wird
 
-Mit dem engeren Muster passt eine Kennung wie `H` nicht mehr auf `^[A-Z][0-9]+$` und läuft damit in den **bereits bestehenden** defensiven Rückfall der Zuordnungslogik: unbekanntes Gruppenkennung-Muster → Termin gilt als zugehörig, Vorfall protokolliert (SEC-F-060). Ein Restbestand ohne Zahl — etwa eine ältere lokale Einstellung oder eine unerwartete INT-019-Antwort — wird dadurch sichtbar behandelt statt still ausgeschlossen. Die stille `0` verschwindet ersatzlos, ohne dass eine zweite Regel nötig wäre.
+Ein Restbestand ohne Zahl — eine ältere gerätelokale Einstellung oder eine unerwartete INT-019-Antwort — bleibt möglich, auch wenn die Eingabe ihn nicht mehr erzeugen kann. Er wird als **unvollständige** Kennung geführt (`zahl: null`) statt die fehlende Zahl als `0` zu lesen. Der Buchstabe entscheidet dabei weiterhin zuerst; erst wenn er auf einer Grenze **mit** Zahl liegt, ist die Zuordnung nicht entscheidbar — dann gilt der Termin als zugehörig und der Vorfall wird protokolliert (SEC-F-060).
+
+**Berichtigt am 2026-09-07, bei der Umsetzung aufgefallen.** Die vorige Fassung dieses Abschnitts hielt fest, der bereits bestehende defensive Rückfall genüge, ohne dass eine zweite Regel nötig sei. Das trägt nicht: Jener Rückfall liefert für *jedes* `studentSet` „zugehörig" und hätte damit auch die Zeile `D` (unvollständig) / `A1-C9` der Beispieltabelle verletzt, wo der Buchstabe allein schon entscheidet (D liegt außerhalb A bis C, die fehlende Zahl spielt dort keine Rolle). Ein Studierender der Gruppe `D` hätte sämtliche `A1-C9`-Termine als eigene angezeigt bekommen — derselbe Fehlertyp wie die stille `0`, nur in die andere Richtung. Die Beispieltabelle und die Fehlerfälle-Zeile („Termine **an Bereichsgrenzen mit Zahl** als zugehörig behandeln") waren von Anfang an eng gefasst und richtig; falsch war allein dieser Abschnitt.
 
 ## Was das für den Glossareintrag heißt
 
@@ -28,4 +30,4 @@ Der Eintrag „Gruppenkennung" wurde am 2026-09-06 erst auf die freiwillige Ziff
 
 ## Was offen bleibt
 
-Ob INT-019 immer eine Zahl liefert, ist nicht belegt — bekannt ist ein Beispiel (`O7`). Liefert der Dienst je eine Kennung ohne Zahl, greift der defensive Rückfall oben; das ist sichtbar und protokolliert, aber nicht schön. Bei der Umsetzung an echten Antworten zu prüfen.
+Ob INT-019 immer eine Zahl liefert, ist nicht belegt. **Bei der Umsetzung am 2026-09-07 gegen das Register geprüft:** Der Eintrag INT-019 führt drei Antwortgestalten und drei real beobachtete Kennungen — `O7`, `B3`, `A9` —, alle mit Buchstabe und Ziffer; eine Kennung ohne Zahl ist dort nicht belegt. Ausgeschlossen ist sie damit nicht: Der Endpunkt ist undokumentiert und ohne SLA. Liefert er je eine Kennung ohne Zahl, greift die Behandlung als unvollständige Kennung oben — sichtbar und protokolliert.

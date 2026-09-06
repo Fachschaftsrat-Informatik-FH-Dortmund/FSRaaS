@@ -150,25 +150,53 @@ describe('SCHED-F-640 Weitere Fachsemester zusätzlich abrufen', () => {
   });
 });
 
-describe('SCHED-F-720 Manuelle Gruppenkennung: Buchstabe verpflichtend, Zahl freiwillig', () => {
+describe('SCHED-F-720 Manuelle Gruppenkennung verlangt Buchstabe und Zahl', () => {
   beforeEach(() => {
     mockEinrichtung.sname = 'INPBPI';
     mockEinrichtung.grade = '1';
   });
 
-  it('setzt beim Antippen eines Buchstabens die Gruppenkennung ohne Zahl', () => {
+  it('speichert beim Antippen eines Buchstabens noch keine Gruppenkennung', () => {
     renderScreen();
     fireEvent.press(screen.getByText('Manuell'));
     fireEvent.press(screen.getByLabelText('C'));
-    expect(mockSetGruppenkennung).toHaveBeenCalledWith('C');
+    // Ein Buchstabe allein ist seit dem 2026-09-06 keine gültige Kennung mehr.
+    expect(mockSetGruppenkennung).toHaveBeenCalledWith(null);
+    expect(mockSetGruppenkennung).not.toHaveBeenCalledWith('C');
   });
 
-  it('ergänzt die freiwillige Zahl um den bereits gewählten Buchstaben', () => {
+  it('benennt die fehlende Zahl, solange nur der Buchstabe gewählt ist', () => {
+    renderScreen();
+    fireEvent.press(screen.getByText('Manuell'));
+    fireEvent.press(screen.getByLabelText('C'));
+    expect(screen.getByText(/Unvollständig/)).toBeTruthy();
+  });
+
+  it('speichert die Kennung, sobald Buchstabe und Zahl vorliegen', () => {
+    renderScreen();
+    fireEvent.press(screen.getByText('Manuell'));
+    fireEvent.press(screen.getByLabelText('C'));
+    fireEvent.changeText(screen.getByLabelText('Zahl'), '8');
+    expect(mockSetGruppenkennung).toHaveBeenCalledWith('C8');
+  });
+
+  it('bietet einen unvollständigen Altbestand zum Nachtragen der Zahl an', () => {
+    // Vor dem 2026-09-06 gespeicherter Wert: der Buchstabe bleibt stehen, die
+    // Zahl lässt sich ergänzen, statt die Eingabe kommentarlos zurückzusetzen.
     mockEinrichtung.gruppenkennung = 'C';
     renderScreen();
     fireEvent.press(screen.getByText('Manuell'));
-    fireEvent.changeText(screen.getByLabelText('Zahl (freiwillig)'), '8');
+    expect(screen.getByText(/Unvollständig/)).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Zahl'), '8');
     expect(mockSetGruppenkennung).toHaveBeenCalledWith('C8');
+  });
+
+  it('hat den Weg über die Matrikelnummer vorausgewählt', () => {
+    renderScreen();
+    // SCHED-F-690/F-700: INT-019 liefert die vollständige Kennung samt Zahl,
+    // ohne dass die Nutzerin sie kennen muss — deshalb der voreingestellte Weg.
+    expect(screen.getByLabelText('Über Matrikelnummer').props.accessibilityState?.selected).toBe(true);
+    expect(screen.getByLabelText('Manuell').props.accessibilityState?.selected).toBe(false);
   });
 
   it('lässt sich ohne jede Matrikelnummer und ohne Gruppenkennung vollständig abschließen', () => {
