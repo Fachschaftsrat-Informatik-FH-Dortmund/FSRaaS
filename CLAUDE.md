@@ -69,7 +69,7 @@ resources/      Reale Beispieldateien (Prüfungspläne)
 
 | Bereich | Wahl | Warum |
 |---|---|---|
-| App | React Native mit Expo, `expo-dev-client`, `npx expo prebuild`; `android/` und `ios/` liegen im Repo | ADR 0009 |
+| App | React Native mit Expo, `expo-dev-client`, `npx expo prebuild`; `app/android/` liegt im Repo, `app/ios/` entsteht mit dem ersten iOS-Prebuild | ADR 0009 |
 | Ausdrücklich nicht | EAS Cloud Build, `expo-updates`, Firebase im Android-Build | F-Droid verlangt reproduzierbare Builds ohne proprietäre Abhängigkeiten (NFR-N-170/210) |
 | Backend | ASP.NET Core, PostgreSQL, EF Core, Hosted Services für periodische Aufgaben | ADR 0011 |
 | Anmeldung | OpenID Connect gegen eigenbetriebenes Authentik; Federation zur FH ist dort konfiguriert, für die App unsichtbar | ADR 0010 |
