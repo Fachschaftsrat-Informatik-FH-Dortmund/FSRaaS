@@ -38,9 +38,14 @@ Drei Anforderungen wechseln das Konzept, nicht nur die Formulierung — sie werd
 
 ## 6. Umsetzung (Roadmap-Schritt 5, Etappe 5)
 
-- [ ] 6.1 Erster Zug: die fünf Voreinstellungen mit festen Reihenfolgen, Anpinnen, Vorbereitungszeiten — der Planungsmodus ist damit vollständig nutzbar
-- [ ] 6.2 Zweiter Zug: freie Sortierung der Kriterienrangfolge und Abschalten einzelner Kriterien
-- [ ] 6.3 Reine Gerätelogik — kein Backend, keine Vertragsänderung
+Ausgelagert nach **Issue #27**: erster Zug mit den fünf Voreinstellungen,
+Anpinnen und Vorbereitungszeiten — damit ist der Planungsmodus vollständig
+nutzbar —, zweiter Zug mit freier Sortierung der Kriterienrangfolge und dem
+Abschalten einzelner Kriterien. Reine Gerätelogik, kein Backend, keine
+Vertragsänderung.
+
+Die Umsetzung ist damit keine offene Aufgabe dieses Changes mehr; er
+beschreibt den Zuschnitt und ist mit dessen Festschreibung abgeschlossen.
 
 ## Beim Archivieren
 
