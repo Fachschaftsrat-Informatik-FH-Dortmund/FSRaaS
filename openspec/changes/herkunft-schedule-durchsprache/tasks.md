@@ -38,8 +38,12 @@
 ## 6. Umsetzung
 
 - [ ] 6.1 `app/src/areas/schedule/einrichtung.ts` und die zugehörigen Tests: Speichern der Matrikelnummer entfernen — die einzige Codefolge dieser Durchsprache
-- [ ] 6.2 Die übrigen geänderten Requirements fallen mit den noch offenen Etappen 3 bis 5 von Roadmap-Schritt 5 an, nicht vorher
-- [x] 6.3 INT-009-Spike als Vorbedingung von Roadmap-Schritt 6 in `specs/product/roadmap.md` festgehalten
+- [x] 6.3 INT-009-Spike als Vorbedingung von Roadmap-Schritt 6 in `specs/product/roadmap.md` festgehalten (Issue #28)
+
+Die übrigen geänderten Requirements fallen mit den noch offenen Etappen 3 bis 5
+von Roadmap-Schritt 5 an, nicht vorher. Das ist eine Einordnung, keine Aufgabe
+dieses Changes — deshalb ohne Kästchen. (Aufgabe 6.2 entfallen, Nummern der
+übrigen Aufgaben bewusst nicht nachgezogen.)
 
 ## Beim Archivieren
 
