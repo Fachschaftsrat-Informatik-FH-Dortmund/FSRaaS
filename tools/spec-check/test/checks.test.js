@@ -199,6 +199,21 @@ test('Referenzen zeigen auf existierende Ziele: meldet einen nicht registrierten
   assert.ok(findings.some((f) => /INT-042/.test(f.message)));
 });
 
+test('Referenzen zeigen auf existierende Ziele: eine entfallene Integration bleibt vergeben', () => {
+  const { model, cleanup } = build({
+    'openspec/specs/integrations/spec.md': REGISTER
+      + '\n## Entfallene Anforderungen (historisch)\n\n'
+      + '### Ehemals INT-013 — Prüfungsplan (Intranet-Excel)\n\n'
+      + 'Status: entfallen, ersetzt durch INT-001.\n',
+    'openspec/specs/demo/spec.md': spec(
+      req('A', 'Das System nutzte früher INT-013. Herkunft: NEU.'),
+    ),
+  });
+  const findings = checkReferences(model);
+  cleanup();
+  assert.deepEqual(findings, []);
+});
+
 test('Referenzen zeigen auf existierende Ziele: ist still, wenn alle Verweise aufgehen', () => {
   const { model, cleanup } = build({
     'openspec/specs/integrations/spec.md': REGISTER,
