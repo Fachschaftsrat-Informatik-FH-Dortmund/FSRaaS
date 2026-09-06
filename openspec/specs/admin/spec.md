@@ -128,22 +128,6 @@ Das System muss der Rolle FSR-Redaktion eine Übersicht aller Rollen/Schichten e
 - **WHEN** eine Redaktionsperson die Übersicht eines Events öffnet
 - **THEN** zeigt das System je Rolle/Schicht die Anzahl besetzter und offener Plätze
 
-### Requirement: Prüfungsplan-Upload mit Importergebnis
-
-Das System muss der Rolle FSR-Redaktion den Upload einer Prüfungsplan-Datei sowie die Anzeige des Importergebnisses (übernommene Einträge, verworfene Zeilen mit Grund) ermöglichen. Herkunft: NEU (vormals ADMIN-F-160).
-
-#### Scenario: Import mit Ergebnisbericht
-- **WHEN** eine Redaktionsperson eine Prüfungsplan-Datei hochlädt
-- **THEN** zeigt das System nach dem Import die Anzahl übernommener Einträge und die verworfenen Zeilen mit Grund
-
-### Requirement: Abschluss des Imports trotz unlesbarer Zeilen
-
-Wenn ein Prüfungsplan-Upload Zeilen enthält, die nicht ausgewertet werden konnten, muss das System den Import dennoch abschließen und die betroffenen Zeilen einzeln benennen. Herkunft: NEU (vormals ADMIN-F-170).
-
-#### Scenario: Einzelne unlesbare Zeile
-- **WHEN** eine Prüfungsplan-Datei eine nicht auswertbare Zeile neben sonst gültigen Zeilen enthält
-- **THEN** schließt das System den Import der gültigen Zeilen ab und benennt die unlesbare Zeile einzeln im Ergebnisbericht
-
 ### Requirement: Pflege der Stammdaten-Listen
 
 Das System muss der Rolle FSR-Redaktion das Anlegen, Ändern und Entfernen von Einträgen der Mensa-Liste, der Raumliste und der Links-/Downloads-Liste ermöglichen. Herkunft: NEU (vormals ADMIN-F-180). Das abgelöste Backend `app.fsrfb4.de` pflegte diese Daten über ein Formular ohne Übersicht, Validierung oder Historie und veraltete dadurch (siehe Capability `integrations`, INT-008, „Lese-/Schreibtrennung bei `/data`"). Gespeichert wird je Liste als Ganzes (vollständige Ersetzung), abgesichert gegen gleichzeitige Bearbeitung durch dieselbe optimistische Nebenläufigkeitskontrolle wie bei Meldungsentwürfen (`If-Match`, siehe Abschnitt „Fehlerfälle"). Strukturell fehlerhafte Eingaben (leere oder doppelte Kennungen) werden als `400` abgewiesen, nicht erst beim Speichern.
@@ -184,6 +168,20 @@ Das System muss Verwaltungsprotokolle mindestens zwölf Monate vorhalten, damit 
 - **WHEN** eine neue FSR-Besetzung ein zehn Monate altes Verwaltungsprotokoll einsehen will
 - **THEN** liegt es noch vor, weil die Aufbewahrungsfrist mindestens zwölf Monate beträgt
 
+## Entfallene Anforderungen (historisch)
+
+### Ehemals ADMIN-F-160: Prüfungsplan-Upload mit Importergebnis
+
+Ursprünglicher Text: „Das System muss der Rolle FSR-Redaktion den Upload einer Prüfungsplan-Datei sowie die Anzeige des Importergebnisses (übernommene Einträge, verworfene Zeilen mit Grund) ermöglichen." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Der Prüfungsbestand wird seit dem 2026-09-06 im Backend aus dem ohnehin abgerufenen Raumplan abgeleitet (Capability `backend-and-api`, „Ableitung des Prüfungsbestands aus dem Raumplan"). Es gibt keine Datei mehr, die eine Redaktionsperson hochladen könnte, und damit auch kein Importergebnis anzuzeigen.
+
+### Ehemals ADMIN-F-170: Abschluss des Imports trotz unlesbarer Zeilen
+
+Ursprünglicher Text: „Wenn ein Prüfungsplan-Upload Zeilen enthält, die nicht ausgewertet werden konnten, muss das System den Import dennoch abschließen und die betroffenen Zeilen einzeln benennen." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Die Anforderung beschreibt die Fehlertoleranz des entfallenen Excel-Imports. Der entsprechende Fall im abgeleiteten Bestand — ein Prüfungseintrag, dessen Namensmuster keine Modulnummer hergibt — ist in der Capability `backend-and-api` geregelt: Er wird als Prüfung ohne Modulbezug geführt und protokolliert, statt verworfen zu werden.
+
 ## Scope / Nicht-Scope
 
 ### Scope
@@ -195,7 +193,6 @@ Das System muss Verwaltungsprotokolle mindestens zwölf Monate vorhalten, damit 
 - Pflege der Laufwege-Datenstruktur zwischen Räumen (Grundlage für RAUM-F-060, Capability `room-finder`).
 - Moderation gemeldeter Bewertungskommentare (zweite Ausbaustufe, siehe `specs/decisions/0012-zuschnitt-der-ersten-ausbaustufe.md`).
 - Anlegen von Helferbedarf und Übersicht der Besetzung (zweite Ausbaustufe).
-- Import des offiziellen Prüfungsplans (zweite Ausbaustufe).
 - Bereitstellung derselben Funktionen in der App und in einer eigenständigen Weboberfläche.
 
 ### Nicht-Scope
@@ -210,7 +207,7 @@ Das System muss Verwaltungsprotokolle mindestens zwölf Monate vorhalten, damit 
 ## Nutzergeschichten
 
 - Als FSR-Mitglied möchte ich eine kurze Meldung unterwegs vom Handy aus veröffentlichen, ohne dafür an einen Rechner zu müssen.
-- Als FSR-Mitglied möchte ich den Prüfungsplan und die Laufwege-Daten am Rechner pflegen, weil beides Fließarbeit mit vielen Einträgen ist.
+- Als FSR-Mitglied möchte ich die Laufwege-Daten am Rechner pflegen, weil das Fließarbeit mit vielen Einträgen ist.
 - Als FSR-Vorsitz möchte ich einem neuen Mitglied die Redaktionsrolle geben und einem ausgeschiedenen wieder entziehen, ohne dafür jemanden mit Serverzugang zu brauchen.
 - Als Moderation möchte ich gemeldete Kommentare an einer Stelle sehen und entscheiden können, statt sie in der Datenbank zu suchen.
 - Als FSR-Mitglied möchte ich vor dem Veröffentlichen sehen, wie eine Meldung in der App aussehen wird.
@@ -227,11 +224,11 @@ Stammdaten: Mensa-Liste, Raumliste, Links-/Downloads-Liste, Semestertermine und 
 
 Verwaltungsprotokoll: Zeitpunkt, handelndes Konto, Art der Handlung, Referenz auf den betroffenen Datensatz. Kein Inhalt nutzergenerierter Beiträge.
 
-Helferbedarf und Prüfungsplan haben kein eigenes Datenmodell in dieser Capability — sie werden in Capability `event-volunteers` beziehungsweise Capability `backend-and-api` geführt und hier nur bearbeitet.
+Helferbedarf hat kein eigenes Datenmodell in dieser Capability — er wird in Capability `event-volunteers` geführt und hier nur bearbeitet. Der Prüfungsbestand wird seit dem 2026-09-06 im Backend aus dem Raumplan abgeleitet und in dieser Capability gar nicht mehr bearbeitet.
 
 ## Externe Schnittstellen
 
-Alle Verwaltungsfunktionen laufen über das eigene Backend INT-008; der Vertrag steht in `openspec/specs/api-contract.yaml`. Anmeldung und Rollenzuweisung nutzen INT-012 (Authentik). Der Prüfungsplan-Upload verarbeitet eine Datei aus INT-013, ruft diese Quelle aber nicht selbst ab — der Download aus dem Hochschul-Intranet bleibt ein manueller Schritt außerhalb des Systems. Keine Endpunktdetails hier — siehe Capability `integrations`.
+Alle Verwaltungsfunktionen laufen über das eigene Backend INT-008; der Vertrag steht in `openspec/specs/api-contract.yaml`. Anmeldung und Rollenzuweisung nutzen INT-012 (Authentik). Keine Endpunktdetails hier — siehe Capability `integrations`.
 
 ## UI-Flows & Zustände
 
@@ -244,7 +241,6 @@ Alle Verwaltungsfunktionen laufen über das eigene Backend INT-008; der Vertrag 
 | Fehler | Fehlermeldung mit Wiederholen-Option; ein nicht gespeicherter Entwurf bleibt erhalten |
 | Offline | Verwaltungsfunktionen sind nicht verfügbar, siehe Abschnitt „Offline-Verhalten" |
 | Vorschau | Darstellung der Meldung in der Ansicht der App vor dem Veröffentlichen |
-| Import läuft | Fortschrittsanzeige beim Prüfungsplan-Upload, danach Ergebnisbericht |
 
 ## Offline-Verhalten
 
@@ -259,8 +255,6 @@ Ein lokal begonnener, noch nicht abgesendeter Meldungsentwurf bleibt davon unber
 | Zwei Personen bearbeiten denselben Meldungsentwurf gleichzeitig | Der zweite Speichervorgang wird abgelehnt, mit Hinweis auf die zwischenzeitliche Änderung und Anzeige des neueren Stands |
 | Zwei Personen bearbeiten dieselbe Stammdaten-Liste gleichzeitig | Der zweite Speichervorgang wird abgelehnt; der neuere Stand wird erneut geladen und zur Bearbeitung angeboten |
 | Rollenänderung schlägt fehl, weil Authentik nicht erreichbar ist | Fehlermeldung mit Wiederholen-Option; die bisherige Rollenzuweisung bleibt unverändert |
-| Prüfungsplan-Datei hat ein unerwartetes Format | Import abbrechen, bisherigen Bestand unverändert lassen, erkannte Abweichung benennen |
-| Prüfungsplan-Datei enthält einzelne unlesbare Zeilen | Import abschließen, unlesbare Zeilen einzeln im Ergebnisbericht benennen |
 | Laufwege-Eintrag verweist zweimal auf dieselbe Raumkennung | Ablehnen mit Hinweis; ein Weg von einem Raum zu sich selbst hat kein Distanzmaß |
 | Gemeldeter Kommentar wurde von der verfassenden Person bereits gelöscht | Meldung als erledigt kennzeichnen, keine Fehlermeldung |
 
