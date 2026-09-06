@@ -19,4 +19,7 @@
 
 ## 4. Umsetzung
 
-- [ ] 4.1 Der Sortier-/Gruppierblock ist unverändert nicht umgesetzt — die drei geänderten Requirements fallen mit seiner Umsetzung an, nicht vorher
+Der Sortier-/Gruppierblock ist unverändert nicht umgesetzt; die drei
+geänderten Requirements fallen mit seiner Umsetzung an, nicht vorher.
+Ausgelagert nach **Issue #26** — die Umsetzung ist keine Aufgabe dieses
+Changes, der die Requirements festschreibt.

@@ -33,4 +33,4 @@
 
 ## 6. Inhaltliche Durchsprache
 
-- [ ] 6.1 Die 56 `NEU`-Requirements der Capability `canteen` nach der Leitfrage aus `docs/agents/herkunft-durchsprache.md` durchgehen — eigener Change
+- [x] 6.1 Die 56 `NEU`-Requirements der Capability `canteen` nach der Leitfrage aus `docs/agents/herkunft-durchsprache.md` durchgehen — erledigt am 2026-09-05 im Change `canteen-durchsprache-inhalt`, alle 56. Kein Requirement entfiel, drei änderten sich.
