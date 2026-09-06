@@ -376,7 +376,7 @@ Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/module/Networ
 
 ### Requirement: INT-009 — FBWS Raumplan
 
-Das System muss die Termine eines einzelnen Raums oder aller Räume direkt über den Wildcard-Endpunkt laden, ohne Umweg über die Iteration aller Studiengang/Semester-Kombinationen. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/TimetableApi.java.
+Das System muss die Termine eines einzelnen Raums oder aller Räume direkt über den Wildcard-Endpunkt laden, ohne Umweg über die Iteration aller Studiengang/Semester-Kombinationen. Der Bestand ist zugleich die Quelle für die Prüfungstermine: Einträge mit `eventType: "Event"` und dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>` sind Prüfungen. Bei diesen Einträgen sind die Felder `courseId` und `courseOfStudy` leer — die Modulnummer steht ausschließlich in der Zeichenkette `name` und ist daraus herauszulösen. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/TimetableApi.java; Prüfungsbefund Recherche: FBWS live abgefragt, 2026-09-04, als Quelle festgelegt 2026-09-06.
 
 **Aufruf**
 ```
@@ -436,6 +436,10 @@ Quelle: live abgefragt am 2026-08-24, `https://ws.inf.fh-dortmund.de/timetable/c
 #### Scenario: Alle Raumtermine in einem Aufruf
 - **WHEN** der Wildcard-Aufruf `Room/*/AllEvents` genutzt wird
 - **THEN** liefert das System alle Raumtermine in einer Antwort, ohne Iteration über Studiengang/Semester-Kombinationen
+
+#### Scenario: Prüfungseintrag erkennen
+- **WHEN** ein Datensatz `eventType: "Event"` trägt und sein Name dem Muster `Prüfung <Modulnummer> <Bezeichnung>` folgt
+- **THEN** gilt er als Prüfungstermin, und die Modulnummer ist dem Namensfeld zu entnehmen, nicht dem leeren Feld `courseId`
 
 ### Requirement: INT-010 — Fachbereichs-Aktuelles (aktuelles-ni)
 
@@ -538,45 +542,6 @@ Die Verwaltungsoberfläche listet Konten mit bestehender Rolle über den Gruppen
 #### Scenario: Rollenverwaltung ohne konfigurierte API
 - **WHEN** die Authentik-Verwaltungs-API nicht konfiguriert ist
 - **THEN** meldet das Backend die Rollenverwaltung als nicht verfügbar (503), statt still zu scheitern
-
-### Requirement: INT-013 — Prüfungsplan (Intranet-Excel)
-
-**Status: zu definieren.** Das System muss den offiziellen Prüfungsplan über einen halbautomatischen Excel-Import verarbeiten, da kein automatisierter API-Zugriff möglich ist. Herkunft: Recherche: resources/pplan.xlsx, 2026-08-25.
-
-**Zweck**
-Liefert den offiziellen Prüfungsplan (Termine, keine Ergebnisse) des Fachbereichs als Grundlage für die Prüfungsauswahl im Stundenplan (Capability `schedule`). Nicht zu verwechseln mit HISinOne/INT-006 (Notenergebnisse).
-
-**Aufruf**
-Der Fachbereich veröffentlicht den Prüfungsplan als Excel-Datei zu einem variablen Zeitpunkt während der Vorlesungszeit auf einer Intranet-Seite, die einen Hochschul-Login voraussetzt, den weder App noch Backend besitzen (Passwort-Replay ist ausgeschlossen, Capability `security-and-privacy`). Der Zugriff ist deshalb **kein automatisierter API-Aufruf**, sondern ein zweistufiger, halbautomatischer Vorgang: Ein FSR-Mitglied oder Admin lädt die Datei manuell aus dem Intranet herunter und lädt sie anschließend in das eigene Backend hoch (Capability `backend-and-api`), das die Datei parst und weiterverarbeitet.
-
-**Antwortstruktur**
-Excel-Datei, ein Arbeitsblatt `PP`. Fünf reale Dateien der Jahrgänge WiSe 2023/24 bis SoSe 2026 liegen unter `resources/` vor.
-
-| Bereich | Inhalt |
-|---|---|
-| Kopfzeilen | Semesterbezeichnung, `Stand:`-Datum, Prüfungszeitraum, Farblegende |
-| Zeilenachse | je Prüfung eine Zeile: `Anmeldezeitraum`, `WT`, `Datum`, `Zeit`, `Raum` (mehrzeilig), `Num.`, `Name`, `Prüfer/in` |
-| Spaltenachse ab Spalte I | Matrix aus Studiengang × Vertiefung × Prüfungsordnung |
-| Zellwerte der Matrix | Fachsemester als Zahl oder Wahlkategorie als Kürzel (`1`, `2`, `4`, `5`, `W`, `Fo`, `Pr`) |
-| Trennzeilen | Zeilen mit Datum, aber ohne Prüfungsangaben, die Tagesabschnitte gliedern |
-
-Drei Eigenschaften erschweren den Import: Die Kopfzeilen-Position schwankt zwischen den Jahrgängen, die Spaltenzahl variiert (33 bis 44), und Zellhintergrundfarben tragen Bedeutung — ein Import, der nur Zellwerte liest, verliert diese Information. Fachlich wertvoll ist die Matrix: Sie liefert die Zuordnung Prüfung → (Studiengang, Vertiefung, Prüfungsordnung, Fachsemester).
-
-**Authentifizierung:** Hochschul-Intranet-Login für den manuellen Download durch den Admin — betrifft nur diesen manuellen Schritt. **Eigentümer/Betreiber:** Fachbereich Informatik, FH Dortmund (Intranet). **Verfügbarkeit:** Nicht dokumentiert; Veröffentlichungszeitpunkt variabel.
-
-**Risiko:** Mittel: Kein technisches Zugriffsrisiko, da App/Backend keine Hochschul-Zugangsdaten halten. Abhängigkeit von einem manuellen Schritt durch eine verantwortliche FSR-Person; Datei-Format kann sich zwischen Jahren ändern.
-
-**Ersatzoption:** Keine bekannte automatisierte Alternative.
-
-**Status:** Struktur grob erfasst. Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen, FSR FB4, 2026-08-25. Feldgenaue Festlegung erfolgt bewusst erst bei Umsetzung in der zweiten Ausbaustufe.
-
-**Nebenbefund (2026-08-25).** Die Android-Alt-App importiert den Prüfungsplan nicht, sondern verlinkt ihn nur (Schlüssel `examplan`, aktuell `http://hoolycraap.de/fh/pruefungsplan.pdf`, unverschlüsselt). Der geplante Import ist eine echte Neuerung gegenüber dem Stand beider Alt-Apps.
-
-Quelle: `resources/pplan.xlsx`, `resources/pplan(1).xlsx` bis `resources/pplan(4).xlsx`, ausgewertet 2026-08-25
-
-#### Scenario: Neuer Prüfungsplan-Jahrgang hochgeladen
-- **WHEN** ein Admin eine neue Prüfungsplan-Excel-Datei hochlädt
-- **THEN** ersetzt das Backend den Bestand vollständig, unabhängig von Kopfzeilen-Position und Spaltenzahl des Jahrgangs
 
 ### Requirement: INT-014 — E-Key-Verwaltungstool (Postgres)
 
@@ -786,6 +751,64 @@ Quelle: Hinweis des Nutzers (studierende Person) mit Beispielaufruf, 2026-09-04;
 - **WHEN** der Endpunkt eine nicht-leere Zeichenkette als Kennung liefert
 - **THEN** legt die App sie der Nutzerin zur Bestätigung vor, statt sie stillschweigend zu übernehmen
 
+## Entfallene Anforderungen (historisch)
+
+### Ehemals INT-013 — Prüfungsplan (Intranet-Excel)
+
+Status: entfallen (entschieden 2026-09-06). Herkunft des ursprünglichen Eintrags: Recherche: resources/pplan.xlsx, 2026-08-25.
+
+**Grund.** Der offizielle Prüfungsbestand wird seit dem 2026-09-06 aus dem Raumplan (INT-009) abgeleitet, den das Backend ohnehin alle paar Minuten abruft; Prüfungen erscheinen dort als Einträge mit `eventType: "Event"` und dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>`. Der zweistufige manuelle Weg — Download aus dem Intranet durch eine FSR-Person, Upload in das eigene Backend — entfällt damit vollständig. Ausschlaggebend war nicht der Aufwand des einzelnen Vorgangs, sondern seine Abhängigkeit von einer jährlich wechselnden ehrenamtlichen Person: dieselbe Konstruktion, an der das abgelöste Backend `app.fsrfb4.de` gescheitert ist.
+
+**Ersetzt durch:** INT-009 als Quelle, ausgewertet im Backend (Capability `backend-and-api`, „Ableitung des Prüfungsbestands aus dem Raumplan").
+
+**Was dabei verloren geht.** Die Excel-Matrix trug die Zuordnung Prüfung → Studiengang, Vertiefung, Prüfungsordnung und Fachsemester. INT-009 liefert sie nicht. Für Prüfungen zu Veranstaltungen des eigenen Plans ist das folgenlos (Zuordnung über die Modulnummer); Nachholprüfungen außerhalb des Plans sind nur noch über Bezeichnung oder Modulnummer auffindbar.
+
+**Die Formatanalyse bleibt erhalten**, damit ein Rückweg nicht neu erarbeitet werden muss, falls sich der Raumplan-Bestand als lückenhaft erweist. Die fünf realen Jahrgangsdateien (WiSe 2023/24 bis SoSe 2026) liegen weiterhin unter `resources/`.
+
+<details>
+<summary>Ursprünglicher Eintrag (Stand 2026-08-25)</summary>
+
+#### INT-013 — Prüfungsplan (Intranet-Excel)
+
+**Status: zu definieren.** Das System muss den offiziellen Prüfungsplan über einen halbautomatischen Excel-Import verarbeiten, da kein automatisierter API-Zugriff möglich ist. Herkunft: Recherche: resources/pplan.xlsx, 2026-08-25.
+
+**Zweck**
+Liefert den offiziellen Prüfungsplan (Termine, keine Ergebnisse) des Fachbereichs als Grundlage für die Prüfungsauswahl im Stundenplan (Capability `schedule`). Nicht zu verwechseln mit HISinOne/INT-006 (Notenergebnisse).
+
+**Aufruf**
+Der Fachbereich veröffentlicht den Prüfungsplan als Excel-Datei zu einem variablen Zeitpunkt während der Vorlesungszeit auf einer Intranet-Seite, die einen Hochschul-Login voraussetzt, den weder App noch Backend besitzen (Passwort-Replay ist ausgeschlossen, Capability `security-and-privacy`). Der Zugriff ist deshalb **kein automatisierter API-Aufruf**, sondern ein zweistufiger, halbautomatischer Vorgang: Ein FSR-Mitglied oder Admin lädt die Datei manuell aus dem Intranet herunter und lädt sie anschließend in das eigene Backend hoch (Capability `backend-and-api`), das die Datei parst und weiterverarbeitet.
+
+**Antwortstruktur**
+Excel-Datei, ein Arbeitsblatt `PP`. Fünf reale Dateien der Jahrgänge WiSe 2023/24 bis SoSe 2026 liegen unter `resources/` vor.
+
+| Bereich | Inhalt |
+|---|---|
+| Kopfzeilen | Semesterbezeichnung, `Stand:`-Datum, Prüfungszeitraum, Farblegende |
+| Zeilenachse | je Prüfung eine Zeile: `Anmeldezeitraum`, `WT`, `Datum`, `Zeit`, `Raum` (mehrzeilig), `Num.`, `Name`, `Prüfer/in` |
+| Spaltenachse ab Spalte I | Matrix aus Studiengang × Vertiefung × Prüfungsordnung |
+| Zellwerte der Matrix | Fachsemester als Zahl oder Wahlkategorie als Kürzel (`1`, `2`, `4`, `5`, `W`, `Fo`, `Pr`) |
+| Trennzeilen | Zeilen mit Datum, aber ohne Prüfungsangaben, die Tagesabschnitte gliedern |
+
+Drei Eigenschaften erschweren den Import: Die Kopfzeilen-Position schwankt zwischen den Jahrgängen, die Spaltenzahl variiert (33 bis 44), und Zellhintergrundfarben tragen Bedeutung — ein Import, der nur Zellwerte liest, verliert diese Information. Fachlich wertvoll ist die Matrix: Sie liefert die Zuordnung Prüfung → (Studiengang, Vertiefung, Prüfungsordnung, Fachsemester).
+
+**Authentifizierung:** Hochschul-Intranet-Login für den manuellen Download durch den Admin — betrifft nur diesen manuellen Schritt. **Eigentümer/Betreiber:** Fachbereich Informatik, FH Dortmund (Intranet). **Verfügbarkeit:** Nicht dokumentiert; Veröffentlichungszeitpunkt variabel.
+
+**Risiko:** Mittel: Kein technisches Zugriffsrisiko, da App/Backend keine Hochschul-Zugangsdaten halten. Abhängigkeit von einem manuellen Schritt durch eine verantwortliche FSR-Person; Datei-Format kann sich zwischen Jahren ändern.
+
+**Ersatzoption:** Keine bekannte automatisierte Alternative.
+
+**Status:** Struktur grob erfasst. Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen, FSR FB4, 2026-08-25. Feldgenaue Festlegung erfolgt bewusst erst bei Umsetzung in der zweiten Ausbaustufe.
+
+**Nebenbefund (2026-08-25).** Die Android-Alt-App importiert den Prüfungsplan nicht, sondern verlinkt ihn nur (Schlüssel `examplan`, aktuell `http://hoolycraap.de/fh/pruefungsplan.pdf`, unverschlüsselt). Der geplante Import ist eine echte Neuerung gegenüber dem Stand beider Alt-Apps.
+
+Quelle: `resources/pplan.xlsx`, `resources/pplan(1).xlsx` bis `resources/pplan(4).xlsx`, ausgewertet 2026-08-25
+
+#### Scenario: Neuer Prüfungsplan-Jahrgang hochgeladen
+- **WHEN** ein Admin eine neue Prüfungsplan-Excel-Datei hochlädt
+- **THEN** ersetzt das Backend den Bestand vollständig, unabhängig von Kopfzeilen-Position und Spaltenzahl des Jahrgangs
+
+</details>
+
 ## Übersicht
 
 | ID | System | Status | Risiko | Abhängige Feature-Capabilities |
@@ -802,7 +825,7 @@ Quelle: Hinweis des Nutzers (studierende Person) mit Beispielaufruf, 2026-09-04;
 | INT-010 | Fachbereichs-Aktuelles (aktuelles-ni) | geklärt: HTML-Auswertung | mittel | news |
 | INT-011 | FSR-Event-Kalender (ICS) | Dienst geklärt (Google Calendar) | gering bis mittel | events |
 | INT-012 | Authentik (Identitätsanbieter) | Anbieter entschieden, FH-Federation ausstehend | gering bis mittel | canteen-ratings, e-key, admin |
-| INT-013 | Prüfungsplan (Intranet-Excel) | Struktur grob erfasst | mittel | schedule |
+| ~~INT-013~~ | ~~Prüfungsplan (Intranet-Excel)~~ | entfallen 2026-09-06, ersetzt durch INT-009 | – | – |
 | INT-014 | E-Key-Verwaltungstool (Postgres) | zu definieren | mittel bis hoch | e-key |
 | INT-015 | Mensa-API des ITMC (TU Dortmund) | bestätigt, live erprobt | gering bis mittel | canteen, canteen-ratings |
 | INT-016 | Nachrichten des Fachbereichs Wirtschaft (FB9) | bestätigt, nicht im Umfang | mittel | – |

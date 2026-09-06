@@ -180,28 +180,32 @@ Das System muss E-Key-Verknüpfungsanfragen gegen das bestehende E-Key-Verwaltun
 - **WHEN** eine Nutzerin eine E-Key-Verknüpfung anfragt
 - **THEN** prüft das Backend die Anfrage gegen das bestehende E-Key-Verwaltungstool und speichert nur den Status für die Anzeige zwischen
 
-### Requirement: Import des Prüfungsplans
+### Requirement: Ableitung des Prüfungsbestands aus dem Raumplan
 
-Das System muss einem Admin/FSR-Mitglied den Import des offiziellen Prüfungsplans aus einer hochgeladenen Excel-Datei ermöglichen. Herkunft: NEU (vormals API-F-180).
+Das System muss aus dem zwischengespeicherten Raumplan (INT-009, siehe Capability `integrations`) die Prüfungstermine ableiten und als eigenen Bestand führen. Maßgeblich sind Einträge mit `eventType: "Event"`, deren Bezeichnung dem Muster `Prüfung <Modulnummer> <Bezeichnung>` folgt; Modulnummer und Bezeichnung werden daraus herausgelöst, Raum, Datum und Uhrzeit aus den übrigen Feldern übernommen. Herkunft: NEU, entschieden 2026-09-06. Ersetzt den entfallenen Excel-Import (vormals API-F-180).
 
-#### Scenario: Excel-Upload
-- **WHEN** ein Admin eine Prüfungsplan-Excel-Datei hochlädt
-- **THEN** übernimmt das Backend den Import
+#### Scenario: Prüfungseintrag im Raumplan
+- **WHEN** der Raumplan-Zwischenspeicher einen Eintrag mit `eventType: "Event"` und dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>` enthält
+- **THEN** führt das Backend ihn im Prüfungsbestand mit Modulnummer, Bezeichnung, Raum, Datum und Uhrzeit
 
-### Requirement: Vollständiger Ersatz des Prüfungsplan-Bestands
+#### Scenario: Nicht auflösbares Namensmuster
+- **WHEN** ein Eintrag als Prüfung erkennbar ist, sein Name aber keine Modulnummer nach dem Muster hergibt
+- **THEN** führt das Backend ihn als Prüfung ohne Modulbezug im Bestand und protokolliert den Vorfall (SEC-F-060), statt ihn zu verwerfen
 
-Wenn ein neuer Prüfungsplan für ein neues Jahr importiert wird, muss das System den bisherigen Prüfungsplan-Bestand vollständig ersetzen. Herkunft: NEU (vormals API-F-190).
+### Requirement: Abruf des Prüfungsbestands
 
-#### Scenario: Import für neues Jahr
-- **WHEN** ein Prüfungsplan für ein neues Jahr importiert wird
-- **THEN** ersetzt das Backend den bisherigen Bestand vollständig
+Das System muss den abgeleiteten Prüfungsbestand über einen Abruf-Endpunkt bereitstellen, ohne Anmeldung und ohne Kenntnis darüber, welche Prüfungen eine einzelne Nutzerin ausgewählt hat. Herkunft: NEU, entschieden 2026-09-06.
+
+#### Scenario: Prüfungsbestand abrufen
+- **WHEN** die App den Prüfungsbestand abruft
+- **THEN** liefert das Backend die abgeleiteten Prüfungstermine ohne Anmeldung aus
 
 ### Requirement: Allgemeine Aktualisierungsmeldung bei geändertem Prüfungsplan
 
-Wenn sich ein importierter Prüfungsplan gegenüber dem zuvor gespeicherten Bestand unterscheidet, muss das System eine allgemeine Aktualisierungsmeldung auslösen, ohne dabei personenbezogene Auswahldaten einzelner Nutzerinnen zu verarbeiten. Herkunft: NEU (vormals API-F-200). Löst allgemein aus, ohne zu wissen, welche Nutzerin welche Prüfung ausgewählt hat; das bleibt mit dem Requirement „Verzicht auf serverseitige Speicherung persönlicher Stundenpläne“ vereinbar, weil Capability `schedule` den Abgleich mit der individuellen, ausschließlich lokal gespeicherten Auswahl auf dem Gerät vornimmt.
+Wenn sich der aus dem Raumplan abgeleitete Prüfungsbestand gegenüber dem zuvor abgeleiteten Stand unterscheidet, muss das System eine allgemeine Aktualisierungsmeldung auslösen, ohne dabei personenbezogene Auswahldaten einzelner Nutzerinnen zu verarbeiten. Herkunft: NEU, entschieden 2026-09-06; vormals API-F-200. Löst allgemein aus, ohne zu wissen, welche Nutzerin welche Prüfung ausgewählt hat; das bleibt mit dem Requirement „Verzicht auf serverseitige Speicherung persönlicher Stundenpläne“ vereinbar, weil Capability `schedule` den Abgleich mit der individuellen, ausschließlich lokal gespeicherten Auswahl auf dem Gerät vornimmt.
 
 #### Scenario: Prüfungsplan-Änderung erkannt
-- **WHEN** ein importierter Prüfungsplan vom zuvor gespeicherten Bestand abweicht
+- **WHEN** der abgeleitete Prüfungsbestand vom zuvor abgeleiteten Stand abweicht
 - **THEN** löst das Backend eine allgemeine Aktualisierungsmeldung aus, ohne personenbezogene Auswahldaten zu verarbeiten
 
 ### Requirement: Raumbesetzt-Meldungen ohne Personenbezug
@@ -476,6 +480,20 @@ Das System muss über einen im Repository beschriebenen, automatisierten Ablauf 
 - **WHEN** ein CI-Lauf auf `main` erfolgreich abschließt
 - **THEN** löst der automatisierte Ablauf Build, Test, Übertragung und Neustart aus und prüft danach den Betriebszustand
 
+## Entfallene Anforderungen (historisch)
+
+### Ehemals API-F-180: Import des Prüfungsplans
+
+Ursprünglicher Text: „Das System muss einem Admin/FSR-Mitglied den Import des offiziellen Prüfungsplans aus einer hochgeladenen Excel-Datei ermöglichen." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Der Prüfungsbestand wird aus dem ohnehin abgerufenen Raumplan abgeleitet; ein Upload findet nicht mehr statt. Ausschlaggebend war die Abhängigkeit des manuellen Schritts von einer jährlich wechselnden ehrenamtlichen Person — dieselbe Konstruktion, an der das abgelöste Backend `app.fsrfb4.de` gescheitert ist. Ersetzt durch „Ableitung des Prüfungsbestands aus dem Raumplan".
+
+### Ehemals API-F-190: Vollständiger Ersatz des Prüfungsplan-Bestands
+
+Ursprünglicher Text: „Wenn ein neuer Prüfungsplan für ein neues Jahr importiert wird, muss das System den bisherigen Prüfungsplan-Bestand vollständig ersetzen." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Die Anforderung regelte den Jahrgangswechsel beim Excel-Import. Der abgeleitete Bestand folgt dem Raumplan-Zwischenspeicher und wird mit jedem Abruf neu gebildet; ein gesonderter Ersatzvorgang je Jahrgang entfällt. Ersetzt durch „Ableitung des Prüfungsbestands aus dem Raumplan".
+
 ## Warum das Backend unvermeidlich ist
 
 Vier unabhängige Gründe, jeder für sich hinreichend:
@@ -509,7 +527,7 @@ Nur Zweck und grobe Felder; ausformulierte Datenmodelle entstehen mit den jeweil
 | News-Zwischenspeicher | Kopie von FSR-News und FB-Aktuelles, je mit Klassifizierung | Titel, Text, Datum, Quelle, Klassifizierung |
 | Speiseplan-Zwischenspeicher | Kopie der Mensa-Quelle | Mensa, Datum, Gerichte, Gerichtskategorien, Zusatzstoffverzeichnis |
 | E-Key-Verknüpfung | Zuordnung Konto ↔ E-Key, Zwischenspeicher für Anzeige (System der Wahrheit: E-Key-Verwaltungstool, extern) | E-Key-Nummer-Referenz, Konto-Referenz, zuletzt gelesener Status/Berechtigungen, letzte/nächste Bestätigung |
-| Prüfungsplan | Import aus Excel-Upload durch Admin/FSR | Prüfungs-ID, Bezeichnung, Datum/Zeit, Raum, Studiengang-/Prüfungsordnungs-Bezug, Import-Jahr |
+| Prüfungsbestand | Aus dem Raumplan (INT-009) abgeleitet | Modulnummer, Bezeichnung, Datum/Zeit, Raum |
 | Laufwege | Distanzen/Nachbarschaften zwischen Räumen | Raum-Paar, Distanz-/Gewichtsmaß |
 | Besetzt-Meldung | Crowd-Hinweis auf tatsächliche Raumbelegung | roomId, Zeitstempel, kein Personen-/Kontobezug |
 

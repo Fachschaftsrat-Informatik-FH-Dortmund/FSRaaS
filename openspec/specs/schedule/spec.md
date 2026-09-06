@@ -30,15 +30,15 @@ Wenn Studiengang und Fachsemester gewählt sind, muss das System die zugehörige
 
 ### Requirement: Gruppenkennungs-Eingabeformat
 
-Das System muss der Nutzerin die Angabe einer Gruppenkennung nach dem Muster `^[A-Z][0-9]*$` ermöglichen, wobei der Buchstabe verpflichtend und die Zahl freiwillig ist. Herkunft: Alt: lib/areas/schedule/models/selected_course_info.dart (vormals SCHED-F-040).
-
-#### Scenario: Gültige Eingabe ohne Zahl
-- **WHEN** die Nutzerin nur einen Buchstaben als Gruppenkennung eingibt (z. B. `D`)
-- **THEN** akzeptiert das System die Eingabe als gültige Gruppenkennung
+Das System muss der Nutzerin die Angabe einer Gruppenkennung nach dem Muster `^[A-Z][0-9]+$` ermöglichen; Buchstabe und Zahl sind beide verpflichtend. Herkunft: Alt: lib/areas/schedule/models/selected_course_info.dart, Zahl wieder verpflichtend entschieden 2026-09-06; vormals SCHED-F-040. Die zwischenzeitliche Erweiterung auf eine freiwillige Zahl (2026-09-04) ist zurückgenommen: Fünf der 21 im FBWS-Bestand vorkommenden `studentSet`-Werte tragen eine Zahl an einer Bereichsgrenze, an der sie mitentscheidet.
 
 #### Scenario: Gültige Eingabe mit Zahl
 - **WHEN** die Nutzerin Buchstabe und Zahl eingibt (z. B. `C8`)
 - **THEN** akzeptiert das System die Eingabe als gültige Gruppenkennung
+
+#### Scenario: Eingabe ohne Zahl
+- **WHEN** die Nutzerin nur einen Buchstaben eingibt (z. B. `D`)
+- **THEN** weist das System die Eingabe als unvollständig zurück und benennt die fehlende Zahl
 
 ### Requirement: Alle Termine ohne Gruppenkennung
 
@@ -50,7 +50,7 @@ Solange keine Gruppenkennung angegeben ist, muss das System alle abgerufenen Ter
 
 ### Requirement: Wildcard im studentSet
 
-Wenn `studentSet` eines Termins den Wert `*` trägt, dann muss das System diesen Termin für jede angegebene Gruppenkennung anzeigen. Herkunft: NEU (vormals SCHED-F-060). Die Android-Alt-App (`util/GroupLetterUtil.java`) behandelt `*` nicht gesondert und markiert einen für alle Gruppen gültigen Termin fälschlich als gruppenfremd; dieses Verhalten ist bewusst nicht übernommen, siehe Abschnitt „Bewusst nicht übernommenes Altverhalten".
+Wenn `studentSet` eines Termins den Wert `*` trägt, dann muss das System diesen Termin für jede angegebene Gruppenkennung anzeigen. Herkunft: NEU, bestätigt 2026-09-06; vormals SCHED-F-060. Die Android-Alt-App (`util/GroupLetterUtil.java`) behandelt `*` nicht gesondert und markiert einen für alle Gruppen gültigen Termin fälschlich als gruppenfremd; dieses Verhalten ist bewusst nicht übernommen, siehe Abschnitt „Bewusst nicht übernommenes Altverhalten".
 
 #### Scenario: Wildcard bei gesetzter Gruppenkennung
 - **WHEN** die Gruppenkennung `C8` gesetzt ist und ein Termin `studentSet` `*` trägt
@@ -74,7 +74,7 @@ Wenn `studentSet` eines Termins ein Einzelwert ohne Bindestrich ist (z. B. `C8`)
 
 ### Requirement: Bereichsangabe im studentSet
 
-Wenn `studentSet` eines Termins ein Bereich der Form `A1-C9` ist, dann muss das System einen Termin genau dann anzeigen, wenn das Paar (Buchstabe, Zahl) der Gruppenkennung — die Zahl dabei numerisch, nicht als Zeichenkette, verglichen — innerhalb des durch Anfangs- und Endpaar aufgespannten Bereichs liegt, einschließlich beider Grenzen. Herkunft: Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:218-249 (vormals SCHED-F-080). Der numerische statt zeichenweise Vergleich ist ausdrücklich festgehalten, weil ein reiner Zeichenkettenvergleich bei mehrstelligen Zahlen falsche Ergebnisse liefert (`"10"` wäre als Zeichenkette kleiner als `"9"`). Die Capability `quality-and-testing` verlangt automatisierte Tests genau für diesen Fall.
+Wenn `studentSet` eines Termins ein Bereich der Form `A1-C9` ist, dann muss das System einen Termin genau dann anzeigen, wenn das Paar (Buchstabe, Zahl) der Gruppenkennung — die Zahl dabei numerisch, nicht als Zeichenkette, verglichen — innerhalb des durch Anfangs- und Endpaar aufgespannten Bereichs liegt, einschließlich beider Grenzen. Trägt die Gruppenkennung keine Zahl und ist damit unvollständig, muss das System den Termin als zugehörig behandeln und den Vorfall protokollieren, statt eine Zahl anzunehmen. Herkunft: Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:218-249, Behandlung der unvollständigen Kennung ergänzt 2026-09-06; vormals SCHED-F-080. Der numerische statt zeichenweise Vergleich ist ausdrücklich festgehalten, weil ein reiner Zeichenkettenvergleich bei mehrstelligen Zahlen falsche Ergebnisse liefert (`"10"` wäre als Zeichenkette kleiner als `"9"`). Die Capability `quality-and-testing` verlangt automatisierte Tests genau für diesen Fall.
 
 #### Scenario: Buchstabe echt innerhalb des Bereichs
 - **WHEN** die Gruppenkennung `B5` gesetzt ist und ein Termin `studentSet` `A1-C9` trägt
@@ -104,6 +104,10 @@ Wenn `studentSet` eines Termins ein Bereich der Form `A1-C9` ist, dann muss das 
 - **WHEN** die Gruppenkennung `D2` gesetzt ist und ein Termin `studentSet` `C5-E` trägt
 - **THEN** zeigt das System diesen Termin als zugehörig an, da (D,2) zwischen der Anfangsgrenze (C,5) und der offenen Endgrenze E liegt
 
+#### Scenario: Unvollständige Gruppenkennung an einer Grenze mit Zahl
+- **WHEN** eine unvollständige Gruppenkennung `H` ohne Zahl vorliegt und ein Termin `studentSet` `H5-J` trägt
+- **THEN** zeigt das System diesen Termin als zugehörig an und protokolliert den Vorfall, statt die fehlende Zahl als `0` zu behandeln
+
 ### Requirement: Offene Bereichsgrenze im studentSet
 
 Wenn eine Bereichsgrenze in `studentSet` keine Zahl trägt (z. B. `A-C9`), dann muss das System diese Grenze als offen behandeln und jede Zahl auf dem jeweiligen Grenzbuchstaben einschließen. Herkunft: Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:225,235 (vormals SCHED-F-090).
@@ -120,13 +124,17 @@ Wenn eine Bereichsgrenze in `studentSet` keine Zahl trägt (z. B. `A-C9`), dann 
 - **WHEN** die Gruppenkennung `M3` gesetzt ist und ein Termin `studentSet` `A-P` trägt
 - **THEN** zeigt das System diesen Termin als zugehörig an
 
-### Requirement: Leerer Tag bei Gruppenfilterung
+### Requirement: Leerer Tag bei wirksamem Filter
 
-Falls bei aktivem Ausblenden gruppenfremder Termine an einem Wochentag kein Termin verbleibt, muss das System diesen Tag als leer kennzeichnen und die Gruppenfilterung als Grund nennen. Herkunft: NEU (vormals SCHED-F-100).
+Falls an einem Wochentag durch einen wirksamen Filter kein Termin verbleibt, muss das System diesen Tag als leer kennzeichnen und den Filter nennen, der dazu geführt hat. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-100. Die vorige Fassung nannte allein die Gruppenfilterung; inzwischen wirken mehrere Filter auf die Wochenansicht.
 
 #### Scenario: Alle Termine eines Tages ausgeblendet
 - **WHEN** an einem Wochentag nach Ausblenden gruppenfremder Termine kein Termin verbleibt
 - **THEN** kennzeichnet das System den Tag als leer und nennt die Gruppenfilterung als Grund
+
+#### Scenario: Eingrenzung auf ein Fachsemester leert den Tag
+- **WHEN** an einem Wochentag nach Eingrenzung auf ein Fachsemester kein Termin verbleibt
+- **THEN** kennzeichnet das System den Tag als leer und nennt diese Eingrenzung als Grund
 
 ### Requirement: Anlegen eigener Termine
 
@@ -210,11 +218,19 @@ Das System muss der Nutzerin das Kennzeichnen eines eigenen Termins als Prüfung
 
 ### Requirement: Auswahl aus dem offiziellen Prüfungsplan
 
-Das System muss der Nutzerin die Auswahl relevanter Prüfungen aus dem importierten offiziellen Prüfungsplan (INT-013, Capability `integrations`) ermöglichen, einschließlich Prüfungen, die die Nutzerin nachholen möchte. Herkunft: NEU (vormals SCHED-F-200).
+Das System muss der Nutzerin die Auswahl relevanter Prüfungen aus dem vom Backend bereitgestellten Prüfungsbestand ermöglichen, einschließlich Prüfungen, die die Nutzerin nachholen möchte. Der Bestand wird aus dem Raumplan abgeleitet (INT-009 über INT-008, siehe Capability `backend-and-api`); ein manueller Import entfällt. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-200. Prüfungen zu Veranstaltungen des eigenen Plans sind über die Modulnummer zugeordnet; Nachholprüfungen aus Veranstaltungen außerhalb des Plans sind nur über Bezeichnung oder Modulnummer auffindbar, weil der Raumplan — anders als die entfallene Intranet-Excel — keine Zuordnung zu Studiengang, Vertiefung, Prüfungsordnung und Fachsemester führt.
 
 #### Scenario: Prüfung auswählen
-- **WHEN** die Nutzerin aus dem importierten Prüfungsplan eine für sie relevante Prüfung wählt
+- **WHEN** die Nutzerin aus dem bereitgestellten Prüfungsbestand eine für sie relevante Prüfung wählt
 - **THEN** übernimmt das System diese Prüfung in den persönlichen Stundenplan
+
+#### Scenario: Prüfung zur eigenen Veranstaltung
+- **WHEN** die Nutzerin zu einer Veranstaltung ihres Plans die zugehörige Prüfung aufruft
+- **THEN** zeigt das System sie anhand der Modulnummer zugeordnet an
+
+#### Scenario: Nachholprüfung suchen
+- **WHEN** die Nutzerin eine Prüfung zu einer Veranstaltung sucht, die nicht in ihrem Plan steht
+- **THEN** findet das System sie über Bezeichnung oder Modulnummer und übernimmt sie auf Auswahl in den persönlichen Stundenplan
 
 ### Requirement: Visuelle Kennzeichnung von Prüfungsterminen
 
@@ -226,19 +242,27 @@ Wenn ein Termin eine Prüfung ist — eigen als Prüfung gekennzeichnet oder aus
 
 ### Requirement: Benachrichtigung bei Prüfungsplan-Aktualisierung
 
-Wenn das Backend eine Aktualisierung des offiziellen Prüfungsplans meldet und mindestens einer der lokal ausgewählten Prüfungstermine der Nutzerin davon betroffen ist, muss das System die Nutzerin darüber informieren. Herkunft: NEU (vormals SCHED-F-220). Verträgt sich mit der Anforderung „Kein serverseitiges Speichern des persönlichen Stundenplans" der Capability `backend-and-api` (API-F-100): Der Abgleich erfolgt lokal gegen die ausschließlich gerätegespeicherte Auswahl.
+Wenn das Backend eine Aktualisierung des Prüfungsbestands meldet und mindestens einer der lokal ausgewählten Prüfungstermine der Nutzerin davon betroffen ist, muss das System die Nutzerin darüber informieren. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-220. Verträgt sich mit der Anforderung „Kein serverseitiges Speichern des persönlichen Stundenplans" der Capability `backend-and-api` (API-F-100): Das Backend meldet nur, dass sich der Bestand geändert hat; der Abgleich erfolgt lokal gegen die ausschließlich gerätegespeicherte Auswahl, indem die App den geänderten Bestand abruft und gegen ihre Auswahl hält.
 
 #### Scenario: Ausgewählte Prüfung betroffen
-- **WHEN** eine Aktualisierung des Prüfungsplans einen lokal ausgewählten Prüfungstermin betrifft
+- **WHEN** eine Aktualisierung des Prüfungsbestands einen lokal ausgewählten Prüfungstermin betrifft
 - **THEN** informiert das System die Nutzerin darüber
+
+#### Scenario: Keine ausgewählte Prüfung betroffen
+- **WHEN** sich der Prüfungsbestand ändert, ohne einen lokal ausgewählten Termin zu betreffen
+- **THEN** informiert das System die Nutzerin nicht
 
 ### Requirement: Konflikthinweis bei festen Terminen
 
-Wenn sich zwei Termine des persönlichen Plans mit dem Status „fest" zeitlich überschneiden, muss das System beide Termine mit einem sichtbaren Konflikthinweis darstellen, unabhängig davon, ob sie offiziell oder eigen sind. Herkunft: NEU (vormals SCHED-F-230).
+Wenn sich zwei Termine des persönlichen Plans mit dem Status „fest" zeitlich überschneiden, muss das System beide Termine mit einem sichtbaren Konflikthinweis darstellen, unabhängig davon, ob sie offiziell oder eigen sind. Hat die Nutzerin die Überschneidung nach der Anforderung zur bewussten Übernahme trotz Konflikt angenommen, darf das System keinen wiederkehrenden Konflikthinweis mehr erzeugen; das Terminpaar trägt dann allein die Kennzeichnung „angenommener Konflikt". Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-230. Ohne diese Ausnahme entstünde für einen bewusst angenommenen Konflikt genau die Dauerwarnung, gegen die der Status „vorgemerkt" eingeführt wurde.
 
 #### Scenario: Zwei feste Termine überschneiden sich
 - **WHEN** zwei Termine mit Status „fest" zeitlich überschneidend sind
 - **THEN** stellt das System beide mit einem sichtbaren Konflikthinweis dar
+
+#### Scenario: Konflikt wurde bewusst angenommen
+- **WHEN** die Nutzerin die Überschneidung zweier fester Termine bewusst angenommen hat
+- **THEN** zeigt das System keinen Konflikthinweis mehr, sondern allein die Kennzeichnung „angenommener Konflikt"
 
 ### Requirement: Kalenderexport in Gerätekalender
 
@@ -256,13 +280,17 @@ Das System sollte den beim Kalenderexport vorgeschlagenen Zeitraum auf das serve
 - **WHEN** die Nutzerin den Export-Dialog öffnet
 - **THEN** sind Von- und Bis-Feld mit dem aktuellen Semester vorbelegt und bleiben änderbar
 
-### Requirement: Datei-Export als Rückfallweg
+### Requirement: Gleichrangiger Datei-Export und Verhalten bei verweigerter Berechtigung
 
-Falls die Berechtigung für den Gerätekalender nicht erteilt wird, muss das System den Datei-Export als Rückfallweg anbieten. Herkunft: NEU (vormals SCHED-F-177).
+Das System muss das Übertragen in einen Gerätekalender und den Datei-Export (.ics) gleichrangig zur Auswahl stellen. Falls die Berechtigung für den Gerätekalender nicht erteilt wird, darf das System den Vorgang nicht abbrechen, sondern muss im selben Vorgang beide Auswege anbieten: den Weg in die Systemeinstellungen der App zum nachträglichen Erteilen der Berechtigung und den Datei-Export. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-177. iOS und Android zeigen den Berechtigungsdialog nach einer Ablehnung kein zweites Mal; ein von der App ausgelöster erneuter Versuch ist deshalb nicht möglich.
+
+#### Scenario: Beide Wege stehen zur Wahl
+- **WHEN** die Nutzerin den Export öffnet
+- **THEN** bietet das System die Übertragung in einen Gerätekalender und den Datei-Export gleichrangig an
 
 #### Scenario: Kalenderberechtigung verweigert
 - **WHEN** die Kalenderberechtigung verweigert wird
-- **THEN** bietet das System den Datei-Export (.ics) als Rückfallweg an
+- **THEN** bleibt der Vorgang offen und das System bietet sowohl den Weg in die Systemeinstellungen als auch den Datei-Export an
 
 ### Requirement: Auswahl der Terminarten beim Export
 
@@ -394,31 +422,47 @@ Das System muss der Nutzerin ermöglichen, für den Planungsmodus ein bevorzugte
 
 ### Requirement: Kennzeichnung außerhalb des Zeitfensters
 
-Bei der Prüfung eines Kandidaten-Termins muss das System zusätzlich zur Kollisionsprüfung kennzeichnen, ob der Termin außerhalb des festgelegten Zeitfensters liegt, ohne ihn deswegen aus der Auswahl zu entfernen. Herkunft: NEU (vormals SCHED-F-340).
+Bei der Prüfung eines Kandidaten-Termins muss das System zusätzlich zur Kollisionsprüfung kennzeichnen, ob der Termin außerhalb des festgelegten Zeitfensters liegt, ohne ihn deswegen aus der Auswahl zu entfernen. Ob die Abweichung zusätzlich auf die Reihenfolge wirkt, hängt davon ab, an welcher Stelle das Kriterium „Zeitfenster" in der Kriterienrangfolge steht; ist es abgeschaltet, bleibt es eine reine Kennzeichnung. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-340. Die vorige Fassung ließ offen, ob das Zeitfenster die Reihung beeinflusst — die Erläuterung behauptete es, das Reihungs-Requirement kannte es nicht.
 
 #### Scenario: Termin außerhalb des Zeitfensters
 - **WHEN** ein konfliktfreier Kandidaten-Termin außerhalb des festgelegten Zeitfensters liegt
 - **THEN** kennzeichnet das System ihn entsprechend, entfernt ihn aber nicht aus der Auswahl
 
-### Requirement: Auswahl des Optimierungsmodus
+#### Scenario: Zeitfenster als oberstes Kriterium
+- **WHEN** das Kriterium „Zeitfenster" an oberster Stelle der Rangfolge steht
+- **THEN** ordnet das System Termine innerhalb des Zeitfensters vor solchen außerhalb ein
 
-Das System muss der Nutzerin für den Planungsmodus die Auswahl eines Optimierungsmodus ermöglichen, mindestens aus „minimale Zeit an der Hochschule", „ausgeglichener Tagesablauf" und „mehr Abstand zwischen Lerneinheiten". Herkunft: NEU (vormals SCHED-F-350). Die drei Modi sind ein Mindestumfang, keine abschließende Liste.
+### Requirement: Kriterienrangfolge für die Planung
 
-#### Scenario: Optimierungsmodus wählen
-- **WHEN** die Nutzerin einen der drei Optimierungsmodi wählt
-- **THEN** übernimmt das System ihn für die Reihung der Planungsvorschläge
+Das System muss der Nutzerin ermöglichen, die Kriterien der Planungsreihung nach Wichtigkeit zu ordnen und einzelne Kriterien abzuschalten. Zur Verfügung stehen mindestens: *Uni-Tage*, *Anwesenheitszeit*, *gleichmäßige Woche*, *Abstand zwischen Lerneinheiten*, *Vorbereitungszeit*, *Abstand Vorlesung–Übung*, *Abwechslung* und *Zeitfenster*. Zusätzlich muss das System mindestens fünf benannte Voreinstellungen anbieten, die die Rangfolge füllen; eine Voreinstellung schaltet genau die Kriterien ein, die sie ausmachen, und lässt die übrigen abgeschaltet. Herkunft: NEU, entschieden 2026-09-06. Ersetzt die entfallene Anforderung „Auswahl des Optimierungsmodus" (vormals SCHED-F-350). Kriterienliste und Voreinstellungen sind ein Mindestumfang, keine abschließende Liste.
 
-### Requirement: Reihung nach Optimierungsmodus
+Die Voreinstellungen: *Zeit an der Uni* (Anwesenheitszeit) · *Fahrten zur Uni* (Uni-Tage, dann Anwesenheitszeit) · *Ausgeglichene Woche* (gleichmäßige Woche) · *Abstand zwischen Lerneinheiten* · *Vorbereitungszeit* (Vorbereitungszeit, dann Abstand Vorlesung–Übung). *Abwechslung* und *Zeitfenster* sind Kriterien ohne eigene Voreinstellung.
 
-Wenn im Planungsmodus mehrere konfliktfreie Termine für einen Kandidaten zur Auswahl stehen, muss das System sie entsprechend dem gewählten Optimierungsmodus ordnen, sodass die nach dessen Kriterium günstigste Option zuerst erscheint. Herkunft: NEU (vormals SCHED-F-360). Kriterien: *Tagesspanne* (Zeitraum von frühester Beginnzeit bis spätester Endzeit aller Termine eines Wochentags im übernommenen Plan, unter Einbeziehung des geprüften Kandidaten) und *Nachbarabstand* (kleinere der beiden Pausen zum unmittelbar vorangehenden bzw. nachfolgenden Termin desselben Wochentags; ohne anderen Termin gilt er als maximal). „Minimale Zeit an der Hochschule" bevorzugt die geringste zusätzliche bzw. unveränderte Tagesspanne, „Ausgeglichener Tagesablauf" die Tagesspanne, die einer Acht-Stunden-Spanne am nächsten kommt, „Mehr Abstand zwischen Lerneinheiten" den größten Nachbarabstand. Bei Gleichstand ist die Reihenfolge nicht weiter festgelegt (deterministisches, aber beliebiges Tie-Breaking genügt).
+#### Scenario: Voreinstellung wählen
+- **WHEN** die Nutzerin die Voreinstellung „Fahrten zur Uni" wählt
+- **THEN** enthält die Rangfolge „Uni-Tage" vor „Anwesenheitszeit", und alle übrigen Kriterien sind abgeschaltet
 
-#### Scenario: Reihung nach „minimale Zeit an der Hochschule"
-- **WHEN** mehrere konfliktfreie Termine zur Wahl stehen und der Modus „minimale Zeit an der Hochschule" aktiv ist
-- **THEN** ordnet das System den Termin mit der geringsten zusätzlichen Tagesspanne an erste Stelle
+#### Scenario: Rangfolge selbst ändern
+- **WHEN** die Nutzerin ein Kriterium in der Rangfolge nach oben zieht oder abschaltet
+- **THEN** übernimmt das System die geänderte Rangfolge für die Reihung
 
-#### Scenario: Reihung nach „mehr Abstand zwischen Lerneinheiten"
-- **WHEN** mehrere konfliktfreie Termine zur Wahl stehen und der Modus „mehr Abstand zwischen Lerneinheiten" aktiv ist
-- **THEN** ordnet das System den Termin mit dem größten Nachbarabstand an erste Stelle
+### Requirement: Reihung nach der Kriterienrangfolge
+
+Wenn mehrere konfliktfreie Termine für einen Kandidaten zur Auswahl stehen, muss das System sie nach der eingestellten Kriterienrangfolge ordnen: Das oberste eingeschaltete Kriterium entscheidet; nur bei Gleichstand zählt das nächste, ohne Toleranzbereich. Herkunft: NEU, entschieden 2026-09-06. Ersetzt die entfallene Anforderung „Reihung nach Optimierungsmodus" (vormals SCHED-F-360).
+
+Die Kriterien messen: *Uni-Tage* — Zahl der Wochentage mit mindestens einem Termin, weniger ist besser. *Anwesenheitszeit* — Summe der Tagesspannen (früheste Beginnzeit bis späteste Endzeit je Wochentag) über die Woche, weniger ist besser. *Gleichmäßige Woche* — Unterschied zwischen den Tagesspannen der Uni-Tage, kleiner ist besser. *Abstand zwischen Lerneinheiten* — Nachbarabstand, also die kleinere der beiden Pausen zum unmittelbar vorangehenden bzw. nachfolgenden Termin desselben Wochentags; ohne anderen Termin gilt er als maximal, größer ist besser. *Vorbereitungszeit* — freie Zeit unmittelbar vor dem Termin, gemessen am Zielwert seiner Veranstaltungsart; der erste Termin eines Tages gilt als erfüllt. *Abstand Vorlesung–Übung* — Zeit zwischen der Vorlesung einer Veranstaltung und deren Termin anderer Art; angestrebt ist mindestens der eingestellte Abstand nach der Vorlesung, ein Termin vor der Vorlesung gilt als schlecht erfüllt. *Abwechslung* — Zahl der Fälle, in denen an einem Wochentag Termine derselben Veranstaltungsart unmittelbar aufeinanderfolgen, weniger ist besser. *Zeitfenster* — ob der Termin im festgelegten Zeitfenster liegt, innerhalb ist besser. Bei Gleichstand aller eingeschalteten Kriterien ist die Reihenfolge nicht weiter festgelegt; deterministisches, aber beliebiges Tie-Breaking genügt.
+
+#### Scenario: Reihung nach „Uni-Tage" vor „Anwesenheitszeit"
+- **WHEN** mehrere konfliktfreie Termine zur Wahl stehen und die Rangfolge „Uni-Tage" vor „Anwesenheitszeit" führt
+- **THEN** ordnet das System den Termin mit den wenigsten Uni-Tagen an erste Stelle, auch wenn ein anderer eine kürzere Anwesenheitszeit ergäbe
+
+#### Scenario: Gleichstand im obersten Kriterium
+- **WHEN** zwei Termine dieselbe Zahl von Uni-Tagen ergeben und „Anwesenheitszeit" das nächste eingeschaltete Kriterium ist
+- **THEN** ordnet das System den Termin mit der kürzeren Anwesenheitszeit an erste Stelle
+
+#### Scenario: Übung vor der zugehörigen Vorlesung
+- **WHEN** das Kriterium „Abstand Vorlesung–Übung" eingeschaltet ist und ein Übungstermin vor der zugehörigen Vorlesung liegt
+- **THEN** bewertet das System ihn schlechter als jeden Termin, der nach der Vorlesung liegt
 
 ### Requirement: Mehrere Kandidaten in der Planungsauswahl
 
@@ -430,19 +474,63 @@ Das System muss der Nutzerin ermöglichen, mehrere ausgewählte Kandidaten gleic
 
 ### Requirement: Kandidat als Pflicht markieren
 
-Das System muss der Nutzerin ermöglichen, einen Kandidaten innerhalb der Planungsauswahl als „Pflicht" zu markieren, sobald sie sich für dessen Teilnahme entschieden hat. Herkunft: NEU (vormals SCHED-F-380).
+Das System muss der Nutzerin ermöglichen, einen Kandidaten der Planungsauswahl als „Pflicht" zu markieren. Eine als Pflicht markierte Veranstaltung muss im Plan enthalten bleiben; welcher ihrer Termine gewählt wird, bleibt der Planung überlassen. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-380. Die Markierung betrifft ausschließlich das *Ob* — für das *Wann* gibt es das Anpinnen.
 
 #### Scenario: Kandidat als Pflicht markieren
 - **WHEN** die Nutzerin sich für einen Kandidaten entscheidet
 - **THEN** markiert das System ihn in der Planungsauswahl als „Pflicht"
 
-### Requirement: Konfliktprüfung gegenüber Pflicht-Kandidaten
+#### Scenario: Pflicht-Veranstaltung bleibt enthalten
+- **WHEN** die Nutzerin einen Kandidaten als „Pflicht" markiert und eine Optimierung auslöst
+- **THEN** enthält der Vorschlag diese Veranstaltung, gegebenenfalls mit einem anderen Termin als zuvor
 
-Bei der Konfliktprüfung eines nicht als „Pflicht" markierten Kandidaten der Planungsauswahl muss das System dessen Termine gegen den bereits übernommenen Stundenplan sowie gegen die als „Pflicht" markierten Kandidaten derselben Planungsauswahl prüfen, nicht gegen andere, ebenfalls noch nicht als „Pflicht" markierte Kandidaten. Herkunft: NEU (vormals SCHED-F-390). Eine Vollkombinatorik über mehrere gleichzeitig unentschiedene Kandidaten wurde bewusst zurückgestellt (Rücksprache FSR FB4, 2026-08-25), siehe „Erläuterungen".
+### Requirement: Anpinnen eines Termins
 
-#### Scenario: Prüfung gegen Pflicht-Kandidaten
+Das System muss der Nutzerin ermöglichen, einen einzelnen Termin des persönlichen Plans anzupinnen. Ein angepinnter Termin darf von einer Optimierung weder umgelegt noch entfernt werden. Herkunft: NEU, entschieden 2026-09-06. Trennt das *Wann* vom *Ob*: „Pflicht" hält fest, dass eine Veranstaltung im Plan bleiben muss; das Anpinnen hält fest, dass es genau dieser Zeitslot sein soll — etwa, weil die eigene Lerngruppe dorthin geht.
+
+#### Scenario: Angepinnter Termin bei erneuter Optimierung
+- **WHEN** die Nutzerin einen Termin anpinnt und danach eine Optimierung auslöst
+- **THEN** bleibt dieser Termin unverändert an seinem Zeitslot
+
+#### Scenario: Anpinnen zurücknehmen
+- **WHEN** die Nutzerin das Anpinnen eines Termins zurücknimmt
+- **THEN** darf eine folgende Optimierung diesen Termin wieder umlegen
+
+### Requirement: Konfliktprüfung gegenüber angepinnten Terminen
+
+Bei der Konfliktprüfung eines Kandidaten der Planungsauswahl muss das System dessen Termine gegen den bereits übernommenen Stundenplan sowie gegen die angepinnten Termine prüfen, nicht gegen andere, noch nicht festgelegte Kandidaten. Herkunft: NEU, entschieden 2026-09-06. Ersetzt die entfallene Anforderung „Konfliktprüfung gegenüber Pflicht-Kandidaten" (vormals SCHED-F-390); eine Vollkombinatorik über mehrere gleichzeitig unentschiedene Kandidaten bleibt zurückgestellt (Rücksprache 2026-08-25). Geprüft wird gegen angepinnte statt gegen als Pflicht markierte Termine, weil eine Pflicht-Markierung seit dem 2026-09-06 nur noch die Veranstaltung festhält, nicht deren Uhrzeit.
+
+#### Scenario: Prüfung gegen angepinnte Termine
 - **WHEN** zwei Kandidaten gleichzeitig unentschieden in der Planungsauswahl stehen
-- **THEN** prüft das System jeden nur gegen den übernommenen Plan und die bereits als Pflicht markierten Kandidaten, nicht gegeneinander
+- **THEN** prüft das System jeden nur gegen den übernommenen Plan und die angepinnten Termine, nicht gegeneinander
+
+### Requirement: Ausgangszustand ohne Optimierung
+
+Das System muss den Plan ohne jede Optimierung nach der Gruppenkennung der Nutzerin zusammenstellen, solange sie keine Optimierung auslöst. Die Optimierung ist ein Hilfsmittel, das die Nutzerin beim Zusammenstellen aufruft, kein dauerhaft wirkender Zustand. Herkunft: NEU, entschieden 2026-09-06.
+
+#### Scenario: Plan ohne ausgelöste Optimierung
+- **WHEN** die Nutzerin ihren Plan zusammenstellt, ohne eine Optimierung auszulösen
+- **THEN** ordnet das System die Termine allein nach ihrer Gruppenkennung zu und ändert daran nichts von selbst
+
+### Requirement: Rücknahme einer übernommenen Optimierung
+
+Das System muss der Nutzerin über einen sichtbaren Bedienweg ermöglichen, eine übernommene Optimierung zurückzunehmen und damit die Einteilung nach Gruppenkennung wiederherzustellen. Angepinnte Termine und selbst angelegte Termine bleiben davon unberührt. Herkunft: NEU, entschieden 2026-09-06. Ohne Rückweg wird der Knopf aus Sorge vor Unumkehrbarkeit gar nicht erst gedrückt.
+
+#### Scenario: Optimierung zurücknehmen
+- **WHEN** die Nutzerin eine übernommene Optimierung zurücknimmt
+- **THEN** stellt das System die Termine ihrer eigenen Gruppe wieder her und lässt angepinnte sowie selbst angelegte Termine unverändert
+
+### Requirement: Vorbereitungszeit je Veranstaltungsart
+
+Das System muss der Nutzerin einen allgemeinen Zielwert für die Vorbereitungszeit vor einem Termin sowie davon abweichende Werte für einzelne Veranstaltungsarten festlegen lassen. Der allgemeine Wert gilt für jede Veranstaltungsart, für die kein abweichender Wert gesetzt ist, einschließlich künftiger, heute unbekannter Arten. Die Werte gelten allgemein und nicht je einzelner Veranstaltung. Herkunft: NEU, entschieden 2026-09-06. FBWS führt derzeit sechs Veranstaltungsarten; sie alle einzeln zu erfragen wäre eine lange Einrichtung, und eine siebte Art bliebe ohne Wert.
+
+#### Scenario: Abweichender Wert für eine Veranstaltungsart
+- **WHEN** die Nutzerin für die Veranstaltungsart „Praktikum" einen abweichenden Zielwert festlegt
+- **THEN** verwendet das System diesen Wert für Praktika und den allgemeinen Wert für alle übrigen Arten
+
+#### Scenario: Unbekannte Veranstaltungsart
+- **WHEN** ein Termin eine Veranstaltungsart trägt, für die kein abweichender Wert gesetzt ist
+- **THEN** verwendet das System den allgemeinen Zielwert
 
 ### Requirement: Abgleich mit dem Raumplan
 
@@ -478,11 +566,11 @@ Wenn ein offizieller Termin im aktuellen Raumplan unter keinem Merkmalssatz zuge
 
 ### Requirement: Kennzeichnung als unbestätigte Ableitung
 
-Das System muss einen Hinweis auf Raumabweichung oder fehlende Zuordnung als unbestätigte Ableitung kennzeichnen und auf „FB-Aktuelles" (Capability `news`) als verbindliche Quelle verweisen. Herkunft: NEU (vormals SCHED-F-440).
+Das System muss einen Hinweis auf Raumabweichung oder fehlende Zuordnung als unbestätigte Ableitung kennzeichnen, die Quelle benennen, aus der er abgeleitet ist (die Raumreservierung des Fachbereichs, INT-009), und auf den offiziellen Prüfungsplan sowie „FB-Aktuelles" (Capability `news`) als vorrangige, verbindliche Quellen verweisen. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-440. Der Raumplan-Abgleich ist ausdrücklich ein experimentelles Feature, das unvollständig bleiben darf — deshalb muss am Hinweis selbst stehen, worauf er beruht und was ihm vorgeht.
 
 #### Scenario: Hinweis angezeigt
 - **WHEN** ein Raumabweichungs- oder Nicht-gefunden-Hinweis angezeigt wird
-- **THEN** kennzeichnet das System ihn als unbestätigte Ableitung und verweist auf „FB-Aktuelles"
+- **THEN** kennzeichnet das System ihn als unbestätigte Ableitung, nennt die Raumreservierung als Quelle und verweist auf Prüfungsplan und „FB-Aktuelles" als vorrangige Quellen
 
 ### Requirement: Kein Verändern des Eintrags bei Hinweis
 
@@ -494,11 +582,15 @@ Solange ein Hinweis auf Raumabweichung oder fehlende Zuordnung angezeigt wird, d
 
 ### Requirement: Kein Hinweis bei veraltetem Raumplan
 
-Falls der Raumplan-Zwischenspeicher älter als die vorgesehene Aktualisierungsfrequenz ist, muss das System keinen Hinweis auf Raumabweichung oder fehlende Zuordnung anzeigen und stattdessen das Alter des Raumplan-Stands ausweisen. Herkunft: NEU (vormals SCHED-F-450).
+Falls der Raumplan-Zwischenspeicher älter ist als das Vierfache der vorgesehenen Aktualisierungsfrequenz, mindestens jedoch älter als 30 Minuten, muss das System keinen Hinweis auf Raumabweichung oder fehlende Zuordnung anzeigen und stattdessen das Alter des Raumplan-Stands ausweisen. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-450. Die vorige Fassung ließ die Hinweise bereits entfallen, sobald der Stand älter war als die Aktualisierungsfrequenz — bei einem Abruf alle paar Minuten wäre der Block damit praktisch immer stumm gewesen.
 
 #### Scenario: Veralteter Raumplan-Stand
-- **WHEN** der Raumplan-Zwischenspeicher älter als die Aktualisierungsfrequenz ist
+- **WHEN** der Raumplan-Zwischenspeicher älter als das Vierfache der Aktualisierungsfrequenz und älter als 30 Minuten ist
 - **THEN** zeigt das System keinen Abweichungshinweis, sondern das Alter des Stands
+
+#### Scenario: Einzelner ausgelassener Abruf
+- **WHEN** der Raumplan-Zwischenspeicher eine Aktualisierungsrunde übersprungen, die Schwelle aber nicht erreicht hat
+- **THEN** zeigt das System die Hinweise unverändert weiter
 
 ### Requirement: Wochentagsleiste mit bedarfsweisem Samstag
 
@@ -682,11 +774,19 @@ Das System muss als Kandidaten für den Planungsmodus jede Veranstaltung des Aus
 
 ### Requirement: Automatischer Planungsvorschlag
 
-Das System muss der Nutzerin ermöglichen, aus den Kandidaten der Planungsauswahl selbsttätig einen konfliktfreien Vorschlag nach dem gewählten Optimierungsmodus erzeugen zu lassen, den sie vor der Übernahme einsehen und einzeln ändern kann. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04 (vormals SCHED-F-680).
+Das System muss der Nutzerin ermöglichen, aus den Kandidaten der Planungsauswahl selbsttätig einen Vorschlag nach der eingestellten Kriterienrangfolge erzeugen zu lassen, den sie vor der Übernahme einsehen und einzeln ändern kann. Der Vorschlag entsteht schrittweise: Das System geht die Kandidaten in einer festgelegten Reihenfolge durch und wählt für jeden den nach der Rangfolge besten Termin, der gegen den bis dahin aufgebauten Vorschlag konfliktfrei ist; Kombinationen werden nicht durchsucht. Dabei darf das System jeden nicht angepinnten Termin auf einen anderen Gruppen-Slot derselben Veranstaltung umlegen, aber keine Veranstaltung aus dem Vorschlag entfernen. Findet das System keine vollständig konfliktfreie Konstellation, muss es die beste gefundene mit sichtbar markiertem Konflikt anzeigen, die beteiligten Veranstaltungen benennen und auf die „Pflicht"-Markierung als Weg hinweisen, den Vorrang zu bestimmen. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Verfahren festgelegt 2026-09-06; vormals SCHED-F-680.
 
 #### Scenario: Vorschlag erzeugen und ändern
 - **WHEN** die Nutzerin einen Vorschlag erzeugen lässt
 - **THEN** zeigt das System ihn vor der Übernahme an und lässt einzelne Termine ändern, bevor der Plan sich ändert
+
+#### Scenario: Nicht angepinnter Termin wird umgelegt
+- **WHEN** ein nicht angepinnter Termin auf einem anderen Gruppen-Slot derselben Veranstaltung ein nach der Rangfolge besseres Ergebnis ergibt
+- **THEN** legt das System ihn im Vorschlag dorthin um und weist die Änderung aus
+
+#### Scenario: Keine konfliktfreie Konstellation
+- **WHEN** keine Anordnung ohne Konflikt gefunden wird
+- **THEN** zeigt das System die beste gefundene mit markiertem Konflikt, benennt die beteiligten Veranstaltungen und weist auf die „Pflicht"-Markierung hin
 
 ### Requirement: Ermittlung der Gruppenkennung über Matrikelnummer
 
@@ -708,21 +808,29 @@ Wenn eine Gruppenkennung ermittelt wurde, muss das System sie der Nutzerin zur B
 - **WHEN** INT-019 mit `{"fhDoStudentSet":false}` oder `[]` antwortet
 - **THEN** behandelt das System beide Fälle gleich als „keine Gruppe hinterlegt" und übernimmt keine Kennung
 
-### Requirement: Lokale Speicherung der Matrikelnummer
+### Requirement: Keine Speicherung der Matrikelnummer
 
-Das System muss die Matrikelnummer ausschließlich auf dem Gerät speichern und sie an kein anderes Ziel als INT-019 übertragen. Herkunft: NEU (vormals SCHED-F-710).
+Das System darf die Matrikelnummer nicht dauerhaft speichern. Es verwendet sie ausschließlich für den Abruf nach INT-019 (Capability `integrations`) und überträgt sie an kein anderes Ziel. Gespeichert wird allein die daraus ermittelte und von der Nutzerin bestätigte Gruppenkennung. Herkunft: NEU, entschieden 2026-09-06; vormals SCHED-F-710. Die Matrikelnummer ist personenbeziehbar und wird nach der Ermittlung nicht mehr gebraucht; die Gruppenkennung bleibt auch ohne sie jederzeit von Hand festlegbar.
 
 #### Scenario: Matrikelnummer im Netzwerkmitschnitt
 - **WHEN** ein Netzwerkmitschnitt während der Nutzung erstellt wird
 - **THEN** erscheint die Matrikelnummer in keinem Aufruf außer gegen INT-019
 
+#### Scenario: Nach Abschluss der Einrichtung
+- **WHEN** die Nutzerin die ermittelte Gruppenkennung bestätigt hat und die App neu startet
+- **THEN** ist die Gruppenkennung vorhanden und die Matrikelnummer nirgends gespeichert
+
 ### Requirement: Gruppenkennung ohne Matrikelnummer
 
-Das System muss die Gruppenkennung auch ohne Angabe einer Matrikelnummer festlegbar machen und dabei den Buchstaben als maßgebliche Angabe führen, die Zahl als freiwillige Ergänzung. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04 (vormals SCHED-F-720).
+Das System muss die Gruppenkennung auch ohne Angabe einer Matrikelnummer festlegbar machen; die manuelle Angabe verlangt dann Buchstabe und Zahl. Die Ermittlung über die Matrikelnummer (INT-019) ist der voreingestellte Weg, weil sie die vollständige Kennung samt Zahl liefert, ohne dass die Nutzerin sie kennen muss. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Zahlenpflicht ergänzt 2026-09-06; vormals SCHED-F-720. Die vorige Fassung führte den Buchstaben als maßgebliche Angabe und die Zahl als freiwillige Ergänzung; das trägt nicht mehr, seit nur der Weg über die Matrikelnummer die Zahl zuverlässig beschafft.
 
 #### Scenario: Einrichtung ohne Matrikelnummer
 - **WHEN** die Nutzerin keine Matrikelnummer angibt
-- **THEN** lässt sich die Einrichtung dennoch durch manuelle Angabe der Gruppenkennung abschließen
+- **THEN** lässt sich die Einrichtung dennoch durch manuelle Angabe von Buchstabe und Zahl abschließen
+
+#### Scenario: Voreingestellter Weg
+- **WHEN** die Nutzerin die Einrichtung der Gruppenkennung öffnet
+- **THEN** ist die Ermittlung über die Matrikelnummer vorausgewählt, die manuelle Angabe bleibt erreichbar
 
 ### Requirement: Wiederkehrend oder einmalig bei eigenen Terminen
 
@@ -736,15 +844,43 @@ Das System muss beim Anlegen eines eigenen Eintrags die Wahl ermöglichen, ob er
 - **WHEN** die Nutzerin einen eigenen Eintrag als einmalig an einem Datum anlegt
 - **THEN** erscheint er nur in der Woche dieses Datums
 
-### Requirement: Zeitziel beim Blättern zwischen Wochentagen
+### Requirement: Schalter zum Abschalten aller Filter
 
-Das System muss beim Blättern zwischen Wochentagen die Zielwerte der Capability `non-functional` (NFR-N-040) einhalten. Herkunft: NEU (vormals SCHED-N-010).
+Das System muss der Nutzerin einen Schalter bereitstellen, der sämtliche wirksamen Filter der Wochenansicht auf einmal abschaltet — Gruppenfilterung, Gültigkeitszeitraum und Eingrenzung auf Fachsemester — und alle Termine des persönlichen Plans zeigt, gleich welchen Status sie tragen. Die Wochenansicht bleibt dabei erhalten. Herkunft: NEU, entschieden 2026-09-06. Zweck ist das manuelle Zusammenstellen des Plans, wenn die App den Fall einer Nutzerin nicht abdeckt; dass die Darstellung dabei unübersichtlich wird, ist ausdrücklich in Kauf genommen.
 
-#### Scenario: Wochentagswechsel
-- **WHEN** die Nutzerin zwischen zwei Wochentagen blättert
-- **THEN** hält das System den in der Capability `non-functional` festgelegten Zeitwert ein
+#### Scenario: Alle Filter abschalten
+- **WHEN** die Nutzerin den Schalter aktiviert
+- **THEN** zeigt das System alle Termine des persönlichen Plans, einschließlich gruppenfremder und außerhalb ihres Gültigkeitszeitraums liegender
+
+#### Scenario: Schalter zurücknehmen
+- **WHEN** die Nutzerin den Schalter wieder deaktiviert
+- **THEN** wirken die zuvor gesetzten Filtereinstellungen unverändert weiter
 
 ## Entfallene Anforderungen (historisch)
+
+### Ehemals SCHED-N-010: Zeitziel beim Blättern zwischen Wochentagen
+
+Ursprünglicher Text: „Das System muss beim Blättern zwischen Wochentagen die Zielwerte der Capability `non-functional` (NFR-N-040) einhalten." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06, Herkunfts-Durchsprache). Grund: Die Anforderung sagte inhaltlich nur, dass der querschnittliche Zeitwert einzuhalten sei — ohne eigenen Wert, ohne eigene Schwelle und ohne eigene Begründung; der Abschnitt „Nicht-funktionale Anforderungen (Register)" verwies seinerseits auf sie zurück. NFR-N-040 gilt unverändert für die gesamte App und damit auch für den Stundenplan.
+
+### Ehemals SCHED-F-350: Auswahl des Optimierungsmodus
+
+Ursprünglicher Text: „Das System muss der Nutzerin für den Planungsmodus die Auswahl eines Optimierungsmodus ermöglichen, mindestens aus „minimale Zeit an der Hochschule", „ausgeglichener Tagesablauf" und „mehr Abstand zwischen Lerneinheiten"." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Eine Auswahl aus benannten Modi kann nicht mehr ausdrücken, was gebraucht wird — „möglichst wenige Fahrten, und dabei nach Möglichkeit Vorbereitungszeit" ist keine Auswahl, sondern eine Rangfolge. Ersetzt durch „Kriterienrangfolge für die Planung"; die fünf Modi leben dort als benannte Voreinstellungen weiter.
+
+### Ehemals SCHED-F-360: Reihung nach Optimierungsmodus
+
+Ursprünglicher Text: „Wenn im Planungsmodus mehrere konfliktfreie Termine für einen Kandidaten zur Auswahl stehen, muss das System sie entsprechend dem gewählten Optimierungsmodus ordnen, sodass die nach dessen Kriterium günstigste Option zuerst erscheint." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Der Modus „ausgeglichener Tagesablauf" bevorzugte die Tagesspanne, die einer Acht-Stunden-Spanne am nächsten kommt, und blähte damit an einem kurzen Tag den Tag auf — das Gegenteil dessen, was sein Name verspricht. Außerdem fehlte das Zeitfenster als Größe, obwohl die Erläuterung seine Wirkung auf die Reihung behauptete. Ersetzt durch „Reihung nach der Kriterienrangfolge" mit acht definierten Kriterien.
+
+### Ehemals SCHED-F-390: Konfliktprüfung gegenüber Pflicht-Kandidaten
+
+Ursprünglicher Text: „Bei der Konfliktprüfung eines nicht als „Pflicht" markierten Kandidaten der Planungsauswahl muss das System dessen Termine gegen den bereits übernommenen Stundenplan sowie gegen die als „Pflicht" markierten Kandidaten derselben Planungsauswahl prüfen, nicht gegen andere, ebenfalls noch nicht als „Pflicht" markierte Kandidaten." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-06). Grund: Seit der Trennung von *Ob* und *Wann* hält eine Pflicht-Markierung nur noch fest, dass eine Veranstaltung im Plan bleiben muss, und trägt keinen Zeitpunkt mehr, gegen den sich prüfen ließe. Ersetzt durch „Konfliktprüfung gegenüber angepinnten Terminen"; die Zurückstellung der Vollkombinatorik von 2026-08-25 bleibt in Kraft.
 
 ### Ehemals SCHED-F-270: Zweites Fachsemester für die Wahlpflicht-Planung
 
@@ -764,7 +900,7 @@ Status: entfallen (Entscheidung FSR FB4, 2026-08-26). Grund: Die Live-Prüfung v
 - Anlegen, Bearbeiten und Löschen eigener, nicht-offizieller Einträge — wahlweise wöchentlich wiederkehrend oder einmalig an einem Datum —, einschließlich eigener Prüfungstermine.
 - Ermittlung der Gruppenkennung aus der Matrikelnummer (INT-019) als Alternative zur manuellen Eingabe.
 - Lokale Persistenz des Stundenplans über App-Neustarts hinweg (siehe Capability `data-and-storage`, DATA-F-010).
-- Auswahl relevanter Prüfungstermine aus dem vom FSR/Admin importierten offiziellen Prüfungsplan (INT-013) und deren Anzeige im Stundenplan, gesondert gekennzeichnet.
+- Auswahl relevanter Prüfungstermine aus dem vom Backend aus dem Raumplan (INT-009) abgeleiteten Prüfungsbestand und deren Anzeige im Stundenplan, gesondert gekennzeichnet.
 - Benachrichtigung bei Änderungen an ausgewählten Prüfungsterminen.
 - Planungsmodus: Einsicht und Übernahme einzelner Termine anderer Gruppen für eine Pflichtveranstaltung.
 - Planungsmodus: Auswahl konfliktfreier Termine für Wahlpflichtmodule gegenüber dem eigenen Stundenplan, einschließlich explizitem Hinweis bei fehlender konfliktfreier Konstellation.
@@ -776,7 +912,7 @@ Status: entfallen (Entscheidung FSR FB4, 2026-08-26). Grund: Die Live-Prüfung v
 
 - Raumbelegung/-verfügbarkeit über den eigenen Stundenplan hinaus — siehe Capability `room-finder`.
 - Serverseitige Speicherung des persönlichen Stundenplans einschließlich der individuellen Prüfungsauswahl — ausdrücklich ausgeschlossen, siehe Capability `backend-and-api` (API-F-100) und die Erläuterung zur Anforderung „Benachrichtigung bei Prüfungsplan-Aktualisierung".
-- Import und Pflege des offiziellen Prüfungsplans selbst (Excel-Upload, Jahres-Rotation) — Backend-Vorgang, siehe Capability `backend-and-api` (API-F-180 bis API-F-200) und Capability `integrations` (INT-013).
+- Ableitung und Pflege des Prüfungsbestands selbst — Backend-Vorgang, siehe Capability `backend-and-api` („Ableitung des Prüfungsbestands aus dem Raumplan") und Capability `integrations` (INT-009). Der vormalige Excel-Upload samt Jahres-Rotation ist am 2026-09-06 entfallen.
 - Notenergebnisse zu Prüfungen — siehe Capability `grades`; diese Spec zeigt ausschließlich Termine, keine Ergebnisse.
 - Automatische, kombinatorische Optimierung über mehrere gleichzeitig **unentschiedene** Wahlpflicht-Kandidaten hinweg — mehrere Kandidaten können gleichzeitig in der Planungsauswahl geführt werden, die Konfliktprüfung erfolgt aber je Kandidat einzeln gegen den bereits übernommenen Plan und die bereits als „Pflicht" markierten Module, nicht kombinatorisch zwischen mehreren noch unentschiedenen Kandidaten. Diese Ausgestaltung wurde bewusst erwogen und zurückgestellt (Rücksprache FSR FB4, 2026-08-25).
 - Echtzeit- oder Kapazitätsdaten zu Veranstaltungen (z. B. Auslastung, freie Plätze) — INT-002 liefert dazu keine Felder, siehe Capability `integrations`.
@@ -814,11 +950,18 @@ Status: entfallen (Entscheidung FSR FB4, 2026-08-26). Grund: Die Live-Prüfung v
 
 ## Erläuterungen
 
+**Durchsprache vom 2026-09-06** (`docs/agents/herkunft-durchsprache.md`). Alle 29 `NEU`-Requirements dieser Capability wurden nach der Leitfrage „Würde der FSR das heute noch so beschließen — und woran erkennt man das?" durchgegangen. Ein Requirement entfällt (SCHED-N-010), zwölf ändern sich, eines kommt hinzu. Was bestätigt wurde, trägt seitdem den Beleg „bestätigt 2026-09-06".
+
+**Worauf sich diese Bestätigungen stützen — und worauf nicht.** Anders als beim `canteen`-Durchgang steht hinter keinem dieser Requirements eine laufende Implementierung: `ScheduleScreen` ist zum Zeitpunkt der Durchsprache weiterhin ein Platzhalter, es existieren nur Logikmodule mit Einheitentests und die beiden Einrichtungs-Screens. Auch die vier Requirements, die nach Testnamen umgesetzt aussehen (vormals SCHED-F-060, F-145, F-660, F-710), sind nie an einer Nutzerin erprobt worden. Jede Bestätigung hier ist deshalb eine Abwägung, keine Erfahrung — das ist der schwächste der drei Belegtypen und entscheidet, wie fest diese Anforderungen beim nächsten Durchgang stehen.
+
+
 **Zur Einzelwert-Anforderung (vormals SCHED-F-070)** — Die Alt-App vergleicht an dieser Stelle fehlerhaft den Zahlenteil der Gruppenkennung (`info.groupNumber`) mit dem ersten Zeichen des `studentSet`-Werts (`schedule_overview_viewmodel.dart:216`, `info.groupNumber.codeUnitAt(0) == item.studentSet.codeUnitAt(0)`), obwohl ein Buchstabenvergleich (`groupLetter`) gemeint war. Dadurch schlägt der Abgleich bei Einzelwert-`studentSet` in der Alt-App praktisch immer fehl, sofern nicht zufällig Zahl- und Buchstabenzeichen denselben Codepoint teilen. Für die Neuentwicklung ist das korrigierte Verhalten (Buchstabenvergleich) das Sollverhalten, nicht das beobachtete Altverhalten — daher die Markierung „Alt: bewusst verworfen" statt eines Quellverweises.
 
-**Zu den Anforderungen zum offiziellen Prüfungsplan** — Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Der Fachbereich veröffentlicht während der Vorlesungszeit einen offiziellen Prüfungsplan als Excel-Datei auf einer Intranet-Seite (siehe Capability `integrations` INT-013). Da diese Seite einen Hochschul-Login voraussetzt, den weder App noch Backend besitzen (siehe `specs/product/vision.md` Nicht-Ziel 1, Capability `security-and-privacy` zum Verzicht auf Passwort-Replay), ist der Import zweistufig: Ein FSR-Mitglied/Admin lädt die Datei manuell herunter und in das eigene Backend hoch (Capability `backend-and-api` API-F-180, Capability `integrations` INT-013); danach wählen Studierende selbst die für sie relevanten Prüfungen aus dem importierten Bestand aus. Nicht jede Prüfung des Fachbereichs interessiert jede Nutzerin — nur die eigenen und ggf. Nachholprüfungen.
+**Zu den Anforderungen zum offiziellen Prüfungsplan** — Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Der Fachbereich veröffentlicht während der Vorlesungszeit einen offiziellen Prüfungsplan als Excel-Datei auf einer Intranet-Seite, die einen Hochschul-Login voraussetzt, den weder App noch Backend besitzen (siehe `specs/product/vision.md` Nicht-Ziel 1, Capability `security-and-privacy` zum Verzicht auf Passwort-Replay). Der Import war deshalb zweistufig und manuell. **Entschieden 2026-09-06: Dieser Weg entfällt vollständig.** Der Raumplan (INT-009), den das Backend ohnehin alle paar Minuten abruft, führt die Prüfungstermine bereits mit — als Einträge mit `eventType: "Event"` und dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>`. Ausschlaggebend war nicht der Aufwand des einzelnen Uploads, sondern seine Abhängigkeit von einer jährlich wechselnden ehrenamtlichen Person: dieselbe Konstruktion, an der das abgelöste Backend `app.fsrfb4.de` gescheitert ist, dessen Semestertermine bis heute aus dem Wintersemester 2023/24 stammen. Unverändert bleibt, dass nicht jede Prüfung des Fachbereichs jede Nutzerin interessiert — sie wählt selbst aus, welche eigenen und welche Nachholprüfungen sie führt.
 
-**Zur Benachrichtigung bei Prüfungsplan-Aktualisierung** — Verträgt sich mit API-F-100 (kein serverseitiges Speichern des persönlichen Stundenplans): Das Backend kennt nicht, welche Prüfungen eine einzelne Nutzerin ausgewählt hat, sondern löst bei jeder Aktualisierung des offiziellen Prüfungsplan-Bestands einen allgemeinen Hinweis aus (vergleichbar einer News-Meldung). Die App gleicht diesen Hinweis lokal gegen die eigene, ausschließlich gerätegespeicherte Auswahl ab und zeigt die Benachrichtigung nur, wenn tatsächlich ein ausgewählter Termin betroffen ist.
+**Was mit der Excel verloren geht.** Die Datei trug eine Matrix, die der Raumplan nicht hat: die Zuordnung Prüfung → Studiengang, Vertiefung, Prüfungsordnung, Fachsemester. Für die eigenen Prüfungen ist das folgenlos, weil die Zuordnung über die Modulnummer aus dem eigenen Plan entsteht. Für **Nachholprüfungen** aus Veranstaltungen außerhalb des Plans entfällt jedoch der Weg, sie über „mein Studiengang, mein Fachsemester" zu finden; sie sind dann nur über Bezeichnung oder Modulnummer auffindbar. Bewusst in Kauf genommen. Eine zweite Bruchstelle: Bei Prüfungsdatensätzen hält INT-009 die Felder `courseId` und `courseOfStudy` leer, die Modulnummer steht allein im Namensfeld — ändert der Fachbereich diese Schreibweise, bricht die Zuordnung, weshalb ein Eintrag ohne auflösbares Muster als Prüfung ohne Modulbezug geführt und protokolliert wird statt still zu verschwinden (SEC-F-060).
+
+**Zur Benachrichtigung bei Prüfungsplan-Aktualisierung** — Verträgt sich mit API-F-100 (kein serverseitiges Speichern des persönlichen Stundenplans): Das Backend kennt nicht, welche Prüfungen eine einzelne Nutzerin ausgewählt hat, sondern löst bei jeder Änderung des abgeleiteten Prüfungsbestands einen allgemeinen Hinweis aus (vergleichbar einer News-Meldung). Die App ruft daraufhin den geänderten Bestand ab, gleicht ihn lokal gegen die eigene, ausschließlich gerätegespeicherte Auswahl ab und zeigt die Benachrichtigung nur, wenn tatsächlich ein ausgewählter Termin betroffen ist.
 
 **Zweiwöchentliche Veranstaltungen (Hinweis aus derselben Rücksprache).** Manche Lehrveranstaltungen finden nur alle zwei Wochen statt. In der bislang dokumentierten INT-002-Antwortstruktur ist kein Feld erkennbar, das einen solchen Rhythmus trägt (nur INT-009 hat ein `interval`-Feld, dort bislang als „unklare Bedeutung, nicht weiter untersucht" geführt, siehe Capability `integrations`). Ob INT-002 wiederkehrende Termine bereits als separate wöchentliche Einträge liefert (dann unproblematisch) oder der Client die Information zur korrekten zweiwöchentlichen Darstellung fehlt, ist vor Umsetzung mit echten Beispieldaten zu verifizieren — siehe „Offene Fragen".
 
@@ -867,32 +1010,59 @@ Status: entfallen (Entscheidung FSR FB4, 2026-08-26). Grund: Die Live-Prüfung v
 | C4 | C5-E | nein | Buchstabe gleich der Anfangsgrenze, Zahl 4 kleiner als 5. |
 | M5 | J-M4 | nein | Buchstabe gleich der Endgrenze M, Zahl 5 größer als 4. |
 | H3 | H5-J | nein | Buchstabe gleich der Anfangsgrenze H, Zahl 3 kleiner als 5. |
+| H (unvollständig) | H5-J | ja, mit Protokolleintrag | Kennung ohne Zahl ist seit dem 2026-09-06 unzulässig; liegt sie dennoch vor, ist die Grenze nicht entscheidbar — sicherer Rückfall auf „gruppenzugehörig" statt Annahme einer Zahl. |
+| C (unvollständig) | C5-E | ja, mit Protokolleintrag | Gleicher Fall an der Anfangsgrenze mit Zahl. |
+| M (unvollständig) | J-M4 | ja, mit Protokolleintrag | Gleicher Fall an der Endgrenze mit Zahl. |
+| D (unvollständig) | A1-C9 | nein | Hier entscheidet allein der Buchstabe: D liegt außerhalb von A bis C, die fehlende Zahl spielt keine Rolle. |
 
 Die Spalte „zugehörig" beantwortet die Frage, ob ein Termin als zur eigenen Gruppe gehörend gilt. Sie entscheidet nicht über die Sichtbarkeit: Gruppenfremde Termine bleiben sichtbar und werden gekennzeichnet; ausgeblendet werden sie nur, wenn die Nutzerin den entsprechenden Schalter aktiviert.
 
-**Befund zu den real vorkommenden `studentSet`-Formen (FBWS live abgefragt, 2026-09-04).** Der Bestand von `INPBPI/2` führt 21 verschiedene Werte: `A-P`, `M-N`, `I-J`, `K-L`, `O-P`, `E-F`, `C-D`, `A-B`, `G-H`, `G-I`, `K-M`, `N-P`, `C5-E`, `M5-P`, `J-M4`, `H5-J`, `F-H4`, `A`, `B`, `C`, `D`. Daraus folgen drei Dinge, die die bisherige Beispieltabelle nicht abbildete: Bereiche ohne Zahlen an **beiden** Grenzen sind der Normalfall, Einzelwerte bestehen aus einem Buchstaben **ohne** Zahl, und gemischte Grenzen (`C5-E`, `J-M4`) kommen vor. Die Wildcard `*` trat im gesamten geprüften Bestand **nicht** auf — die Anforderung bleibt dennoch bestehen, weil die Capability `integrations` den Abrufparameter `studentSet=*` führt und ein späteres Auftreten nicht ausgeschlossen ist. Die Zuordnungslogik trägt alle beobachteten Formen unverändert; ergänzt wurden nur die Prüffälle.
+**Befund zu den real vorkommenden `studentSet`-Formen (FBWS live abgefragt, 2026-09-04).** Der Bestand von `INPBPI/2` führt 21 verschiedene Werte: `A-P`, `M-N`, `I-J`, `K-L`, `O-P`, `E-F`, `C-D`, `A-B`, `G-H`, `G-I`, `K-M`, `N-P`, `C5-E`, `M5-P`, `J-M4`, `H5-J`, `F-H4`, `A`, `B`, `C`, `D`. Daraus folgen drei Dinge, die die bisherige Beispieltabelle nicht abbildete: Bereiche ohne Zahlen an **beiden** Grenzen sind der Normalfall, Einzelwerte bestehen aus einem Buchstaben **ohne** Zahl, und gemischte Grenzen (`C5-E`, `J-M4`) kommen vor. Die Wildcard `*` trat im gesamten geprüften Bestand **nicht** auf. Die Anforderung bleibt dennoch bestehen (bestätigt 2026-09-06), aber nicht mit der zuvor hier stehenden Begründung, die Capability `integrations` führe den Abrufparameter `studentSet=*`: Das ist ein Anfrageparameter und sagt nichts darüber, welche Feldwerte in einer Antwort vorkommen können. Tragend ist eine andere Begründung — `*` bedeutet unstrittig „gilt für alle Gruppen", und die Android-Alt-App kehrt genau diese Bedeutung um (N-007). Drei Zeilen Logik, die einen Bedeutungsfehler ausschließen, brauchen keinen Vorkommensnachweis. Die Zuordnungslogik trägt alle beobachteten Formen unverändert; ergänzt wurden nur die Prüffälle.
 
-**Geklärt am 2026-09-04:** Die Frage, was eine Studierende als Gruppenkennung eintragen soll, ist beantwortet. Der Fachbereich hält die Zuteilung selbst vor und gibt sie zu einer Matrikelnummer heraus (INT-019). In der Praxis ist dabei **der Buchstabe die maßgebliche Angabe; die Zahl wird so gut wie nie gebraucht** (Auskunft einer studierenden Person). Das deckt sich mit dem Datenbestand: Einzelwerte tragen gar keine Zahl, und nur an Bereichsgrenzen wie `C5-E` oder `J-M4` entscheidet sie überhaupt mit. Das Eingabeformat ist entsprechend auf `^[A-Z][0-9]*$` erweitert.
+**Geklärt am 2026-09-04:** Die Frage, was eine Studierende als Gruppenkennung eintragen soll, ist beantwortet. Der Fachbereich hält die Zuteilung selbst vor und gibt sie zu einer Matrikelnummer heraus (INT-019).
+
+**Berichtigt am 2026-09-06: die Zahl ist wieder verpflichtend.** Die Fassung vom 2026-09-04 schloss aus der Auskunft einer studierenden Person, „der Buchstabe ist die maßgebliche Angabe; die Zahl wird so gut wie nie gebraucht", und erweiterte das Eingabeformat auf `^[A-Z][0-9]*$`. Der eigene Befund im selben Abschnitt widerlegt das: Fünf der 21 vorkommenden `studentSet`-Werte — `C5-E`, `M5-P`, `J-M4`, `H5-J`, `F-H4` — tragen eine Zahl an einer Bereichsgrenze, an der sie mitentscheidet. Das ist knapp ein Viertel des Bestands, nicht „so gut wie nie". Richtig an der Auskunft bleibt, dass Studierende ihre Zahl selten im Kopf haben — daraus folgt aber nicht, sie wegzulassen, sondern sie über die Matrikelnummer zu beschaffen. Deshalb ist der Weg über INT-019 seit dem 2026-09-06 der voreingestellte, und die manuelle Angabe verlangt beide Teile.
+
+**Die weggelassene Zahl war nicht neutral, sondern ausschließend.** Die Umsetzung führte eine fehlende Zahl als `0` (`groupMatch.ts`, `Number('')`). Eine Kennung `H` wurde damit gegen `H5-J` als (H,0) verglichen, 0 < 5 — der Termin galt als gruppenfremd und verschwand bei aktivem Ausblenden-Schalter aus dem Plan. Das steht gegen den Grundsatz „sichtbar statt fälschlich als fremd markiert", den dieselbe Spec im Abschnitt „Fehlerfälle" für unbekannte `studentSet`-Muster vorschreibt, und blieb unentdeckt, weil die Beispieltabelle keinen solchen Fall führte. Eine neue Rückfallregel braucht es dafür nicht: Mit dem engeren Muster passt `H` nicht mehr auf die Gruppenkennung und läuft in den bereits bestehenden defensiven Rückfall (unbekanntes Muster → zugehörig, protokolliert). Die vier neuen Zeilen der Beispieltabelle halten das als Prüfvorgabe fest.
 
 **Wildcard-Befund aus der Android-Alt-App.** Deren Gruppenabgleich (`util/GroupLetterUtil.java`) behandelt den Wert `*` nicht gesondert: Er trifft die Bedingung für Einzelwerte nur, wenn die Gruppenkennung selbst mit `*` beginnt, und fällt andernfalls auf „nicht zugehörig" durch. Ein Termin, der ausdrücklich für alle Gruppen gilt, würde damit bei gesetzter Gruppenkennung als gruppenfremd markiert — das Gegenteil des Gemeinten. Die Anforderung zur Wildcard-Behandlung legt das korrekte Verhalten fest; die Herkunftsmarkierung bleibt „NEU", weil keine der beiden Alt-Apps ein Vorbild dafür liefert. Geführt als N-007 in `specs/product/legacy-inventory.md`.
 
-**Gruppenwechsel als beobachtetes Verhalten.** Aus der Chat-Auswertung (u. a. `pi-8-semester-fh-informatik`, 2022-12-14 und 2023-01-09; `praktische-informatik-ws-23-24`, 2023-09-21): Studierende weichen bereits informell auf andere Gruppen aus — bei eigener Krankheit, verpasstem Termin oder auf ausdrücklichen Wunsch. Ein Beleg aus `informatik-pi-ti-ds-ws-24-25` (2024-09-30) zeigt den bestehenden Workaround: Studierende tragen den Termin einer fremden Gruppe manuell als eigenen, nicht-offiziellen Termin ein, um eine freie Lücke im eigenen Plan zu füllen. Da INT-002 mit `studentSet=*` ohnehin bereits alle Gruppentermine liefert und clientseitig lediglich auf die eigene Gruppenkennung gefiltert wird, ist dafür keine zusätzliche Integration nötig — die Requirements zu Einsicht und Übernahme von Terminen anderer Gruppen machen diesen bereits gelebten Workaround zu einem regulären, als offiziell erkennbaren Bedienweg. Ein weiterer Beleg (`fh-informatik-22-23`, 2022-12-14) nennt ausdrücklich das Risiko, dass insbesondere Termine gegen Wochenende hin „meistens sehr voll" sind — die App selbst kann diese Auslastung nicht anzeigen (INT-002 liefert keine Kapazitätsfelder, siehe Nicht-Scope), das Risiko bleibt daher der Nutzerin überlassen.
+**Gruppenwechsel als beobachtetes Verhalten.** Aus der Chat-Auswertung (u. a. `pi-8-semester-fh-informatik`, 2022-12-14 und 2023-01-09; `praktische-informatik-ws-23-24`, 2023-09-21): Studierende weichen bereits informell auf andere Gruppen aus — bei eigener Krankheit, verpasstem Termin oder auf ausdrücklichen Wunsch. Ein Beleg aus `informatik-pi-ti-ds-ws-24-25` (2024-09-30) zeigt den bestehenden Workaround: Studierende tragen den Termin einer fremden Gruppe manuell als eigenen, nicht-offiziellen Termin ein, um eine freie Lücke im eigenen Plan zu füllen. Da INT-002 mit `studentSet=*` ohnehin bereits alle Gruppentermine liefert und clientseitig lediglich auf die eigene Gruppenkennung gefiltert wird, ist dafür keine zusätzliche Integration nötig — die Requirements zu Einsicht und Übernahme von Terminen anderer Gruppen machen diesen bereits gelebten Workaround zu einem regulären, als offiziell erkennbaren Bedienweg. **Gemischte Gruppen sind der Normalfall, nicht die Ausnahme (festgehalten 2026-09-06).** Studierende stellen sich ihren Stundenplan regelmäßig aus Terminen mehrerer Gruppen zusammen und besuchen Gruppen, denen sie formal nicht angehören; der Fachbereich duldet das, solange die Gruppen nicht überfüllt sind. Das ist die tragende Begründung hinter gleich vier Anforderungen — Kennzeichnen statt Entfernen, Einsicht in Termine anderer Gruppen, Übernahme fremder Termine und der Schalter zum Abschalten aller Filter — und stand bis dahin nirgends. Es erklärt zugleich, warum der Schalter „Alle anzeigen" unübersichtlich sein darf: Wer seinen Plan von Hand aus mehreren Gruppen zusammensetzt, braucht den Rohbestand, nicht eine aufgeräumte Auswahl.
+
+Ein weiterer Beleg (`fh-informatik-22-23`, 2022-12-14) nennt ausdrücklich das Risiko, dass insbesondere Termine gegen Wochenende hin „meistens sehr voll" sind — die App selbst kann diese Auslastung nicht anzeigen (INT-002 liefert keine Kapazitätsfelder, siehe Nicht-Scope), das Risiko bleibt daher der Nutzerin überlassen.
 
 **Wahlpflicht-Planungsmodus.** Die Chat-Auswertung zeigt durchgängig, dass die Terminfindung für Wahlpflichtmodule eigenständig schwierig ist: Studierende fragen wiederholt nach Modullisten, Empfehlungen für „einfache" Module und danach, wann ein Modul angeboten wird (`pi-8-semester-fh-informatik`, u. a. 2024-01-30, 2024-09-01, 2025-09-23, 2026-04-11; `praktische-informatik-ws-23-24`, u. a. 2025-09-15, 2025-09-19). Ein konkreter Beleg (`pi-8-semester-fh-informatik`, 2025-04-03) zeigt eine bestehende Lücke im Alt-App-Stundenplan selbst: Termine eines Wahlpflichtmoduls fehlten dort vollständig. Ursache ist vermutlich, dass INT-002 pro `{sname}/{grade}`-Paar abgefragt wird und Wahlpflichtmodule organisatorisch oft einem anderen Fachsemester zugeordnet sind als dem der Nutzerin. Ein weiterer Beleg (`informatik-pi-ti-ds-ws-24-25`, 2025-02-28) zeigt denselben Bedarf bei Wiederholerinnen: Um ihren Stundenplan zu planen, mussten sie erst selbst herausfinden, wann und wo eine zu wiederholende Veranstaltung stattfindet.
 
 **Automatische Wahlpflicht-Liste statt manueller Fachsemester-Auswahl.** Die vorige Fassung ging davon aus, eine automatische Zuordnung „Wahlpflichtmodul → zuständiges Fachsemester" würde eine zusätzliche, gepflegte Datengrundlage voraussetzen, für die keine Evidenz vorlag — die Chat-Belege zeigten nur, dass Studierende diese Zuordnung selbst über Modulhandbuch bzw. Curricula-PDF nachschlagen (`pi-8-semester-fh-informatik`, 2024-01-30: `modulhandbuch.php`; `praktische-informatik-ws-23-24`, 2025-09-15: `Curricula.pdf`). Die Live-Prüfung vom 2026-08-26 widerlegt diese Annahme: Capability `integrations` dokumentiert mit `WFPB` eine vom Fachbereich selbst über FBWS gepflegte Sammelkategorie, die alle aktuell angebotenen Wahlpflichtmodule direkt liefert (27 Module zum Prüfzeitpunkt), inklusive der zulässigen Studiengänge/Vertiefungsrichtungen im Klartext. Entscheidung FSR FB4, 2026-08-26: die manuelle Fachsemester-Auswahl entfällt, ersetzt durch den automatischen Bezug — die App ruft `WFPB` automatisch ab, keine manuelle Fachsemester-Eingabe mehr nötig. Unverifiziert bleibt die Abdeckung für Master-Wahlpflichtfächer, siehe „Offene Fragen".
 
-**Zeitfenster als weiche statt harte Einschränkung.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Ein Termin außerhalb des gewünschten Zeitfensters ist unbequem, aber nicht per se unzulässig — anders als eine echte Terminkollision lässt er sich nicht automatisch als „geht nicht" behandeln. Konsistent mit dem in dieser Spec durchgängig verfolgten Grundsatz „sichtbar statt fälschlich verborgen" blendet die Kennzeichnung außerhalb des Zeitfensters einen solchen Termin daher nicht aus, sondern kennzeichnet ihn nur; der Optimierungsmodus berücksichtigt die Abweichung bei der Reihung. Anders als bei der bewussten Übernahme trotz Konflikt ist dafür keine gesonderte Bestätigungshandlung nötig, da keine echte Kollision vorliegt.
+**Zeitfenster als weiche statt harte Einschränkung.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Ein Termin außerhalb des gewünschten Zeitfensters ist unbequem, aber nicht per se unzulässig — anders als eine echte Terminkollision lässt er sich nicht automatisch als „geht nicht" behandeln. Konsistent mit dem in dieser Spec durchgängig verfolgten Grundsatz „sichtbar statt fälschlich verborgen" blendet die Kennzeichnung außerhalb des Zeitfensters einen solchen Termin daher nicht aus, sondern kennzeichnet ihn nur. Ob die Abweichung zusätzlich auf die Reihenfolge wirkt, war bis zum 2026-09-06 widersprüchlich geregelt: Diese Erläuterung behauptete es, das Reihungs-Requirement kannte das Zeitfenster als Größe gar nicht. Aufgelöst, indem das Zeitfenster ein Kriterium der Rangfolge wurde — die Nutzerin entscheidet über seine Stellung, ob und wie stark es die Reihenfolge bestimmt; abgeschaltet bleibt es eine reine Kennzeichnung. Anders als bei der bewussten Übernahme trotz Konflikt ist dafür keine gesonderte Bestätigungshandlung nötig, da keine echte Kollision vorliegt.
 
-**Definition der Optimierungsmodi.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Die drei Modi sind ein Mindestumfang, keine abschließende Liste (weitere Modi bleiben denkbar, siehe „Offene Fragen"). Jeder Modus vergleicht ausschließlich bereits konfliktfreie Kandidaten-Termine anhand der in der zugehörigen Requirement-Beschreibung definierten Größen Tagesspanne und Nachbarabstand — keine neue Integration nötig.
+**Von Optimierungsmodi zur Kriterienrangfolge (2026-09-06).** Bis dahin wählte die Nutzerin einen von drei benannten Modi. Das trug nicht mehr: Erstens rechnete „ausgeglichener Tagesablauf" das Gegenteil seines Namens — er bevorzugte die Tagesspanne, die acht Stunden am nächsten kommt, und blähte damit an einem bisher kurzen Tag ausgerechnet den Tag auf. Zweitens kamen vier weitere Optimierungsziele hinzu, womit fünf Modusnamen keine sinnvolle Einteilung mehr waren. Drittens lässt sich der eigentliche Wunsch als Auswahl gar nicht ausdrücken: „möglichst wenige Fahrten, und dabei nach Möglichkeit Vorbereitungszeit" ist eine Rangfolge, keine Auswahl. Die Modi leben als benannte Voreinstellungen weiter, die die Rangfolge füllen.
 
-| Optimierungsmodus | Bevorzugt wird der Kandidaten-Termin mit … |
-|---|---|
-| Minimale Zeit an der Hochschule | der geringsten zusätzlichen bzw. unveränderten Tagesspanne — ein Termin, der sich in eine bereits bestehende Tagesspanne einfügt, schlägt einen Termin an einem sonst freien Tag |
-| Ausgeglichener Tagesablauf | der Tagesspanne, die eine Acht-Stunden-Spanne am nächsten trifft, statt sie deutlich zu über- oder unterschreiten |
-| Mehr Abstand zwischen Lerneinheiten | dem größten Nachbarabstand |
+| Kriterium | Gemessen wird | Besser ist |
+|---|---|---|
+| Uni-Tage | Zahl der Wochentage mit mindestens einem Termin | weniger |
+| Anwesenheitszeit | Summe der Tagesspannen über die Woche | weniger |
+| Gleichmäßige Woche | Unterschied zwischen den Tagesspannen der Uni-Tage | kleiner |
+| Abstand zwischen Lerneinheiten | Nachbarabstand zum vorangehenden bzw. folgenden Termin | größer |
+| Vorbereitungszeit | freie Zeit unmittelbar vor einem Termin, gegen den Zielwert seiner Veranstaltungsart | näher am Zielwert |
+| Abstand Vorlesung–Übung | Zeit zwischen einer Vorlesung und dem zugehörigen Termin anderer Art derselben Veranstaltung | mindestens der eingestellte Abstand, in dieser Reihenfolge |
+| Abwechslung | Zahl der Fälle, in denen an einem Tag Termine derselben Veranstaltungsart unmittelbar aufeinanderfolgen | weniger |
+| Zeitfenster | ob der Termin im festgelegten Zeitfenster liegt | innerhalb |
+
+**Warum streng der Reihe nach und nicht gewichtet.** Die Rangfolge wird lexikographisch ausgewertet: Das oberste eingeschaltete Kriterium entscheidet, erst bei Gleichstand zählt das nächste, ohne Toleranzbereich. Eine Punktegewichtung wurde verworfen, weil sich einer Nutzerin dann nicht mehr erklären lässt, warum ein Vorschlag oben steht, und weil ein hoch gewichtetes Kriterium von mehreren niedrigen überstimmt werden kann. Der Einwand, ein zweitrangiges Kriterium komme bei Minutenwerten nie zum Zug, greift in der Praxis schwächer als gedacht: Das in aller Regel oberste Kriterium — die Zahl der Uni-Tage — ist eine ganze Zahl, Gleichstände dort sind der Normalfall. Wer eine andere Abwägung will, ändert die Reihenfolge; genau dafür ist die Liste da (entschieden 2026-09-06).
+
+**Zwei Randfestlegungen, ohne die Kriterien in die Irre laufen.** Bei der Vorbereitungszeit gilt der **erste Termin eines Tages als erfüllt** — wer den Tag mit dem Praktikum beginnt, bereitet zu Hause vor; ohne diese Regel würde das Kriterium frühe Termine systematisch benachteiligen und die Nutzerin zu späteren Anfangszeiten drängen. Beim Abstand Vorlesung–Übung gilt eine **Übung vor der zugehörigen Vorlesung als schlecht erfüllt**, unabhängig davon, wie viele Stunden dazwischenliegen — sonst würde ausgerechnet die Anordnung, in der Vorbereitung gar nicht möglich ist, als beste bewertet.
+
+**Vorbereitungszeiten je Veranstaltungsart, nicht je Veranstaltung.** FBWS führt derzeit sechs Veranstaltungsarten, eigene Einträge eine siebte. Sieben Felder auszufüllen wäre eine lange Einrichtung, und eine künftige achte Art bliebe ohne Wert. Deshalb ein allgemeiner Zielwert plus Abweichungen für die Arten, bei denen es darauf ankommt — typischerweise Übung und Praktikum.
 
 **Planungsauswahl mit Pflicht-Markierung statt Vollkombinatorik.** Aus der Rücksprache mit dem FSR FB4, 2026-08-25: Denkbar wäre auch ein Modus, der zusätzlich zu den Pflichtkursen mehrere gleichzeitig noch unentschiedene Wahlpflicht-Kandidaten entgegennimmt und alle Kombinationen daraus durchrechnet, um passende Konstellationen auszugeben. Diese Ausweitung wurde bewusst zurückgestellt — Begründung: die Ergebnisdarstellung würde bei mehr als wenigen gleichzeitig offenen Kandidaten schnell unübersichtlich, und der Zusatznutzen gegenüber dem hier gewählten schrittweisen Vorgehen erschien nicht klar genug, um die Komplexität zu rechtfertigen. Eine Vollkombinatorik über mehrere gleichzeitig unentschiedene Kandidaten bleibt eine mögliche spätere Erweiterung, siehe „Offene Fragen".
+
+**Auflösung des Widerspruchs zum automatischen Vorschlag (2026-09-06).** Der am 2026-09-04 ergänzte automatische Planungsvorschlag verlangte dem Wortlaut nach genau die Kombinatorik, die hier zurückgestellt worden war, ohne diese Festlegung zu nennen — zwei Anforderungen, die sich widersprachen. Aufgelöst zugunsten der Zurückstellung: Der Vorschlag arbeitet **greedy**. Er geht die Kandidaten in einer festgelegten Reihenfolge durch und wählt für jeden den nach der Kriterienrangfolge besten Termin, der gegen den bis dahin aufgebauten Vorschlag frei ist. Die bekannte Grenze dieses Verfahrens ist ausdrücklich in Kauf genommen: Es kann eine Konstellation verfehlen, die bei anderer Bearbeitungsreihenfolge aufgegangen wäre. Der Preis dafür ist, dass das Ergebnis in einem Satz erklärbar bleibt („weniger Uni-Tage, bei gleicher Tageszahl kürzere Anwesenheit") und die Nutzerin über Rangfolge, „Pflicht" und Anpinnen nachsteuert, statt aus dutzenden Varianten zu wählen.
+
+**„Pflicht" und „angepinnt" trennen Ob und Wann (2026-09-06).** Die Pflicht-Markierung trug bis dahin beides: Sie hielt fest, dass eine Veranstaltung gewählt ist, und diente zugleich als fixer Zeitpunkt, gegen den andere Kandidaten geprüft wurden. Das ist auseinandergezogen. **Pflicht** heißt nun: diese Veranstaltung muss im Plan bleiben; welcher ihrer Termine gewählt wird, bleibt der Planung überlassen — das *Ob*. **Angepinnt** heißt: dieser Zeitslot steht, die Optimierung fasst ihn nicht an — das *Wann*, etwa weil die eigene Lerngruppe zu diesem Termin geht. Daraus folgt unmittelbar, dass die Konfliktprüfung sich nicht mehr auf Pflicht-Markierungen stützen kann: Sie tragen keinen Zeitpunkt mehr. Geprüft wird gegen den übernommenen Plan und gegen angepinnte Termine.
+
+**Die Optimierung ist ein Hilfsmittel, kein Zustand (2026-09-06).** Der Ausgangszustand ist die Einteilung nach Gruppenbuchstabe, ohne jede Optimierung; die Nutzerin stellt ihren Plan selbst zusammen und ruft die Optimierung auf, wenn sie sie braucht. Eine übernommene Optimierung ist über einen sichtbaren Weg zurücknehmbar — ohne Rückweg wird ein Knopf, der den ganzen Plan umstellen kann, aus Sorge vor Unumkehrbarkeit gar nicht erst gedrückt. Die Optimierung darf dabei jeden nicht angepinnten Termin auf einen anderen Gruppen-Slot derselben Veranstaltung umlegen, aber nie eine Veranstaltung weglassen; findet sie keine konfliktfreie Anordnung, zeigt sie die beste gefundene mit markiertem Konflikt und benennt die „Pflicht"-Markierung als Weg, den Vorrang zu bestimmen.
 
 **Raumplan-Abgleich.** Der Fachbereich pflegt Termine im FBWS an zwei Stellen, die dieselben Veranstaltungen aus unterschiedlicher Richtung zeigen: der studiengangsbezogene Terminplan (INT-002), aus dem der Stundenplan entsteht, und der raumbezogene Raumplan (INT-009), den das Backend alle paar Minuten neu abruft (Capability `backend-and-api` API-F-045). Die App speichert den einmal angelegten Stundenplan lokal und aktualisiert ihn nicht von selbst — ein zwischenzeitlicher Raumwechsel im FBWS bleibt der Nutzerin daher verborgen. Der Raumplan-Abgleich schließt diese Lücke, indem er den lokal gespeicherten Termin gegen den frischen Raumplan hält. Der Abgleich läuft vollständig auf dem Gerät; das Backend liefert nur die Raumplan-Termine (Capability `backend-and-api` API-F-056), der Stundenplan verlässt das Gerät nicht (API-F-100).
 
@@ -900,7 +1070,9 @@ Die Spalte „zugehörig" beantwortet die Frage, ob ein Termin als zur eigenen G
 
 Die Anforderung zum Raumabweichungs-Hinweis fordert bewusst „unter keiner der geführten Raumkennungen": Eine Veranstaltung, die regulär parallel in zwei Räumen läuft (belegt für „Lern- und Arbeitstechniken", siehe „Offene Fragen" und Capability `integrations` INT-002), darf keinen Fehlalarm auslösen, wenn der eigene gespeicherte Raum einer der beiden ist.
 
-Der Hinweis ist bewusst schwach: Er ändert den Eintrag nicht, verschwindet bei veraltetem Raumplan und nennt „FB-Aktuelles" als die Stelle, an der eine Raumänderung verbindlich steht. Ob INT-009 kurzfristige Änderungen überhaupt trägt, ist offen — dieselbe Frage wie in Capability `room-finder`, „Offene Fragen".
+**Der Raumplan-Abgleich ist ein ausdrücklich experimentelles Feature (entschieden 2026-09-06).** Er darf unvollständig sein und wird gebaut, weil er möglich ist — nicht, weil seine Datengrundlage gesichert wäre. Zwei Folgerungen daraus stehen in den Requirements: Der Hinweis muss benennen, **woher** er stammt (die Raumreservierung des Fachbereichs), damit niemand ihn für eine amtliche Auskunft hält; und er muss die Rangfolge der Quellen nennen — der offizielle Prüfungsplan und „FB-Aktuelles" stehen über der Raumreservierung.
+
+Der Hinweis ist bewusst schwach: Er ändert den Eintrag nicht, verschwindet bei deutlich veraltetem Raumplan und nennt Prüfungsplan und „FB-Aktuelles" als die Stellen, an denen eine Raumänderung verbindlich steht. Die Veraltungsschwelle wurde am 2026-09-06 korrigiert: Sie lag zuvor bei der Aktualisierungsfrequenz selbst, womit der Zwischenspeicher bei einem Abruf alle paar Minuten fast immer als veraltet gegolten hätte und der ganze Block praktisch immer stumm gewesen wäre. Sie liegt jetzt beim Vierfachen der Frequenz, mindestens 30 Minuten — das trifft den gemeinten Fall: nicht „eine Runde verpasst", sondern „das Backend holt seit Längerem nichts mehr". Ob INT-009 kurzfristige Änderungen überhaupt trägt, ist offen — dieselbe Frage wie in Capability `room-finder`, „Offene Fragen".
 
 **„fest" und „vorgemerkt".** Aus der Rücksprache mit einer studierenden Person, 2026-09-04: Studierende tragen sich bewusst zwei Veranstaltungen zur selben Uhrzeit ein — um vor Ort zu entscheiden, welche der beiden Gruppen weniger voll ist; um sich einen Termin zu merken, den sie nur gelegentlich brauchen; oder um bei einer echten Kollision beide der Vollständigkeit halber im Blick zu behalten. Die vorige Fassung der Konflikthinweis-Anforderung hätte dafür eine Dauerwarnung erzeugt. Der Status trennt beides: „fest" ist der Termin, zu dem die Person tatsächlich geht, „vorgemerkt" der bewusst geparkte. Nur feste Termine werden gegeneinander auf Konflikte geprüft. Der Status ersetzt nicht `akzeptierterKonflikt`: dort geht die Person bewusst zu beiden kollidierenden Terminen, hier hält sie sich eine Entscheidung offen.
 
@@ -920,21 +1092,21 @@ Die Bestätigungs-Anforderung ist keine Höflichkeit, sondern eine Notwendigkeit
 
 ## Datenmodell
 
-Jeder Termin des persönlichen Plans, offiziell wie eigen, trägt zusätzlich `status: fest | vorgemerkt`, eine Farbe und einen Gültigkeitszeitraum `gueltigVon`/`gueltigBis` (bei eigenen Terminen offen, sofern nicht angegeben).
+Jeder Termin des persönlichen Plans, offiziell wie eigen, trägt zusätzlich `status: fest | vorgemerkt`, `angepinnt: boolean` (von der Optimierung nicht umzulegen), eine Farbe und einen Gültigkeitszeitraum `gueltigVon`/`gueltigBis` (bei eigenen Terminen offen, sofern nicht angegeben).
 
 Termin (offiziell): siehe INT-002-Felder in Capability `integrations`, ergänzt um Kennzeichnung `istOffiziell: true`, `gruppenzugehoerig: boolean`, `abweichendeGruppe: boolean` (Termin einer anderen Gruppe übernommen statt des eigenen), `ausWahlpflicht: boolean` (aus der Wahlpflicht-Sammelkategorie statt aus dem eigenen Fachsemester übernommen), `ausFremdemFachsemester: boolean` und `akzeptierterKonflikt: boolean`.
 
 Termin (eigen): Titel, Wochentag, Beginnzeit, Endzeit, `istOffiziell: false`, `istPruefung: boolean` sowie `wiederkehrend: boolean` (bei `false` fallen `gueltigVon` und `gueltigBis` auf dasselbe Datum). Kein Bezug zu INT-002-Feldern wie `courseType`, `lecturerName`, `studentSet`.
 
-Matrikelnummer (lokal, freiwillig): ausschließlich gerätegespeichert und ausschließlich für den Abruf nach INT-019 verwendet. Kein serverseitiges Pendant; die Einrichtung ist auch ohne sie abschließbar.
+Matrikelnummer (flüchtig, freiwillig): wird ausschließlich für den Abruf nach INT-019 verwendet und **nicht gespeichert** — weder auf dem Gerät noch serverseitig. Persistiert wird allein die daraus ermittelte und bestätigte Gruppenkennung; die Einrichtung ist auch ohne Matrikelnummer abschließbar.
 
 Auswahlbestand (flüchtig, nicht persistiert): die aus INT-002 abgerufenen Termine des eigenen Fachsemesters, der zusätzlich gewählten Fachsemester und der Wahlpflicht-Sammelkategorie, verdichtet zu Veranstaltung → Veranstaltungsart → Gruppen-Slot. Persistiert wird nur, was die Nutzerin daraus übernimmt.
 
-Ansichtseinstellungen (lokal): Zeitachse oder kompakte Liste, gruppenfremde Termine ausblenden, Sprung zum aktuellen Wochentag.
+Ansichtseinstellungen (lokal): Zeitachse oder kompakte Liste, gruppenfremde Termine ausblenden, alle Filter abschalten („Alle anzeigen"), Sprung zum aktuellen Wochentag.
 
-Prüfungsauswahl (lokal): Referenz auf einen Eintrag des vom Backend importierten Prüfungsplans (INT-013), rein gerätegespeichert — kein serverseitiges Pendant.
+Prüfungsauswahl (lokal): Referenz auf einen Eintrag des vom Backend abgeleiteten Prüfungsbestands (Rohquelle INT-009), rein gerätegespeichert — kein serverseitiges Pendant.
 
-Wahlpflicht-Planungsauswahl (lokal): eine Liste gewählter Wahlpflichtmodule aus der automatisch bezogenen Liste, je Eintrag ein `pflicht: boolean`-Flag sowie der übernommene bzw. vorgeschlagene Termin samt Konfliktstatus und `innerhalbZeitfenster: boolean`, rein gerätegespeichert — kein serverseitiges Pendant, gleiche Begründung wie bei der Prüfungsauswahl (API-F-100). Planungsmodus-Einstellungen (lokal): Zeitfenster (früheste Beginnzeit, späteste Endzeit) und gewählter Optimierungsmodus, ebenfalls rein gerätegespeichert.
+Planungsauswahl (lokal): eine Liste gewählter Kandidaten, je Eintrag ein `pflicht: boolean`-Flag (die Veranstaltung muss im Plan bleiben — eine Aussage über das *Ob*, nicht über den Zeitslot) sowie der übernommene bzw. vorgeschlagene Termin samt Konfliktstatus und `innerhalbZeitfenster: boolean`, rein gerätegespeichert — kein serverseitiges Pendant, gleiche Begründung wie bei der Prüfungsauswahl (API-F-100). Planungseinstellungen (lokal): Zeitfenster (früheste Beginnzeit, späteste Endzeit), die geordnete Kriterienrangfolge samt an-/abgeschalteter Kriterien, der allgemeine Zielwert für die Vorbereitungszeit und die davon abweichenden Werte je Veranstaltungsart sowie der Mindestabstand Vorlesung–Übung, ebenfalls rein gerätegespeichert.
 
 Gemeinsame Persistenz aller vier Datenarten: Capability `data-and-storage`, DATA-F-010.
 
@@ -942,7 +1114,7 @@ Raumplan-Abgleich (lokal, berechnet): je offiziellem Termin ein Status `überein
 
 ## Externe Schnittstellen
 
-Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-019 (FBWS Gruppenkennung zur Matrikelnummer) für die Ermittlung der Gruppenkennung, INT-002 (FBWS Termine) für den Terminabruf und den vom Backend (INT-008) importierten Prüfungsplan (INT-013) für die Prüfungsauswahl. Für den Planungsmodus ruft die App INT-002 zusätzlich für die FBWS-Sammelkategorie der Wahlpflichtmodule ab — technisch derselbe Endpunkt, keine neue Integration. Für den Raumplan-Abgleich ruft die App zusätzlich die zwischengespeicherten Raumplan-Termine über das Backend ab (INT-008, `openspec/specs/api-contract.yaml` `/raumplan/termine`, API-F-056); die Rohquelle ist INT-009, kein direkter FBWS-Aufruf aus der App. Keine weiteren Endpunktdetails hier — siehe Capability `integrations` und `openspec/specs/api-contract.yaml`.
+Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-019 (FBWS Gruppenkennung zur Matrikelnummer) für die Ermittlung der Gruppenkennung, INT-002 (FBWS Termine) für den Terminabruf und den vom Backend (INT-008) aus dem Raumplan abgeleiteten Prüfungsbestand für die Prüfungsauswahl. Für den Planungsmodus ruft die App INT-002 zusätzlich für die FBWS-Sammelkategorie der Wahlpflichtmodule ab — technisch derselbe Endpunkt, keine neue Integration. Für den Raumplan-Abgleich ruft die App zusätzlich die zwischengespeicherten Raumplan-Termine über das Backend ab (INT-008, `openspec/specs/api-contract.yaml` `/raumplan/termine`, API-F-056); die Rohquelle ist INT-009, kein direkter FBWS-Aufruf aus der App. Keine weiteren Endpunktdetails hier — siehe Capability `integrations` und `openspec/specs/api-contract.yaml`.
 
 ## UI-Flows & Zustände
 
@@ -950,10 +1122,14 @@ Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-0
 |---|---|
 | Laden | Ladeanzeige während des INT-002-Abrufs, bestehende lokale Termine bleiben währenddessen sichtbar |
 | Leer (kein Studiengang gewählt) | Hinweis auf die Studiengangsauswahl als nächsten Schritt |
-| Leer (Gruppenfilterung aktiv) | Tag als leer gekennzeichnet, Grund „keine Termine für Gruppe X an diesem Tag" genannt, mit Hinweis auf den Ausblenden-Schalter |
+| Leer (ein Filter wirkt) | Tag als leer gekennzeichnet, der wirksame Filter als Grund genannt (z. B. „keine Termine für Gruppe X an diesem Tag"), mit Hinweis auf den zugehörigen Schalter |
 | Fehler | Fehlermeldung mit Wiederholen-Option, zuletzt geladene Termine bleiben sichtbar (siehe Capability `architecture` ARCH-F-130) |
 | Offline | Zuletzt geladener Stand wird angezeigt, siehe „Offline-Verhalten" |
 | Planungsmodus: kein konfliktfreier Termin | Expliziter Hinweis „keine konfliktfreie Terminoption für dieses Modul"; Möglichkeit zur bewussten Übernahme trotz Konflikt wird angeboten |
+| Automatischer Vorschlag ohne konfliktfreie Konstellation | Beste gefundene Anordnung mit markiertem Konflikt, Nennung der beteiligten Veranstaltungen und Hinweis auf die „Pflicht"-Markierung |
+| Optimierung zurückgenommen | Termine der eigenen Gruppe wiederhergestellt; angepinnte und eigene Termine unverändert |
+| Angepinnter Termin | Als angepinnt erkennbar; von der Optimierung unangetastet |
+| „Alle anzeigen" aktiv | Sämtliche Filter abgeschaltet, alle Termine des Plans sichtbar; der Zustand ist als solcher erkennbar |
 | Planungsmodus: Termin außerhalb des Zeitfensters | Termin bleibt wählbar, zusätzlich sichtbar als „außerhalb des bevorzugten Zeitfensters" gekennzeichnet, keine gesonderte Bestätigung nötig |
 | Raumabweichung für einen Termin erkannt | Kleiner Hinweis am Eintrag mit der abweichenden Raumkennung, Eintrag sonst unverändert |
 | Termin im Raumplan nicht auffindbar | Kleiner Hinweis „im Raumplan nicht gefunden — evtl. Ausfall oder Verlegung", Eintrag unverändert |
@@ -961,11 +1137,13 @@ Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-0
 | Angezeigte Woche außerhalb der Vorlesungszeit | Woche als vorlesungsfrei gekennzeichnet, Plan nicht als regulär dargestellt; Rückweg zur laufenden Woche angeboten |
 | Wochentag ohne Termine, ohne aktive Gruppenfilterung | Tag als frei gekennzeichnet — abzugrenzen vom Fall der Gruppenfilterung, der diese als Grund nennt |
 | Zwei feste Termine überschneiden sich | Beide nebeneinander dargestellt, beide mit Konflikthinweis; kein Termin wird verschoben oder ausgeblendet |
+| Überschneidung wurde bewusst angenommen | Beide nebeneinander dargestellt, kein Konflikthinweis, stattdessen die Kennzeichnung „angenommener Konflikt" |
 | Fester und vorgemerkter Termin überschneiden sich | Beide nebeneinander dargestellt, kein Konflikthinweis |
 | Kursauswahl: Suche oder Filter ohne Treffer | Leerzustand mit Nennung des wirksamen Filters und einem Weg, ihn zurückzunehmen (UX-F-110) |
 | Gruppenkennung schließt keinen einzigen Termin ein | Rückmeldung „0 von N Terminen" unmittelbar bei der Eingabe, Eingabe wird nicht verworfen |
 | INT-019 antwortet ohne Kennung — leere Liste `[]` **oder** `{"fhDoStudentSet":false}` | Beide gleich behandeln: Hinweis „zu dieser Matrikelnummer ist keine Gruppe hinterlegt", Eingabe bleibt stehen, manuelle Angabe wird angeboten |
-| INT-019 nicht erreichbar | Hinweis mit Wiederholen-Option; manuelle Angabe bleibt jederzeit möglich, die Einrichtung ist dadurch nicht blockiert |
+| INT-019 nicht erreichbar | Hinweis mit Wiederholen-Option; manuelle Angabe von Buchstabe und Zahl bleibt jederzeit möglich, die Einrichtung ist dadurch nicht blockiert |
+| Gruppenkennung liegt ohne Zahl vor (Altbestand oder unerwartete INT-019-Antwort) | Termine an Bereichsgrenzen mit Zahl als zugehörig behandeln, Vorfall protokollieren (SEC-F-060), Nachtrag der Zahl anbieten |
 | Nach der Matrikelnummer-Ermittlung erhaltene Kennung wird von der Nutzerin abgelehnt | Kennung wird nicht übernommen, Eingabefeld für die manuelle Angabe erhält den Fokus |
 
 ## Offline-Verhalten
@@ -978,7 +1156,7 @@ Der Stundenplan ist einer der drei in Capability `architecture` (ARCH-F-100) ben
 |---|---|
 | INT-001 liefert keinen zur vorherigen Auswahl passenden Studiengang mehr (z. B. nach Umbenennung) | Hinweis anzeigen, erneute Auswahl anbieten |
 | INT-002 liefert ein `studentSet`, das keinem der Muster aus der Beispieltabelle entspricht | Termin als gruppenzugehörig behandeln (sicherer Rückfall: sichtbar statt fälschlich als fremd markiert), Vorfall protokollieren (SEC-F-060) |
-| Kalenderberechtigung wird verweigert | Datei-Export als Rückfallweg anbieten, keine wiederholte Nachfrage |
+| Kalenderberechtigung wird verweigert | Vorgang offen halten und beide Auswege anbieten: Weg in die Systemeinstellungen der App und Datei-Export |
 | INT-001 nicht erreichbar | Rückfallliste des Backends verwenden, Alter der Liste sichtbar machen |
 | Eigener Termin überschneidet sich zeitlich mit einem offiziellen Termin | Beide Termine anzeigen, zusätzlich sichtbarer Konflikthinweis, keine automatische Konfliktauflösung |
 | Raumplan-Termine nicht abrufbar | Stundenplan normal anzeigen, keinen Abgleichhinweis zeigen, kein Fehler in der Stundenplanansicht |
@@ -986,7 +1164,7 @@ Der Stundenplan ist einer der drei in Capability `architecture` (ARCH-F-100) ben
 
 ## Nicht-funktionale Anforderungen (Register)
 
-Siehe Requirement „Zeitziel beim Blättern zwischen Wochentagen" oben (vormals SCHED-N-010).
+Diese Capability führt keine eigenen nicht-funktionalen Anforderungen mehr. Es gelten die querschnittlichen Werte der Capability `non-functional`, insbesondere NFR-N-040 für die Reaktionszeit beim Blättern zwischen Wochentagen. Das vormalige SCHED-N-010 ist am 2026-09-06 entfallen, siehe „Entfallene Anforderungen (historisch)".
 
 ## Akzeptanzkriterien
 
@@ -997,19 +1175,27 @@ Siehe Requirement „Zeitziel beim Blättern zwischen Wochentagen" oben (vormals
 - Eine Änderung an einer ausgewählten Prüfung führt zu einer Benachrichtigung, eine Änderung an einer nicht ausgewählten Prüfung nicht.
 - Eine zeitliche Überschneidung eigener und offizieller Termine ist als solche sichtbar, nicht nur an der Uhrzeit ablesbar.
 - Der Export enthält je nach getroffener Auswahl ausschließlich die gewählten Terminarten; eine erneute Änderung des Plans erfordert einen erneuten manuellen Export beziehungsweise eine erneute Übertragung, da keine Synchronisation stattfindet.
-- Termine lassen sich in einen von der Nutzerin gewählten Gerätekalender übertragen; bei verweigerter Berechtigung steht der Datei-Export zur Verfügung.
+- Kalenderübertragung und Datei-Export stehen gleichrangig zur Wahl; bei verweigerter Berechtigung bricht der Vorgang nicht ab, sondern bietet den Weg in die Systemeinstellungen und den Datei-Export an.
 - Gruppenfremde Termine sind standardmäßig sichtbar und als solche erkennbar; der Schalter blendet sie aus und wieder ein.
+- Der Schalter „Alle anzeigen" schaltet sämtliche Filter zugleich ab und zeigt alle Termine des Plans; nach dem Zurücknehmen wirken die vorherigen Filtereinstellungen unverändert weiter.
+- Ein bewusst angenommener Konflikt erzeugt keinen wiederkehrenden Warnhinweis mehr, sondern trägt allein die Kennzeichnung „angenommener Konflikt".
 - Beim Anlegen des offiziellen Stundenplans lässt sich auswählen, welche Termine übernommen werden.
 - Eine Nutzerin kann für eine Pflichtveranstaltung den Termin einer anderen Gruppe einsehen und anstelle des eigenen Gruppentermins übernehmen, weiterhin als offizieller Termin erkennbar.
 - Für ein gewähltes Wahlpflichtmodul mit mehreren parallelen Terminen zeigt das System korrekt an, welche Termine konfliktfrei sind und welche nicht.
 - Existiert für ein gewähltes Wahlpflichtmodul kein konfliktfreier Termin, erhält die Nutzerin einen expliziten Hinweis statt einer stillschweigend leeren Auswahl, und kann optional bewusst einen Konflikt akzeptieren.
 - Termine außerhalb des festgelegten Zeitfensters werden sichtbar gekennzeichnet, aber nicht ausgeblendet.
-- Bei mehreren konfliktfreien Terminen für ein Wahlpflichtmodul steht im jeweils gewählten Optimierungsmodus erkennbar die nach dessen Kriterium (Tagesspanne bzw. Nachbarabstand) günstigste Option zuerst.
-- Wird ein Wahlpflichtmodul in der Planungsauswahl als „Pflicht" markiert, zählt es bei der Prüfung weiterer, noch nicht markierter Kandidaten als fixer Bestandteil des Plans; zwei gleichzeitig unentschiedene Kandidaten werden dabei nicht gegeneinander geprüft.
+- Bei mehreren konfliktfreien Terminen steht die nach der eingestellten Kriterienrangfolge günstigste Option zuerst; das oberste eingeschaltete Kriterium entscheidet, erst bei Gleichstand das nächste.
+- Eine gewählte Voreinstellung füllt die Kriterienrangfolge sichtbar und lässt die übrigen Kriterien abgeschaltet; die Reihenfolge bleibt danach von Hand änderbar.
+- Eine als „Pflicht" markierte Veranstaltung bleibt in jedem erzeugten Vorschlag enthalten, auch wenn sich ihr Termin ändert.
+- Ein angepinnter Termin bleibt bei jeder Optimierung an seinem Zeitslot; nicht angepinnte Termine dürfen auf einen anderen Gruppen-Slot derselben Veranstaltung wandern, ohne dass eine Veranstaltung wegfällt.
+- Die Konfliktprüfung eines Kandidaten läuft gegen den übernommenen Plan und die angepinnten Termine; zwei gleichzeitig unentschiedene Kandidaten werden nicht gegeneinander geprüft.
+- Existiert keine konfliktfreie Konstellation, erscheint die beste gefundene mit markiertem Konflikt und der Nennung der beteiligten Veranstaltungen, nicht eine leere Meldung.
+- Eine übernommene Optimierung lässt sich zurücknehmen; danach stehen wieder die Termine der eigenen Gruppe, angepinnte und eigene Termine unverändert.
 - Ein offizieller Termin, dessen Raum im aktuellen Raumplan abweicht, trägt im Stundenplan einen Hinweis mit der abweichenden Raumkennung, ohne dass der Eintrag selbst verändert wird.
 - Ein offizieller Termin, der im Raumplan nicht auffindbar ist, trägt einen Hinweis auf möglichen Ausfall oder Verlegung.
 - Eine regulär in zwei Räumen parallel angebotene Veranstaltung löst keinen Abweichungshinweis aus, solange der gespeicherte Raum einer der beiden ist.
-- Bei veraltetem Raumplan-Stand erscheint kein Abweichungshinweis, sondern das Alter des Stands.
+- Ein einzelner ausgelassener Raumplan-Abruf lässt die Hinweise unberührt; erst jenseits des Vierfachen der Aktualisierungsfrequenz (mindestens 30 Minuten) erscheint statt eines Abweichungshinweises das Alter des Stands.
+- Jeder Raumhinweis nennt die Raumreservierung als Quelle und verweist auf Prüfungsplan und „FB-Aktuelles" als vorrangige Quellen.
 - Die Wochentagsleiste zeigt Montag bis Freitag; ein Samstag erscheint genau dann, wenn an ihm ein Termin liegt, und verschwindet, sobald der letzte entfernt ist.
 - Jeder Wochentag trägt das Datum der angezeigten Woche; ein Blättern in die Vorwoche und zurück führt zum selben Stand.
 - Eine Veranstaltung, deren Gültigkeitszeitraum in der Wochenmitte endet, erscheint in der letzten zutreffenden Woche und in der darauffolgenden nicht mehr.
@@ -1025,8 +1211,9 @@ Siehe Requirement „Zeitziel beim Blättern zwischen Wochentagen" oben (vormals
 - Der erzeugte Gesamtvorschlag ist vor der Übernahme einsehbar und einzeln änderbar; ohne Bestätigung ändert sich der Plan nicht.
 - Die Eingabe der Matrikelnummer führt zu einer angezeigten, noch nicht übernommenen Gruppenkennung; erst die Bestätigung übernimmt sie.
 - Eine unbekannte Matrikelnummer führt zu einem verständlichen Hinweis, nicht zu einer stillschweigend leeren Kennung.
-- Die Einrichtung lässt sich vollständig ohne Angabe einer Matrikelnummer abschließen, und eine Gruppenkennung aus nur einem Buchstaben wird angenommen.
-- Die Matrikelnummer erscheint in keiner Anfrage an das eigene Backend.
+- Die Einrichtung lässt sich vollständig ohne Angabe einer Matrikelnummer abschließen; eine Gruppenkennung aus nur einem Buchstaben wird dabei als unvollständig zurückgewiesen.
+- Liegt dennoch eine Kennung ohne Zahl vor, verschwindet kein Termin: An einer Bereichsgrenze mit Zahl gilt er als zugehörig und der Vorfall wird protokolliert.
+- Die Matrikelnummer erscheint in keiner Anfrage an das eigene Backend und ist nach Abschluss der Einrichtung nirgends gespeichert; die bestätigte Gruppenkennung überlebt den Neustart.
 - Ein eigener Eintrag lässt sich als wöchentlich wiederkehrend anlegen und erscheint dann in jeder Woche des Zeitraums; ein einmaliger Eintrag erscheint nur in der Woche seines Datums.
 
 ## Bewusst nicht übernommenes Altverhalten
@@ -1040,18 +1227,18 @@ Siehe Requirement „Zeitziel beim Blättern zwischen Wochentagen" oben (vormals
 ## Offene Fragen
 
 - Die Anforderung zum Semesterwechsel-Hinweis erkennt einen Semesterwechsel durch Abgleich der `grade`-Liste des gewählten Studiengangs aus INT-001 gegen den zuletzt gespeicherten Stand — zuverlässiger als ein festes Kalenderdatum, da Semesterstart-Termine variieren, und ohne zusätzliche manuelle Nutzerangabe.
-- Format der Prüfungsplan-Excel-Datei (INT-013): Spaltenaufbau erst bei Vorliegen einer realen Datei zu klären, siehe Capability `integrations` INT-013.
+- Gegenstandslos seit 2026-09-06: Format der Prüfungsplan-Excel-Datei. Der manuelle Excel-Import ist entfallen, der Prüfungsbestand wird aus dem Raumplan abgeleitet; INT-013 ist als REMOVED geführt, die Formatanalyse dort erhalten.
 - Zweiwöchentliche Veranstaltungen: Teilweise beantwortet 2026-08-26 (Live-Prüfung aller aktuell angebotenen Studiengang/Fachsemester-Kombinationen, siehe Capability `integrations` INT-002): `interval` ist im gesamten aktuellen Bestand ausschließlich `weekly`. Die als Beispiel genannte Veranstaltung „Lern- und Arbeitstechniken" ist wöchentlich, kein Beleg für den Zweiwochen-Fall. Ob `interval` überhaupt einen anderen Wert führen kann, bleibt unverifiziert, bis eine tatsächlich zweiwöchentliche Veranstaltung im Bestand auftaucht — bei Umsetzung erneut zu prüfen.
 - Beantwortet 2026-09-04: „Lern- und Arbeitstechniken" wird parallel in zwei Räumen mit identischem `studentSet` angeboten (`courseId 411031`). Der Curricula-Bestand des Fachbereichs (`resources/Curricula.pdf`, Stand 24.07.2026) führt die Modulnummer `411031` als „Lern- u. Arbeitstechniken/Studium Generale/Mentoring" — ein Bündel dreier Angebote unter einer Modulnummer. Die zwei parallelen Räume sind damit zwei verschiedene Angebote, kein Datenfehler und keine Mehrdeutigkeit. Die App zeigt beide Varianten nebeneinander; ein Scheinkonflikt entsteht nicht, solange höchstens eine davon den Status „fest" trägt. Welche der drei Teilveranstaltungen eine einzelne Person besucht, bleibt ihre Auswahl.
 - Beantwortet am 2026-09-04: Welche Bedeutung hat der Zahlenteil einer Gruppenkennung (`C5`, `M4`)? Die Zuteilung ist über INT-019 zur Matrikelnummer abrufbar, und in der Praxis zählt der Buchstabe, die Zahl wird so gut wie nie gebraucht. Offen bleibt allein, wie der Fachbereich die Zuteilung intern bildet — für die App ohne Belang, da sie die Kennung nicht selbst herleiten muss.
-- Neu (2026-09-04): Prüfungstermine erscheinen in INT-009 als Einträge mit `eventType: "Event"` und dem Namensmuster `Prüfung <courseId> <Bezeichnung>`, samt Raum, Datum und Uhrzeit. Ob das INT-013 (Intranet-Excel, Hochschul-Login nötig) für die Auswahl aus dem offiziellen Prüfungsplan ganz oder teilweise ersetzen kann, ist vor der zweiten Ausbaustufe zu prüfen — es würde den zweistufigen manuellen Import überflüssig machen. Offen ist insbesondere, ob dieser Bestand vollständig und rechtzeitig gepflegt wird.
+- Beantwortet 2026-09-06: Prüfungstermine erscheinen in INT-009 als Einträge mit `eventType: "Event"` und dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>`. Entschieden, sie als alleinige Quelle zu nutzen; der zweistufige manuelle Import entfällt. **Offen bleibt**, ob dieser Bestand vollständig und rechtzeitig gepflegt wird — der INT-009-Spike vor Roadmap-Schritt 6 prüft das mit. Findet er eine Lücke, ist das eine neue Entscheidung, kein stiller Rückfall auf den Upload.
 - Neu (2026-09-04): Vorlesungsfreie Einzeltage und Feiertage liefert derzeit keine Quelle. Die Kennzeichnung vorlesungsfreier Wochen stützt sich vorerst allein auf Semesterbeginn und -ende aus den Stammdaten (API-F-230); ob eine vom FSR gepflegte Liste vorlesungsfreier Tage den Aufwand lohnt, ist nach der ersten Nutzung zu entscheiden.
 - Neu (2026-09-04): Führt FBWS jemals `Sat` oder `Sun` im Feld `weekday`? Der am 2026-09-04 geprüfte Bestand tut es nicht. Die Wochentagsleiste baut dynamisch und ist damit unabhängig von der Antwort; `openspec/specs/api-contract.yaml` beschränkt den Wochentag im Schema `RaumplanTermin` jedoch auf `Mon`–`Fri` und wäre bei einem Gegenbeleg zu erweitern.
 - Gegenstandslos seit 2026-08-26: Liefert INT-002 für ein vom eigenen Fachsemester abweichendes `{grade}` tatsächlich die benötigten Wahlpflicht-Termine? Die manuelle Fachsemester-Auswahl ist entfallen, ersetzt durch den automatischen Bezug aus der FBWS-Sammelkategorie `WFPB`, siehe Capability `integrations` INT-002.
 - Gegenstandslos aus demselben Grund: Lohnt sich für eine spätere Version eine komfortablere, FSR-gepflegte Zuordnung „Wahlpflichtmodul → typisches Fachsemester"? Die FBWS-eigene Sammelkategorie leistet das bereits, keine zusätzliche FSR-Pflege nötig.
 - Neu (2026-08-26): Deckt die FBWS-Sammelkategorie `WFPB` auch Master-Wahlpflichtfächer ab, oder ausschließlich Bachelor (so die Namensgebung „Bachelor Wahlpflichtfächer WPF")? Keine äquivalente Kategorie für die Master-Studiengänge (`INPM`, `MIPM`, `WIPM`) in der Studiengangsliste gefunden — vor Umsetzung zu klären, falls Master-Wahlpflicht relevant wird.
-- Weitere Optimierungsmodi über die drei Mindestmodi hinaus (z. B. „möglichst früh fertig", „bestimmte Wochentage bevorzugt frei") — bewusst als erweiterbare, nicht abschließende Liste formuliert; konkrete weitere Modi bei Bedarf nachzutragen.
-- Vollkombinatorische Analyse mehrerer gleichzeitig unentschiedener Wahlpflicht-Kandidaten gegeneinander (statt der schrittweisen Pflicht-Markierung) — bewusst zurückgestellt, siehe Erläuterung zur Planungsauswahl; mögliche spätere Erweiterung, falls sich die schrittweise Variante in der Praxis als unzureichend erweist.
+- Weitere Kriterien über die acht hinaus (z. B. „möglichst früh fertig") — die Kriterienliste ist bewusst erweiterbar und nicht abschließend. Ausdrücklich verworfen wurde am 2026-09-06 eine Einstellung „bestimmte Wochentage bevorzugt frei halten": Das Kriterium „Uni-Tage" räumt ohnehin den Tag frei, an dem am wenigsten liegt — in der Praxis meist den Freitag —, und eine zusätzliche Stellschraube wäre ohne erkennbaren Zusatznutzen zu erklären und zu bedienen. Bei festen außeruniversitären Verpflichtungen wäre sie erneut zu erwägen.
+- Vollkombinatorische Analyse mehrerer gleichzeitig unentschiedener Kandidaten gegeneinander — bewusst zurückgestellt (2026-08-25, bestätigt 2026-09-06); auch der automatische Planungsvorschlag arbeitet greedy und kann deshalb eine Konstellation verfehlen, die bei anderer Bearbeitungsreihenfolge aufgegangen wäre. Mögliche spätere Erweiterung, falls sich das schrittweise Verfahren in der Praxis als unzureichend erweist.
 - Ob das Zeitfenster einheitlich für alle Wochentage gilt oder je Wochentag unterschiedlich einstellbar sein sollte — für den ersten Umfang als ein einheitliches Zeitfenster angenommen, mangels gegenteiliger Evidenz aus der Rücksprache mit dem FSR FB4.
-- Trennschärfe des Merkmalssatzes Bezeichnung + Wochentag + Beginnzeit + `studentSet` für die Zuordnung INT-002 ↔ INT-009 — an echten Daten zu prüfen; INT-002 führt kein `courseId` für alle Fälle, ein exakter Schlüssel fehlt teils.
+- Trennschärfe des Merkmalssatzes Bezeichnung + Wochentag + Beginnzeit + `studentSet` für die Zuordnung INT-002 ↔ INT-009 **bei Einträgen ohne `courseId`** — an echten Daten zu prüfen. Berichtigt 2026-09-06: Die frühere Fassung dieser Frage behauptete, INT-002 führe kein `courseId` für alle Fälle und ein exakter Schlüssel fehle teils; das ist durch die Korrektur vom 2026-09-04 überholt — beide Bestände führen `courseId`, in INT-009 fehlt es nur bei Einträgen mit `eventType: "Event"`.
 - Bildet INT-009 kurzfristige Ausfälle und Raumänderungen ab (bestimmt die Aussagekraft der Raumabweichungs-/Nicht-gefunden-Hinweise)? Gemeinsame offene Frage mit Capability `room-finder`, „Offene Fragen"; vor Roadmap-Schritt 6 als Spike zu klären.
