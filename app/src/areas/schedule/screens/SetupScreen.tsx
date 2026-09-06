@@ -19,8 +19,9 @@ import { zaehleGruppenTreffer } from '../groupMatch';
 // (SCHED-F-640) und die Rückmeldung, wie viele Termine eine Kennung einschließt
 // (SCHED-F-650). Die gesamte Fachlogik liegt bereits in `einrichtung.ts`,
 // `api.ts` und `groupMatch.ts` — dieser Bildschirm bindet sie nur an.
-// SCHED-F-710: Die Matrikelnummer wird ausschließlich über `useMatrikelnummer`
-// (lokaler Speicher) gehalten und nie an das eigene Backend übertragen.
+// Keine Speicherung der Matrikelnummer: Sie wird ausschließlich über
+// `useMatrikelnummer` im Arbeitsspeicher gehalten, überlebt keinen Neustart
+// und geht an kein Ziel außer INT-019 — nie an das eigene Backend.
 
 const BUCHSTABEN = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 

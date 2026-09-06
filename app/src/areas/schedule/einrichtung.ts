@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
 import { logError } from '@/errors/AppError';
-import { readJson, writeJson } from '@/storage/kv';
+import { readJson, removeKey, writeJson } from '@/storage/kv';
 
 // SCHED-F-020/F-040/F-640: die einmalig gewählte Einrichtung des Stundenplans —
 // Studiengang (`sname`) mit Fachsemester (`grade`), optionale Gruppenkennung
@@ -169,19 +169,22 @@ export function useEinrichtung() {
   };
 }
 
-// SCHED-F-710: die Matrikelnummer ist personenbeziehbar (integrations.md
-// INT-019) und wird bewusst unter einem eigenen Speicherschlüssel geführt,
-// getrennt von `scheduleSetup` — sie hat kein serverseitiges Pendant und geht
-// an kein anderes Ziel als INT-019 (API-F-100 bleibt davon unberührt, da sie
-// das eigene Backend nie erreicht). Gleiches Reaktivitätsmuster wie oben,
-// bewusst als eigener, kleinerer Speicher statt eines weiteren Felds in
-// `Einrichtung`.
+// Keine Speicherung der Matrikelnummer (entschieden 2026-09-06, vormals
+// SCHED-F-710). Die Matrikelnummer ist personenbeziehbar (`integrations`
+// INT-019) und wird nach der Ermittlung der Gruppenkennung nicht mehr
+// gebraucht. Sie liegt deshalb ausschließlich im Arbeitsspeicher — für die
+// Dauer der Eingabe und des Abrufs — und überlebt keinen App-Neustart.
+// Gespeichert wird allein die bestätigte Gruppenkennung.
+//
+// Der frühere Speicherschlüssel `scheduleMatrikelnummer` wird beim ersten
+// Zugriff gelöscht: Ohne das bliebe auf einem Gerät, das die App vor dem
+// 2026-09-06 genutzt hat, eine Matrikelnummer dauerhaft liegen — die
+// Anforderung wäre dort nicht erfüllt.
 
-const MATRIKELNUMMER_KEY = 'scheduleMatrikelnummer';
+const MATRIKELNUMMER_ALTSCHLUESSEL = 'scheduleMatrikelnummer';
 
 let matrikelnummerSnapshot: string | null = null;
-let matrikelnummerGeladen = false;
-let matrikelnummerLadeGestartet = false;
+let altbestandGeloescht = false;
 const matrikelnummerHoerer = new Set<() => void>();
 
 function matrikelnummerMelden() {
@@ -194,51 +197,36 @@ function bereinigeMatrikelnummer(v: unknown): string | null {
 
 function matrikelnummerSubscribe(cb: () => void): () => void {
   matrikelnummerHoerer.add(cb);
-  if (!matrikelnummerLadeGestartet) {
-    matrikelnummerLadeGestartet = true;
-    readJson<string | null>(MATRIKELNUMMER_KEY, null)
-      .then((v) => {
-        matrikelnummerSnapshot = bereinigeMatrikelnummer(v);
-      })
-      .catch((error) => logError('einrichtung.matrikelnummer.load', error))
-      .finally(() => {
-        matrikelnummerGeladen = true;
-        matrikelnummerMelden();
-      });
+  if (!altbestandGeloescht) {
+    altbestandGeloescht = true;
+    removeKey(MATRIKELNUMMER_ALTSCHLUESSEL).catch((error) =>
+      logError('einrichtung.matrikelnummer.altbestand', error),
+    );
   }
   return () => {
     matrikelnummerHoerer.delete(cb);
   };
 }
 
-function matrikelnummerSchreiben(next: string | null) {
-  matrikelnummerSnapshot = next;
-  matrikelnummerGeladen = true;
-  matrikelnummerMelden();
-  writeJson(MATRIKELNUMMER_KEY, next).catch((error) => logError('einrichtung.matrikelnummer.save', error));
-}
-
-/** SCHED-F-710: die gespeicherte Matrikelnummer lesen (ausschließlich lokal). */
-export function readMatrikelnummer(): Promise<string | null> {
-  return readJson<string | null>(MATRIKELNUMMER_KEY, null).then(bereinigeMatrikelnummer);
-}
-
 /** Nur für Tests: Modulzustand zurücksetzen. */
 export function __resetMatrikelnummerForTest(): void {
   matrikelnummerSnapshot = null;
-  matrikelnummerGeladen = false;
-  matrikelnummerLadeGestartet = false;
+  altbestandGeloescht = false;
   matrikelnummerHoerer.clear();
 }
 
-/** SCHED-F-710/F-720: die Matrikelnummer ist optional und getrennt von der übrigen Einrichtung gespeichert. */
+/**
+ * Die Matrikelnummer für die Dauer der Einrichtung. Rein flüchtig — es gibt
+ * bewusst kein Gegenstück zu `readMatrikelnummer`, das sie von der Platte läse.
+ * `loaded` ist konstant `true`, weil nichts zu laden ist.
+ */
 export function useMatrikelnummer() {
   const matrikelnummer = useSyncExternalStore(matrikelnummerSubscribe, () => matrikelnummerSnapshot);
-  const loaded = useSyncExternalStore(matrikelnummerSubscribe, () => matrikelnummerGeladen);
 
   const setMatrikelnummer = useCallback((wert: string | null) => {
-    matrikelnummerSchreiben(bereinigeMatrikelnummer(wert));
+    matrikelnummerSnapshot = bereinigeMatrikelnummer(wert);
+    matrikelnummerMelden();
   }, []);
 
-  return { matrikelnummer, loaded, setMatrikelnummer };
+  return { matrikelnummer, loaded: true, setMatrikelnummer };
 }
