@@ -37,8 +37,13 @@
 
 ## 7. Umsetzung
 
-- [ ] 7.1 Ableitung im Backend, gemeinsam mit dem Raumplan-Zwischenspeicher in Roadmap-Schritt 6
-- [ ] 7.2 INT-009-Spike: prüft zusätzlich, ob der Raumplan die Prüfungstermine vollständig und rechtzeitig führt — Vorbedingung von Schritt 6
+Ausgelagert: die Ableitung im Backend, gemeinsam mit dem Raumplan-
+Zwischenspeicher in Roadmap-Schritt 6, nach **Issue #29**; der INT-009-Spike
+als deren Vorbedingung nach **Issue #28**, dort als Blocker von #29
+eingetragen.
+
+Offen bleiben in diesem Change allein die Vertragsaufgaben 4.1 und 4.2 — sie
+gehören hierher, weil der Vertrag vor dem Code kommt.
 
 ## Beim Archivieren
 
