@@ -40,6 +40,13 @@ export interface AsyncStatesProps<T> {
    */
   emptyNextStep: string;
   emptyTitle?: string;
+  /**
+   * Sichtbarer Bedienweg zum genannten nächsten Schritt (UX-F-110: „mit
+   * Handlungsweg"), z. B. ein Knopf zur fehlenden Einrichtung. Optional, weil
+   * der nächste Schritt manchmal bereits am selben Bildschirm bedienbar ist
+   * (z. B. ein Filter-Schalter direkt darüber) und keinen eigenen Knopf braucht.
+   */
+  emptyAction?: ReactNode;
 }
 
 export function AsyncStates<T>({
@@ -48,6 +55,7 @@ export function AsyncStates<T>({
   isEmpty,
   emptyNextStep,
   emptyTitle,
+  emptyAction,
 }: AsyncStatesProps<T>) {
   const { t } = useTranslation();
   const online = useOnlineStatus();
@@ -86,7 +94,14 @@ export function AsyncStates<T>({
 
   // 3. Leer — mit Handlungsweg (UX-F-110).
   if (isEmpty?.(data)) {
-    return <MessageView symbol="—" title={emptyTitle ?? t('states.emptyTitle')} body={emptyNextStep} />;
+    return (
+      <MessageView
+        symbol="—"
+        title={emptyTitle ?? t('states.emptyTitle')}
+        body={emptyNextStep}
+        action={emptyAction}
+      />
+    );
   }
 
   // 4. Daten — bei veraltetem Offline-Stand mit sichtbarem Altershinweis (DATA-F-090).

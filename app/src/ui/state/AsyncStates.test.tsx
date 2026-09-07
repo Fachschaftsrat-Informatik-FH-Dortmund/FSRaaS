@@ -60,6 +60,33 @@ describe('ARCH-F-130 / UX-F-100 Vier Zustände je datenabhängiger Ansicht', () 
     expect(screen.getByText(NEXT_STEP)).toBeTruthy();
   });
 
+  it('Leerzustand bietet einen Bedienweg an, wenn `emptyAction` gesetzt ist (UX-F-110)', () => {
+    const q = query<{ items: number[] }>({ data: { items: [] } });
+    const onPress = jest.fn();
+    render(
+      <AsyncStates
+        query={q}
+        isEmpty={(d) => d.items.length === 0}
+        emptyNextStep={NEXT_STEP}
+        emptyAction={<Text onPress={onPress}>Jetzt einrichten</Text>}
+      >
+        {() => <Text>Inhalt</Text>}
+      </AsyncStates>,
+    );
+    fireEvent.press(screen.getByText('Jetzt einrichten'));
+    expect(onPress).toHaveBeenCalled();
+  });
+
+  it('Leerzustand ohne `emptyAction` zeigt weiterhin nur Text, kein Handlungselement', () => {
+    const q = query<{ items: number[] }>({ data: { items: [] } });
+    render(
+      <AsyncStates query={q} isEmpty={(d) => d.items.length === 0} emptyNextStep={NEXT_STEP}>
+        {() => <Text>Inhalt</Text>}
+      </AsyncStates>,
+    );
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
   it('Datenzustand rendert die Inhalte', () => {
     const q = query<{ items: number[] }>({ data: { items: [1, 2] } });
     render(
