@@ -6,9 +6,11 @@ openapi: 3.1.0
 # wie jede Spec (README.md Abschnitt 8). Eine Vertragsänderung ist eine Spec-Änderung.
 # Grundlage: decisions/0011-monorepo-und-openapi-vertrag.md.
 #
-# Umfang dieser Fassung: die erste Ausbaustufe (decisions/0012). Endpunkte der zweiten
-# Ausbaustufe (Events, Helferbedarf, E-Key, Prüfungsplan, Moderation, Push) werden
-# ergänzt, sobald die jeweils blockierende Klärung vorliegt.
+# Umfang dieser Fassung: die erste Ausbaustufe (decisions/0012), dazu der Abruf des
+# Prüfungsbestands — er hat die zweite Ausbaustufe verlassen, seit der Bestand aus dem
+# Raumplan abgeleitet wird statt aus einer hochgeladenen Excel-Datei (2026-09-06).
+# Die übrigen Endpunkte der zweiten Ausbaustufe (Events, Helferbedarf, E-Key,
+# Moderation, Push) werden ergänzt, sobald die jeweils blockierende Klärung vorliegt.
 
 info:
   title: FB4-App Backend
@@ -16,7 +18,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.5.2
+  version: 0.6.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -473,6 +475,33 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Studiengang" }
+        default: { $ref: "#/components/responses/Fehler" }
+
+  /stundenplan/pruefungsplan:
+    get:
+      tags: [stundenplan]
+      summary: Abgeleiteter Prüfungsbestand
+      description: |
+        Erfüllt das Requirement „Abruf des Prüfungsbestands" der Capability
+        `backend-and-api`. Liefert die Prüfungstermine, die das Backend aus dem
+        zwischengespeicherten Raumplan (INT-009) ableitet — anmeldefrei und ohne
+        Kenntnis darüber, welche Prüfungen eine einzelne Nutzerin ausgewählt hat;
+        die Auswahl bleibt ausschließlich auf dem Gerät (API-F-100). Ein manueller
+        Import findet nicht mehr statt (ehemals INT-013, entfallen 2026-09-06).
+      security: []
+      responses:
+        "200":
+          description: Prüfungstermine mit Stand-Alter des zugrunde liegenden Raumplans
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pruefungen, standAlter]
+                properties:
+                  pruefungen:
+                    type: array
+                    items: { $ref: "#/components/schemas/Pruefungstermin" }
+                  standAlter: { $ref: "#/components/schemas/StandAlter" }
         default: { $ref: "#/components/responses/Fehler" }
 
   /stundenplan/pruefungsplan/stand:
@@ -1020,6 +1049,28 @@ components:
         studentSet: { type: [string, "null"] }
         lecturerId: { type: [string, "null"] }
         note: { type: [string, "null"] }
+
+    Pruefungstermin:
+      type: object
+      description: >
+        Ein aus dem Raumplan abgeleiteter Prüfungstermin: Eintrag mit
+        eventType „Event", dessen Name dem Muster „Prüfung <Modulnummer>
+        <Bezeichnung>" folgt (INT-009). Die App hält die Auswahl daraus
+        ausschließlich lokal (API-F-100); der Bestand selbst kennt keine
+        Zuordnung zu einer Nutzerin.
+      required: [bezeichnung, roomId, beginn, ende]
+      properties:
+        modulnummer:
+          type: [string, "null"]
+          description: >
+            Aus dem Namensfeld herausgelöst — bei Prüfungseinträgen des Raumplans
+            sind courseId und courseOfStudy leer (INT-009). Null, wenn das
+            Namensmuster nicht griff: Der Termin bleibt dann als Prüfung ohne
+            Modulbezug im Bestand, der Vorfall wird protokolliert (SEC-F-060).
+        bezeichnung: { type: string }
+        roomId: { type: string }
+        beginn: { type: string, format: date-time }
+        ende: { type: string, format: date-time }
 
     Klassifizierung:
       type: string
