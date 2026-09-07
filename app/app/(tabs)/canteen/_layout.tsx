@@ -1,8 +1,10 @@
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { FilterResetAction } from '@/areas/canteen/ui/FilterResetAction';
 import { FilterZugang } from '@/areas/canteen/ui/FilterZugang';
+import { SortierZugang } from '@/areas/canteen/ui/SortierZugang';
 import { useTheme } from '@/theme';
 import { useReducedMotion } from '@/ui/reducedMotion';
 
@@ -28,7 +30,15 @@ export default function CanteenLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ title: t('nav.canteen'), headerRight: () => <FilterZugang /> }}
+        options={{
+          title: t('nav.canteen'),
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <SortierZugang />
+              <FilterZugang />
+            </View>
+          ),
+        }}
       />
       <Stack.Screen name="auswahl" options={{ title: t('mensa.mensenWaehlen') }} />
       <Stack.Screen name="alle" options={{ title: t('mensa.alleMensenTitel') }} />
@@ -36,6 +46,7 @@ export default function CanteenLayout() {
         name="filter"
         options={{ title: t('mensa.filterTitel'), headerRight: () => <FilterResetAction /> }}
       />
+      <Stack.Screen name="sortierung" options={{ title: t('mensa.sortierTitel') }} />
     </Stack>
   );
 }

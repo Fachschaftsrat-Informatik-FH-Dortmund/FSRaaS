@@ -24,6 +24,13 @@ export interface KonsolidiertesGericht {
    * in der Auswahlreihenfolge erste anbietende Mensa.
    */
   massgeblich: AnbieterGericht;
+  /**
+   * Stabiler Rang aus der Reihenfolge des ersten Auftretens über die gewählten
+   * Mensen in Auswahlreihenfolge (0-basiert, lückenlos). Macht das
+   * Sortierkriterium „Reihenfolge der Quelle" auch bei Gruppierung ≠ Mensa
+   * wohldefiniert (`sortierung.ts`).
+   */
+  quellrang: number;
 }
 
 export interface KonsolidierteSektion {
@@ -44,7 +51,7 @@ export interface MensaTagesplan {
 }
 
 /** Rang der Kategorie in der Gruppenreihenfolge: benannt → kategorielos (F-160) → Beilagen (F-040). */
-function kategorieRang(kategorie: string): number {
+export function kategorieRang(kategorie: string): number {
   if (kategorie === '') return 1;
   if (/beilag/i.test(kategorie)) return 2;
   return 0;
@@ -83,6 +90,7 @@ export function konsolidiere(proMensa: MensaTagesplan[]): Konsolidierung {
   // je Mensa die Schlüssel der Gerichte, für die sie die erste anbietende Mensa ist,
   // in der von der Quelle gelieferten Reihenfolge dieser Mensa.
   const schluesselJeMensa = new Map<string, string[]>();
+  let naechsterQuellrang = 0;
 
   for (const { mensaId, gerichte } of proMensa) {
     for (const g of gerichte) {
@@ -95,6 +103,7 @@ export function konsolidiere(proMensa: MensaTagesplan[]): Konsolidierung {
         schluessel: g.schluessel,
         anbieter: [mensaId],
         massgeblich: { ...g, mensaId },
+        quellrang: naechsterQuellrang++,
       });
       if (!schluesselJeMensa.has(mensaId)) schluesselJeMensa.set(mensaId, []);
       schluesselJeMensa.get(mensaId)!.push(g.schluessel);

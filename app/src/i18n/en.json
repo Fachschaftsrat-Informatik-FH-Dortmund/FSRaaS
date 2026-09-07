@@ -101,6 +101,48 @@
     "preise": "Students {{studierende}} · Staff {{mitarbeitende}} · Guests {{gaeste}}",
     "preisEinzeln": "{{gruppe}} {{preis}}",
     "zusatzstoffe": "Additives: {{liste}}",
+    "sortierZugang": "Open sorting and grouping",
+    "sortierTitel": "Sorting & grouping",
+    "presetsTitel": "Presets",
+    "presetWahlLabel": "Preset {{name}}",
+    "presetAktiv": "active",
+    "eigeneKombinationTitel": "Custom combination",
+    "gruppierungTitel": "Grouping",
+    "gruppenreihenfolgeTitel": "Order of the groups",
+    "gerichteSortierungTitel": "Order of the dishes",
+    "kriteriumLabel": "Criterion",
+    "richtungLabel": "Direction",
+    "sammelgruppe": "No category",
+    "presetNamePlatzhalter": "Preset name",
+    "presetSpeichern": "Save as custom preset",
+    "presetUmbenennen": "Rename",
+    "presetLoeschen": "Delete",
+    "preset": {
+      "mensa-eigene-bewertung": "Canteen, my rating",
+      "mensa-community": "Canteen, community rating",
+      "mensa-guenstigstes": "Canteen, cheapest first",
+      "preis": "Price"
+    },
+    "gruppierung": {
+      "keine": "no grouping",
+      "mensa": "by canteen",
+      "kategorie": "by category"
+    },
+    "sortierkriterium": {
+      "quelle": "source order",
+      "bezeichnung": "name",
+      "preis": "price",
+      "eigeneBewertung": "my rating",
+      "community": "overall community rating"
+    },
+    "gruppenkriterium": {
+      "reihenfolge": "source order",
+      "alphabetisch": "alphabetical"
+    },
+    "richtung": {
+      "auf": "ascending",
+      "ab": "descending"
+    },
     "weekday": {
       "0": "Sunday",
       "1": "Monday",
