@@ -1,6 +1,7 @@
 // MENSA-F-042 / MENSA-F-044: Datumsgrenzen der Tagesauswahl. Untergrenze ist der
 // aktuelle Tag; Samstage/Sonntage ohne bekanntes Angebot werden beim Blättern
-// und Wischen übersprungen, Werktage nie. Reine Funktionen, ohne React.
+// und Wischen übersprungen, Werktage nie — und der aktuelle Tag nie, auch wenn
+// er auf ein angebotsfreies Wochenende fällt. Reine Funktionen, ohne React.
 
 export function isoHeute(jetzt: Date = new Date()): string {
   return `${jetzt.getFullYear()}-${String(jetzt.getMonth() + 1).padStart(2, '0')}-${String(
@@ -38,6 +39,10 @@ export function istVorHeute(datum: string, jetzt?: Date): boolean {
  * Angebot führt; `undefined` = unbekannt (offline/Ladefehler) und gilt wie „kein
  * Angebot" (Spec Abschnitt 9). Ein Wochenendtag ohne bekanntes Angebot wird
  * übersprungen, höchstens bis zum nächsten Werktag (MENSA-F-044); Werktage nie.
+ * Ausgenommen ist der aktuelle Tag: Er ist die Untergrenze und wird nie
+ * übersprungen, auch nicht als angebotsfreier Samstag oder Sonntag. Die
+ * Ausnahme ist richtungsneutral formuliert; vorwärts kann der aktuelle Tag
+ * ohnehin kein Kandidat sein.
  */
 export function naechsterTag(
   datum: string,
@@ -48,9 +53,11 @@ export function naechsterTag(
   const heute = isoHeute(jetzt);
   let kandidat = verschiebe(datum, richtung);
 
-  // höchstens drei Schritte — mehr als Sa+So kann nicht am Stück übersprungen werden
+  // höchstens drei Schritte — rückwärts endet die Kette spätestens am aktuellen
+  // Tag, vorwärts nach Samstag und Sonntag; drei ist damit großzügig bemessen
   for (let schritt = 0; schritt < 3; schritt++) {
     if (kandidat < heute) return null;
+    if (kandidat === heute) return kandidat;
     if (!istWochenende(kandidat) || hatAngebot(kandidat) === true) return kandidat;
     kandidat = verschiebe(kandidat, richtung);
   }

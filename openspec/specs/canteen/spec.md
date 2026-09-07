@@ -126,11 +126,19 @@ Das System muss eine Handlung bereitstellen, die die Tagesauswahl unmittelbar au
 
 ### Requirement: Überspringen angebotsfreier Wochenendtage
 
-Falls an einem Samstag oder Sonntag keine der gewählten Mensen ein Angebot führt, muss das System diesen Tag beim Blättern und Wischen überspringen. Herkunft: NEU (vormals MENSA-F-044).
+Falls an einem Samstag oder Sonntag keine der gewählten Mensen ein Angebot führt, muss das System diesen Tag beim Blättern und Wischen überspringen; den aktuellen Tag muss das System davon ausnehmen und nie überspringen. Ein Wochenendtag ist damit erreichbar, wenn er ein Angebot führt oder wenn er der aktuelle Tag ist. Herkunft: NEU, Ausnahme für den aktuellen Tag entschieden 2026-09-05 (vormals MENSA-F-044).
 
 #### Scenario: Samstag ohne Angebot
-- **WHEN** an einem Samstag keine der gewählten Mensen ein Angebot führt
+- **WHEN** an einem Samstag, der nicht der aktuelle Tag ist, keine der gewählten Mensen ein Angebot führt
 - **THEN** überspringt das System diesen Tag beim Blättern und beim Wischen
+
+#### Scenario: Rückblättern auf einen angebotsfreien aktuellen Wochenendtag
+- **WHEN** der aktuelle Tag ein Samstag oder Sonntag ohne Angebot ist und die Nutzerin von einem Folgetag zurückblättert oder zurückwischt
+- **THEN** wechselt das System auf den aktuellen Tag, statt ihn zu überspringen
+
+#### Scenario: Vorblättern vom angebotsfreien aktuellen Wochenendtag
+- **WHEN** der aktuelle Tag ein Samstag ohne Angebot ist und die Nutzerin vorwärts blättert
+- **THEN** überspringt das System den folgenden Sonntag ohne Angebot und zeigt den Montag
 
 ### Requirement: Blättern zu benachbarten Tagen
 
@@ -588,6 +596,18 @@ Der Speiseplan-Zwischenspeicher des Backends (Capability `backend-and-api`, API-
 - **WHEN** eine morgendliche oder mittägliche Nutzungsspitze bevorsteht
 - **THEN** ist der Zwischenspeicher zuvor aus INT-015 aufgefrischt worden
 
+### Requirement: Aktueller Tag als Ausgangspunkt der Tagesauswahl
+
+Beim Öffnen der Hauptansicht muss das System den aktuellen Tag als gewählten Tag führen, auch wenn dieser ein Samstag oder Sonntag ist und keine der gewählten Mensen an ihm ein Angebot führt. Herkunft: NEU, entschieden 2026-09-05.
+
+#### Scenario: Öffnen an einem Werktag
+- **WHEN** die Nutzerin die Hauptansicht an einem Werktag öffnet
+- **THEN** ist der aktuelle Tag der gewählte Tag
+
+#### Scenario: Öffnen an einem angebotsfreien Wochenendtag
+- **WHEN** die Nutzerin die Hauptansicht an einem Samstag oder Sonntag öffnet, an dem keine der gewählten Mensen ein Angebot führt
+- **THEN** ist der aktuelle Tag der gewählte Tag und das System zeigt für ihn den Leerzustand „kein Angebot"
+
 ## Entfallene Anforderungen (historisch)
 
 ### Ehemals MENSA-F-080: Eigener Lieblingsgericht-Merker
@@ -640,7 +660,6 @@ Die vordefinierten Presets sind unveränderlich; eigene Presets entstehen als be
 
 Die **maßgebliche Mensa** (siehe Begriffstabelle oben) bleibt von alldem unberührt: Sie folgt weiterhin ausschließlich der Mensa-Auswahlreihenfolge, nicht der gewählten Gruppenreihenfolge — sonst würde sich der angezeigte Preis oder die angezeigte Kennzeichnung eines an mehreren Mensen angebotenen Gerichts allein durch eine andere Sortierung ändern, was verwirrend wäre. Die Gruppenreihenfolge bestimmt nur, an welcher Position der Abschnitt einer Mensa in der Liste erscheint, nicht welche Mensa für ein zusammengefasstes Gericht maßgeblich ist.
 
-
 **Durchsprache vom 2026-09-05** (`docs/agents/herkunft-durchsprache.md`). Alle 56 `NEU`-Requirements dieser Capability wurden nach der Leitfrage „Würde der FSR das heute noch so beschließen — und woran erkennt man das?" durchgegangen. Kein Requirement entfällt; drei ändern sich (Voreinstellung, Ordnung unbewerteter Gerichte, getrennte Richtungswahl). Was dabei bestätigt wurde, trägt seitdem diesen Beleg — insbesondere:
 
 - **Vier vordefinierte Presets bleiben**, obwohl „Mensa, eigene Bewertung" und „Mensa, Community-Bewertung" sich bis Roadmap-Schritt 9 identisch verhalten: beide sortieren mangels Bewertungsdaten nach der Reihenfolge der Quelle. Das ist kein Fehler, sondern löst sich mit Schritt 9 von selbst auf; festgehalten, damit es beim nächsten Durchgang nicht erneut auffällt. Die Voreinstellung ist deshalb bis dahin „Mensa, günstigstes zuerst" — das einzige gruppierte Preset, das ohne Bewertungsdaten vollständig trägt.
@@ -671,7 +690,7 @@ gilt er als ohne Angebot und wird übersprungen, siehe Abschnitt „Fehlerfälle
 
 **Alle Mensen ohne Auswahländerung** (Requirements „Handlung „Alle Mensen anzeigen"" bis „Keine Auswahländerung durch die Ansicht aller Mensen"). Wer heute an einem anderen Campus ist, will einmal dorthin sehen, nicht seine dauerhafte Mensaauswahl umstellen und später zurückstellen. Die Handlung am Seitenende führt deshalb in eine reine Leseansicht über alle vom Backend gelieferten Mensen (API-F-230), nach Mensa getrennt untereinander — die Darstellung, die die Android-Alt-App als Hauptansicht führte (`MenuDayFragment.java:105`). Das dortige Verhalten, Mensen ohne Angebot des Tages wegzulassen (`MenuDayFragment.java:109`), wird übernommen; der Hinweis auf geschlossene Mensen bleibt auf die **gewählten** Mensen der Hauptansicht beschränkt, sonst bestünde die Ansicht an einem Wochenende fast nur aus Geschlossen-Hinweisen. Die Requirement „Keine Auswahländerung durch die Ansicht aller Mensen" hält fest, dass diese Ansicht nichts speichert: Sie ändert weder Auswahl noch Reihenfolge. Die Chip-Ankernavigation verhält sich wie in der Hauptansicht, hier über die anbietenden Mensen. Der angezeigte Tag wird aus der Hauptansicht übernommen, damit der Wechsel den Zusammenhang nicht verliert.
 
-**Umsetzungsstand nach der Überarbeitung vom 2026-09-04, nachgeführt am 2026-09-04.** Die Spec war nach der Überarbeitung von `implemented` auf `accepted` zurückgesetzt. Mit dem Abschluss von Roadmap-Schritt 4 am 2026-09-04 sind umgesetzt und durch ID-tragende Tests belegt: die zusammengefasste, nach Mensa-Auswahlreihenfolge in Abschnitte gegliederte Gerichtsliste (MENSA-F-012 bis F-018), die Datumsgrenzen, das Wischen und „Zurücksetzen" (F-042/F-043/F-044/F-046), der Geschlossen-Hinweis (F-049), die Chip-Ankernavigation (F-016/F-017/F-019/F-295, geteilt von Haupt- und Alle-Mensen-Ansicht `app/src/areas/canteen/ui/AnkerListe.tsx`), die Ansicht aller Mensen (F-120 bis F-150), das Filtermenü — Höchstpreis (F-235), Unverträglichkeiten (F-170 bis F-215) sowie Lebensstil-Vorgabe und Ausschluss (F-250 bis F-285) —, die Preisgruppe (F-220/F-230 mit SET-F-180/F-190), das Herunterziehen zum Aktualisieren (F-240) und die Kopfbereich-Korrekturen (F-280/F-285/F-290) — alles in der App, ohne Vertragsänderung. Serverseitig ist der Speiseplan-Job auf einen Ortszeit-Zeitplan vor den Nutzungsspitzen und nach Mensaschluss umgestellt (MENSA-N-020 über API-F-076).
+**Umsetzungsstand nach der Überarbeitung vom 2026-09-04, nachgeführt am 2026-09-04.** Die Spec war nach der Überarbeitung von `implemented` auf `accepted` zurückgesetzt. Mit dem Abschluss von Roadmap-Schritt 4 am 2026-09-04 sind umgesetzt und durch ID-tragende Tests belegt: die zusammengefasste, nach Mensa-Auswahlreihenfolge in Abschnitte gegliederte Gerichtsliste (MENSA-F-012 bis F-018), die Datumsgrenzen, das Wischen und „Zurücksetzen" (F-042/F-043/F-044/F-046), der Geschlossen-Hinweis (F-049), die Chip-Ankernavigation (F-016/F-017/F-019/F-295, geteilt von Haupt- und Alle-Mensen-Ansicht `app/src/areas/canteen/ui/AnkerListe.tsx`), die Ansicht aller Mensen (F-120 bis F-150), das Filtermenü — Höchstpreis (F-235), Unverträglichkeiten (F-170 bis F-215) sowie Lebensstil-Vorgabe und Ausschluss (F-250 bis F-285) —, die Preisgruppe (F-220/F-230 mit SET-F-180/F-190), das Herunterziehen zum Aktualisieren (F-240) und die Kopfbereich-Korrekturen (F-280/F-285/F-290) — alles in der App, ohne Vertragsänderung. Serverseitig ist der Speiseplan-Job auf einen Ortszeit-Zeitplan vor den Nutzungsspitzen und nach Mensaschluss umgestellt (MENSA-N-020 über API-F-076). Am 2026-09-07 nachgeführt: Das Überspringen angebotsfreier Wochenendtage (F-044, Requirement „Überspringen angebotsfreier Wochenendtage") nimmt seither den aktuellen Tag aus — er wird nie übersprungen, damit ein angebotsfreier Samstag oder Sonntag als Untergrenze der Tagesauswahl (F-042) erreichbar bleibt statt beim Rückblättern verloren zu gehen. Belegt durch Tests, die den Requirement-Titel statt der Alt-ID tragen (`app/src/areas/canteen/tageswahl.test.ts`, `app/src/areas/canteen/screens/CanteenScreen.wochenende.test.tsx`); dasselbe gilt für das mit dieser Änderung erstmals geschriebene Requirement „Aktueller Tag als Ausgangspunkt der Tagesauswahl".
 
 Der `status` bleibt **`accepted`**, weil die bewertungsgekoppelten Anforderungen noch offen sind: MENSA-F-085/F-087 (Lieblingsgericht aus der Höchstbewertung), MENSA-F-090 in der Neufassung, MENSA-F-100/F-105/F-110 in der Neufassung und der Abschalter SET-F-170 folgen gemeinsam mit den Bewertungen in Roadmap-Schritt 9 und sind bis dahin nicht erfüllbar (Erläuterung zum entfallenen MENSA-F-080, Tabellenzeile „Zeitpunkt"). Bis dahin liegt der in Schritt 4 gelieferte Stern-Merker nach dem entfallenen MENSA-F-080 weiter im Code (`app/src/areas/canteen/favorites.ts`, `backgroundCheck.ts`, `notifications.ts`, `registerBackgroundTask.ts`); zwei Tests tragen die entfallene ID MENSA-F-080 im Namen — ein bewusst in Kauf genommener und hier dokumentierter Rückstand, kein unbemerktes Auseinanderlaufen (Capability `quality-and-testing`). Die Geräte- und Gestaltungsprüfungen der neuen Ansicht sind im Prüfprotokoll `pruefprotokolle/2026-09-04-schritt-4-mensa-teil-a.md` festgehalten (Geräteprüfungen „ausstehend Gerät").
 
