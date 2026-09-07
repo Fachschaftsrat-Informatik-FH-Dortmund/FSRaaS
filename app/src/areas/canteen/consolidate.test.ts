@@ -101,6 +101,33 @@ describe('MENSA-F-049 geschlossene Mensen ohne Angebot am Tag', () => {
   });
 });
 
+describe('Reihenfolge der Quelle als stabiler Quellrang', () => {
+  it('gibt einem nur an der zweiten Mensa geführten Gericht einen höheren Quellrang', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g(), g({ schluessel: 'suppe', bezeichnung: 'Suppe' })]),
+      plan('Sued', [
+        g({ schluessel: 'suppe', bezeichnung: 'Suppe' }),
+        g({ schluessel: 'curry', bezeichnung: 'Curry' }),
+      ]),
+    ]);
+    const rang = new Map(alleGerichte(k).map((x) => [x.schluessel, x.quellrang]));
+    expect(rang.get('curry')!).toBeGreaterThan(rang.get('bolognese')!);
+    expect(rang.get('curry')!).toBeGreaterThan(rang.get('suppe')!);
+    // lückenlos 0..n-1
+    expect([...rang.values()].sort((a, b) => a - b)).toEqual([0, 1, 2]);
+  });
+
+  it('lässt Zusammenfassung und maßgebliche Mensa unverändert', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g({ preisStudierende: 3.3 })]),
+      plan('Sued', [g({ preisStudierende: 9.9 })]),
+    ]);
+    expect(alleGerichte(k)).toHaveLength(1);
+    expect(alleGerichte(k)[0]!.massgeblich.mensaId).toBe('Mensa');
+    expect(alleGerichte(k)[0]!.quellrang).toBe(0);
+  });
+});
+
 describe('MENSA-F-040 / MENSA-F-160 Gruppenreihenfolge: benannt, kategorielos, Beilagen', () => {
   it('stellt die kategorielose Sammelgruppe hinter benannte Kategorien und vor Beilagen', () => {
     const gerichte = [

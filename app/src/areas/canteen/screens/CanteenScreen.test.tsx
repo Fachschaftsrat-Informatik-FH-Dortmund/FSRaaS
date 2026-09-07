@@ -38,6 +38,24 @@ const mockMensen = [
   },
 ];
 
+let mockPreset: any;
+const mockPresetSpies = {
+  waehle: jest.fn(),
+  stelleEin: jest.fn(),
+  speichereEigenes: jest.fn(),
+  benenneUm: jest.fn(),
+  loesche: jest.fn(),
+};
+jest.mock('../sortierPreset', () => ({
+  useSortierGruppierung: () => ({
+    aktiv: mockPreset,
+    istEntwurf: false,
+    presets: [],
+    loaded: true,
+    ...mockPresetSpies,
+  }),
+}));
+
 jest.mock('../selection', () => ({ useCanteenSelection: () => mockSelection }));
 jest.mock('../favorites', () => ({
   useFavorites: () => ({ list: [], has: mockHas, toggle: mockToggle }),
@@ -143,6 +161,15 @@ beforeEach(() => {
   mockGroup = 'student';
   mockCodes = [];
   mockLimit = null;
+  // Voreinstellung „Mensa, günstigstes zuerst": nach Mensa gegliedert,
+  // Auswahlreihenfolge, Gerichte aufsteigend nach Preis.
+  mockPreset = {
+    id: 'mensa-guenstigstes',
+    eigen: false,
+    gruppierung: 'mensa',
+    gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+    gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+  };
   client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: Infinity } },
   });
@@ -395,6 +422,55 @@ describe('MENSA-F-060 sichtbare Fehlermeldung statt stiller Leeransicht', () => 
     renderScreen();
     await waitFor(() => expect(screen.getByText('Etwas ist schiefgelaufen')).toBeTruthy());
     expect(screen.getByText('Erneut versuchen')).toBeTruthy();
+  });
+});
+
+describe('Chip-Leiste zeigt Gruppen der aktiven Gruppierung', () => {
+  it('blendet ohne Gruppierung (Preset „Preis") die Chip-Leiste und die Abschnittsüberschriften aus und sortiert nach Preis', async () => {
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Mensa: qr([gericht({ schluessel: 'teuer', bezeichnung: 'Steak', preisStudierende: 9.9 })]),
+      Sued: qr([gericht({ schluessel: 'billig', bezeichnung: 'Suppe', preisStudierende: 2.2 })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Suppe')).toBeTruthy());
+
+    // Keine Mensa-Abschnittsüberschriften mehr (nur der Chip wäre doppelt).
+    expect(screen.queryByText('Hauptmensa')).toBeNull();
+    expect(screen.queryByText('Mensa Süd')).toBeNull();
+
+    // Reihenfolge im Baum: günstigeres Gericht zuerst (aufsteigend nach Preis).
+    const namen = screen.getAllByText(/^(Suppe|Steak)$/).map((n) => n.props.children);
+    expect(namen).toEqual(['Suppe', 'Steak']);
+    expect(screen.getByText('Studierende 2,20 €')).toBeTruthy();
+  });
+
+  it('zeigt bei Gruppierung „nach Kategorie" Kategorie-Chips statt Mensa-Chips', async () => {
+    mockPreset = {
+      id: 'eigen-kat',
+      eigen: true,
+      gruppierung: 'kategorie',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'quelle', richtung: 'auf' },
+    };
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Mensa: qr([gericht({ schluessel: 'a', bezeichnung: 'Auflauf', kategorie: 'Wok' })]),
+      Sued: qr([gericht({ schluessel: 'b', bezeichnung: 'Brot', kategorie: 'Aktion' })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Auflauf')).toBeTruthy());
+    // Kategorie-Namen erscheinen als Chip und als Abschnittsüberschrift.
+    expect(screen.getAllByText('Wok').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Aktion').length).toBeGreaterThanOrEqual(2);
+    // Mensa-Namen tauchen nicht mehr als Chips/Überschriften auf.
+    expect(screen.queryByText('Hauptmensa')).toBeNull();
   });
 });
 

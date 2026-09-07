@@ -101,6 +101,48 @@
     "preise": "Studierende {{studierende}} · Mitarbeitende {{mitarbeitende}} · Gäste {{gaeste}}",
     "preisEinzeln": "{{gruppe}} {{preis}}",
     "zusatzstoffe": "Zusatzstoffe: {{liste}}",
+    "sortierZugang": "Sortierung und Gruppierung öffnen",
+    "sortierTitel": "Sortierung & Gruppierung",
+    "presetsTitel": "Presets",
+    "presetWahlLabel": "Preset {{name}}",
+    "presetAktiv": "aktiv",
+    "eigeneKombinationTitel": "Eigene Zusammenstellung",
+    "gruppierungTitel": "Gruppierung",
+    "gruppenreihenfolgeTitel": "Reihenfolge der Gruppen",
+    "gerichteSortierungTitel": "Sortierung der Gerichte",
+    "kriteriumLabel": "Kriterium",
+    "richtungLabel": "Richtung",
+    "sammelgruppe": "Ohne Kategorie",
+    "presetNamePlatzhalter": "Name des Presets",
+    "presetSpeichern": "Als eigenes Preset speichern",
+    "presetUmbenennen": "Umbenennen",
+    "presetLoeschen": "Löschen",
+    "preset": {
+      "mensa-eigene-bewertung": "Mensa, eigene Bewertung",
+      "mensa-community": "Mensa, Community-Bewertung",
+      "mensa-guenstigstes": "Mensa, günstigstes zuerst",
+      "preis": "Preis"
+    },
+    "gruppierung": {
+      "keine": "keine Gruppierung",
+      "mensa": "nach Mensa",
+      "kategorie": "nach Kategorie"
+    },
+    "sortierkriterium": {
+      "quelle": "Reihenfolge der Quelle",
+      "bezeichnung": "Bezeichnung",
+      "preis": "Preis",
+      "eigeneBewertung": "eigene Bewertungsstufe",
+      "community": "Community-Gesamtbewertung"
+    },
+    "gruppenkriterium": {
+      "reihenfolge": "Reihenfolge der Quelle",
+      "alphabetisch": "alphabetisch"
+    },
+    "richtung": {
+      "auf": "aufsteigend",
+      "ab": "absteigend"
+    },
     "weekday": {
       "0": "Sonntag",
       "1": "Montag",

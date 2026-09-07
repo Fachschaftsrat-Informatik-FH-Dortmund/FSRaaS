@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor } from '@testing-library/react-native';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { ThemeProvider } from '@/theme';
 import { CanteenAllScreen } from './CanteenAllScreen';
@@ -110,6 +112,21 @@ describe('MENSA-F-230 alle drei Preise unabhängig von der Preisgruppe', () => {
         screen.getAllByText(/Studierende 3,30 € · Mitarbeitende 5,40 € · Gäste 6,50 €/).length,
       ).toBeGreaterThan(0),
     );
+  });
+});
+
+describe('Chip-Leiste zeigt Gruppen der aktiven Gruppierung', () => {
+  it('arbeitet ohne Bezug auf das Sortier-/Gruppierpreset — feste Mensa-Gliederung', () => {
+    const quelle = readFileSync(join(__dirname, 'CanteenAllScreen.tsx'), 'utf8');
+    expect(quelle).not.toMatch(/sortierPreset|useSortierGruppierung|from '\.\.\/sortierung'|\bwendeAn\b/);
+  });
+
+  it('gliedert die Ansicht weiterhin fest nach Mensa, unabhängig von einem Preset', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    // Reihenfolge folgt der Backend-Mensa-Liste, nicht einer Preset-Gruppenreihenfolge.
+    const mensen = screen.getAllByText(/^(Hauptmensa|Mensa Nord)$/).map((n) => n.props.children);
+    expect(mensen.indexOf('Hauptmensa')).toBeLessThan(mensen.lastIndexOf('Mensa Nord'));
   });
 });
 
