@@ -44,8 +44,14 @@ interface PlanEntryBase {
   gruppenzugehoerig: boolean;
   /** SCHED-F-260: Termin einer anderen Gruppe übernommen statt des eigenen. */
   abweichendeGruppe: boolean;
-  /** SCHED-F-310: Kollision bewusst in Kauf genommen. */
-  akzeptierterKonflikt: boolean;
+  /** Kennungen der Termine, mit denen eine Kollision bewusst angenommen wurde
+   * (Requirement „Bewusste Übernahme trotz Konflikt", vormals SCHED-F-310).
+   * Die Annahme trägt das Terminpaar, nicht der einzelne Eintrag: Ein Paar gilt
+   * nur als angenommen, wenn **beide** Termine einander nennen. Ein einzelnes
+   * Flag am Eintrag ließe eine nie angenommene Kollision stumm bleiben, sobald
+   * der angenommene Gegenpart durch einen anderen Termin ersetzt wird
+   * (design.md, Entscheidung 2). */
+  akzeptierteKonflikte: string[];
   istPruefung: boolean;
   gueltigVon: number | null;
   gueltigBis: number | null;

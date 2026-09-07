@@ -68,7 +68,7 @@ function baueEintrag(
     timeEndMin: termin.timeEndMin,
     gruppenzugehoerig,
     abweichendeGruppe: !gruppenzugehoerig, // SCHED-F-260
-    akzeptierterKonflikt: false,
+    akzeptierteKonflikte: [],
     istPruefung: false,
     gueltigVon: termin.gueltigVon,
     gueltigBis: termin.gueltigBis,

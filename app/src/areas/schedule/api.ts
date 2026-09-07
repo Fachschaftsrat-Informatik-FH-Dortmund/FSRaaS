@@ -72,6 +72,37 @@ export function useWahlpflichtTermine() {
   });
 }
 
+/**
+ * Requirement „Kennzeichnung vorlesungsfreier Wochen": Semesterbeginn und
+ * -ende aus den ferngepflegten Stammdaten (`GET /stammdaten`, API-F-230) als
+ * Unix-Sekunden, wie `wochenrechnung.wocheAusserhalbVorlesungszeit` sie
+ * erwartet. Fehlt eine der beiden Angaben, bleibt sie `null` — ohne bekannte
+ * Vorlesungszeit erzeugt die Ansicht keinen Hinweis, statt einen Fehlalarm zu
+ * riskieren.
+ */
+export function useVorlesungszeit() {
+  return useQuery<{ von: number | null; bis: number | null }>({
+    queryKey: ['stammdaten', 'vorlesungszeit'],
+    staleTime: staleTime('stammdaten'),
+    gcTime: gcTime('stammdaten'),
+    queryFn: async () => {
+      const stammdaten = unwrap(await api.GET('/stammdaten'));
+      return {
+        von: alsUnixSekunden(stammdaten.semestertermine.semesterBeginn),
+        bis: alsUnixSekunden(stammdaten.semestertermine.semesterEnde),
+      };
+    },
+  });
+}
+
+/** ISO-Datum `"YYYY-MM-DD"` als Unix-Sekunden zur Mittagszeit — zeitzonenunempfindlicher Vergleichspunkt. */
+function alsUnixSekunden(datum: string | undefined): number | null {
+  if (!datum) return null;
+  const [y, m, d] = datum.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return Math.floor(new Date(y, m - 1, d, 12, 0, 0).getTime() / 1000);
+}
+
 /** Studiengänge ohne React — für Hintergrundabgleiche (z. B. `semesterwechsel.ts` außerhalb eines Bildschirms). */
 export async function ladeStudiengaenge(): Promise<FbwsStudiengang[]> {
   return holeStudiengaenge();
