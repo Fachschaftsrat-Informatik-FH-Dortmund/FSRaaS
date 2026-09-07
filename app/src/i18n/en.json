@@ -67,6 +67,7 @@
     "oeffnungszeitMensa": "{{mensa}}: open {{zeit}}",
     "geschlossenHeute": "{{mensa}} is closed on this day.",
     "wiederGeoeffnet": "Reopens on {{tag}}.",
+    "wiederGeoeffnetDatum": "({{datum}})",
     "mensaGefiltert": "All dishes at this canteen are hidden by your filters.",
     "angebotIn": "Available at: {{mensen}}",
     "alleMensenAnzeigen": "Show all canteens",

@@ -67,6 +67,7 @@
     "oeffnungszeitMensa": "{{mensa}}: geöffnet {{zeit}}",
     "geschlossenHeute": "{{mensa}} hat an diesem Tag geschlossen.",
     "wiederGeoeffnet": "Wieder geöffnet am {{tag}}.",
+    "wiederGeoeffnetDatum": "({{datum}})",
     "mensaGefiltert": "Alle Gerichte dieser Mensa sind durch deine Filter ausgeblendet.",
     "angebotIn": "Angeboten in: {{mensen}}",
     "alleMensenAnzeigen": "Alle Mensen anzeigen",
