@@ -13,7 +13,7 @@ function termin(id: string, timeBeginMin: number, timeEndMin: number): CustomPla
     timeEndMin,
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
-    akzeptierterKonflikt: false,
+    akzeptierteKonflikte: [],
     istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,

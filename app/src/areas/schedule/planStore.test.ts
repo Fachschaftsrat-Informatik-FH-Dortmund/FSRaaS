@@ -16,7 +16,7 @@ function eigenerTermin(überschreibung: Partial<CustomPlanEntry> = {}): CustomPl
     timeEndMin: 570,
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
-    akzeptierterKonflikt: false,
+    akzeptierteKonflikte: [],
     istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
@@ -124,6 +124,25 @@ describe('DATA-F-020 inkonsistenter gespeicherter Bestand wird nicht kommentarlo
     errorSpy.mockRestore();
   });
 
+  it('überspringt einen Eintrag mit unlesbarem Konfliktfeld einzeln und behält den Rest', async () => {
+    await writeJson('scheduleEntries', [
+      eigenerTermin({ id: 'gueltig' }),
+      { ...eigenerTermin({ id: 'kaputtesKonfliktfeld' }), akzeptierteKonflikte: true },
+      { ...eigenerTermin({ id: 'keineKennungen' }), akzeptierteKonflikte: [1, 2] },
+    ]);
+    __resetScheduleEntriesForTest();
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]!.id).toBe('gueltig');
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(2);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
   it('verwirft einen eigenen Eintrag ohne das Feld wiederkehrend als ungültig (SCHED-F-730)', async () => {
     const ohneWiederkehrend: Record<string, unknown> = { ...eigenerTermin() };
     delete ohneWiederkehrend.wiederkehrend;
@@ -185,5 +204,59 @@ describe('SCHED-F-730 eigener Eintrag: wöchentlich wiederkehrend oder einmalig 
     const b = result.current.entries.find((e) => e.id === 'b') as CustomPlanEntry;
     expect(a.wiederkehrend).toBe(true);
     expect(b.wiederkehrend).toBe(false);
+  });
+});
+
+describe('Bewusste Übernahme trotz Konflikt', () => {
+  it('hält die Annahme an beiden Seiten des Paars fest', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'a' })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'b', timeBeginMin: 540, timeEndMin: 630 })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+
+    act(() => result.current.konfliktAnnehmen('a', 'b'));
+    await waitFor(() => expect(result.current.entries[0]!.akzeptierteKonflikte).toEqual(['b']));
+    expect(result.current.entries[1]!.akzeptierteKonflikte).toEqual(['a']);
+
+    const geladen = await readScheduleEntries();
+    expect(geladen.map((e) => e.akzeptierteKonflikte)).toEqual([['b'], ['a']]);
+  });
+
+  it('hält die Annahme bei zwei gleichzeitigen Kollisionen je Paar einzeln fest', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    // Der übernommene Termin „neu" kollidiert mit „a" und mit „b".
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'a', timeBeginMin: 480, timeEndMin: 540 })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'b', timeBeginMin: 540, timeEndMin: 600 })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'neu', timeBeginMin: 480, timeEndMin: 600 })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(3));
+
+    act(() => result.current.konfliktAnnehmen('neu', 'a'));
+    act(() => result.current.konfliktAnnehmen('neu', 'b'));
+
+    await waitFor(() => expect(result.current.entries[2]!.akzeptierteKonflikte).toEqual(['a', 'b']));
+    expect(result.current.entries[0]!.akzeptierteKonflikte).toEqual(['neu']);
+    expect(result.current.entries[1]!.akzeptierteKonflikte).toEqual(['neu']);
+  });
+
+  it('entfernt beim Löschen eines Termins die Nennungen auf ihn aus den übrigen Einträgen', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'a' })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'b', timeBeginMin: 540, timeEndMin: 630 })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+    act(() => result.current.konfliktAnnehmen('a', 'b'));
+    await waitFor(() => expect(result.current.entries[0]!.akzeptierteKonflikte).toEqual(['b']));
+
+    act(() => result.current.entfernen('b'));
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+
+    expect(result.current.entries[0]!.akzeptierteKonflikte).toEqual([]);
+    const geladen = await readScheduleEntries();
+    expect(geladen.some((e) => e.akzeptierteKonflikte.includes('b'))).toBe(false);
   });
 });
