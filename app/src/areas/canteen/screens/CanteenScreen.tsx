@@ -46,6 +46,7 @@ import {
 import { useCanteenSelection } from '../selection';
 import { AnkerListe } from '../ui/AnkerListe';
 import { wischRichtung } from '../gesten';
+import { naechsterOeffnungstag, oeffnungszeitFuer } from '../oeffnungszeiten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 
 // MENSA: Tages-Speiseplan als eine über die gewählten Mensen zusammengefasste
@@ -268,6 +269,7 @@ function GerichtListe({
   const konsolidierung = useMemo(() => konsolidiere(proMensa), [proMensa]);
   const geschlossene = konsolidierung.geschlossene;
   const ids = proMensa.map((p) => p.mensaId);
+  const nurEineMensa = ids.length === 1;
 
   // Sortier-/Gruppiermodell (Requirements „Wahl der Gruppierung" ff.): die
   // Abschnitte folgen dem aktiven Preset statt der festen Mensa-Gliederung. Die
@@ -281,40 +283,52 @@ function GerichtListe({
     bewertung: () => undefined,
   };
   const struktur = wendeAn(preset, konsolidierung, kontext);
+  const mensaGruppierung = struktur.gruppierungAktiv && preset.gruppierung === 'mensa';
   const hatGerichte = struktur.abschnitte.some((a) => a.gerichte.length > 0);
 
-  // Ernährungsfilter (MENSA-F-190/F-200): betroffene Gerichte ausblenden, zählen.
-  const gefiltert = (() => {
-    let ausgeblendet = 0;
-    const abschnitte = struktur.abschnitte
-      .map((a) => {
-        const sichtbar = a.gerichte.filter((e) => !betroffen(e.massgeblich));
-        ausgeblendet += a.gerichte.length - sichtbar.length;
-        return { ...a, gerichte: sichtbar };
-      })
-      .filter((a) => a.gerichte.length > 0);
-    return { abschnitte, ausgeblendet };
-  })();
+  // Ernährungsfilter je Abschnitt auswerten (MENSA-F-190/F-200) und den
+  // Anzeigezustand jedes Abschnitts nach der Tabelle in design.md D3 bestimmen:
+  // ein leerer Gerichte-Abschnitt wird bei Mensa-Gruppierung zum
+  // Filter-Hinweis-Abschnitt, sonst entfällt er; ein geschlossener Abschnitt
+  // bleibt immer erhalten. Die reine Sortierlogik erfährt nichts von Filtern.
+  let ausgeblendet = 0;
+  const angezeigte: {
+    id: string;
+    titel: string | null;
+    art: 'gerichte' | 'geschlossen' | 'gefiltert';
+    gerichte: KonsolidiertesGericht[];
+  }[] = [];
+  for (const a of struktur.abschnitte) {
+    if (a.zustand === 'geschlossen') {
+      angezeigte.push({ id: a.id, titel: a.titel, art: 'geschlossen', gerichte: [] });
+      continue;
+    }
+    const sichtbar = a.gerichte.filter((e) => !betroffen(e.massgeblich));
+    ausgeblendet += a.gerichte.length - sichtbar.length;
+    if (sichtbar.length > 0) {
+      angezeigte.push({ id: a.id, titel: a.titel, art: 'gerichte', gerichte: sichtbar });
+    } else if (mensaGruppierung) {
+      angezeigte.push({ id: a.id, titel: a.titel, art: 'gefiltert', gerichte: [] });
+    }
+  }
 
-  const sichtbareIds = new Set(gefiltert.abschnitte.map((a) => a.id));
-  const mehrereAbschnitte = gefiltert.abschnitte.length > 1;
+  const sichtbareIds = new Set(angezeigte.map((a) => a.id));
+  const mehrereAbschnitte = angezeigte.length > 1;
   // Chip-Leiste (Requirement „Chip-Leiste zeigt Gruppen der aktiven Gruppierung"):
   // die Gruppen der aktiven Gruppierung in Gruppenreihenfolge; ohne Gruppierung
-  // keine Chips. Eine Gruppe ohne sichtbaren Abschnitt — geschlossen oder ganz
-  // weggefiltert — ist nicht auswählbar (Requirement „Nicht auswählbare Chips …").
+  // keine Chips. Bei Mensa-Gruppierung führt jede gewählte Mensa einen Abschnitt
+  // — mit Angebot, Geschlossen- oder Filter-Hinweis —, ihr Chip ist damit stets
+  // auswählbar; nicht auswählbar bleibt nur eine Gruppe ohne eigenen Abschnitt,
+  // was künftig allein die Kategorie-Gruppierung betrifft (Requirement „Nicht
+  // auswählbare Chips ohne sichtbaren Abschnitt").
   const chips = !struktur.gruppierungAktiv
     ? []
-    : preset.gruppierung === 'mensa'
-      ? [
-          ...struktur.abschnitte.map((a) => ({
-            id: a.id,
-            titel: nameVon(a.id),
-            deaktiviert: !sichtbareIds.has(a.id),
-          })),
-          ...ids
-            .filter((id) => !struktur.abschnitte.some((a) => a.id === id))
-            .map((id) => ({ id, titel: nameVon(id), deaktiviert: true })),
-        ]
+    : mensaGruppierung
+      ? struktur.abschnitte.map((a) => ({
+          id: a.id,
+          titel: nameVon(a.id),
+          deaktiviert: !sichtbareIds.has(a.id),
+        }))
       : struktur.abschnitte.map((a) => ({
           id: a.id,
           titel: a.titel ?? t('mensa.sammelgruppe'),
@@ -332,18 +346,28 @@ function GerichtListe({
     }),
   ).current;
 
-  // MENSA-F-290: für eine Mensa ohne Angebot am Tag keine Öffnungszeit-Zeile —
-  // sie steht dann allein im Geschlossen-Hinweis (MENSA-F-049).
-  const oeffnungszeilen = proMensa
-    .filter((p) => !geschlossene.includes(p.mensaId))
-    .map((p) => {
-      const zeit = oeffnungszeitFuer(
-        mensen.find((m) => m.id === p.mensaId),
-        datum,
-      );
-      return zeit ? t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit }) : null;
-    })
-    .filter((z): z is string => z !== null);
+  // Öffnungszeit-Zeilen und Geschlossen-Zeilen erscheinen im Fußbereich nur noch,
+  // wenn die Gruppierung nicht „nach Mensa" ist — bei Mensa-Gruppierung tragen
+  // die Abschnittsüberschriften die Öffnungszeit und die geschlossenen Abschnitte
+  // den Geschlossen-Hinweis (design.md D5, Requirements „Öffnungszeit an der
+  // Mensa-Abschnittsüberschrift" / „Geschlossen-Hinweis für Mensa ohne Angebot").
+  // Führt am Tag keine gewählte Mensa ein Angebot, entstehen gar keine
+  // Abschnitte (design.md D4, Leerzustand „Heute kein Angebot") — dann trägt der
+  // Fußbereich den vollen Kontext, unabhängig von der Gruppierung.
+  // Für eine Mensa ohne Angebot am Tag ohnehin keine Öffnungszeit (MENSA-F-290).
+  const mensaAbschnitteAktiv = mensaGruppierung && hatGerichte;
+  const oeffnungszeilen = mensaAbschnitteAktiv
+    ? []
+    : proMensa
+        .filter((p) => !geschlossene.includes(p.mensaId))
+        .map((p) => {
+          const zeit = oeffnungszeitFuer(
+            mensen.find((m) => m.id === p.mensaId),
+            datum,
+          );
+          return zeit ? t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit }) : null;
+        })
+        .filter((z): z is string => z !== null);
 
   const fuss = (
     <View style={styles.fuss}>
@@ -352,16 +376,18 @@ function GerichtListe({
           {z}
         </Text>
       ))}
-      {gefiltert.ausgeblendet > 0 ? (
+      {ausgeblendet > 0 ? (
         <Text style={[styles.fussZeile, { color: colors.textMuted }]}>
-          {t('mensa.ausgeblendet', { count: gefiltert.ausgeblendet })}
+          {t('mensa.ausgeblendet', { count: ausgeblendet })}
         </Text>
       ) : null}
-      {geschlossene.map((id) => (
-        <Text key={id} style={[styles.fussZeile, { color: colors.textMuted }]}>
-          {t('mensa.geschlossenHeute', { mensa: nameVon(id) })}
-        </Text>
-      ))}
+      {!mensaAbschnitteAktiv
+        ? geschlossene.map((id) => (
+            <Text key={id} style={[styles.fussZeile, { color: colors.textMuted }]}>
+              {t('mensa.geschlossenHeute', { mensa: nameVon(id) })}
+            </Text>
+          ))
+        : null}
       <View style={styles.fussAktion}>
         <AlleMensenKnopf datum={datum} />
       </View>
@@ -372,8 +398,11 @@ function GerichtListe({
     <RefreshControl refreshing={aktualisiertGerade} onRefresh={onAktualisieren} />
   );
 
-  // Alle Gerichte durch den Filter ausgeblendet — eigener Leerzustand (Abschnitt 7).
-  if (hatGerichte && gefiltert.abschnitte.length === 0 && gefiltert.ausgeblendet > 0) {
+  // Alle Gerichte durch den Filter ausgeblendet und kein Abschnitt bleibt stehen
+  // — eigener Leerzustand (Abschnitt 7). Bei Mensa-Gruppierung tritt dieser Fall
+  // nicht ein: dort behält jede Mensa mit Angebot ihren Abschnitt als
+  // Filter-Hinweis (design.md D3).
+  if (hatGerichte && angezeigte.length === 0 && ausgeblendet > 0) {
     return (
       <ScrollView
         contentContainerStyle={styles.liste}
@@ -390,7 +419,9 @@ function GerichtListe({
     );
   }
 
-  // Keine der gewählten Mensen führt ein Angebot.
+  // Keine der gewählten Mensen führt ein Angebot: der querschnittliche
+  // Leerzustand „Heute kein Angebot" (Capability `architecture`), nicht eine
+  // Liste aus lauter Geschlossen-Abschnitten (design.md D4).
   if (!hatGerichte) {
     return (
       <ScrollView
@@ -445,27 +476,79 @@ function GerichtListe({
         ...swipe.panHandlers,
       }}
       fuss={fuss}
-      abschnitte={gefiltert.abschnitte.map((abschnitt) => ({
-        id: abschnitt.id,
-        inhalt: (
-          <View style={styles.sektion}>
-            {struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel ? (
-              <Text style={[styles.sektionTitel, { color: colors.text }]}>{abschnitt.titel}</Text>
-            ) : null}
-            {abschnitt.gerichte.map((g) => (
-              <GerichtKarte
-                key={g.schluessel}
-                eintrag={g}
-                zeigeAnbieter={g.anbieter.length > 1}
-                nameVon={nameVon}
-                group={group}
-                favorit={favorites.has(g.schluessel)}
-                onStern={() => void markiere(g)}
-              />
-            ))}
-          </View>
-        ),
-      }))}
+      abschnitte={angezeigte.map((abschnitt) => {
+        // Öffnungszeit an der Überschrift nur bei Mensa-Gruppierung und nur für
+        // eine Mensa mit Angebot bzw. vollständig gefilterte Mensa — nie für eine
+        // geschlossene (design.md D5, Requirement „Keine Öffnungszeit für Mensa
+        // ohne Angebot"). Die Abschnitts-Kennung ist bei Mensa-Gruppierung die
+        // Mensa-Kennung.
+        const zeit =
+          mensaGruppierung && abschnitt.art !== 'geschlossen'
+            ? oeffnungszeitFuer(
+                mensen.find((m) => m.id === abschnitt.id),
+                datum,
+              )
+            : null;
+        // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
+        // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.
+        const zeigeKopf = mensaGruppierung
+          ? true
+          : struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel != null;
+        const kopfName = mensaGruppierung ? nameVon(abschnitt.id) : abschnitt.titel;
+        const wieder =
+          abschnitt.art === 'geschlossen'
+            ? naechsterOeffnungstag(
+                mensen.find((m) => m.id === abschnitt.id),
+                datum,
+              )
+            : null;
+        return {
+          id: abschnitt.id,
+          inhalt: (
+            <View style={styles.sektion}>
+              {zeigeKopf && kopfName != null ? (
+                <View style={styles.sektionKopf}>
+                  <Text style={[styles.sektionTitel, { color: colors.text }]}>{kopfName}</Text>
+                  {zeit ? (
+                    <Text
+                      style={[
+                        styles.oeffnungPille,
+                        { color: colors.text, backgroundColor: colors.surface },
+                      ]}
+                    >
+                      {t('mensa.oeffnungszeit', { zeit })}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+              {abschnitt.art === 'geschlossen' ? (
+                <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
+                  {t('mensa.geschlossenHeute', { mensa: nameVon(abschnitt.id) })}
+                  {wieder != null
+                    ? ` ${t('mensa.wiederGeoeffnet', { tag: t(`mensa.weekday.${wieder}`) })}`
+                    : ''}
+                </Text>
+              ) : null}
+              {abschnitt.art === 'gefiltert' ? (
+                <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
+                  {t('mensa.mensaGefiltert')}
+                </Text>
+              ) : null}
+              {abschnitt.gerichte.map((g) => (
+                <GerichtKarte
+                  key={g.schluessel}
+                  eintrag={g}
+                  zeigeAnbieter={mensaGruppierung ? g.anbieter.length > 1 : !nurEineMensa}
+                  nameVon={nameVon}
+                  group={group}
+                  favorit={favorites.has(g.schluessel)}
+                  onStern={() => void markiere(g)}
+                />
+              ))}
+            </View>
+          ),
+        };
+      })}
     />
   );
 }
@@ -554,15 +637,6 @@ function AlleMensenKnopf({ datum }: { datum: string }) {
 
 // -------------------------------------------------------------------- Helfer
 
-function oeffnungszeitFuer(mensa: Mensa | undefined, datum: string): string | null {
-  const zeiten = mensa?.oeffnungszeiten;
-  if (!zeiten || zeiten.length < 5) return null;
-  const [y, m, d] = datum.split('-').map(Number);
-  const wochentag = new Date(y!, m! - 1, d!).getDay();
-  if (wochentag === 0 || wochentag === 6) return null;
-  return zeiten[wochentag - 1] ?? null;
-}
-
 function formatDatum(datum: string, t: TFunction): string {
   const [y, m, d] = datum.split('-').map(Number);
   const wd = new Date(y!, m! - 1, d!).getDay();
@@ -579,7 +653,20 @@ const styles = StyleSheet.create({
   leerAktionen: { gap: 8 },
   liste: { gap: 16, paddingBottom: 24 },
   sektion: { gap: 10 },
+  // Kopfzeile je Abschnitt: Name und Öffnungszeit-Angabe in einer Zeile, die auf
+  // schmalen Geräten umbricht, statt den Namen abzuschneiden (design.md D5).
+  sektionKopf: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   sektionTitel: { fontSize: 17, fontWeight: '700' },
+  // Zurückgenommen über Schriftgröße und Pille, nicht über blassen Text:
+  // `colors.text` auf `colors.surface` hält den Mindestkontrast 4,5:1 (D5).
+  oeffnungPille: {
+    fontSize: 12,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  hinweisZeile: { fontSize: 13 },
   karte: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 4 },
   kartekopf: {
     flexDirection: 'row',
