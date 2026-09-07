@@ -16,6 +16,14 @@ public class SpeiseplanTag
     /// <summary>Gerichte als JSON-Liste von <see cref="GerichtCache"/> — zweisprachig, mit vorab berechnetem Schlüssel.</summary>
     public string GerichteJson { get; set; } = "[]";
 
+    /// <summary>
+    /// Anzahl der Einträge in <see cref="GerichteJson"/>, beim Schreiben gesetzt (nicht
+    /// aus dem JSON abgeleitet). Erlaubt die Suche nach dem nächsten Tag mit Angebot per
+    /// SQL (<c>WHERE "AnzahlGerichte" > 0</c>), ohne bei jeder Abfrage jede Kandidatenzeile
+    /// zu deserialisieren.
+    /// </summary>
+    public int AnzahlGerichte { get; set; }
+
     public DateTimeOffset AbgerufenAm { get; set; }
 }
 

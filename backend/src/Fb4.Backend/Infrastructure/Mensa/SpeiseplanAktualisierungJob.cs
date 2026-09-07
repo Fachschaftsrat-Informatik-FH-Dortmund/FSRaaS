@@ -108,6 +108,7 @@ public sealed class SpeiseplanAktualisierungJob(
                 MensaId = mensa.Id,
                 Datum = datum,
                 GerichteJson = JsonSerializer.Serialize(cache, Json),
+                AnzahlGerichte = cache.Count,
                 AbgerufenAm = jetzt,
             });
         }

@@ -25,8 +25,8 @@ public static class MensaEndpoints
             if (!await store.MensaBekanntAsync(mensaId, ct))
                 throw ApiException.NotFound("mensa_unbekannt", $"Keine Mensa mit der Kennung „{mensaId}“.");
 
-            var (gerichte, stand) = await store.TagAsync(mensaId, tag, Sprache(sprache), ct);
-            return Results.Ok(new { gerichte, standAlter = stand });
+            var (gerichte, stand, naechsteOeffnung) = await store.TagAsync(mensaId, tag, Sprache(sprache), ct);
+            return Results.Ok(new { gerichte, standAlter = stand, naechsteOeffnung });
         }).AllowAnonymous().WithTags("mensa");
 
         app.MapGet("/mensen/verzeichnisse", async (

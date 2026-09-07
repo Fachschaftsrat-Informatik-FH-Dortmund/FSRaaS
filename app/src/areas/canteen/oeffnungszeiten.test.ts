@@ -1,4 +1,4 @@
-import { naechsterOeffnungstag, oeffnungszeitFuer } from './oeffnungszeiten';
+import { oeffnungszeitFuer } from './oeffnungszeiten';
 import type { Mensa } from './api';
 
 // 2026-09-07 ist ein Montag, 2026-09-11 ein Freitag, 2026-09-12 ein Samstag,
@@ -37,31 +37,5 @@ describe('Öffnungszeit-Auflösung nach Wochentag', () => {
   it('liefert ohne hinterlegte Öffnungszeiten nichts', () => {
     expect(oeffnungszeitFuer(mensa(undefined), '2026-09-07')).toBeNull();
     expect(oeffnungszeitFuer(undefined, '2026-09-07')).toBeNull();
-  });
-});
-
-describe('Wiedereröffnungshinweis an der geschlossenen Mensa', () => {
-  it('nennt den nächstgelegenen der folgenden sieben Tage mit hinterlegter Öffnungszeit', () => {
-    // Geschlossen am Samstag (2026-09-12); Mo–Fr gepflegt, Wochenende nicht.
-    const m = mensa(['Mo', 'Di', 'Mi', 'Do', 'Fr']);
-    // Folgetag ist Sonntag (nichts hinterlegt), dann Montag 2026-09-14 → getDay() 1.
-    expect(naechsterOeffnungstag(m, '2026-09-12')).toBe(1);
-  });
-
-  it('sucht ab dem Folgetag, nicht ab dem angezeigten Tag selbst', () => {
-    // Angezeigt: Montag 2026-09-07, nur Mittwoch gepflegt.
-    const m = mensa([null, null, 'Mi', null, null]);
-    expect(naechsterOeffnungstag(m, '2026-09-07')).toBe(3); // Mittwoch
-  });
-
-  it('findet einen Öffnungstag auch, wenn er genau sieben Tage entfernt liegt', () => {
-    // Nur Montag gepflegt; angezeigt Montag → nächster Montag ist +7.
-    const m = mensa(['Mo', null, null, null, null]);
-    expect(naechsterOeffnungstag(m, '2026-09-07')).toBe(1);
-  });
-
-  it('liefert null, wenn keiner der folgenden sieben Tage eine Öffnungszeit führt', () => {
-    expect(naechsterOeffnungstag(mensa([]), '2026-09-07')).toBeNull();
-    expect(naechsterOeffnungstag(mensa(undefined), '2026-09-07')).toBeNull();
   });
 });

@@ -49,6 +49,7 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
         {
             MensaId = "Mensa", Datum = Tag,
             GerichteJson = JsonSerializer.Serialize(gerichte, Json),
+            AnzahlGerichte = gerichte.Count,
             AbgerufenAm = DateTimeOffset.UtcNow,
         });
         db.MensaVerzeichnis.AddRange(
@@ -60,7 +61,7 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
         db.SaveChanges();
     }
 
-    sealed record SpeiseplanAntwort(List<Gericht> Gerichte, StandAlter StandAlter);
+    sealed record SpeiseplanAntwort(List<Gericht> Gerichte, StandAlter StandAlter, DateOnly? NaechsteOeffnung);
 
     [Fact]
     public async Task MENSA_F_010_liefert_die_Gerichte_des_Tages_aus_dem_Zwischenspeicher()
@@ -122,6 +123,7 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
             {
                 MensaId = "Foodfakultaet", Datum = Tag,
                 GerichteJson = JsonSerializer.Serialize(gerichte, Json),
+                AnzahlGerichte = gerichte.Count,
                 AbgerufenAm = DateTimeOffset.UtcNow,
             });
             db.SaveChanges();
@@ -160,6 +162,82 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
         var antwort = await response.Content.ReadFromJsonAsync<SpeiseplanAntwort>();
 
         Assert.Empty(antwort!.Gerichte);
+    }
+
+    /// <summary>
+    /// Requirement „Wiedereröffnungshinweis an der geschlossenen Mensa": Scenario
+    /// „Geschlossene Mensa mit späterem Öffnungstag".
+    /// </summary>
+    [Fact]
+    public async Task Wiedereroeffnungshinweis_nennt_naechsten_Tag_mit_Angebot_im_Zwischenspeicher()
+    {
+        Seed();
+        using (var scope = factory.NewScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Fb4DbContext>();
+            db.Speiseplaene.Add(new SpeiseplanTag
+            {
+                MensaId = "Mensa", Datum = Tag.AddDays(9),
+                GerichteJson = """[{"Schluessel":"suppe"}]""",
+                AnzahlGerichte = 1,
+                AbgerufenAm = DateTimeOffset.UtcNow,
+            });
+            db.SaveChanges();
+        }
+        var client = factory.CreateClient();
+
+        var antwort = await client.GetFromJsonAsync<SpeiseplanAntwort>($"/v1/mensen/Mensa/speiseplan/{Tag.AddDays(1):yyyy-MM-dd}");
+
+        Assert.Empty(antwort!.Gerichte);
+        Assert.Equal(Tag.AddDays(9), antwort.NaechsteOeffnung);
+    }
+
+    /// <summary>
+    /// Requirement „Wiedereröffnungshinweis an der geschlossenen Mensa": Scenario
+    /// „Keine Öffnungszeit in den folgenden sieben Tagen" — ohne künstliche Tagesgrenze:
+    /// führt kein bekannter Tag ein Angebot, entfällt der Zusatz.
+    /// </summary>
+    [Fact]
+    public async Task Wiedereroeffnungshinweis_entfaellt_ohne_bekannten_Tag_mit_Angebot()
+    {
+        Seed();
+        var client = factory.CreateClient();
+
+        var antwort = await client.GetFromJsonAsync<SpeiseplanAntwort>($"/v1/mensen/Mensa/speiseplan/{Tag.AddDays(1):yyyy-MM-dd}");
+
+        Assert.Empty(antwort!.Gerichte);
+        Assert.Null(antwort.NaechsteOeffnung);
+    }
+
+    /// <summary>
+    /// Requirement „Wiedereröffnungshinweis an der geschlossenen Mensa": Scenario
+    /// „Zwischenzeitlich veröffentlichter Speiseplan" — ein zuvor unbekannter Tag mit
+    /// Angebot wird bei der nächsten Anzeige berücksichtigt, ohne Sonderbehandlung.
+    /// </summary>
+    [Fact]
+    public async Task Wiedereroeffnungshinweis_beruecksichtigt_nachtraeglich_veroeffentlichten_Tag()
+    {
+        Seed();
+        var client = factory.CreateClient();
+        var ersteAntwort = await client.GetFromJsonAsync<SpeiseplanAntwort>($"/v1/mensen/Mensa/speiseplan/{Tag.AddDays(1):yyyy-MM-dd}");
+        Assert.Null(ersteAntwort!.NaechsteOeffnung);
+
+        using (var scope = factory.NewScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Fb4DbContext>();
+            db.Speiseplaene.Add(new SpeiseplanTag
+            {
+                MensaId = "Mensa", Datum = Tag.AddDays(3),
+                GerichteJson = """[{"Schluessel":"suppe"}]""",
+                AnzahlGerichte = 1,
+                AbgerufenAm = DateTimeOffset.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var zweiteAntwort = await client.GetFromJsonAsync<SpeiseplanAntwort>($"/v1/mensen/Mensa/speiseplan/{Tag.AddDays(1):yyyy-MM-dd}");
+
+        Assert.Equal(Tag.AddDays(3), zweiteAntwort!.NaechsteOeffnung);
     }
 
     [Fact]
