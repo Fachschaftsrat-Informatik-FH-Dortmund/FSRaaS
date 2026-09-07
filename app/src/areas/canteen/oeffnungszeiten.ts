@@ -4,8 +4,9 @@ import type { Mensa } from './api';
 // Mensa-Stammdaten (Vertrag: „Ein Eintrag je Wochentag, Montag zuerst", Einträge
 // dürfen `null` sein). Reine Fachlogik ohne React (Capability
 // `quality-and-testing`, Abschnitt 5). Der Wiedereröffnungshinweis an einer
-// geschlossenen Mensa speist sich ausschließlich aus dieser Wochenangabe — kein
-// zusätzlicher Speiseplan-Abruf, offline verfügbar (design.md D1/D8).
+// geschlossenen Mensa stützt sich seit `canteen-wiedereroeffnung-aus-speiseplan`
+// nicht mehr auf diese Wochenangabe, sondern auf das vom Backend gelieferte Feld
+// `naechsteOeffnung` (siehe api.ts, CanteenScreen.tsx).
 
 /** Index in `oeffnungszeiten` (Montag zuerst) für ein ISO-Datum. */
 function wochentagIndex(datum: string): number {
@@ -27,22 +28,4 @@ export function oeffnungszeitFuer(mensa: Mensa | undefined, datum: string): stri
   const i = wochentagIndex(datum);
   if (i >= zeiten.length) return null;
   return zeiten[i] ?? null;
-}
-
-/**
- * Nächster Wochentag ab dem Tag *nach* `datum`, für den die Stammdaten eine
- * Öffnungszeit führen; gesucht über höchstens die folgenden sieben Tage. Liefert
- * den Wochentag als `Date.getDay()`-Wert (0 = Sonntag … 6 = Samstag) oder `null`,
- * wenn keiner dieser Tage eine Öffnungszeit führt (design.md D1).
- */
-export function naechsterOeffnungstag(mensa: Mensa | undefined, datum: string): number | null {
-  const zeiten = mensa?.oeffnungszeiten;
-  if (!zeiten) return null;
-  const [y, m, d] = datum.split('-').map(Number);
-  for (let versatz = 1; versatz <= 7; versatz++) {
-    const tag = new Date(y!, m! - 1, d! + versatz);
-    const i = (tag.getDay() + 6) % 7;
-    if (i < zeiten.length && zeiten[i] != null) return tag.getDay();
-  }
-  return null;
 }
