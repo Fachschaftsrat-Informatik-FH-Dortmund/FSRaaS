@@ -42,8 +42,9 @@ describe('QA-F-030 Beispieltabelle aus spec.md Abschnitt 4 (Gruppenzuordnung)', 
       erwartet: true,
       grund: 'unbekanntes Muster, sicherer Rückfall auf zugehörig statt fälschlich fremd (SEC-F-060)',
     },
-    // Kennung ohne Zahl: seit dem 2026-09-06 unzulässig, aus einem älteren
-    // gerätelokalen Stand oder einer unerwarteten INT-019-Antwort aber möglich.
+    // Kennung ohne Zahl: seit dem 2026-09-06 unzulässig, über eine bestätigte
+    // INT-019-Antwort aber weiterhin möglich — der Vorschlag wird ungeprüft
+    // übernommen, und der Endpunkt ist undokumentiert und ohne SLA.
     { kennung: 'H', studentSet: 'H5-J', erwartet: true, grund: 'unvollständig an der Anfangsgrenze mit Zahl, nicht entscheidbar' },
     { kennung: 'C', studentSet: 'C5-E', erwartet: true, grund: 'unvollständig an der Anfangsgrenze mit Zahl, nicht entscheidbar' },
     { kennung: 'M', studentSet: 'J-M4', erwartet: true, grund: 'unvollständig an der Endgrenze mit Zahl, nicht entscheidbar' },

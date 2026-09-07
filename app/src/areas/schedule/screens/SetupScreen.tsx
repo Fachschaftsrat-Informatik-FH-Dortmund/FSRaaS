@@ -28,10 +28,12 @@ const BUCHSTABEN = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 +
 type GruppenkennungModus = 'matrikelnummer' | 'manuell';
 
 /**
- * Zerlegt eine gespeicherte Kennung in die zwei Eingabefelder. Ein unvollständiger
- * Altbestand (`H`, vor dem 2026-09-06 zulässig) wird dabei nicht verworfen, sondern
- * als Buchstabe ohne Zahl angeboten — so lässt sich die fehlende Zahl nachtragen,
- * statt die Eingabe kommentarlos zurückzusetzen (Fehlerfälle, `schedule/spec.md`).
+ * Zerlegt eine gespeicherte Kennung in die zwei Eingabefelder. Eine unvollständige
+ * Kennung wird dabei nicht verworfen, sondern als Buchstabe ohne Zahl angeboten —
+ * so lässt sich die fehlende Zahl nachtragen, statt die Eingabe kommentarlos
+ * zurückzusetzen (Fehlerfälle, `schedule/spec.md`). Entstehen kann sie über
+ * `gruppenkennungVorschlagBestaetigen`: Eine INT-019-Antwort wird ungeprüft
+ * übernommen, und der Endpunkt ist undokumentiert und ohne SLA.
  */
 function splitKennung(kennung: string | null): { buchstabe: string; zahl: string } {
   if (!kennung) return { buchstabe: '', zahl: '' };

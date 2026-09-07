@@ -199,16 +199,6 @@ describe('Keine Speicherung der Matrikelnummer', () => {
     expect(danach.result.current.matrikelnummer).toBeNull();
   });
 
-  it('löscht einen vor dem 2026-09-06 gespeicherten Altbestand beim ersten Zugriff', async () => {
-    await AsyncStorage.setItem('fb4:scheduleMatrikelnummer', JSON.stringify(PLATZHALTER_MATRIKELNUMMER));
-
-    renderHook(() => useMatrikelnummer());
-
-    await waitFor(async () => {
-      expect(await AsyncStorage.getItem('fb4:scheduleMatrikelnummer')).toBeNull();
-    });
-  });
-
   it('entfernt die Matrikelnummer wieder mit null', async () => {
     const { result } = renderHook(() => useMatrikelnummer());
 

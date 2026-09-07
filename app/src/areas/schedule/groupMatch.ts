@@ -41,9 +41,10 @@ const MUSTER_BEREICH = /^([A-Za-z])([0-9]*)-([A-Za-z])([0-9]*)$/;
 // `studentSet`-Werte tragen eine Zahl an einer Bereichsgrenze (`C5-E`, `M5-P`,
 // `J-M4`, `H5-J`, `F-H4`), an der sie mitentscheidet.
 //
-// Eine Kennung ohne Zahl kann die Eingabe deshalb nicht mehr erzeugen, aus
-// einem älteren gerätelokalen Stand oder einer unerwarteten INT-019-Antwort
-// aber weiterhin vorliegen. Sie wird als unvollständig geführt (`zahl: null`)
+// Eine Kennung ohne Zahl kann die Eingabe deshalb nicht mehr erzeugen, über
+// eine bestätigte INT-019-Antwort aber weiterhin vorliegen: `einrichtung.ts`
+// übernimmt den Vorschlag ungeprüft, und der Endpunkt ist undokumentiert und
+// ohne SLA. Sie wird als unvollständig geführt (`zahl: null`)
 // statt die fehlende Zahl als `0` zu lesen: `Number('')` ergab 0, wodurch eine
 // Kennung `H` an der Grenze `H5-J` wegen 0 < 5 fälschlich als gruppenfremd
 // galt und bei aktivem Ausblenden-Schalter aus dem Plan verschwand.
