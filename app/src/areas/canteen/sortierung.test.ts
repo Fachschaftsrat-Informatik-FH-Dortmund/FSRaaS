@@ -80,6 +80,78 @@ describe('Wahl der Gruppierung', () => {
   });
 });
 
+describe('Gliederung nach Mensa-Auswahlreihenfolge bei aktiver Mensa-Gruppierung', () => {
+  const ctx = kontext({
+    mensaReihenfolge: ['Mensa', 'Sued', 'Nord'],
+    mensaName: (id) =>
+      ({ Mensa: 'Hauptmensa', Sued: 'Mensa Süd', Nord: 'Mensa Nord' })[id] ?? id,
+  });
+
+  it('gliedert in Abschnitte je gewählter Mensa in der gewählten Gruppenreihenfolge', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g()]),
+      plan('Sued', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    ]);
+    const s = wendeAn(
+      kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+      k,
+      ctx,
+    );
+    expect(s.abschnitte.map((a) => a.titel)).toEqual(['Hauptmensa', 'Mensa Süd']);
+    expect(s.abschnitte.every((a) => a.zustand === 'gerichte')).toBe(true);
+  });
+
+  it('führt für eine gewählte Mensa ohne Angebot einen eigenen Abschnitt an der Stelle der Gruppenreihenfolge', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g()]),
+      plan('Sued', []), // kein Angebot am Tag
+      plan('Nord', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    ]);
+    const s = wendeAn(
+      kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+      k,
+      ctx,
+    );
+    expect(s.abschnitte.map((a) => a.titel)).toEqual(['Hauptmensa', 'Mensa Süd', 'Mensa Nord']);
+    const sued = s.abschnitte.find((a) => a.titel === 'Mensa Süd')!;
+    expect(sued.zustand).toBe('geschlossen');
+    expect(sued.gerichte).toEqual([]);
+  });
+
+  it('erzeugt bei Gruppierung „keine" und „nach Kategorie" keinen geschlossenen Abschnitt', () => {
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [])]);
+    for (const gruppierung of ['keine', 'kategorie'] as const) {
+      const s = wendeAn(
+        kombi({ gruppierung, gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+        k,
+        ctx,
+      );
+      expect(s.abschnitte.every((a) => a.zustand === 'gerichte')).toBe(true);
+    }
+  });
+
+  it('ordnet den geschlossenen Abschnitt wie einen offenen — beide Kriterien, beide Richtungen', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g()]),
+      plan('Sued', []),
+      plan('Nord', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    ]);
+    const titel = (kr: 'reihenfolge' | 'alphabetisch', ri: 'auf' | 'ab') =>
+      wendeAn(
+        kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: kr, richtung: ri } }),
+        k,
+        ctx,
+      ).abschnitte.map((a) => a.titel);
+
+    // eingestellte Mensa-Reihenfolge: Mensa, Sued, Nord — Süd (geschlossen) in der Mitte.
+    expect(titel('reihenfolge', 'auf')).toEqual(['Hauptmensa', 'Mensa Süd', 'Mensa Nord']);
+    expect(titel('reihenfolge', 'ab')).toEqual(['Mensa Nord', 'Mensa Süd', 'Hauptmensa']);
+    // alphabetisch nach Mensa-Name: Hauptmensa, Mensa Nord, Mensa Süd.
+    expect(titel('alphabetisch', 'auf')).toEqual(['Hauptmensa', 'Mensa Nord', 'Mensa Süd']);
+    expect(titel('alphabetisch', 'ab')).toEqual(['Mensa Süd', 'Mensa Nord', 'Hauptmensa']);
+  });
+});
+
 describe('Wahl der Gerichte-Sortierung', () => {
   const k = konsolidiere([
     plan('Mensa', [
