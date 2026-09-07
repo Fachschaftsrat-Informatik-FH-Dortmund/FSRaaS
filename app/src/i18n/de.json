@@ -66,6 +66,8 @@
     "oeffnungszeit": "Geöffnet {{zeit}}",
     "oeffnungszeitMensa": "{{mensa}}: geöffnet {{zeit}}",
     "geschlossenHeute": "{{mensa}} hat an diesem Tag geschlossen.",
+    "wiederGeoeffnet": "Wieder geöffnet am {{tag}}.",
+    "mensaGefiltert": "Alle Gerichte dieser Mensa sind durch deine Filter ausgeblendet.",
     "angebotIn": "Angeboten in: {{mensen}}",
     "alleMensenAnzeigen": "Alle Mensen anzeigen",
     "alleMensenTitel": "Alle Mensen",
@@ -129,14 +131,15 @@
       "kategorie": "nach Kategorie"
     },
     "sortierkriterium": {
-      "quelle": "Reihenfolge der Quelle",
+      "quelle": "Reihenfolge der Mensa",
       "bezeichnung": "Bezeichnung",
       "preis": "Preis",
       "eigeneBewertung": "eigene Bewertungsstufe",
       "community": "Community-Gesamtbewertung"
     },
     "gruppenkriterium": {
-      "reihenfolge": "Reihenfolge der Quelle",
+      "reihenfolgeMensa": "Meine Mensa-Reihenfolge",
+      "reihenfolgeKategorie": "Reihenfolge der Mensa",
       "alphabetisch": "alphabetisch"
     },
     "richtung": {

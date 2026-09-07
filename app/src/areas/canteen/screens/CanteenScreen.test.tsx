@@ -301,16 +301,49 @@ describe('MENSA-F-045 Blättern zu benachbarten Tagen', () => {
   });
 });
 
-describe('MENSA-F-049 geschlossene Mensa am Seitenende', () => {
-  it('weist eine gewählte Mensa ohne Angebot als geschlossen aus', async () => {
+describe('Geschlossen-Hinweis für Mensa ohne Angebot', () => {
+  it('zeigt den Geschlossen-Hinweis bei Mensa-Gruppierung in ihrem Abschnitt unter der Mensa-Überschrift', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    // Chip und Abschnittsüberschrift tragen beide den Namen.
+    expect(screen.getAllByText('Mensa Süd').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/Mensa Süd hat an diesem Tag geschlossen\./)).toBeTruthy();
+  });
+
+  it('zeigt sie ohne Mensa-Gruppierung am Ende der Gerichtsliste', async () => {
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
     mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText('Mensa Süd hat an diesem Tag geschlossen.')).toBeTruthy();
   });
+});
 
-  it('MENSA-F-290 zeigt für die geschlossene Mensa keine Öffnungszeit-Zeile', async () => {
+describe('Keine Öffnungszeit für Mensa ohne Angebot', () => {
+  it('zeigt bei Mensa-Gruppierung an ihrer Abschnittsüberschrift keine Öffnungszeit', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText(/Geöffnet 12:00/)).toBeNull(); // Süd-Öffnungszeit
+    expect(screen.getByText(/Geöffnet 11:30/)).toBeTruthy(); // Hauptmensa mit Angebot weiterhin
+  });
+
+  it('zeigt ohne Mensa-Gruppierung keine Öffnungszeit-Zeile am Listenende', async () => {
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
     mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
     renderScreen();
@@ -320,19 +353,138 @@ describe('MENSA-F-049 geschlossene Mensa am Seitenende', () => {
   });
 });
 
-describe('MENSA-F-295 / MENSA-F-297 geschlossene Mensa im Wechsler', () => {
-  it('deaktiviert den Chip der geschlossenen Mensa und rückt die aktive Mensa auf eine offene', async () => {
+describe('Nicht auswählbare Chips ohne sichtbaren Abschnitt', () => {
+  it('stellt bei Gruppierung „nach Kategorie" den Chip einer vollständig weggefilterten Kategorie als nicht auswählbar dar', async () => {
+    mockPreset = {
+      id: 'eigen-kat',
+      eigen: true,
+      gruppierung: 'kategorie',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'quelle', richtung: 'auf' },
+    };
+    mockSelection = { ids: ['Mensa'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Mensa: qr([
+        gericht({ schluessel: 'a', bezeichnung: 'Auflauf', kategorie: 'Wok', preisStudierende: 3.3 }),
+        gericht({ schluessel: 'teuer', bezeichnung: 'Steak', kategorie: 'Aktion', preisStudierende: 9.9 }),
+      ]),
+    };
+    mockLimit = 5;
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Auflauf')).toBeTruthy());
+    const aktion = screen.getByLabelText('Aktion (an diesem Tag geschlossen)');
+    expect(aktion.props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('lässt bei Mensa-Gruppierung den Chip einer geschlossenen Mensa auswählbar, er führt zu ihrem Abschnitt mit dem Geschlossen-Hinweis', async () => {
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([]), Sued: qr([gericht()]) };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    const chip = screen.getByLabelText('Mensa Süd');
+    expect(chip.props.accessibilityState.disabled).toBe(false);
+    fireEvent.press(chip);
+    expect(screen.getByText(/Mensa Süd hat an diesem Tag geschlossen\./)).toBeTruthy();
+  });
+});
 
-    const zu = screen.getByLabelText('Hauptmensa (an diesem Tag geschlossen)');
-    expect(zu.props.accessibilityState.disabled).toBe(true);
+describe('Hinweis bei vollständig gefilterter Mensa', () => {
+  it('führt den Abschnitt einer Mensa fort, deren Gerichte alle durch die Filtervorgaben ausgeblendet sind, mit einem eigenen, vom Geschlossen-Hinweis unterscheidbaren Hinweis', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Mensa: qr([gericht({ preisStudierende: 9.9 })]),
+      Sued: qr([gericht({ schluessel: 'curry', bezeichnung: 'Curry', preisStudierende: 2.2 })]),
+    };
+    mockLimit = 5;
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Curry')).toBeTruthy());
+    // Chip und Abschnittsüberschrift — der Abschnitt bleibt bestehen.
+    expect(screen.getAllByText('Hauptmensa').length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getByText('Alle Gerichte dieser Mensa sind durch deine Filter ausgeblendet.'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/hat an diesem Tag geschlossen/)).toBeNull();
+  });
+});
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Mensa Süd').props.accessibilityState.selected).toBe(true),
-    );
+describe('Öffnungszeit an der Mensa-Abschnittsüberschrift', () => {
+  it('zeigt bei Mensa-Gruppierung die Öffnungszeit an der Abschnittsüberschrift, nicht am Listenende', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Mensa: qr([gericht()]),
+      Sued: qr([gericht({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 11:30 - 14:45')).toBeTruthy();
+    expect(screen.queryByText(/Hauptmensa: geöffnet/)).toBeNull();
+  });
+
+  it('zeigt die Abschnittsüberschrift mit Öffnungszeit auch bei nur einer gewählten Mensa', async () => {
+    renderScreen(); // Standard-Auswahl: nur „Mensa".
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Hauptmensa')).toBeTruthy();
+    expect(screen.getByText('Geöffnet 11:30 - 14:45')).toBeTruthy();
+  });
+
+  it('zeigt ohne Mensa-Gruppierung die Öffnungszeiten am Ende der Gerichtsliste', async () => {
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText(/Hauptmensa: geöffnet/)).toBeTruthy();
+    expect(screen.queryByText('Geöffnet 11:30 - 14:45')).toBeNull();
+  });
+});
+
+describe('Ausweis der anbietenden Mensa ohne Mensa-Gliederung', () => {
+  it('nennt bei „keine Gruppierung" die Mensa eines Gerichts, das nur an einer von mehreren gewählten Mensen angeboten wird', async () => {
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Angeboten in: Hauptmensa')).toBeTruthy();
+  });
+
+  it('nennt bei Gruppierung „nach Kategorie" an jedem Gericht die anbietende(n) Mensa/Mensen', async () => {
+    mockPreset = {
+      id: 'eigen-kat',
+      eigen: true,
+      gruppierung: 'kategorie',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'quelle', richtung: 'auf' },
+    };
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = {
+      Mensa: qr([gericht({ schluessel: 'a', bezeichnung: 'Auflauf', kategorie: 'Wok' })]),
+      Sued: qr([gericht({ schluessel: 'b', bezeichnung: 'Brot', kategorie: 'Aktion' })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Auflauf')).toBeTruthy());
+    expect(screen.getByText('Angeboten in: Hauptmensa')).toBeTruthy();
+    expect(screen.getByText('Angeboten in: Mensa Süd')).toBeTruthy();
+  });
+
+  it('nennt keine Mensa, wenn insgesamt nur eine Mensa gewählt ist', async () => {
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    renderScreen(); // Standard-Auswahl: nur „Mensa".
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText(/Angeboten in/)).toBeNull();
   });
 });
 

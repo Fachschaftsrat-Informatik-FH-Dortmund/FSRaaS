@@ -66,6 +66,8 @@
     "oeffnungszeit": "Open {{zeit}}",
     "oeffnungszeitMensa": "{{mensa}}: open {{zeit}}",
     "geschlossenHeute": "{{mensa}} is closed on this day.",
+    "wiederGeoeffnet": "Reopens on {{tag}}.",
+    "mensaGefiltert": "All dishes at this canteen are hidden by your filters.",
     "angebotIn": "Available at: {{mensen}}",
     "alleMensenAnzeigen": "Show all canteens",
     "alleMensenTitel": "All canteens",
@@ -129,14 +131,15 @@
       "kategorie": "by category"
     },
     "sortierkriterium": {
-      "quelle": "source order",
+      "quelle": "canteen order",
       "bezeichnung": "name",
       "preis": "price",
       "eigeneBewertung": "my rating",
       "community": "overall community rating"
     },
     "gruppenkriterium": {
-      "reihenfolge": "source order",
+      "reihenfolgeMensa": "my canteen order",
+      "reihenfolgeKategorie": "canteen order",
       "alphabetisch": "alphabetical"
     },
     "richtung": {
