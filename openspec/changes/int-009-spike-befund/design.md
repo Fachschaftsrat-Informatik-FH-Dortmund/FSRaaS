@@ -115,16 +115,28 @@ Ausgezählt wurden die `Course`-Instanzen je Kalendertag über die Vorlesungszei
 | Donnerstag | 171–175 |
 | Freitag | durchgängig 95 |
 
-**Die Gegenprobe an zwei gesetzlichen Feiertagen entscheidet die Frage:**
+**Gesetzliche Feiertage werden nicht ausgenommen.** Gegenprobe:
 
 | Tag | Kursinstanzen | derselbe Wochentag eine Woche später |
 |---|---|---|
 | 2026-05-25 Pfingstmontag | **167** | 167 |
 | 2026-06-04 Fronleichnam (NRW) | **174** | 174 |
 
-Der Bestand nimmt nicht einmal gesetzliche Feiertage aus. Er ist eine mechanische Ausmultiplikation der Serien und bildet weder Feiertage noch kurzfristige Ausfälle ab. Die wenigen Tagesabweichungen (189 statt 192 am 24.06., 214 statt 216 am 14.07., 166 statt 167 am 06.07.) bleiben Einzelfälle im Promillebereich und tragen keine Aussage.
+Für einen im Voraus bekannten, kalendarisch feststehenden Ausfall wie einen Feiertag liefert der Bestand keine Auskunft — er ist an diesen Tagen eine mechanische Ausmultiplikation der Serien.
 
-Die Verteilung der Instanzen je Serie stützt dasselbe Bild: 591 Serien mit genau 9 Instanzen (eine je Woche der neunwöchigen Vorlesungszeit), 108 mit 18, 8 mit 27 — und ein Rest von 14 Serien mit 1, 6, 7 oder 8 Instanzen.
+**Einzelfall-Absagen werden dagegen sichtbar entfernt — Befund nach Rückmeldung (2026-09-07), im Bestand nachvollzogen.** Der erste Durchgang dieses Spikes hatte drei kleinere Tagesabweichungen (189 statt 192 am 24.06., 216 statt 214 am 14.07., 167 statt 166 am 06.07.) als Rasterrauschen verworfen. Eine Rückmeldung aus dem FSR FB4 wies darauf hin, dass Raumänderungen über das Semester vorkommen und Einzelfälle bei Krankheit oder Ausfall korrigiert werden. Die Nachprüfung auf Instanzebene (Schlüssel `courseId` + `roomId` + Wochentag + Beginnzeit + Name, gegen alle übrigen Tage desselben Wochentags derselben Vorlesungszeit) fand für alle drei Tage exakt die fehlenden Einzelinstanzen:
+
+| Tag | fehlende Instanz(en) | erklärt die Zähldifferenz |
+|---|---|---|
+| 2026-06-24 (Mi) | `IT-Landschaft – Planung und Umsetzung` (2×, C.3.34, 10:15 und 12:00) und `Scientific & Transversal Skills 2` (C.3.34, 14:15) | 3 von 3 |
+| 2026-07-06 (Mo) | `Algorithmen und Datenstrukturen` (A.E.01, 08:30) | 1 von 1 |
+| 2026-07-14 (Di) | `Programmierkurs Systemintegration (1. Semesterhälfte)` (2×, C.3.34, 12:00 und 14:15) | 2 von 2 |
+
+Alle sechs Fehlstellen liegen **innerhalb** des regulären Gültigkeitszeitraums der jeweiligen Serie (durch `dateBegin`/`dateEnd` der übrigen Instanzen ausgeschlossen, dass eine Serie schlicht vorher endet) und tragen keinen Hinweis im Bestand selbst — `note` und `description` sind bei allen leer, keine Volltextsuche nach Ausfall-typischen Begriffen (`fällt aus`, `entfällt`, `verlegt`, `Vertretung`) trifft. Die Korrektur besteht also im ersatzlosen Entfernen der Instanz, ohne Markierung. Damit ist die frühere Einordnung „Rasterrauschen, keine Aussage" widerlegt: Alle drei Abweichungen sind vollständig durch je eine echte Einzelabsage erklärt, keine Restdifferenz bleibt offen.
+
+**Für einen Raumwechsel derselben Sitzung über das Semester fand sich in diesem Fenster kein Beleg.** Geprüft wurde mit dem feinsten verfügbaren Schlüssel (`courseId` + Wochentag + Beginnzeit + `studentSet` + `lecturerName` + Name) auf Serien mit mehr als einer Raumkennung. Zwei Treffer (`48091 Scientific & Transversal Skills 2`, `411031 Lern- und Arbeitstechniken`) erwiesen sich bei Prüfung der Einzeltermine als **gleichzeitige Parallelbelegung zweier Räume in jeder Woche**, nicht als Verlegung über die Zeit — beide Räume erscheinen an (fast) jedem Termintag nebeneinander. Ein Fall, in dem eine Serie zunächst durchgehend Raum A und ab einem bestimmten Datum durchgehend Raum B trägt, kam in der Vorlesungszeit SoSe 2026 nicht vor. Das widerlegt die Rückmeldung nicht — ein neunwöchiges Fenster in einem einzigen Semester bietet dafür wenig Gelegenheit —, bestätigt sie aber auch nicht unabhängig. Offen als Nachprüfung.
+
+Die Verteilung der Instanzen je Serie stützt das Gesamtbild: 591 Serien mit genau 9 Instanzen (eine je Woche der neunwöchigen Vorlesungszeit), 108 mit 18, 8 mit 27 — und ein Rest von 14 Serien mit 1, 6, 7 oder 8 Instanzen, worunter die oben gefundenen Einzelabsagen fallen.
 
 ## 6. Der Pseudoraum trägt einen erheblichen Teil der Belegung
 
@@ -190,4 +202,4 @@ Differenz: 55 Minuten in acht Abschnitten (0,2 %), sämtlich Rasterränder von f
 
 - **Warum fehlen die wirtschaftswissenschaftlichen Prüfungen?** Die Vermutung „Räume außerhalb des FB4" ist nicht geprüft. Eine Rückfrage beim Fachbereich klärt es schneller als jede weitere Messung.
 - **Gilt die 70-%-Abdeckung auch für andere Jahrgänge?** Geprüft wurde SoSe 2026 gegen `pplan(4).xlsx`. Die vier weiteren Jahrgangsdateien unter `resources/` erlauben denselben Vergleich für WiSe 2023/24, SoSe 2024 und SoSe 2025 — der Raumplan reicht nachweislich bis Februar 2024 zurück.
-- **Bleibt eine abgesagte Veranstaltung stehen?** Abschnitt 5 zeigt, dass Feiertage nicht ausgenommen werden, und legt damit nahe, dass auch Ausfälle nicht gepflegt werden. Ein Einzelfall-Nachweis an einer bekannten Absage steht aus.
+- **Wird eine Verlegung derselben Sitzung in einen anderen Raum sichtbar?** Abschnitt 5 belegt das Entfernen einzelner Instanzen (sechs Fälle, exakt erklärt), aber keinen Raumwechsel derselben Sitzung über die Zeit — dafür bot das neunwöchige Beobachtungsfenster wenig Gelegenheit. Ein Einzelfall-Nachweis an einer bekannten Verlegung steht aus.

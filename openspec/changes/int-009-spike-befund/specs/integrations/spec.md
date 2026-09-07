@@ -2,7 +2,7 @@
 
 ### Requirement: INT-009 — FBWS Raumplan
 
-Das System muss die Raumtermine des Fachbereichs über die Ressourcen `Room/`, `Room/{roomId}/Events` und `Room/{roomId}/AllEvents` beziehen. `AllEvents` nimmt mit den Abfrageparametern **`From` und `To`** (groß geschrieben, Unix-Sekunden) einen beliebigen Zeitraum entgegen und liefert die Einzeltermine darin; ohne diese Parameter antwortet der Endpunkt mit einem Standardfenster von sieben Tagen ab dem Folgetag. Der Bestand ist zugleich die Quelle für die Prüfungstermine: Einträge mit dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>` sind Prüfungen; bei ihnen sind `courseId` und `courseOfStudy` leer, die Modulnummer steht ausschließlich im Namensfeld. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/TimetableApi.java; Endpunktverhalten Recherche: FBWS live abgefragt im INT-009-Spike, 2026-09-07.
+Das System muss die Raumtermine des Fachbereichs über die Ressourcen `Room/`, `Room/{roomId}/Events` und `Room/{roomId}/AllEvents` beziehen. `AllEvents` nimmt mit den Abfrageparametern **`From` und `To`** (groß geschrieben, Unix-Sekunden) einen beliebigen Zeitraum entgegen und liefert die Einzeltermine darin; ohne diese Parameter antwortet der Endpunkt mit einem Standardfenster von sieben Tagen ab dem Folgetag. Der Bestand ist zugleich die Quelle für die Prüfungstermine: Einträge mit dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>` sind Prüfungen; bei ihnen sind `courseId` und `courseOfStudy` leer, die Modulnummer steht ausschließlich im Namensfeld. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/TimetableApi.java; Endpunktverhalten Recherche: FBWS live abgefragt im INT-009-Spike, 2026-09-07; Hinweis auf Einzelabsage-Korrekturen Recherche: Rücksprache FSR FB4, 2026-09-07, im selben Spike auf Instanzebene nachvollzogen.
 
 **Aufruf**
 ```
@@ -36,7 +36,7 @@ Host `https://ws.inf.fh-dortmund.de`. `{roomId}` ist die Raumkennung im Format d
 
 Die übrigen Felder (`name`, `roomId`, `weekday`, `timeBegin`/`timeEnd` im Format `Hmm`/`HHmm` ohne führende Null, `timestampBegin`/`timestampEnd`, `lecturerName`, `lecturerSurname`, `note`, `examinationReg`, `grade`, `description`, `flags`, `created`, `modified`, `timeSlotBegin`, `timeSlotDuration`, `timeSlotColum`) entsprechen INT-002; die dortige Auffüllregel für Uhrzeiten gilt unverändert. `modified` ist eine Unix-Sekundenangabe und erlaubt es, geänderte Sätze zu erkennen. `created` trägt kleine Zahlen (`19`, `15` beobachtet) und ist keine Zeitangabe.
 
-**Der Bestand bildet keine Ausfälle ab (Befund 2026-09-07).** Die Einzeltermine sind eine mechanische Ausmultiplikation der Serien. Nachweis: Pfingstmontag (2026-05-25) trägt 167 Kursinstanzen, exakt so viele wie der Montag darauf; Fronleichnam (2026-06-04) trägt 174, exakt so viele wie der Donnerstag darauf. Selbst gesetzliche Feiertage sind nicht ausgenommen. Über die gesamte Vorlesungszeit bleibt die Zahl der Instanzen je Wochentag konstant. Wer diesem Bestand entnehmen will, ob eine Veranstaltung ausfällt, erhält keine Auskunft.
+**Kalendarisch feststehende Ausfälle bildet der Bestand nicht ab, kurzfristige Einzelabsagen entfernt er ersatzlos (Befund 2026-09-07, Einzelabsagen nach Rückmeldung FSR FB4 nachvollzogen).** Für einen Feiertag ist der Instanzbestand eine mechanische Ausmultiplikation der Serien: Pfingstmontag (2026-05-25) trägt 167 Kursinstanzen, exakt so viele wie der Montag darauf; Fronleichnam (2026-06-04) trägt 174, exakt so viele wie der Donnerstag darauf. Über die gesamte Vorlesungszeit bleibt die Zahl der Instanzen je Wochentag ansonsten konstant — mit drei Ausnahmen, die sich auf Instanzebene vollständig aufklären lassen: Am 24.06., 06.07. und 14.07.2026 fehlen gegenüber sonst gleichen Wochentagen zusammen sechs einzelne Sitzungen, jede ersatzlos entfernt und ohne jede Markierung in `note` oder `description`. Ein Raumwechsel derselben Sitzung über die Zeit ließ sich im geprüften Semester dagegen nicht nachweisen — die einzigen gefundenen Mehrraum-Serien waren gleichzeitige Parallelbelegungen zweier Räume, keine Verlegungen. Wer aus diesem Bestand einen kalendarisch bekannten Ausfall lesen will, erhält keine Auskunft; eine kurzfristige Einzelabsage zeigt sich als stilles Verschwinden der Instanz.
 
 **Als Prüfungsquelle rechtzeitig, aber unvollständig (Befund 2026-09-07).** Für den Prüfungszeitraum SoSe 2026 führt der Raumplan 149 Prüfungseinträge. Ihr Vorlauf — Termin minus `modified`, also eine Untergrenze — beträgt im Median 55 Tage; 87 % der Einträge haben mindestens 42 Tage Vorlauf. Das deckt den Bedarf, dessen Anmeldefrist rund sieben Wochen vor der ersten Prüfung endet. **Der Bestand ist jedoch nicht vollständig:** Von 91 Modulen des Prüfungsplans SoSe 2026 (`resources/pplan(4).xlsx`) führt der Raumplan 64 — eine Abdeckung von 70 %. Bei 61 dieser 64 stimmt der Prüfungstag exakt überein. Die 27 fehlenden sind bis auf zwei Ausnahmen wirtschaftswissenschaftliche Module der Studiengänge Wirtschaftsinformatik; die Ursache ist ungeklärt.
 
@@ -76,9 +76,13 @@ Die übrigen Felder (`name`, `roomId`, `weekday`, `timeBegin`/`timeEnd` im Forma
 - **WHEN** ein Termin `roomId: "*"` trägt und sein Name eine Raumangabe als Freitext enthält
 - **THEN** ist der Raum aus dem Namensfeld zu lesen, weil die Belegung sonst um rund ein Drittel zu niedrig ausfällt
 
-#### Scenario: Ausfall nicht ableitbar
-- **WHEN** geprüft wird, ob eine Veranstaltung an einem bestimmten Tag ausfällt
+#### Scenario: Kalendarisch feststehender Ausfall nicht ableitbar
+- **WHEN** geprüft wird, ob ein Feiertag oder eine sonst kalendarisch bekannte Unterbrechung im Raumplan als Ausfall erkennbar ist
 - **THEN** gibt der Raumplan darüber keine Auskunft — er führt auch gesetzliche Feiertage als belegt
+
+#### Scenario: Kurzfristige Einzelabsage erkennbar
+- **WHEN** eine einzelne Sitzung einer sonst regelmäßigen Serie krankheits- oder ausfallbedingt abgesagt wird
+- **THEN** fehlt die betroffene Instanz im nächsten Abruf, ohne Markierung des Grundes in `note` oder `description`
 
 #### Scenario: Prüfungseintrag erkennen
 - **WHEN** ein Datensatz dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>` folgt
