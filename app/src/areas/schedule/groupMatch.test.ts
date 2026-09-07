@@ -42,6 +42,13 @@ describe('QA-F-030 Beispieltabelle aus spec.md Abschnitt 4 (Gruppenzuordnung)', 
       erwartet: true,
       grund: 'unbekanntes Muster, sicherer Rückfall auf zugehörig statt fälschlich fremd (SEC-F-060)',
     },
+    // Kennung ohne Zahl: seit dem 2026-09-06 unzulässig, über eine bestätigte
+    // INT-019-Antwort aber weiterhin möglich — der Vorschlag wird ungeprüft
+    // übernommen, und der Endpunkt ist undokumentiert und ohne SLA.
+    { kennung: 'H', studentSet: 'H5-J', erwartet: true, grund: 'unvollständig an der Anfangsgrenze mit Zahl, nicht entscheidbar' },
+    { kennung: 'C', studentSet: 'C5-E', erwartet: true, grund: 'unvollständig an der Anfangsgrenze mit Zahl, nicht entscheidbar' },
+    { kennung: 'M', studentSet: 'J-M4', erwartet: true, grund: 'unvollständig an der Endgrenze mit Zahl, nicht entscheidbar' },
+    { kennung: 'D', studentSet: 'A1-C9', erwartet: false, grund: 'unvollständig, aber der Buchstabe D entscheidet allein — außerhalb A bis C' },
   ];
 
   it.each(faelle)('$kennung gegen studentSet=$studentSet → $erwartet ($grund)', ({ kennung, studentSet, erwartet }) => {
@@ -143,6 +150,41 @@ describe('SEC-F-060 unbekanntes studentSet-Muster fällt sicher auf zugehörig z
 
   it('erkennt A1B2 beim reinen Parsen als unbekanntes Muster', () => {
     expect(parseStudentSet('A1B2')).toEqual({ art: 'unbekannt', roh: 'A1B2' });
+  });
+});
+
+describe('Bereichsangabe im studentSet — unvollständige Gruppenkennung ohne Zahl', () => {
+  const logErrorMock = jest.mocked(logError);
+
+  beforeEach(() => logErrorMock.mockClear());
+
+  it('behandelt sie an einer Grenze mit Zahl als zugehörig und protokolliert den Vorfall', () => {
+    // Vor dem 2026-09-06 wurde die fehlende Zahl als 0 gelesen; 0 < 5 machte den
+    // Termin fälschlich gruppenfremd und blendete ihn bei aktivem Schalter aus.
+    expect(gruppenzugehoerig('H', 'H5-J')).toBe(true);
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock.mock.calls[0]![0]).toBe('groupMatch.gruppenkennung');
+  });
+
+  it('behandelt sie an der Endgrenze mit Zahl ebenso', () => {
+    expect(gruppenzugehoerig('M', 'J-M4')).toBe(true);
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('entscheidet allein über den Buchstaben, wo dieser schon außerhalb liegt — ohne Protokolleintrag', () => {
+    expect(gruppenzugehoerig('D', 'A1-C9')).toBe(false);
+    expect(logErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('protokolliert nicht, wenn beide Grenzen ohne Zahl sind — die fehlende Zahl entscheidet dort nichts', () => {
+    expect(gruppenzugehoerig('M', 'A-P')).toBe(true);
+    expect(logErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('vergleicht bei einem Einzelwert weiterhin nur den Buchstaben', () => {
+    expect(gruppenzugehoerig('D', 'D')).toBe(true);
+    expect(gruppenzugehoerig('D', 'C')).toBe(false);
+    expect(logErrorMock).not.toHaveBeenCalled();
   });
 });
 

@@ -5,8 +5,8 @@ import { readJson, writeJson } from '@/storage/kv';
 
 // SCHED-F-020/F-040/F-640: die einmalig gewählte Einrichtung des Stundenplans —
 // Studiengang (`sname`) mit Fachsemester (`grade`), optionale Gruppenkennung
-// (SCHED-F-040, Muster `^[A-Z][0-9]*$` — Buchstabe verpflichtend, Zahl
-// freiwillig, SCHED-F-720) und die zusätzlich abgerufenen Fachsemester
+// (SCHED-F-040, Muster `^[A-Z][0-9]+$` — Buchstabe und Zahl beide
+// verpflichtend, SCHED-F-720) und die zusätzlich abgerufenen Fachsemester
 // desselben Studiengangs (SCHED-F-640, z. B. für Wiederholerinnen oder
 // Vorzieherinnen). Rein gerätelokal (DATA-F-010). Reaktiver Modul-Speicher wie
 // `canteen/selection.ts`, damit alle Stundenplan-Bildschirme denselben Stand
@@ -20,8 +20,13 @@ import { readJson, writeJson } from '@/storage/kv';
 
 const KEY = 'scheduleSetup';
 
-/** SCHED-F-040/F-720: verbindliches Muster einer Gruppenkennung — der Buchstabe ist verpflichtend, die Zahl freiwillig. */
-export const GRUPPENKENNUNG_MUSTER = /^[A-Z][0-9]*$/;
+/**
+ * SCHED-F-040/F-720: verbindliches Muster einer Gruppenkennung — Buchstabe und
+ * Zahl sind beide verpflichtend (entschieden 2026-09-06). Eine Eingabe ohne Zahl
+ * wird zurückgewiesen; der voreingestellte Weg über die Matrikelnummer (INT-019)
+ * liefert die vollständige Kennung, ohne dass die Nutzerin sie kennen muss.
+ */
+export const GRUPPENKENNUNG_MUSTER = /^[A-Z][0-9]+$/;
 
 export interface Einrichtung {
   sname: string | null;
@@ -164,19 +169,18 @@ export function useEinrichtung() {
   };
 }
 
-// SCHED-F-710: die Matrikelnummer ist personenbeziehbar (integrations.md
-// INT-019) und wird bewusst unter einem eigenen Speicherschlüssel geführt,
-// getrennt von `scheduleSetup` — sie hat kein serverseitiges Pendant und geht
-// an kein anderes Ziel als INT-019 (API-F-100 bleibt davon unberührt, da sie
-// das eigene Backend nie erreicht). Gleiches Reaktivitätsmuster wie oben,
-// bewusst als eigener, kleinerer Speicher statt eines weiteren Felds in
-// `Einrichtung`.
-
-const MATRIKELNUMMER_KEY = 'scheduleMatrikelnummer';
+// Keine Speicherung der Matrikelnummer (entschieden 2026-09-06, vormals
+// SCHED-F-710). Die Matrikelnummer ist personenbeziehbar (`integrations`
+// INT-019) und wird nach der Ermittlung der Gruppenkennung nicht mehr
+// gebraucht. Sie liegt deshalb ausschließlich im Arbeitsspeicher — für die
+// Dauer der Eingabe und des Abrufs — und überlebt keinen App-Neustart.
+// Gespeichert wird allein die bestätigte Gruppenkennung.
+//
+// Kein Aufräumen eines früheren Speicherschlüssels: Die App ist nicht
+// ausgeliefert, es gibt kein Gerät, auf dem je eine Matrikelnummer abgelegt
+// wurde.
 
 let matrikelnummerSnapshot: string | null = null;
-let matrikelnummerGeladen = false;
-let matrikelnummerLadeGestartet = false;
 const matrikelnummerHoerer = new Set<() => void>();
 
 function matrikelnummerMelden() {
@@ -189,51 +193,29 @@ function bereinigeMatrikelnummer(v: unknown): string | null {
 
 function matrikelnummerSubscribe(cb: () => void): () => void {
   matrikelnummerHoerer.add(cb);
-  if (!matrikelnummerLadeGestartet) {
-    matrikelnummerLadeGestartet = true;
-    readJson<string | null>(MATRIKELNUMMER_KEY, null)
-      .then((v) => {
-        matrikelnummerSnapshot = bereinigeMatrikelnummer(v);
-      })
-      .catch((error) => logError('einrichtung.matrikelnummer.load', error))
-      .finally(() => {
-        matrikelnummerGeladen = true;
-        matrikelnummerMelden();
-      });
-  }
   return () => {
     matrikelnummerHoerer.delete(cb);
   };
 }
 
-function matrikelnummerSchreiben(next: string | null) {
-  matrikelnummerSnapshot = next;
-  matrikelnummerGeladen = true;
-  matrikelnummerMelden();
-  writeJson(MATRIKELNUMMER_KEY, next).catch((error) => logError('einrichtung.matrikelnummer.save', error));
-}
-
-/** SCHED-F-710: die gespeicherte Matrikelnummer lesen (ausschließlich lokal). */
-export function readMatrikelnummer(): Promise<string | null> {
-  return readJson<string | null>(MATRIKELNUMMER_KEY, null).then(bereinigeMatrikelnummer);
-}
-
 /** Nur für Tests: Modulzustand zurücksetzen. */
 export function __resetMatrikelnummerForTest(): void {
   matrikelnummerSnapshot = null;
-  matrikelnummerGeladen = false;
-  matrikelnummerLadeGestartet = false;
   matrikelnummerHoerer.clear();
 }
 
-/** SCHED-F-710/F-720: die Matrikelnummer ist optional und getrennt von der übrigen Einrichtung gespeichert. */
+/**
+ * Die Matrikelnummer für die Dauer der Einrichtung. Rein flüchtig — es gibt
+ * bewusst kein Gegenstück zu `readMatrikelnummer`, das sie von der Platte läse.
+ * `loaded` ist konstant `true`, weil nichts zu laden ist.
+ */
 export function useMatrikelnummer() {
   const matrikelnummer = useSyncExternalStore(matrikelnummerSubscribe, () => matrikelnummerSnapshot);
-  const loaded = useSyncExternalStore(matrikelnummerSubscribe, () => matrikelnummerGeladen);
 
   const setMatrikelnummer = useCallback((wert: string | null) => {
-    matrikelnummerSchreiben(bereinigeMatrikelnummer(wert));
+    matrikelnummerSnapshot = bereinigeMatrikelnummer(wert);
+    matrikelnummerMelden();
   }, []);
 
-  return { matrikelnummer, loaded, setMatrikelnummer };
+  return { matrikelnummer, loaded: true, setMatrikelnummer };
 }

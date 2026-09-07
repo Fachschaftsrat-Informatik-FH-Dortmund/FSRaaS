@@ -19,10 +19,10 @@
 
 ## 4. Umsetzung
 
-- [ ] 4.1 `app/src/areas/schedule/groupMatch.ts`: `MUSTER_GRUPPENKENNUNG` zurück auf `^([A-Za-z])([0-9]+)$` und den Kommentarblock (Zeilen 36–49) berichtigen — er begründet heute die stille `0` mit der widerlegten Annahme
-- [ ] 4.2 `app/src/areas/schedule/groupMatch.test.ts`: die vier neuen Fälle der Beispieltabelle als Prüffälle ergänzen (QA-F-030)
-- [ ] 4.3 `app/src/areas/schedule/screens/SetupScreen.tsx`: manuelle Angabe verlangt Buchstabe **und** Zahl; Matrikelnummer-Weg vorauswählen (ist bereits die Vorauswahl, `modus`-Startwert)
-- [ ] 4.4 Bei der Umsetzung prüfen, ob INT-019 je eine Kennung ohne Zahl liefert — belegt ist nur `O7`
+- [x] 4.1 `app/src/areas/schedule/groupMatch.ts`: `MUSTER_GRUPPENKENNUNG` zurück auf `^([A-Za-z])([0-9]+)$`, Kommentarblock berichtigt. Eine Kennung ohne Zahl wird als unvollständig geführt (`zahl: null`) und in `liegtImBereich` behandelt: Buchstabe außerhalb entscheidet weiterhin allein, nur an einer Grenze mit Zahl gilt der Termin als zugehörig und wird protokolliert. Ebenso `einrichtung.ts`: `GRUPPENKENNUNG_MUSTER` auf `^[A-Z][0-9]+$`
+- [x] 4.2 `app/src/areas/schedule/groupMatch.test.ts`: die vier neuen Fälle der Beispieltabelle ergänzt (QA-F-030), dazu fünf Tests unter dem Requirement-Titel „Bereichsangabe im studentSet" für Protokollierung und Nichtprotokollierung. `H` gegen `H5-J` war vor der Änderung rot
+- [x] 4.3 `app/src/areas/schedule/screens/SetupScreen.tsx`: Eingabe lokal gehalten, gespeichert erst wenn beide Teile vorliegen; Hinweis benennt die fehlende Zahl; ein unvollständiger Altbestand wird zum Nachtragen angeboten statt zurückgesetzt. Matrikelnummer-Weg als Vorauswahl durch einen Test belegt. i18n: `zahlLabel` nicht mehr „(freiwillig)", neuer Schlüssel `gruppenkennungZahlFehlt` in de und en
+- [x] 4.4 Gegen `openspec/specs/integrations/spec.md` INT-019 geprüft: drei real beobachtete Kennungen (`O7`, `B3`, `A9`), alle mit Ziffer; eine Kennung ohne Zahl ist nicht belegt, aber mangels Dokumentation und SLA auch nicht ausgeschlossen. Ergebnis im Proposal festgehalten
 
 ## Beim Archivieren
 
