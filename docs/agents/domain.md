@@ -15,7 +15,7 @@ This repo does **not** use the generic `CONTEXT.md` / `docs/adr/` convention. It
 - **`specs/product/glossary.md`** — the domain vocabulary. If a term conflicts with prose elsewhere, the glossary wins.
 - **`specs/product/roadmap.md`** and **`specs/product/legacy-inventory.md`** — what's planned next, and what the two predecessor apps (under `alte apps/`) could and couldn't do. Useful context, not something to copy from.
 
-If a spec, ADR, or the glossary doesn't have an answer, **proceed silently** — don't flag the absence or suggest creating generic `CONTEXT.md`/`docs/adr/` files instead; that would create a second, competing source of truth. Use the `openspec-propose` / `opsx:propose` skill (or `/schnitt`) to add missing specs the way this repo already does it.
+If a spec, ADR, or the glossary doesn't have an answer, **proceed silently** — don't flag the absence or suggest creating generic `CONTEXT.md`/`docs/adr/` files instead; that would create a second, competing source of truth. Use the `openspec-propose` / `opsx:propose` skill to add missing specs the way this repo already does it; the repo's own build-time rules reach that workflow through `openspec/config.yaml`.
 
 ## Read narrowly — the specs do not fit in one context
 
