@@ -2,6 +2,7 @@ import { naechsterTag } from './tageswahl';
 
 // 2026-09-04 ist ein Freitag. 2026-09-05 Samstag, 2026-09-06 Sonntag, 2026-09-07 Montag.
 const FREITAG = new Date(2026, 8, 4, 9, 0, 0);
+const SAMSTAG = new Date(2026, 8, 5, 9, 0, 0);
 
 describe('MENSA-F-042 Tagesauswahl auf heute und Folgetage begrenzt', () => {
   it('lässt am heutigen Tag kein „Tag zurück" zu', () => {
@@ -37,5 +38,20 @@ describe('MENSA-F-044 Wochenenden ohne Angebot beim Blättern überspringen', ()
   it('überspringt Werktage nie, auch ohne Angebot', () => {
     const ziel = naechsterTag('2026-09-07', 1, () => false, FREITAG);
     expect(ziel).toBe('2026-09-08');
+  });
+});
+
+describe('Überspringen angebotsfreier Wochenendtage: der aktuelle Tag ist ausgenommen', () => {
+  it('blättert vom Montag zurück auf den angebotsfreien Samstag, wenn er der aktuelle Tag ist', () => {
+    // Aktueller Tag = Sa (2026-09-05). Rückwärts vom Montag: So (2026-09-06)
+    // ohne Angebot wird übersprungen, der Samstag als Untergrenze nicht.
+    const ziel = naechsterTag('2026-09-07', -1, () => false, SAMSTAG);
+    expect(ziel).toBe('2026-09-05');
+  });
+
+  it('überspringt vom aktuellen Samstag vorwärts den angebotsfreien Sonntag weiterhin', () => {
+    // Die Ausnahme gilt nur für den aktuellen Tag, sie hebt das Überspringen nicht auf.
+    const ziel = naechsterTag('2026-09-05', 1, () => false, SAMSTAG);
+    expect(ziel).toBe('2026-09-07');
   });
 });
