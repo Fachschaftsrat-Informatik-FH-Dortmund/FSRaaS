@@ -185,5 +185,5 @@
 - [x] 8.5 Vollprüfung: `node node_modules/jest/bin/jest.js` (App) grün, `tsc`
   sauber, `npx eslint .` sauber, `tools/spec-check` 4/4, contract-codegen
   `--check` grün, `npx expo export --platform android` baut.
-- [ ] 8.6 `openspec validate canteen-sortieren-gruppieren --strict` grün, dann
+- [x] 8.6 `openspec validate canteen-sortieren-gruppieren --strict` grün, dann
   `openspec archive canteen-sortieren-gruppieren`.
