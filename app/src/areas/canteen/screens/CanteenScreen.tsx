@@ -30,6 +30,8 @@ import {
 import { konsolidiere, type KonsolidiertesGericht } from '../consolidate';
 import { useFavorites } from '../favorites';
 import { useGerichtFilter } from '../filter';
+import { useSortierGruppierung } from '../sortierPreset';
+import { wendeAn, type SortierKontext } from '../sortierung';
 import {
   benachrichtigungBerechtigungAnfragen,
   benachrichtigungErlaubt,
@@ -47,12 +49,14 @@ import { wischRichtung } from '../gesten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 
 // MENSA: Tages-Speiseplan als eine über die gewählten Mensen zusammengefasste
-// Gerichtsliste (MENSA-F-012 bis F-018). Blättern über die Datumsauswahl
-// (MENSA-F-045) und Wischen (MENSA-F-046), begrenzt auf heute und Folgetage
-// (MENSA-F-042), Wochenenden ohne Angebot übersprungen (MENSA-F-044).
-// Herunterziehen lädt neu (MENSA-F-240). Der Stern-Merker (MENSA-F-080, in der
-// Spec entfallen) bleibt bewusst bis Roadmap-Schritt 9 im Code — siehe
-// canteen/spec.md „Umsetzungsstand".
+// Gerichtsliste (MENSA-F-012 ff.). Abschnitte und Gerichte-Reihenfolge folgen
+// dem aktiven Sortier-/Gruppierpreset (`sortierung.ts` / `sortierPreset.ts`,
+// Requirements „Wahl der Gruppierung" ff.); die maßgebliche Mensa bleibt an die
+// Auswahlreihenfolge gebunden. Blättern über die Datumsauswahl (MENSA-F-045) und
+// Wischen (MENSA-F-046), begrenzt auf heute und Folgetage (MENSA-F-042),
+// Wochenenden ohne Angebot übersprungen (MENSA-F-044). Herunterziehen lädt neu
+// (MENSA-F-240). Der Stern-Merker (MENSA-F-080, in der Spec entfallen) bleibt
+// bewusst bis Roadmap-Schritt 9 im Code — siehe canteen/spec.md „Umsetzungsstand".
 
 export function CanteenScreen() {
   const { t, i18n } = useTranslation();
@@ -248,47 +252,74 @@ function GerichtListe({
   onAktualisieren: () => void;
   aktualisiertGerade: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { colors } = useTheme();
   const favorites = useFavorites();
   const consent = useConsent();
   const { group } = usePriceGroup();
   const { betroffen } = useGerichtFilter();
+  const { aktiv: preset } = useSortierGruppierung();
 
   const nameVon = useMemo(() => {
     const map = new Map(mensen.map((m) => [m.id, m.name]));
     return (id: string) => map.get(id) ?? id;
   }, [mensen]);
 
-  const { sektionen, geschlossene } = useMemo(() => konsolidiere(proMensa), [proMensa]);
+  const konsolidierung = useMemo(() => konsolidiere(proMensa), [proMensa]);
+  const geschlossene = konsolidierung.geschlossene;
+  const ids = proMensa.map((p) => p.mensaId);
+
+  // Sortier-/Gruppiermodell (Requirements „Wahl der Gruppierung" ff.): die
+  // Abschnitte folgen dem aktiven Preset statt der festen Mensa-Gliederung. Die
+  // maßgebliche Mensa bleibt an die Auswahlreihenfolge gebunden. Der
+  // Bewertungs-Resolver liefert bis Roadmap-Schritt 9 immer `undefined` (D4).
+  const kontext: SortierKontext = {
+    preisGruppe: group,
+    mensaReihenfolge: ids,
+    mensaName: nameVon,
+    sprache: i18n.language,
+    bewertung: () => undefined,
+  };
+  const struktur = wendeAn(preset, konsolidierung, kontext);
+  const hatGerichte = struktur.abschnitte.some((a) => a.gerichte.length > 0);
 
   // Ernährungsfilter (MENSA-F-190/F-200): betroffene Gerichte ausblenden, zählen.
-  const gefiltert = useMemo(() => {
+  const gefiltert = (() => {
     let ausgeblendet = 0;
-    const sichtbareSektionen = sektionen
-      .map((s) => {
-        const gruppen = s.gruppen
-          .map((g) => {
-            const sichtbar = g.gerichte.filter((e) => !betroffen(e.massgeblich));
-            ausgeblendet += g.gerichte.length - sichtbar.length;
-            return { kategorie: g.kategorie, gerichte: sichtbar };
-          })
-          .filter((g) => g.gerichte.length > 0);
-        return { ...s, gruppen };
+    const abschnitte = struktur.abschnitte
+      .map((a) => {
+        const sichtbar = a.gerichte.filter((e) => !betroffen(e.massgeblich));
+        ausgeblendet += a.gerichte.length - sichtbar.length;
+        return { ...a, gerichte: sichtbar };
       })
-      .filter((s) => s.gruppen.length > 0);
-    return { sichtbareSektionen, ausgeblendet };
-  }, [sektionen, betroffen]);
+      .filter((a) => a.gerichte.length > 0);
+    return { abschnitte, ausgeblendet };
+  })();
 
-  const sichtbareIds = new Set(gefiltert.sichtbareSektionen.map((s) => s.mensaId));
-  const mehrereSektionen = gefiltert.sichtbareSektionen.length > 1;
-  // Chip-Leiste (MENSA-F-016/F-017/F-019): alle gewählten Mensen in Auswahlreihenfolge;
-  // Mensen ohne (sichtbaren) Abschnitt — geschlossen oder ganz weggefiltert — deaktiviert.
-  const chips = proMensa.map((p) => ({
-    id: p.mensaId,
-    titel: nameVon(p.mensaId),
-    deaktiviert: !sichtbareIds.has(p.mensaId),
-  }));
+  const sichtbareIds = new Set(gefiltert.abschnitte.map((a) => a.id));
+  const mehrereAbschnitte = gefiltert.abschnitte.length > 1;
+  // Chip-Leiste (Requirement „Chip-Leiste zeigt Gruppen der aktiven Gruppierung"):
+  // die Gruppen der aktiven Gruppierung in Gruppenreihenfolge; ohne Gruppierung
+  // keine Chips. Eine Gruppe ohne sichtbaren Abschnitt — geschlossen oder ganz
+  // weggefiltert — ist nicht auswählbar (Requirement „Nicht auswählbare Chips …").
+  const chips = !struktur.gruppierungAktiv
+    ? []
+    : preset.gruppierung === 'mensa'
+      ? [
+          ...struktur.abschnitte.map((a) => ({
+            id: a.id,
+            titel: nameVon(a.id),
+            deaktiviert: !sichtbareIds.has(a.id),
+          })),
+          ...ids
+            .filter((id) => !struktur.abschnitte.some((a) => a.id === id))
+            .map((id) => ({ id, titel: nameVon(id), deaktiviert: true })),
+        ]
+      : struktur.abschnitte.map((a) => ({
+          id: a.id,
+          titel: a.titel ?? t('mensa.sammelgruppe'),
+          deaktiviert: !sichtbareIds.has(a.id),
+        }));
 
   const swipe = useRef(
     PanResponder.create({
@@ -342,11 +373,7 @@ function GerichtListe({
   );
 
   // Alle Gerichte durch den Filter ausgeblendet — eigener Leerzustand (Abschnitt 7).
-  if (
-    sektionen.length > 0 &&
-    gefiltert.sichtbareSektionen.length === 0 &&
-    gefiltert.ausgeblendet > 0
-  ) {
+  if (hatGerichte && gefiltert.abschnitte.length === 0 && gefiltert.ausgeblendet > 0) {
     return (
       <ScrollView
         contentContainerStyle={styles.liste}
@@ -364,7 +391,7 @@ function GerichtListe({
   }
 
   // Keine der gewählten Mensen führt ein Angebot.
-  if (sektionen.length === 0) {
+  if (!hatGerichte) {
     return (
       <ScrollView
         contentContainerStyle={styles.liste}
@@ -418,32 +445,23 @@ function GerichtListe({
         ...swipe.panHandlers,
       }}
       fuss={fuss}
-      abschnitte={gefiltert.sichtbareSektionen.map((sektion) => ({
-        id: sektion.mensaId,
+      abschnitte={gefiltert.abschnitte.map((abschnitt) => ({
+        id: abschnitt.id,
         inhalt: (
           <View style={styles.sektion}>
-            {mehrereSektionen ? (
-              <Text style={[styles.sektionTitel, { color: colors.text }]}>
-                {nameVon(sektion.mensaId)}
-              </Text>
+            {struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel ? (
+              <Text style={[styles.sektionTitel, { color: colors.text }]}>{abschnitt.titel}</Text>
             ) : null}
-            {sektion.gruppen.map(({ kategorie, gerichte }) => (
-              <View key={kategorie || ' ohne'} style={styles.gruppe}>
-                {kategorie ? (
-                  <Text style={[styles.gruppeTitel, { color: colors.textMuted }]}>{kategorie}</Text>
-                ) : null}
-                {gerichte.map((g) => (
-                  <GerichtKarte
-                    key={g.schluessel}
-                    eintrag={g}
-                    zeigeAnbieter={g.anbieter.length > 1}
-                    nameVon={nameVon}
-                    group={group}
-                    favorit={favorites.has(g.schluessel)}
-                    onStern={() => void markiere(g)}
-                  />
-                ))}
-              </View>
+            {abschnitt.gerichte.map((g) => (
+              <GerichtKarte
+                key={g.schluessel}
+                eintrag={g}
+                zeigeAnbieter={g.anbieter.length > 1}
+                nameVon={nameVon}
+                group={group}
+                favorit={favorites.has(g.schluessel)}
+                onStern={() => void markiere(g)}
+              />
             ))}
           </View>
         ),
@@ -562,8 +580,6 @@ const styles = StyleSheet.create({
   liste: { gap: 16, paddingBottom: 24 },
   sektion: { gap: 10 },
   sektionTitel: { fontSize: 17, fontWeight: '700' },
-  gruppe: { gap: 8 },
-  gruppeTitel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   karte: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 4 },
   kartekopf: {
     flexDirection: 'row',
