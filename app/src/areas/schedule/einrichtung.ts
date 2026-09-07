@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
 import { logError } from '@/errors/AppError';
-import { readJson, removeKey, writeJson } from '@/storage/kv';
+import { readJson, writeJson } from '@/storage/kv';
 
 // SCHED-F-020/F-040/F-640: die einmalig gewählte Einrichtung des Stundenplans —
 // Studiengang (`sname`) mit Fachsemester (`grade`), optionale Gruppenkennung
@@ -176,15 +176,11 @@ export function useEinrichtung() {
 // Dauer der Eingabe und des Abrufs — und überlebt keinen App-Neustart.
 // Gespeichert wird allein die bestätigte Gruppenkennung.
 //
-// Der frühere Speicherschlüssel `scheduleMatrikelnummer` wird beim ersten
-// Zugriff gelöscht: Ohne das bliebe auf einem Gerät, das die App vor dem
-// 2026-09-06 genutzt hat, eine Matrikelnummer dauerhaft liegen — die
-// Anforderung wäre dort nicht erfüllt.
-
-const MATRIKELNUMMER_ALTSCHLUESSEL = 'scheduleMatrikelnummer';
+// Kein Aufräumen eines früheren Speicherschlüssels: Die App ist nicht
+// ausgeliefert, es gibt kein Gerät, auf dem je eine Matrikelnummer abgelegt
+// wurde.
 
 let matrikelnummerSnapshot: string | null = null;
-let altbestandGeloescht = false;
 const matrikelnummerHoerer = new Set<() => void>();
 
 function matrikelnummerMelden() {
@@ -197,12 +193,6 @@ function bereinigeMatrikelnummer(v: unknown): string | null {
 
 function matrikelnummerSubscribe(cb: () => void): () => void {
   matrikelnummerHoerer.add(cb);
-  if (!altbestandGeloescht) {
-    altbestandGeloescht = true;
-    removeKey(MATRIKELNUMMER_ALTSCHLUESSEL).catch((error) =>
-      logError('einrichtung.matrikelnummer.altbestand', error),
-    );
-  }
   return () => {
     matrikelnummerHoerer.delete(cb);
   };
@@ -211,7 +201,6 @@ function matrikelnummerSubscribe(cb: () => void): () => void {
 /** Nur für Tests: Modulzustand zurücksetzen. */
 export function __resetMatrikelnummerForTest(): void {
   matrikelnummerSnapshot = null;
-  altbestandGeloescht = false;
   matrikelnummerHoerer.clear();
 }
 

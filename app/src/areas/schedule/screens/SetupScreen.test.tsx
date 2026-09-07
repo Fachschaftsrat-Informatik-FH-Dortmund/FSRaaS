@@ -180,9 +180,11 @@ describe('SCHED-F-720 Manuelle Gruppenkennung verlangt Buchstabe und Zahl', () =
     expect(mockSetGruppenkennung).toHaveBeenCalledWith('C8');
   });
 
-  it('bietet einen unvollständigen Altbestand zum Nachtragen der Zahl an', () => {
-    // Vor dem 2026-09-06 gespeicherter Wert: der Buchstabe bleibt stehen, die
-    // Zahl lässt sich ergänzen, statt die Eingabe kommentarlos zurückzusetzen.
+  it('bietet eine unvollständige Kennung zum Nachtragen der Zahl an', () => {
+    // Entsteht, wenn INT-019 eine Kennung ohne Zahl liefert und die Nutzerin sie
+    // bestätigt — der Vorschlag wird ungeprüft übernommen. Der Buchstabe bleibt
+    // dann stehen und die Zahl lässt sich ergänzen, statt die Eingabe
+    // kommentarlos zurückzusetzen.
     mockEinrichtung.gruppenkennung = 'C';
     renderScreen();
     fireEvent.press(screen.getByText('Manuell'));

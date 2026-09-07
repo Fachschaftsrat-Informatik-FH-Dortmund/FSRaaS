@@ -37,7 +37,7 @@
 
 ## 6. Umsetzung
 
-- [x] 6.1 `app/src/areas/schedule/einrichtung.ts` und die zugehörigen Tests: Speichern der Matrikelnummer entfernt. Sie liegt jetzt nur noch im Arbeitsspeicher und überlebt keinen Neustart; `readMatrikelnummer` ist ersatzlos entfallen. Der frühere Schlüssel `scheduleMatrikelnummer` wird beim ersten Zugriff gelöscht — ohne das bliebe auf einem vor dem 2026-09-06 genutzten Gerät eine Matrikelnummer dauerhaft liegen und die Anforderung wäre dort nicht erfüllt. Fünf Tests unter dem Requirement-Titel „Keine Speicherung der Matrikelnummer", einer davon prüft jeden Speicherschlüssel statt nur den erwarteten
+- [x] 6.1 `app/src/areas/schedule/einrichtung.ts` und die zugehörigen Tests: Speichern der Matrikelnummer entfernt. Sie liegt jetzt nur noch im Arbeitsspeicher und überlebt keinen Neustart; `readMatrikelnummer` ist ersatzlos entfallen. Ein Aufräumen des früheren Speicherschlüssels ist bewusst **nicht** vorgesehen: Die App ist nicht ausgeliefert, es gibt kein Gerät, auf dem je eine Matrikelnummer abgelegt wurde. Vier Tests unter dem Requirement-Titel „Keine Speicherung der Matrikelnummer", einer davon prüft jeden Speicherschlüssel statt nur den erwarteten
 - [x] 6.3 INT-009-Spike als Vorbedingung von Roadmap-Schritt 6 in `specs/product/roadmap.md` festgehalten (Issue #28)
 
 Die übrigen geänderten Requirements fallen mit den noch offenen Etappen 3 bis 5
