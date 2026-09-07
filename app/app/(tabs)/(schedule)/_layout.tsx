@@ -30,6 +30,8 @@ export default function ScheduleLayout() {
       <Stack.Screen name="index" options={{ title: t('nav.schedule') }} />
       <Stack.Screen name="einrichtung" options={{ title: t('schedule.einrichtungTitel') }} />
       <Stack.Screen name="kurse" options={{ title: t('schedule.kurseTitel') }} />
+      <Stack.Screen name="detail" options={{ title: t('schedule.detailTitel') }} />
+      <Stack.Screen name="termin" options={{ title: t('schedule.terminTitel') }} />
     </Stack>
   );
 }
