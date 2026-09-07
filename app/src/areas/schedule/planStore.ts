@@ -22,6 +22,16 @@ const KEY = 'scheduleEntries';
 const WEEKDAYS: readonly Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const STATUSES: readonly PlanEntryStatus[] = ['fest', 'vorgemerkt'];
 
+/**
+ * Prüft das Feld `akzeptierteKonflikte` (`typen.ts`): eine Liste von
+ * Gegenpart-Kennungen. Ein Eintrag, dessen Feld nicht lesbar ist, fällt damit
+ * durch `istGueltigerEintrag` und wird von `bereinige` einzeln übersprungen —
+ * der übrige Bestand bleibt erhalten (DATA-F-020).
+ */
+function istKennungsliste(x: unknown): x is string[] {
+  return Array.isArray(x) && x.every((k) => typeof k === 'string');
+}
+
 function istGueltigeBasis(e: Record<string, unknown>): boolean {
   return (
     typeof e.id === 'string' &&
@@ -35,7 +45,7 @@ function istGueltigeBasis(e: Record<string, unknown>): boolean {
     typeof e.timeEndMin === 'number' &&
     typeof e.gruppenzugehoerig === 'boolean' &&
     typeof e.abweichendeGruppe === 'boolean' &&
-    typeof e.akzeptierterKonflikt === 'boolean' &&
+    istKennungsliste(e.akzeptierteKonflikte) &&
     typeof e.istPruefung === 'boolean' &&
     (e.gueltigVon === null || typeof e.gueltigVon === 'number') &&
     (e.gueltigBis === null || typeof e.gueltigBis === 'number')
@@ -164,8 +174,22 @@ export function useScheduleEntries() {
     schreiben(snapshot.map((e) => (e.id === id ? ({ ...e, ...patch } as PlanEntry) : e)));
   }, []);
 
+  /**
+   * Entfernt einen Termin und mit ihm die Nennungen auf ihn in den übrigen
+   * Einträgen — sonst wüchsen Verweise ins Leere, und eine später an dieselbe
+   * Stelle tretende, nie angenommene Kollision bliebe stumm (design.md,
+   * Entscheidung 2). Aufräumen im Schreibpfad, keine Migration.
+   */
   const entfernen = useCallback((id: string) => {
-    schreiben(snapshot.filter((e) => e.id !== id));
+    schreiben(
+      snapshot
+        .filter((e) => e.id !== id)
+        .map((e) =>
+          e.akzeptierteKonflikte.includes(id)
+            ? ({ ...e, akzeptierteKonflikte: e.akzeptierteKonflikte.filter((k) => k !== id) } as PlanEntry)
+            : e,
+        ),
+    );
   }, []);
 
   /** SCHED-F-570: Status zwischen „fest" und „vorgemerkt" wechseln. */
@@ -180,6 +204,26 @@ export function useScheduleEntries() {
     schreiben(snapshot.map((e) => (e.id === id ? { ...e, color } : e)));
   }, []);
 
+  /**
+   * Requirement „Bewusste Übernahme trotz Konflikt": hält die Annahme einer
+   * Kollision am **Paar** fest, indem beide Termine einander nennen. Eine
+   * einseitige Eintragung gilt als nicht angenommen und erzeugt weiterhin einen
+   * Hinweis (`konflikt.ts`). Kollidiert ein Termin mit mehreren, wird die
+   * Annahme je Paar einzeln über einen eigenen Aufruf festgehalten.
+   */
+  const konfliktAnnehmen = useCallback((idA: string, idB: string) => {
+    if (idA === idB) return;
+    const beide = [idA, idB];
+    if (!beide.every((id) => snapshot.some((e) => e.id === id))) return;
+    schreiben(
+      snapshot.map((e) => {
+        const gegenpart = e.id === idA ? idB : e.id === idB ? idA : null;
+        if (gegenpart === null || e.akzeptierteKonflikte.includes(gegenpart)) return e;
+        return { ...e, akzeptierteKonflikte: [...e.akzeptierteKonflikte, gegenpart] } as PlanEntry;
+      }),
+    );
+  }, []);
+
   const clear = useCallback(() => schreiben([]), []);
 
   return {
@@ -191,6 +235,7 @@ export function useScheduleEntries() {
     entfernen,
     statusUmschalten,
     farbeSetzen,
+    konfliktAnnehmen,
     clear,
   };
 }
