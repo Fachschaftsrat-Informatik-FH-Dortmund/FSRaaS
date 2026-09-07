@@ -46,7 +46,7 @@ import {
 import { useCanteenSelection } from '../selection';
 import { AnkerListe } from '../ui/AnkerListe';
 import { wischRichtung } from '../gesten';
-import { naechsterOeffnungstag, oeffnungszeitFuer } from '../oeffnungszeiten';
+import { oeffnungszeitFuer } from '../oeffnungszeiten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 
 // MENSA: Tages-Speiseplan als eine über die gewählten Mensen zusammengefasste
@@ -200,6 +200,7 @@ function MensaListe({
   const proMensa = ids.map((id, i) => ({
     mensaId: id,
     gerichte: ergebnisse[i]?.data?.gerichte ?? [],
+    naechsteOeffnung: ergebnisse[i]?.data?.naechsteOeffnung ?? null,
   }));
 
   const irgendwasGeladen = ergebnisse.some((r) => r.data !== undefined);
@@ -246,7 +247,7 @@ function GerichtListe({
   onAktualisieren,
   aktualisiertGerade,
 }: {
-  proMensa: { mensaId: string; gerichte: Gericht[] }[];
+  proMensa: { mensaId: string; gerichte: Gericht[]; naechsteOeffnung: string | null }[];
   datum: string;
   mensen: Mensa[];
   onBlaettern: (richtung: -1 | 1) => void;
@@ -270,6 +271,13 @@ function GerichtListe({
   const geschlossene = konsolidierung.geschlossene;
   const ids = proMensa.map((p) => p.mensaId);
   const nurEineMensa = ids.length === 1;
+  // Wiedereröffnungshinweis (Requirement „Wiedereröffnungshinweis an der
+  // geschlossenen Mensa"): das Backend liefert `naechsteOeffnung` je Mensa
+  // bereits mit dem Tages-Speiseplan (api.ts, SpeiseplanStore.TagAsync).
+  const naechsteOeffnungVon = useMemo(
+    () => new Map(proMensa.map((p) => [p.mensaId, p.naechsteOeffnung])),
+    [proMensa],
+  );
 
   // Sortier-/Gruppiermodell (Requirements „Wahl der Gruppierung" ff.): die
   // Abschnitte folgen dem aktiven Preset statt der festen Mensa-Gliederung. Die
@@ -496,12 +504,7 @@ function GerichtListe({
           : struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel != null;
         const kopfName = mensaGruppierung ? nameVon(abschnitt.id) : abschnitt.titel;
         const wieder =
-          abschnitt.art === 'geschlossen'
-            ? naechsterOeffnungstag(
-                mensen.find((m) => m.id === abschnitt.id),
-                datum,
-              )
-            : null;
+          abschnitt.art === 'geschlossen' ? (naechsteOeffnungVon.get(abschnitt.id) ?? null) : null;
         return {
           id: abschnitt.id,
           inhalt: (
@@ -524,9 +527,7 @@ function GerichtListe({
               {abschnitt.art === 'geschlossen' ? (
                 <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
                   {t('mensa.geschlossenHeute', { mensa: nameVon(abschnitt.id) })}
-                  {wieder != null
-                    ? ` ${t('mensa.wiederGeoeffnet', { tag: t(`mensa.weekday.${wieder}`) })}`
-                    : ''}
+                  {wieder != null ? ` ${formatWiedereroeffnung(wieder, datum, t)}` : ''}
                 </Text>
               ) : null}
               {abschnitt.art === 'gefiltert' ? (
@@ -641,6 +642,31 @@ function formatDatum(datum: string, t: TFunction): string {
   const [y, m, d] = datum.split('-').map(Number);
   const wd = new Date(y!, m! - 1, d!).getDay();
   return `${t(`mensa.weekday.${wd}`)}, ${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.${y}`;
+}
+
+/**
+ * Wiedereröffnungshinweis (Requirement „Wiedereröffnungshinweis an der
+ * geschlossenen Mensa", design.md D3): der Wochentag des ermittelten Tages,
+ * ergänzt um das Datum in Kurzform, wenn der Tag mehr als sechs Tage vom
+ * angezeigten Tag entfernt liegt — sonst wäre „Montag" mit dem nächsten oder
+ * übernächsten Montag zu verwechseln.
+ */
+function formatWiedereroeffnung(naechsteOeffnung: string, datum: string, t: TFunction): string {
+  const [y, m, d] = naechsteOeffnung.split('-').map(Number);
+  const wd = new Date(y!, m! - 1, d!).getDay();
+  const basis = t('mensa.wiederGeoeffnet', { tag: t(`mensa.weekday.${wd}`) });
+  if (tageDifferenz(datum, naechsteOeffnung) <= 6) return basis;
+  const kurzdatum = `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.`;
+  return `${basis} ${t('mensa.wiederGeoeffnetDatum', { datum: kurzdatum })}`;
+}
+
+/** Anzahl ganzer Tage zwischen zwei ISO-Datumsangaben (`bis` − `von`). */
+function tageDifferenz(von: string, bis: string): number {
+  const [y1, m1, d1] = von.split('-').map(Number);
+  const [y2, m2, d2] = bis.split('-').map(Number);
+  const t1 = Date.UTC(y1!, m1! - 1, d1!);
+  const t2 = Date.UTC(y2!, m2! - 1, d2!);
+  return Math.round((t2 - t1) / 86_400_000);
 }
 
 const styles = StyleSheet.create({

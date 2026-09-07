@@ -18,7 +18,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.6.0
+  version: 0.7.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -111,6 +111,14 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/Gericht" }
                   standAlter: { $ref: "#/components/schemas/StandAlter" }
+                  naechsteOeffnung:
+                    type: string
+                    format: date
+                    nullable: true
+                    description: >
+                      Nächster Tag nach `datum`, für den der Speiseplan-Zwischenspeicher
+                      dieser Mensa ein Angebot führt. Nur gesetzt, wenn `gerichte` leer
+                      ist; `null`, wenn kein solcher Tag im bekannten Zeithorizont liegt.
         "404":
           description: Unbekannte Mensa-Kennung
           content:

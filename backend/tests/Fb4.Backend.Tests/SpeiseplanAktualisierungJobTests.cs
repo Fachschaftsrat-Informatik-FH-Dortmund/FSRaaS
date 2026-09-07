@@ -33,6 +33,7 @@ public class SpeiseplanAktualisierungJobTests
                        "price":{"student":"3,30 €","staff":"5,40 €","guest":"6,50 €"},
                        "counter":"Menü 1","counterNames":{"de":"Menü 1","en":"Menu 1"},"position":0}]}
                     """,
+                var p when p.EndsWith("/canteens/342") => """{"2026-09-05":[]}""",
                 _ => "[]",
             };
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
@@ -84,9 +85,36 @@ public class SpeiseplanAktualisierungJobTests
         Assert.Equal("Mensa", tag.MensaId);
         Assert.Contains("bolognese", tag.GerichteJson);
         Assert.Contains("\"schluessel\":\"bolognese\"", tag.GerichteJson);
+        Assert.Equal(1, tag.AnzahlGerichte);
         Assert.True(await db2.MensaVerzeichnis.AnyAsync(e => e.Art == "kennzeichnung" && e.QuelleId == "N"));
         Assert.True(await db2.MensaVerzeichnis.AnyAsync(e => e.Art == "kategorie"));
         Assert.True((await db2.MensaStand.SingleAsync()).QuelleErreichbar);
+    }
+
+    [Fact]
+    public async Task API_F_070_Tag_ohne_Gerichte_hat_AnzahlGerichte_0()
+    {
+        var provider = Provider(out _);
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Fb4DbContext>();
+            db.Mensen.Add(new MensaEintrag { Id = "MensaLeer", Name = "Nebenmensa", QuelleId = "342", Reihenfolge = 20 });
+            await db.SaveChangesAsync();
+        }
+
+        var job = new SpeiseplanAktualisierungJob(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            provider.GetRequiredService<JobStatusRegistry>(),
+            new ConfigurationBuilder().Build(),
+            NullLogger<SpeiseplanAktualisierungJob>.Instance);
+        await job.RunOnceForTestAsync();
+
+        using var pruef = provider.CreateScope();
+        var db2 = pruef.ServiceProvider.GetRequiredService<Fb4DbContext>();
+        var tag = await db2.Speiseplaene.SingleAsync();
+        Assert.Equal("MensaLeer", tag.MensaId);
+        Assert.Equal("[]", tag.GerichteJson);
+        Assert.Equal(0, tag.AnzahlGerichte);
     }
 
     [Fact]

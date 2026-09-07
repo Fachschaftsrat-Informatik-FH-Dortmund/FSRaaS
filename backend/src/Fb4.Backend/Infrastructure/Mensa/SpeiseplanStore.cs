@@ -19,9 +19,12 @@ public sealed class SpeiseplanStore(Fb4DbContext db)
 
     /// <summary>
     /// Gerichte eines Tages in der gewaehlten Sprache, nach Position sortiert.
-    /// Leere Liste = „kein Angebot" (kein Fehler, MENSA Abschnitt 9).
+    /// Leere Liste = „kein Angebot" (kein Fehler, MENSA Abschnitt 9). Führt der Tag
+    /// kein Angebot, wird zusätzlich der nächste Tag mit Angebot dieser Mensa ermittelt
+    /// (Requirement „Wiedereröffnungshinweis an der geschlossenen Mensa"), ohne
+    /// künstliche Tagesgrenze — die Suche reicht so weit wie der Zwischenspeicher.
     /// </summary>
-    public async Task<(IReadOnlyList<Gericht> gerichte, StandAlter stand)> TagAsync(
+    public async Task<(IReadOnlyList<Gericht> gerichte, StandAlter stand, DateOnly? naechsteOeffnung)> TagAsync(
         string mensaId, DateOnly datum, string sprache, CancellationToken ct)
     {
         var tag = await db.Speiseplaene.AsNoTracking()
@@ -30,15 +33,30 @@ public sealed class SpeiseplanStore(Fb4DbContext db)
         var verzeichnis = await VerzeichnisNachschlagAsync(sprache, ct);
         var stand = await StandAsync(tag?.AbgerufenAm, ct);
 
-        if (tag is null) return ([], stand);
+        if (tag is null)
+            return ([], stand, await NaechsteOeffnungAsync(mensaId, datum, ct));
 
         var cache = JsonSerializer.Deserialize<List<GerichtCache>>(tag.GerichteJson, Json) ?? [];
         var gerichte = cache
             .OrderBy(g => g.Position)
             .Select(g => Projizieren(g, sprache, verzeichnis))
             .ToList();
-        return (gerichte, stand);
+
+        if (gerichte.Count > 0) return (gerichte, stand, null);
+        return (gerichte, stand, await NaechsteOeffnungAsync(mensaId, datum, ct));
     }
+
+    /// <summary>
+    /// Nächster Tag nach <paramref name="datum"/>, für den der Zwischenspeicher dieser
+    /// Mensa ein Angebot führt — oder <c>null</c>, wenn keiner im bekannten
+    /// Zeithorizont liegt (design.md D2).
+    /// </summary>
+    async Task<DateOnly?> NaechsteOeffnungAsync(string mensaId, DateOnly datum, CancellationToken ct) =>
+        await db.Speiseplaene.AsNoTracking()
+            .Where(t => t.MensaId == mensaId && t.Datum > datum && t.AnzahlGerichte > 0)
+            .OrderBy(t => t.Datum)
+            .Select(t => (DateOnly?)t.Datum)
+            .FirstOrDefaultAsync(ct);
 
     public async Task<(IReadOnlyList<Schluesselwert> kategorien,
         IReadOnlyList<Schluesselwert> zusatzstoffe,

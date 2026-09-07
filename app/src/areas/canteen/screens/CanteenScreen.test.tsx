@@ -106,12 +106,16 @@ const gericht = (over: Partial<Record<string, unknown>> = {}) => ({
   ...over,
 });
 
-function qr(gerichte: unknown[] | undefined, over: Partial<Record<string, unknown>> = {}) {
+function qr(
+  gerichte: unknown[] | undefined,
+  over: Partial<Record<string, unknown>> = {},
+  naechsteOeffnung: string | null = null,
+) {
   return {
     data:
       gerichte === undefined
         ? undefined
-        : { gerichte, standAlter: { abgerufenAm: new Date().toISOString() } },
+        : { gerichte, standAlter: { abgerufenAm: new Date().toISOString() }, naechsteOeffnung },
     isPending: false,
     isError: false,
     isFetching: false,
@@ -324,6 +328,35 @@ describe('Geschlossen-Hinweis für Mensa ohne Angebot', () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText('Mensa Süd hat an diesem Tag geschlossen.')).toBeTruthy();
+  });
+});
+
+describe('Wiedereröffnungshinweis an der geschlossenen Mensa', () => {
+  it('zeigt den nächstgelegenen Tag mit Angebot im Zwischenspeicher (Geschlossene Mensa mit späterem Angebot im Zwischenspeicher)', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    // MONTAG = 2026-09-07; 2026-09-09 ist Mittwoch, zwei Tage entfernt.
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, '2026-09-09') };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText(/Wieder geöffnet am Mittwoch\.$/)).toBeTruthy();
+  });
+
+  it('zeigt keinen Wiedereröffnungshinweis ohne bekannten Tag mit Angebot (Kein bekannter Tag mit Angebot)', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, null) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText(/Mensa Süd hat an diesem Tag geschlossen\.$/)).toBeTruthy();
+    expect(screen.queryByText(/Wieder geöffnet/)).toBeNull();
+  });
+
+  it('ergänzt das Datum in Kurzform, wenn der Tag mehr als sechs Tage entfernt liegt', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    // MONTAG = 2026-09-07; 2026-09-20 (Sonntag) liegt 13 Tage entfernt.
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, '2026-09-20') };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText(/Wieder geöffnet am Sonntag\. \(20\.09\.\)$/)).toBeTruthy();
   });
 });
 

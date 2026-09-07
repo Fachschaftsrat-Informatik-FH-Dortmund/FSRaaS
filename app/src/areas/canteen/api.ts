@@ -17,6 +17,8 @@ export type StandAlter = components['schemas']['StandAlter'];
 export interface Speiseplan {
   gerichte: Gericht[];
   standAlter: StandAlter;
+  /** Nächster Tag mit Angebot dieser Mensa, wenn `gerichte` leer ist; sonst `null`. */
+  naechsteOeffnung?: string | null;
 }
 export interface Verzeichnisse {
   kategorien: Schluesselwert[];
