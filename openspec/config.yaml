@@ -1,32 +1,122 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# Projektkontext — geht in jede Artefakt-Erzeugung und in die Umsetzung ein.
+#
+# Hier steht bewusst nur, was `CLAUDE.md` nicht schon trägt. Technische
+# Festlegungen, Sprachregeln, Herkunftspflicht und die Mängel der Alt-Apps
+# stehen dort und werden hier nicht wiederholt — zwei Kopien driften.
+# Was hier steht, sind die querschnittlichen Umsetzungsregeln: Sie gelten für
+# jede Ansicht und jeden Schreibpfad und tauchen in keiner Feature-Spec auf.
+#
+# Listeneinträge stehen als `>-`-Blockskalare, damit ein Doppelpunkt im Text
+# („Herkunft: …") nicht als YAML-Schlüssel gelesen wird.
+context: |
+  Lies `CLAUDE.md` für Arbeitsweise, technische Festlegungen und Sprachregeln.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Vertikale Schnitte: Ein Roadmap-Schritt (`specs/product/roadmap.md`) umfasst
+  Vertragsanteil, Backend, App und Tests gemeinsam und endet mit einem
+  lauffähigen Stand. Ein Change deckt idealerweise einen solchen Schnitt ab;
+  seine `tasks.md` teilt ihn in Blöcke, die einzeln abschließbar sind und
+  einzeln unterbrochen werden können — die Umsetzung erfolgt nebenher durch
+  eine einzelne Person.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Querschnittliche Regeln, die bei jeder Ansicht und jedem Schreibpfad gelten
+  und deshalb in keiner Feature-Capability wiederholt werden:
+
+  - Vier Zustände je Ansicht mit entfernten Daten — Laden, Leer, Fehler,
+    Offline — über die wiederverwendbare Grundstruktur, nicht je Bildschirm
+    neu definiert (Capability `architecture`).
+  - Leerzustände nennen den nächsten sinnvollen Schritt, Fehlermeldungen
+    bieten Wiederholen an (Capability `ux-and-theming`).
+  - Keine Bedeutung allein über Farbe, keine Aktion allein über eine Geste,
+    Mindestkontrast 4,5:1, Bedienelemente ab 44×44 dp
+    (Capability `ux-and-theming`).
+  - Keine Zeichenkette fest im Code — Deutsch und Englisch von Anfang an
+    (Capability `non-functional`).
+  - Fehler nie stillschweigend verschlucken; kein `try` ohne `catch`
+    (Capability `security-and-privacy`).
+  - Zielsysteme ausschließlich über Konfiguration ansprechen, nie fest im
+    Quellcode verdrahtet (Capability `security-and-privacy`). URL, Feldnamen
+    und Antwortstruktur eines Fremdsystems stehen ausschließlich in
+    `openspec/specs/integrations/spec.md` — weder in einer Feature-Capability
+    noch als Konstante im Code. Steht ein Eintrag dort auf „zu verifizieren"
+    oder „zu definieren", ist das ein Grund zum Nachfragen, kein Grund zum
+    Raten.
+  - Ausnahmslos TLS. Bei Zertifikatsproblemen der Hochschule deren Aussteller
+    als zusätzlichen Vertrauensanker aufnehmen, nie die Prüfung abschalten
+    (Capability `security-and-privacy`).
+  - Schreibpfade brauchen einen Idempotenz-Schlüssel, damit ein Vorgang aus
+    der Offline-Warteschlange nicht doppelt wirkt
+    (Capability `backend-and-api`).
+  - Berührt die Arbeit eine Verwaltungsfunktion, gilt sie für App und
+    Weboberfläche gemeinsam (Capability `admin`). Die Weboberfläche ist der
+    Web-Export aus `app/`, kein eigenes Verzeichnis (ADR 0018).
+
+  Ein neuer Aufruf zwischen App und Backend wird zuerst in
+  `openspec/specs/api-contract.yaml` beschrieben; Anfrage- und Antworttypen
+  werden daraus erzeugt, nicht von Hand geschrieben.
+
+# Regeln je Artefakt.
+rules:
+  proposal:
+    - >-
+      Nenne, welchem Roadmap-Schritt aus `specs/product/roadmap.md` der
+      Schnitt zugeordnet ist, und welche Teile du bewusst weglässt.
+    - >-
+      Trifft der Schnitt einen offenen Punkt aus `specs/open-questions.md`
+      oder aus dem Abschnitt „Offene Fragen" der betroffenen Capability,
+      setze ihn nicht auf Verdacht um — benenne die fehlende Entscheidung.
+  specs:
+    - >-
+      Lies die betroffene Capability vollständig, nicht nur die Requirements —
+      Erläuterungen, UI-Zustände, Offline-Verhalten und Fehlerfälle tragen
+      regelmäßig Verhalten, das in keinem Requirement-Satz steht.
+    - >-
+      Jedes Requirement trägt einen EARS-Satz und genau einen abschließenden
+      Satz „Herkunft: …" nach `specs/README.md` Abschnitt 6.
+    - >-
+      Neue Requirements bekommen keine Anforderungs-ID mehr, sondern einen
+      capability-basierten Titel (ADR 0019). Historische IDs werden nur als
+      „(vormals …)" weitergeführt.
+    - >-
+      Eine nicht mehr benötigte Anforderung wird als REMOVED-Delta geführt,
+      nie gelöscht.
+  tasks:
+    - >-
+      Jede funktionale Anforderung mit „muss" braucht mindestens einen
+      automatisierten Test, dessen Name den Requirement-Titel trägt, etwa
+      `describe('Gruppenzuordnung bei Bereichsangabe', …)`.
+    - >-
+      Für Gestaltung, Barrierefreiheit und Leistungswerte ist ein datiertes
+      Prüfprotokoll zulässig statt eines Tests
+      (Capability `quality-and-testing`).
+    - >-
+      Berührt der Schnitt ein Fremdsystem, gehört ein Vertragstest dazu, der
+      bei struktureller Abweichung sichtbar fehlschlägt, statt sie
+      weiterzuverarbeiten (Capability `quality-and-testing`).
+
+# Hinweise für Umsetzung und Archivierung.
+operations:
+  apply:
+    guidance:
+      - >-
+        Backend und App gehören zum selben Schnitt, nicht in getrennte
+        Durchgänge.
+      - >-
+        Schau in den Alt-Code unter `alte apps/`, bevor du eine Fachlogik neu
+        erfindest — die Android-App ist der zu übertreffende Stand. Übernimm
+        daraus nichts ungeprüft.
+      - >-
+        Wächst der Umfang über den Change hinaus, sag es, statt ihn
+        stillschweigend auszuweiten.
+      - >-
+        Vor dem Fertigmelden `node tools/spec-check/src/cli.js` laufen lassen —
+        dieselbe Prüfung blockiert in der CI den Merge.
+  archive:
+    guidance:
+      - >-
+        Prüfe vor dem Archivieren die Definition of Done aus `CLAUDE.md` für
+        jede umgesetzte Anforderung.
+      - >-
+        Melde nichts als fertig, was es nicht ist. Schlägt ein Test fehl oder
+        blieb etwas offen, benenne es ausdrücklich.
