@@ -22,8 +22,8 @@
 
 ## 4. Vertrag und Roadmap
 
-- [ ] 4.1 `openspec/specs/api-contract.yaml`: Endpunkt für den Abruf des Prüfungsbestands ergänzen, Schema für einen Prüfungstermin, Fassung erhöhen
-- [ ] 4.2 Typen neu erzeugen (`tools/contract-codegen`)
+- [x] 4.1 `openspec/specs/api-contract.yaml`: Endpunkt für den Abruf des Prüfungsbestands ergänzen, Schema für einen Prüfungstermin, Fassung erhöhen
+- [x] 4.2 Typen neu erzeugen (`tools/contract-codegen`)
 - [x] 4.3 `specs/product/roadmap.md`: Prüfungsplan aus der zweiten Ausbaustufe nehmen, Schritt 6 zuordnen; Zeile „Prüfungsplan im Stundenplan" aus der Tabelle der zurückgestellten Punkte entfernen; `version` und `last_reviewed` pflegen
 - [x] 4.4 `specs/product/roadmap.md`: ADMIN-Zuordnung um die zwei entfallenen Requirements bereinigen
 
