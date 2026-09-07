@@ -187,6 +187,23 @@ export function ScheduleScreen() {
         emptyNextStep={
           keineEinrichtung ? t('schedule.kurseKeineEinrichtungHinweis') : t('schedule.planLeerHinweis')
         }
+        emptyAction={
+          keineEinrichtung ? (
+            <AppButton label={t('schedule.einrichtungOeffnen')} onPress={() => router.push('/einrichtung')} />
+          ) : (
+            <View style={styles.leerAktionen}>
+              <AppButton
+                label={t('schedule.weiterZurKursauswahl')}
+                onPress={() => router.push('/kurse')}
+              />
+              <AppButton
+                variant="secondary"
+                label={t('schedule.terminAnlegen')}
+                onPress={() => router.push({ pathname: '/termin', params: { wochentag: heutigerWochentag } })}
+              />
+            </View>
+          )
+        }
       >
         {() =>
           stand === null ? null : (
@@ -730,6 +747,7 @@ function SchalterZeile({
 
 const styles = StyleSheet.create({
   inhalt: { gap: 12 },
+  leerAktionen: { gap: 10, alignItems: 'stretch' },
   banner: { padding: 12, borderRadius: 8, gap: 8 },
   bannerAktionen: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   jetzt: { borderWidth: 1, borderRadius: 8, padding: 10, gap: 2 },

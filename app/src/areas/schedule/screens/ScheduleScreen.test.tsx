@@ -499,6 +499,29 @@ describe('Leerer Tag bei wirksamem Filter', () => {
     expect(screen.getByText('Noch keine Einrichtung')).toBeTruthy();
     expect(screen.queryByText('Kein Termin an diesem Tag')).toBeNull();
   });
+
+  it('bietet ohne gewählten Studiengang einen Bedienweg zur Einrichtung an, statt nur Text zu zeigen', async () => {
+    await seed([]);
+    await removeKey('scheduleSetup');
+    __resetEinrichtungForTest();
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('Einrichtung öffnen'));
+    expect(mockPush).toHaveBeenCalledWith('/einrichtung');
+  });
+
+  it('bietet bei leerem Plan trotz vorhandener Einrichtung einen Bedienweg zur Kursauswahl und zum eigenen Termin', async () => {
+    await seed([]);
+    await zeige();
+
+    expect(screen.getByText('Noch keine Termine im Plan')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Weiter zur Kursauswahl'));
+    expect(mockPush).toHaveBeenCalledWith('/kurse');
+
+    fireEvent.press(screen.getByLabelText('Eigenen Termin anlegen'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/termin', params: { wochentag: 'Wed' } });
+  });
 });
 
 describe('Schalter zum Abschalten aller Filter', () => {
