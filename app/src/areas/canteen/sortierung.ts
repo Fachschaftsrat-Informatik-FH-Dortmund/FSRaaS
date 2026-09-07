@@ -58,6 +58,11 @@ export interface Abschnitt {
   id: string;
   /** `null` = keine Überschrift (Gruppierung „keine" oder kategorielose Sammelgruppe). */
   titel: string | null;
+  /**
+   * `'geschlossen'` = gewählte Mensa ohne Angebot am Tag, mit leerer Gerichtsliste;
+   * entsteht nur bei Gruppierung „nach Mensa" (design.md D2). Sonst `'gerichte'`.
+   */
+  zustand: 'gerichte' | 'geschlossen';
   gerichte: KonsolidiertesGericht[];
 }
 
@@ -188,7 +193,7 @@ export function wendeAn(
 
   if (kombination.gruppierung === 'keine') {
     return {
-      abschnitte: [{ id: 'alle', titel: null, gerichte: sortiert(alle) }],
+      abschnitte: [{ id: 'alle', titel: null, zustand: 'gerichte', gerichte: sortiert(alle) }],
       gruppierungAktiv: false,
     };
   }
@@ -200,19 +205,31 @@ export function wendeAn(
       if (!proMensa.has(id)) proMensa.set(id, []);
       proMensa.get(id)!.push(g);
     }
-    const gruppen = [...proMensa.entries()].map(([id, gs]) => ({
+    // Zusätzlich zu den Mensen mit Angebot erhält jede gewählte Mensa ohne
+    // Angebot einen Abschnitt mit leerer Gerichtsliste (design.md D2). Beide
+    // Arten durchlaufen dieselbe Gruppenordnung — eine geschlossene Mensa steht
+    // an genau der Stelle, an der sie stünde, wenn sie geöffnet hätte.
+    const geschlossen = new Set(konsolidierung.geschlossene);
+    const gruppen = [
+      ...[...proMensa.entries()].map(([id, gs]) => ({ id, gerichte: gs })),
+      ...konsolidierung.geschlossene.map((id) => ({
+        id,
+        gerichte: [] as KonsolidiertesGericht[],
+      })),
+    ].map(({ id, gerichte }) => ({
       id,
       titel: kontext.mensaName(id),
       rang: 0,
-      // Mensa-Auswahlreihenfolge (MENSA-F-025) als „Reihenfolge der Quelle".
+      // Mensa-Auswahlreihenfolge (MENSA-F-025) als „eingestellte Mensa-Reihenfolge".
       ersteQuelle: indexOderEnde(kontext.mensaReihenfolge, id),
-      gerichte: gs,
+      gerichte,
     }));
     const geordnet = ordneGruppen(gruppen, kombination.gruppenreihenfolge, kontext, false);
     return {
       abschnitte: geordnet.map((gr) => ({
         id: gr.id,
         titel: gr.titel,
+        zustand: geschlossen.has(gr.id) ? ('geschlossen' as const) : ('gerichte' as const),
         gerichte: sortiert(gr.gerichte),
       })),
       gruppierungAktiv: true,
@@ -240,6 +257,7 @@ export function wendeAn(
     abschnitte: geordnet.map((gr) => ({
       id: gr.id,
       titel: gr.titel,
+      zustand: 'gerichte',
       gerichte: sortiert(gr.gerichte),
     })),
     gruppierungAktiv: true,

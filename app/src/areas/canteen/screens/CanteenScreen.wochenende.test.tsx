@@ -141,11 +141,28 @@ describe('Aktueller Tag als Ausgangspunkt der Tagesauswahl', () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Heute kein Angebot')).toBeTruthy());
     expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy();
-    expect(screen.getByText('Hauptmensa hat an diesem Tag geschlossen.')).toBeTruthy();
+    expect(screen.getByText(/Hauptmensa hat an diesem Tag geschlossen\./)).toBeTruthy();
 
     // Der aktuelle Tag ist die Untergrenze: kein „Tag zurück".
     const zurueck = screen.getByLabelText('Vorheriger Tag');
     expect(zurueck.props.accessibilityState.disabled).toBe(true);
+  });
+});
+
+describe('Geschlossene Abschnitte nur, wenn überhaupt etwas angeboten wird', () => {
+  it('bleibt bei mehreren gewählten, allesamt geschlossenen Mensen beim Leerzustand „kein Angebot" statt einer Liste aus Geschlossen-Abschnitten (design.md D4)', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([]), Sued: qr([]) };
+    renderScreen();
+    // Der querschnittliche Leerzustand „Heute kein Angebot" bleibt der einzige
+    // Titel — keine Liste aus Geschlossen-Abschnitten mit je eigener Überschrift.
+    await waitFor(() => expect(screen.getByText('Heute kein Angebot')).toBeTruthy());
+    expect(screen.queryByText('Mensa')).toBeNull();
+    expect(screen.queryByText('Sued')).toBeNull();
+    // Der Fußbereich trägt trotzdem den vollen Kontext, unabhängig von der
+    // Gruppierung — es gibt hier keine Abschnittsüberschriften, die ihn tragen könnten.
+    expect(screen.getByText(/Hauptmensa hat an diesem Tag geschlossen\./)).toBeTruthy();
+    expect(screen.getByText(/Sued hat an diesem Tag geschlossen\./)).toBeTruthy();
   });
 });
 

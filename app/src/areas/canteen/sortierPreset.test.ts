@@ -52,6 +52,36 @@ describe('sortierPreset verwirft nur den beschädigten Eintrag beim Laden', () =
   });
 });
 
+describe('Bestehende eigene Presets bleiben ohne Migration gültig', () => {
+  it('liest eine gespeicherte Kombination mit `kriterium: \'reihenfolge\'` unverändert ein', async () => {
+    await AsyncStorage.setItem(
+      KEY_PRESETS,
+      JSON.stringify([
+        {
+          id: 'alt',
+          name: 'Alt',
+          kombination: {
+            gruppierung: 'mensa',
+            gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+            gerichteSortierung: { kriterium: 'quelle', richtung: 'auf' },
+          },
+        },
+      ]),
+    );
+    const { result } = await ladeHook();
+    expect(result.current.presets).toHaveLength(1);
+    expect(result.current.presets[0]).toEqual({
+      id: 'alt',
+      name: 'Alt',
+      kombination: {
+        gruppierung: 'mensa',
+        gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+        gerichteSortierung: { kriterium: 'quelle', richtung: 'auf' },
+      },
+    });
+  });
+});
+
 describe('Speichern eines eigenen Presets', () => {
   it('legt die aktuelle Kombination unter einem Namen als wählbares Preset an und hält sie über einen Neustart', async () => {
     const { result } = await ladeHook();

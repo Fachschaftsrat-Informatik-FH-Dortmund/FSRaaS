@@ -60,6 +60,68 @@ describe('Wahl der Gerichte-Sortierung', () => {
   });
 });
 
+describe('Sortierkriterien für Gerichte', () => {
+  it('beschriftet das Reihenfolge-Kriterium als „Reihenfolge der Mensa"', async () => {
+    renderScreen();
+    const kriterium = await screen.findByLabelText('Sortierung der Gerichte');
+    expect(within(kriterium).getByLabelText('Reihenfolge der Mensa')).toBeTruthy();
+    expect(within(kriterium).queryByLabelText('Reihenfolge der Quelle')).toBeNull();
+  });
+});
+
+describe('Gruppenreihenfolge-Kriterien bei Mensa-Gruppierung', () => {
+  it('beschriftet das Kriterium als die eingestellte Mensa-Reihenfolge', async () => {
+    mockAktiv = {
+      id: 'entwurf',
+      eigen: false,
+      gruppierung: 'mensa',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    renderScreen();
+    const gruppe = await screen.findByLabelText('Reihenfolge der Gruppen');
+    expect(within(gruppe).getByLabelText('Meine Mensa-Reihenfolge')).toBeTruthy();
+    expect(within(gruppe).queryByLabelText('Reihenfolge der Quelle')).toBeNull();
+  });
+});
+
+describe('Beschriftung des Reihenfolge-Kriteriums nach seiner Bedeutung', () => {
+  it('beschriftet es bei Mensa-Gruppierung als die eingestellte Mensa-Reihenfolge', async () => {
+    mockAktiv = {
+      id: 'entwurf',
+      eigen: false,
+      gruppierung: 'mensa',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    renderScreen();
+    const gruppe = await screen.findByLabelText('Reihenfolge der Gruppen');
+    expect(within(gruppe).getByLabelText('Meine Mensa-Reihenfolge')).toBeTruthy();
+  });
+
+  it('beschriftet es bei Kategorie-Gruppierung und bei der Gerichte-Sortierung als „Reihenfolge der Mensa"', async () => {
+    mockAktiv = {
+      id: 'entwurf',
+      eigen: false,
+      gruppierung: 'kategorie',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'quelle', richtung: 'auf' },
+    };
+    renderScreen();
+    const gruppe = await screen.findByLabelText('Reihenfolge der Gruppen');
+    expect(within(gruppe).getByLabelText('Reihenfolge der Mensa')).toBeTruthy();
+    const kriterium = screen.getByLabelText('Sortierung der Gerichte');
+    expect(within(kriterium).getByLabelText('Reihenfolge der Mensa')).toBeTruthy();
+  });
+
+  it('trägt kein Kriterium die Beschriftung „Reihenfolge der Quelle"', async () => {
+    renderScreen();
+    await screen.findByLabelText('Sortierung der Gerichte');
+    expect(screen.queryByLabelText('Reihenfolge der Quelle')).toBeNull();
+    expect(screen.queryByText('Reihenfolge der Quelle')).toBeNull();
+  });
+});
+
 describe('Wahl der Gruppierung', () => {
   it('übernimmt eine gewählte Gruppierung in die Zusammenstellung', async () => {
     renderScreen();

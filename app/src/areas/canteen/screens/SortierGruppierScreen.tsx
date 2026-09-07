@@ -67,7 +67,20 @@ export function SortierGruppierScreen() {
   );
 
   const kriteriumLabel = (k: Sortierkriterium) => t(`mensa.sortierkriterium.${k}`);
-  const gruppenKriteriumLabel = (k: GruppenKriterium) => t(`mensa.gruppenkriterium.${k}`);
+  // Das Reihenfolge-Kriterium heißt nach seiner Bedeutung im jeweiligen Kontext
+  // (design.md D7, Requirement „Beschriftung des Reihenfolge-Kriteriums nach
+  // seiner Bedeutung"): bei Gruppierung nach Mensa die von der Nutzerin
+  // eingestellte Mensa-Reihenfolge, bei Gruppierung nach Kategorie die
+  // Reihenfolge, in der die Mensa ausgibt. Der gespeicherte Wert bleibt
+  // `'reihenfolge'`.
+  const gruppenKriteriumLabel = (k: GruppenKriterium) => {
+    if (k === 'reihenfolge') {
+      return kombi.gruppierung === 'mensa'
+        ? t('mensa.gruppenkriterium.reihenfolgeMensa')
+        : t('mensa.gruppenkriterium.reihenfolgeKategorie');
+    }
+    return t(`mensa.gruppenkriterium.${k}`);
+  };
   const richtungLabel = (r: Richtung) => t(`mensa.richtung.${r}`);
   const presetName = (id: string) =>
     VORDEFINIERTE_PRESETS.some((p) => p.id === id)
