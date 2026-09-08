@@ -498,7 +498,12 @@ function AusstehendLeiste({
   }
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.leiste, { borderColor: colors.border }]}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={[styles.leiste, { borderColor: colors.border }]}
+      contentContainerStyle={styles.leisteInhalt}
+    >
       {ausstehend.map((stand) => {
         const ersterSlot = stand.slots[0]!;
         // Requirement „Hinweis bei fehlender konfliktfreier Option": keine der
@@ -537,7 +542,8 @@ const styles = StyleSheet.create({
   zeileInhalt: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },
   zeileText: { flex: 1, gap: 2 },
   alsFest: { paddingHorizontal: 10, minHeight: 44, justifyContent: 'center' },
-  leiste: { flexDirection: 'row', gap: 8, minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 8, alignItems: 'center' },
+  leiste: { minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth },
+  leisteInhalt: { gap: 8, paddingVertical: 8, alignItems: 'center' },
   ausstehendChip: {
     minHeight: 44,
     borderWidth: 1,
