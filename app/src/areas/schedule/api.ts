@@ -38,7 +38,15 @@ export function useStudiengaenge() {
     gcTime: gcTime('studiengaenge'),
     queryFn: async () => {
       const liste = unwrap(await api.GET('/stundenplan/studiengaenge'));
-      return liste.map((s) => ({ name: s.name, sname: s.kurzname, grades: s.fachsemester.map(String) }));
+      // Die Rückfallliste des eigenen Backends (INT-008) führt kein `po` —
+      // `endpunkte.ts` leitet die Prüfungsordnung dort bei Bedarf aus dem
+      // Klarnamen ab (design.md, Entscheidung 2).
+      return liste.map((s): FbwsStudiengang => ({
+        name: s.name,
+        sname: s.kurzname,
+        grades: s.fachsemester.map(String),
+        po: null,
+      }));
     },
   });
 
