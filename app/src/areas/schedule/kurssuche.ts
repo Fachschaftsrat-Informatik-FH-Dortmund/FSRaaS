@@ -1,18 +1,16 @@
-// SCHED-F-630: Freitextsuche über den Auswahlbestand (`kursbaum.ts`), diakritika-
-// und großschreibungstolerant, berücksichtigt Bezeichnung, Modulnummer
-// (`courseId`) und lehrende Person. Dazu SCHED-F-610 (Filter nach
-// Veranstaltungsart) und SCHED-F-640 (Filter nach Fachsemester). Reine Funktion
+// Requirement „Freitextsuche im Auswahlbestand" (unverändert, weiterhin
+// aktiv) — Freitextsuche über Bezeichnung, Modulnummer (`courseId`) und
+// lehrende Person, diakritika- und großschreibungstolerant, jetzt auf der
+// Modulebene (Requirement „Modulauswahl ohne Veranstaltungsart und Gruppen-
+// Slot"). Dazu ein Filter auf ein einzelnes Fachsemester. Reine Funktion
 // ohne React.
 
-import type { Kurs } from './kursbaum';
-import type { CourseType } from './typen';
+import type { ModulAbschnitt } from './kursbaum';
 
-export interface KurssucheFilter {
-  /** Freitext (SCHED-F-630); leer/undefiniert = kein Textfilter. */
+export interface ModulFilter {
+  /** Freitext; leer/undefiniert = kein Textfilter. */
   text?: string;
-  /** SCHED-F-610: nur diese Veranstaltungsarten bleiben sichtbar; undefiniert = alle. */
-  courseTypes?: readonly CourseType[];
-  /** SCHED-F-640: nur Slots mit diesem Fachsemester bleiben sichtbar; undefiniert = alle. */
+  /** Nur der Abschnitt dieses Fachsemesters bleibt sichtbar; undefiniert = alle Abschnitte. */
   grade?: string;
 }
 
@@ -20,45 +18,35 @@ export interface KurssucheFilter {
 function normalisiereText(wert: string): string {
   return wert
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase();
 }
 
-function slotPasstZuFachsemester(grade: string | undefined, filter: string | undefined): boolean {
-  if (filter === undefined) return true;
-  return (grade ?? '') === filter;
-}
-
 /**
- * Wendet Veranstaltungsart- und Fachsemester-Filter strukturell auf den
- * Kursbaum an (SCHED-F-610/F-640) und danach die Freitextsuche (SCHED-F-630)
- * auf das gefilterte Ergebnis. Eine Veranstaltung ohne verbleibende
- * Veranstaltungsart bzw. eine Veranstaltungsart ohne verbleibenden Slot fällt
- * vollständig aus dem Ergebnis.
+ * Wendet den Fachsemester-Filter strukturell auf die Abschnitte an und danach
+ * die Freitextsuche auf die verbleibenden Module. Ein Abschnitt ohne
+ * verbleibendes Modul fällt vollständig aus dem Ergebnis.
  */
-export function filtereKurse(kurse: readonly Kurs[], filter: KurssucheFilter): Kurs[] {
+export function filtereModulAbschnitte(
+  abschnitte: readonly ModulAbschnitt[],
+  filter: ModulFilter,
+): ModulAbschnitt[] {
+  const strukturellGefiltert = abschnitte.filter(
+    (a) => filter.grade === undefined || (a.kennung.art === 'fachsemester' && a.kennung.grade === filter.grade),
+  );
+
   const suchtext = filter.text?.trim() ? normalisiereText(filter.text.trim()) : '';
-
-  const strukturellGefiltert = kurse
-    .map((kurs) => {
-      const arten = kurs.arten
-        .filter((art) => !filter.courseTypes || filter.courseTypes.includes(art.courseType))
-        .map((art) => ({
-          ...art,
-          slots: art.slots.filter((slot) => slotPasstZuFachsemester(slot.termin.grade, filter.grade)),
-        }))
-        .filter((art) => art.slots.length > 0);
-      return { ...kurs, arten };
-    })
-    .filter((kurs) => kurs.arten.length > 0);
-
   if (!suchtext) return strukturellGefiltert;
 
-  return strukturellGefiltert.filter((kurs) => {
-    if (normalisiereText(kurs.name).includes(suchtext)) return true;
-    if (kurs.courseId && normalisiereText(kurs.courseId).includes(suchtext)) return true;
-    return kurs.arten.some((art) =>
-      art.slots.some((slot) => normalisiereText(slot.termin.lecturerName).includes(suchtext)),
-    );
-  });
+  return strukturellGefiltert
+    .map((a) => ({
+      ...a,
+      module: a.module.filter(
+        (m) =>
+          normalisiereText(m.name).includes(suchtext) ||
+          (m.courseId !== '' && normalisiereText(m.courseId).includes(suchtext)) ||
+          m.termine.some((t) => normalisiereText(t.lecturerName).includes(suchtext)),
+      ),
+    }))
+    .filter((a) => a.module.length > 0);
 }

@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery } from '@tanstack/react-query';
 
 import { gcTime, staleTime } from '@/cache/ttl';
 import { api, unwrap } from '@/net/client';
+import { wendeGueltigkeitszeitraumAn } from './endpunktzeitraum';
 import { holeGruppenkennungZuMatrikelnummer, holeStudiengaenge, holeTermine, type FbwsStudiengang } from './fbwsClient';
 import { normalizeOfficialTermine } from './normalize';
 import type { OfficialTermin } from './typen';
@@ -38,7 +39,15 @@ export function useStudiengaenge() {
     gcTime: gcTime('studiengaenge'),
     queryFn: async () => {
       const liste = unwrap(await api.GET('/stundenplan/studiengaenge'));
-      return liste.map((s) => ({ name: s.name, sname: s.kurzname, grades: s.fachsemester.map(String) }));
+      // Die Rückfallliste des eigenen Backends (INT-008) führt kein `po` —
+      // `endpunkte.ts` leitet die Prüfungsordnung dort bei Bedarf aus dem
+      // Klarnamen ab (design.md, Entscheidung 2).
+      return liste.map((s): FbwsStudiengang => ({
+        name: s.name,
+        sname: s.kurzname,
+        grades: s.fachsemester.map(String),
+        po: null,
+      }));
     },
   });
 
@@ -56,6 +65,38 @@ export function useTermine(sname: string | undefined, grade: string | undefined)
     gcTime: gcTime('stundenplanTermine'),
     queryFn: async () => normalizeOfficialTermine(await holeTermine(sname!, grade!)),
   });
+}
+
+/**
+ * Requirement „Terminabruf nach Auswahl": ein Abruf je gewähltem Endpunkt mit
+ * `grade=*` (design.md, Entscheidung 3), Ergebnisse zu einem Auswahlbestand
+ * vereinigt. Je Endpunkt wird zusätzlich der Gültigkeitszeitraum aus dessen
+ * Klarnamen angewandt (`endpunktzeitraum.ts`) — nötig für die Blockwochen,
+ * deren INT-002-Felder das ganze Semester überspannen.
+ */
+export function useTermineFuerEndpunkte(endpunkte: readonly { sname: string; name: string }[]) {
+  const queries = useQueries({
+    queries: endpunkte.map((e) => ({
+      queryKey: ['stundenplanTermine', e.sname, '*'] as const,
+      staleTime: staleTime('stundenplanTermine'),
+      gcTime: gcTime('stundenplanTermine'),
+      queryFn: async () => wendeGueltigkeitszeitraumAn(normalizeOfficialTermine(await holeTermine(e.sname, '*')), e.name),
+    })),
+  });
+
+  const alleGeladen = queries.every((q) => q.data !== undefined);
+  return {
+    termine: queries.flatMap((q) => q.data ?? []),
+    /** Je Endpunkt seine eigenen Termine — Grundlage von `kursbaum.baueModulliste` (Abschnitt je Fachsemester/Endpunkt). */
+    perEndpunkt: endpunkte.map((e, i) => ({ sname: e.sname, name: e.name, termine: queries[i]?.data ?? [] })),
+    alleGeladen,
+    isPending: queries.some((q) => q.isPending),
+    isError: queries.some((q) => q.isError),
+    isFetching: queries.some((q) => q.isFetching),
+    refetch: () => {
+      for (const q of queries) void q.refetch();
+    },
+  };
 }
 
 /**

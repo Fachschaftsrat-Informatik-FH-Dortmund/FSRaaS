@@ -13,7 +13,7 @@ import { zeitZuMinuten } from './time';
 import type { CourseType, OfficialTermin, Weekday } from './typen';
 
 const BEKANNTE_WOCHENTAGE: readonly Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const BEKANNTE_COURSE_TYPES: readonly CourseType[] = ['V', 'Ü', 'ÜPP', 'P', 'SV', 'T'];
+const BEKANNTE_COURSE_TYPES: readonly CourseType[] = ['V', 'Ü', 'ÜPP', 'P', 'SV', 'T', 'PR', 'S'];
 
 function istNichtleererString(wert: unknown): wert is string {
   return typeof wert === 'string' && wert.trim() !== '';
