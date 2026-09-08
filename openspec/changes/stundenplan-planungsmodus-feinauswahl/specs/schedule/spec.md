@@ -142,6 +142,42 @@ Das System muss beim Anlegen des offiziellen Stundenplans die Auswahl ermöglich
 - **WHEN** die Nutzerin den offiziellen Stundenplan anlegt
 - **THEN** kann sie einzelne Veranstaltungen in der Modulauswahl und einzelne Veranstaltungsarten sowie Gruppen-Slots im Planungsmodus gezielt übernehmen oder weglassen
 
+### Requirement: Konfliktprüfung paralleler Termine
+
+Wenn ein ausgewählter Kandidat mehrere parallele Termine (Gruppen) anbietet, muss das System jeden dieser Termine gegen die Termine des Zwischenstands mit dem Status „fest" auf zeitliche Konflikte prüfen und je Termin kennzeichnen, ob er konfliktfrei ist. Zwischenstand ist der gesicherte Plan samt allen in der laufenden Sitzung getroffenen, noch ungesicherten Entscheidungen. Herkunft: NEU, Bezugsgröße auf den Zwischenstand umgestellt 2026-09-08; vormals SCHED-F-290. Seit die Planung erst auf ausdrückliche Sicherung wirkt, wäre eine Prüfung allein gegen den gesicherten Plan blind für alles, was gerade entschieden wird: Wer zwei kollidierende Termine nacheinander ankreuzt, erführe es erst nach dem Sichern, wenn die Kollision bereits im Plan steht.
+
+#### Scenario: Mehrere parallele Gruppentermine
+- **WHEN** ein Kandidat mehrere parallele Termine anbietet
+- **THEN** prüft das System jeden Termin gegen die festen Termine des Zwischenstands und kennzeichnet ihn als konfliktfrei oder nicht
+
+#### Scenario: Kollision innerhalb derselben Sitzung
+- **WHEN** die Nutzerin zwei zeitlich überschneidende Termine nacheinander auswählt, ohne zwischendurch zu sichern
+- **THEN** kennzeichnet das System die Kollision unmittelbar, ohne das Sichern abzuwarten
+
+### Requirement: Konfliktprüfung gegenüber angepinnten Terminen
+
+Bei der Konfliktprüfung eines Kandidaten der Planungsauswahl muss das System dessen Termine gegen den Zwischenstand der laufenden Planung sowie gegen die angepinnten Termine prüfen, nicht gegen andere Kandidaten, zu denen noch keine Entscheidung getroffen wurde. Herkunft: NEU, entschieden 2026-09-06, Bezugsgröße auf den Zwischenstand umgestellt 2026-09-08. Ersetzt die entfallene Anforderung „Konfliktprüfung gegenüber Pflicht-Kandidaten" (vormals SCHED-F-390); eine Vollkombinatorik über mehrere gleichzeitig unentschiedene Kandidaten bleibt zurückgestellt (Rücksprache 2026-08-25). Geprüft wird gegen angepinnte statt gegen als Pflicht markierte Termine, weil eine Pflicht-Markierung seit dem 2026-09-06 nur noch die Veranstaltung festhält, nicht deren Uhrzeit. Die Umstellung auf den Zwischenstand ändert nicht, was ausgeschlossen bleibt: Ein Kandidat ohne getroffene Entscheidung zählt weiterhin nicht als Bezugsgröße — wohl aber eine Entscheidung, die in derselben Sitzung getroffen und noch nicht gesichert wurde.
+
+#### Scenario: Prüfung gegen angepinnte Termine
+- **WHEN** zwei Kandidaten gleichzeitig unentschieden in der Planungsauswahl stehen
+- **THEN** prüft das System jeden nur gegen den Zwischenstand und die angepinnten Termine, nicht gegeneinander
+
+#### Scenario: Ungesicherte Entscheidung zählt
+- **WHEN** zu einem Kandidaten in der laufenden Sitzung ein Termin gewählt, aber noch nicht gesichert wurde
+- **THEN** prüft das System nachfolgende Kandidaten auch gegen diesen Termin
+
+### Requirement: Kein Konflikthinweis bei vorgemerkten Terminen
+
+Wenn sich ein vorgemerkter Termin zeitlich mit einem anderen Termin überschneidet, darf das System dafür keinen Konflikthinweis erzeugen. Im Planungsmodus muss das System eine solche Überschneidung dennoch erkennbar machen, dabei aber deutlich zurückgenommen gegenüber der Kennzeichnung kollidierender fester Termine. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Kennzeichnung im Planungsmodus ergänzt 2026-09-08; vormals SCHED-F-590. Der Status „vorgemerkt" wurde eingeführt, um die Dauerwarnung für etwas zu vermeiden, das man nur erwägt — im Plan bleibt er deshalb stumm. Im Planungsmodus wird dagegen gerade entschieden, ob aus dem Vorgemerkten etwas Festes wird; dort ist die Information, was dem im Weg steht, der eigentliche Gegenstand der Arbeit.
+
+#### Scenario: Vorgemerkter Termin überschneidet sich
+- **WHEN** sich ein vorgemerkter Termin in der Wochenansicht zeitlich mit einem anderen Termin überschneidet
+- **THEN** erzeugt das System keinen Konflikthinweis
+
+#### Scenario: Vorgemerkter Termin im Planungsmodus
+- **WHEN** sich ein vorgemerkter Termin im Planungsmodus zeitlich mit einem festen Termin überschneidet
+- **THEN** macht das System die Überschneidung erkennbar, zurückgenommen gegenüber der Kennzeichnung kollidierender fester Termine
+
 ### Requirement: Mehrere Gruppen-Slots übernehmen
 
 Das System muss der Nutzerin ermöglichen, mehrere Gruppen-Slots derselben Veranstaltung gleichzeitig in den Plan zu übernehmen, und dabei die Anzahl der übernommenen Slots erkennbar machen. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Anzeige der Anzahl ergänzt 2026-09-08; vormals SCHED-F-620. Ohne die Anzahl ist eine bewusste Übernahme zweier Slots von einer versehentlichen Doppelbelegung nicht zu unterscheiden.

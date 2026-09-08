@@ -10,8 +10,10 @@
 - [ ] 2.1 Modul `planungsstand.ts` nach `design.md` Entscheidung 2: reine Funktion von gewählten Modulen, Auswahlbestand und Plan auf den Stand je (Modul, Veranstaltungsart)
 - [ ] 2.2 Test `describe('Vorbelegung eindeutiger Veranstaltungen', …)` für beide Szenarien — genau ein Slot vorbelegt, mehrere Slots nicht vorbelegt trotz passender Gruppenkennung
 - [ ] 2.3 Test `describe('Kennzeichnung des Planungsstands je Veranstaltung', …)` für alle drei Szenarien, einschließlich des Zählers bei mehreren gewählten Slots
-- [ ] 2.4 Kollisionsprüfung eines einzelnen Kandidaten gegen die festen Termine des Zwischenstands ergänzen — nicht gegen den gespeicherten Plan, damit eine Kollision schon vor dem Sichern sichtbar wird; Test belegt, dass vorgemerkte Termine dabei keinen Konflikthinweis erzeugen (bestehendes Requirement „Kein Konflikthinweis bei vorgemerkten Terminen")
-- [ ] 2.5 Test mit dem realen Bestand `INPBPI`/`grade=*` und Kennung `C8`: von dreizehn Kombinationen sind sieben vorbelegt, zwei stehen offen — der Fall aus `design.md`
+- [ ] 2.4 Kollisionsprüfung eines einzelnen Kandidaten gegen die festen Termine des Zwischenstands ergänzen — nicht gegen den gesicherten Plan; Tests `describe('Konfliktprüfung paralleler Termine', …)` für beide Szenarien, darunter die Kollision zweier in derselben Sitzung gewählter Termine
+- [ ] 2.5 Kandidaten ohne getroffene Entscheidung von der Bezugsgröße ausnehmen, ungesicherte Entscheidungen einbeziehen; Tests `describe('Konfliktprüfung gegenüber angepinnten Terminen', …)` für beide Szenarien — die Vollkombinatorik bleibt ausgeschlossen
+- [ ] 2.6 Dritte Stufe zwischen „konfliktfrei" und „Konflikt" für vorgemerkte Termine, statt sie wie heute hart wegzufiltern; Tests `describe('Kein Konflikthinweis bei vorgemerkten Terminen', …)` für beide Szenarien — in der Wochenansicht stumm, im Planungsmodus zurückgenommen sichtbar
+- [ ] 2.7 Test mit dem realen Bestand `INPBPI`/`grade=*` und Kennung `C8`: von dreizehn Kombinationen sind sieben vorbelegt, zwei stehen offen — der Fall aus `design.md`
 
 ## 3. Planungsmodus-Bildschirm
 
@@ -33,11 +35,10 @@
 
 ## 5. Bisher unumgesetzte Planungs-Requirements
 
-- [ ] 5.1 `describe('Konfliktprüfung paralleler Termine', …)` umsetzen und prüfen
-- [ ] 5.2 `describe('Hinweis bei fehlender konfliktfreier Option', …)` umsetzen — die Mitteilung ist ausdrücklich verlangt, ein Ausblenden ausgeschlossen
-- [ ] 5.3 `describe('Bewusste Übernahme trotz Konflikt', …)` umsetzen, einschließlich der dauerhaften Kennzeichnung als angenommener Konflikt
-- [ ] 5.4 `describe('Auswahl beim Anlegen des offiziellen Stundenplans', …)` auf das MODIFIED-Szenario umstellen
-- [ ] 5.5 Prüfen, dass der stille Fehlschlag der bisherigen Kursauswahl nicht wiederkehrt: Eine Veranstaltungsart ohne passenden Slot muss sichtbar als offen erscheinen, nicht wortlos unverändert bleiben
+- [ ] 5.1 `describe('Hinweis bei fehlender konfliktfreier Option', …)` umsetzen — die Mitteilung ist ausdrücklich verlangt, ein Ausblenden ausgeschlossen
+- [ ] 5.2 `describe('Bewusste Übernahme trotz Konflikt', …)` umsetzen, einschließlich der dauerhaften Kennzeichnung als angenommener Konflikt
+- [ ] 5.3 `describe('Auswahl beim Anlegen des offiziellen Stundenplans', …)` auf das MODIFIED-Szenario umstellen
+- [ ] 5.4 Prüfen, dass der stille Fehlschlag der bisherigen Kursauswahl nicht wiederkehrt: Eine Veranstaltungsart ohne passenden Slot muss sichtbar als offen erscheinen, nicht wortlos unverändert bleiben
 
 ## 6. Eigene Termine
 

@@ -63,9 +63,28 @@ Daraus speisen sich beide Anzeigen — die Kennzeichnung je Zeile und die Leiste
 
 ### 3. Die Kollisionsprüfung läuft gegen den Zwischenstand
 
-`konflikt.ts` prüft heute innerhalb einer Terminmenge. Für den Planungsmodus wird gefragt: Kollidiert *dieser eine* Kandidat mit dem, was gerade gewählt ist? Bezugsgröße ist der Zwischenstand des Bildschirms, nicht der gespeicherte Plan — wer zwei Termine nacheinander ankreuzt, soll ihre Kollision sofort sehen und nicht erst nach dem Sichern (Entscheidung 6). Das ist eine schmalere Frage als `ermittleKonflikte` und bekommt eine eigene Funktion, statt jene zu überladen. Die bestehenden Requirements „Konfliktprüfung paralleler Termine", „Hinweis bei fehlender konfliktfreier Option" und „Bewusste Übernahme trotz Konflikt" setzen darauf auf und werden mit diesem Change erstmals umgesetzt, ohne dass ihr Text sich ändert.
+`konflikt.ts` prüft heute innerhalb einer Terminmenge. Für den Planungsmodus wird gefragt: Kollidiert *dieser eine* Kandidat mit dem, was gerade gewählt ist? Das ist eine schmalere Frage als `ermittleKonflikte` und bekommt eine eigene Funktion, statt jene zu überladen.
 
-Vorgemerkte Termine erzeugen dabei keinen Konflikthinweis — das bestehende Requirement „Kein Konflikthinweis bei vorgemerkten Terminen" gilt unverändert und muss in der neuen Prüfung berücksichtigt werden.
+Bezugsgröße ist der **Zwischenstand**, nicht der gesicherte Plan (entschieden 2026-09-08). Der Unterschied ist nicht kosmetisch: Mit dem Sammeln aus Entscheidung 6 wäre eine Prüfung gegen den gesicherten Plan blind für alles, was gerade entschieden wird — die Kollision zweier in derselben Sitzung angekreuzter Termine fiele erst nach dem Sichern auf, wenn sie bereits im Plan steht.
+
+Vier Mengen, sauber getrennt:
+
+```
+  gesicherter Plan            zählt   ---+
+  Entscheidung dieser Sitzung,           |--> Zwischenstand = Bezugsgröße
+    noch nicht gesichert      zählt   ---+
+  angepinnter Termin          zählt        (eigenes Requirement)
+
+  Kandidat ohne getroffene
+    Entscheidung              zählt NICHT  <- Vollkombinatorik bleibt
+                                              zurückgestellt
+```
+
+Die letzte Zeile ist die Grenze, die das Requirement „Konfliktprüfung gegenüber angepinnten Terminen" von Anfang an gezogen hat; sie gilt nach der Umstellung unverändert. Zwei Module, zu denen noch gar nichts gewählt wurde, werden nicht gegeneinander durchgerechnet.
+
+**Vorgemerkte Termine** erzeugen im Plan weiterhin keinen Konflikthinweis, werden im Planungsmodus aber zurückgenommen gekennzeichnet (entschieden 2026-09-08). Der Grund für die Ausnahme liegt im Zweck des Bildschirms: Dort wird gerade entschieden, ob aus dem Vorgemerkten etwas Festes wird — was dem im Weg steht, ist der Gegenstand der Arbeit, nicht eine Störung. `ermittleKonflikte` filtert heute hart auf `status === 'fest'`; die neue Funktion braucht dafür eine dritte Stufe zwischen „konfliktfrei" und „Konflikt", keinen Filter.
+
+Drei bestehende Requirements werden dadurch geändert und nicht nur umgesetzt: „Konfliktprüfung paralleler Termine" und „Konfliktprüfung gegenüber angepinnten Terminen" wegen der Bezugsgröße, „Kein Konflikthinweis bei vorgemerkten Terminen" wegen der Ausnahme. „Hinweis bei fehlender konfliktfreier Option" und „Bewusste Übernahme trotz Konflikt" bleiben im Wortlaut unberührt und werden erstmals umgesetzt.
 
 ### 4. Der Wochentag ist die Gliederung, die Leiste der Ausgleich
 

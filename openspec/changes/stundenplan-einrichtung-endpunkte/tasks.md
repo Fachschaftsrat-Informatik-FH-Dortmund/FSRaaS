@@ -6,6 +6,8 @@
 - [ ] 1.2 Vertragstest gegen den echten INT-001-Bestand: schlägt sichtbar fehl, wenn `po` verschwindet oder ein Pflichtfeld die Gestalt wechselt (Capability `quality-and-testing`)
 - [ ] 1.3 `holeTermine` für den Abruf mit `grade=*` je Endpunkt anpassen; Test belegt anhand eines Bachelor-Endpunkts, dass Termine mehrerer Fachsemester zurückkommen und jeder sein eigenes `grade` trägt
 - [ ] 1.4 `normalize.ts` auf die `courseType`-Werte `PR` und `S` prüfen — keine abgeschlossene Werteliste voraussetzen; Test mit je einem Termin beider Arten
+- [ ] 1.5 Datumsbereich aus dem Endpunktnamen lesen und als Gültigkeitszeitraum der Termine dieses Endpunkts setzen; Tests `describe('Gültigkeitszeitraum aus dem Endpunktnamen', …)` für alle drei Szenarien, einschließlich des protokollierten Rückfalls bei nicht lesbarem Bereich
+- [ ] 1.6 Vertragstest, der anschlägt, sobald `Blockwoche`-Endpunkte ihren Zeitraum nicht mehr im Namen führen — dann trägt die Ableitung nicht mehr und muss auffallen, statt still auf das Semester zurückzufallen
 
 ## 2. Endpunktgruppierung als Fachlogik
 

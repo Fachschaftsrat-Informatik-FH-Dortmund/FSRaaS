@@ -26,6 +26,8 @@ Die Einrichtung des Stundenplans verlangt heute die Wahl **eines** Studiengangs 
 
 **Die Einrichtung wird dauerhaft erreichbar** — über ein Kopfzeilen-Element des Stundenplans, unabhängig davon, ob ein Plan besteht.
 
+**Der Gültigkeitszeitraum einer Blockwoche kommt aus ihrem Namen.** Die drei Blockwochen-Endpunkte liefern `dateBegin`/`dateEnd` über das gesamte Semester und `interval: "weekly"` — identisch mit den regulären Veranstaltungen. Ihr tatsächlicher Zeitraum steht ausschließlich im Klarnamen, etwa `Blockwoche 1 (13.04.-17.04.2026)`. Ohne dessen Auswertung erschiene eine Blockwoche als wöchentlicher Termin über das ganze Semester und kollidierte durchgehend mit dem regulären Plan. Ein Fall, den es vor der Mehrfachauswahl nicht gab: Bisher ließ sich eine Blockwoche gar nicht zusätzlich wählen.
+
 **Der Semesterwechsel-Hinweis meldet künftig Endpunkte.** Sein bisheriger Anker, die Fachsemesterliste des gewählten Studiengangs, fällt weg. Er schlägt stattdessen an, wenn Endpunkte hinzukommen oder ein gewählter verschwindet — was den heute gar nicht abgedeckten Fall „gewählter Endpunkt existiert nicht mehr" mit erledigt.
 
 ## Capabilities

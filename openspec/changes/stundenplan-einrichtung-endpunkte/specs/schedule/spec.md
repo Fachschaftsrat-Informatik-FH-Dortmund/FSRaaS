@@ -76,6 +76,22 @@ Die Modulauswahl darf ausschließlich die Wahl der Module verlangen; sie darf we
 - **WHEN** die Nutzerin ein Modul in der Modulauswahl ankreuzt
 - **THEN** führt das System es als Kandidat für die Planung, ohne eine Veranstaltungsart oder einen Gruppen-Slot zu erfragen
 
+### Requirement: Gültigkeitszeitraum aus dem Endpunktnamen
+
+Wenn der Name eines Endpunkts einen Datumsbereich führt, dann muss das System diesen als Gültigkeitszeitraum aller Termine dieses Endpunkts verwenden, abweichend von den in INT-002 gelieferten Feldern. Lässt sich dem Namen kein Datumsbereich entnehmen, muss das System die gelieferten Felder unverändert übernehmen. Herkunft: Recherche: FBWS live abgefragt, 2026-09-08. Die drei Blockwochen-Endpunkte tragen ihren tatsächlichen Zeitraum ausschließlich im Klarnamen — `Blockwoche 1 (13.04.-17.04.2026)`. Ihre Termine liefern demgegenüber `dateBegin`/`dateEnd` über das gesamte Semester (25.05. bis 25.07.2026, identisch mit den regulären Veranstaltungen) und `interval: "weekly"`. Ohne diese Auswertung erschiene eine Blockwoche als wöchentlicher Termin über das ganze Semester und kollidierte an jedem Wochentag mit dem regulären Plan — ein Fehlalarm, der jede Nutzerin trifft, die eine Blockwoche wählt.
+
+#### Scenario: Blockwoche mit Zeitraum im Namen
+- **WHEN** ein gewählter Endpunkt den Namen `Blockwoche 1 (13.04.-17.04.2026)` trägt
+- **THEN** gelten seine Termine ausschließlich innerhalb dieses Zeitraums, nicht über das von INT-002 gelieferte Semester
+
+#### Scenario: Endpunktname ohne Datumsbereich
+- **WHEN** der Name eines Endpunkts keinen Datumsbereich enthält
+- **THEN** übernimmt das System die von INT-002 gelieferten Gültigkeitsangaben unverändert
+
+#### Scenario: Datumsbereich nicht auswertbar
+- **WHEN** ein Endpunktname eine Zeichenfolge in Klammern führt, die sich nicht als Datumsbereich lesen lässt
+- **THEN** übernimmt das System die gelieferten Gültigkeitsangaben unverändert und protokolliert den Vorfall, statt einen Zeitraum zu erraten
+
 ### Requirement: Abwahl eines Moduls mit vorhandenen Planeinträgen
 
 Wenn die Nutzerin ein Modul abwählt, zu dem bereits Termine im persönlichen Plan stehen, dann muss das System erfragen, ob diese Termine mit entfernt werden sollen, und diese Frage mit „nein" vorbelegen. Ein selbsttätiges Entfernen ist ausgeschlossen; ein wortloses Stehenlassen ohne Hinweis ebenso. Herkunft: NEU, entschieden 2026-09-08. Folgt aus dem Requirement „Bestätigung vor zerstörender Aktion" der Capability `ux-and-theming` und dem Requirement „Kein selbsttätiges Entfernen des Stundenplans" der Capability `data-and-storage`: Planeinträge sind Nutzerdaten, ihr Verlust braucht eine Zustimmung. Die Vorbelegung auf „nein" folgt derselben Erwägung wie bei den Löschaktionen — wer sich vertippt, verliert nichts.

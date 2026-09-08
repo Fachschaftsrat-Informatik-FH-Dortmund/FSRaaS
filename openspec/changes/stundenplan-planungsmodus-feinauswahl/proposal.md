@@ -16,6 +16,10 @@
 
 **Vorbelegt wird nur, wo es nichts zu entscheiden gibt.** Hat eine Veranstaltungsart genau einen Slot, sitzt das Häkchen beim Öffnen. Wo mehrere Slots existieren, bleibt es leer — auch wenn die Gruppenkennung einen davon einschließt; jener wird stattdessen hervorgehoben. Jede echte Wahl bleibt bei der Nutzerin, die Scheinwahlen nimmt ihr die App ab.
 
+**Die Konfliktprüfung bezieht sich auf den Zwischenstand.** Geprüft wird gegen den gesicherten Plan **samt** allen in der laufenden Sitzung getroffenen, noch ungesicherten Entscheidungen — sonst wäre sie blind für genau das, was man gerade tut, und die Kollision zweier nacheinander angekreuzter Termine fiele erst nach dem Sichern auf. Was ausgeschlossen bleibt, ändert sich dadurch nicht: Kandidaten, zu denen noch gar keine Entscheidung getroffen wurde, werden weiterhin nicht gegeneinander durchgerechnet.
+
+**Vorgemerkte Termine werden im Planungsmodus zurückgenommen gekennzeichnet.** In der Wochenansicht bleiben sie stumm, wie es die Anforderung verlangt — dort ist „vorgemerkt" ein Erwägen, das keine Dauerwarnung verdient. Im Planungsmodus wird aber gerade entschieden, ob daraus etwas Festes wird; was dem im Weg steht, ist dort der Gegenstand der Arbeit.
+
 **Drei Kennzeichnungen je Zeile:** *wird nirgends besucht* (zu diesem Modul und dieser Art ist an keinem Tag ein Haken gesetzt — das Mittel gegen das vergessene Praktikum), *bereits zugewiesen* mit Zähler (verhindert die versehentliche Doppelbelegung und macht das bewusste Belegen zweier Slots sichtbar) und *Zeitkonflikt*.
 
 **Eine schmale Leiste am unteren Rand nennt das Ausstehende beim Namen** — nicht nur eine Zahl. Ein Tipp auf einen Namen wechselt auf den Tag, an dem die Veranstaltung liegt, und hebt sie hervor. Die Leiste leert sich, während man arbeitet; leer heißt fertig.
@@ -38,7 +42,7 @@ Keine.
 
 ### Modified Capabilities
 
-- `schedule`: Planungsmodus als Bildschirm mit Wochentagsgliederung, Vorbelegung, Kennzeichnungen und Ausstehendenleiste; Statusvergabe im Planungsmodus statt nach Auswahlreihenfolge; Zweckbestimmung eigener Termine; Erfassung von Uhrzeit und Datum über systemeigene Auswahl
+- `schedule`: Planungsmodus als Bildschirm mit Wochentagsgliederung, Vorbelegung, Kennzeichnungen und Ausstehendenleiste; Sicherung über eine ausdrückliche Aktion samt Rückfrage beim Verlassen; Konfliktprüfung gegen den Zwischenstand statt gegen den gesicherten Plan; Kennzeichnung vorgemerkter Überschneidungen im Planungsmodus; Statusvergabe im Planungsmodus statt nach Auswahlreihenfolge; Zweckbestimmung eigener Termine; Erfassung von Uhrzeit und Datum über systemeigene Auswahl
 
 ## Impact
 
