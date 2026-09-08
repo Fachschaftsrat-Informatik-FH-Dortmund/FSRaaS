@@ -27,7 +27,7 @@ import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
 // bereits vorhandener Planeintrag zu einem Modul zeigt es dennoch angekreuzt
 // (Requirement „Abwahl eines Moduls mit vorhandenen Planeinträgen").
 
-function planEintraegeFuerModul(entries: readonly PlanEntry[], modul: Modul): OfficialPlanEntry[] {
+export function planEintraegeFuerModul(entries: readonly PlanEntry[], modul: Modul): OfficialPlanEntry[] {
   return entries.filter(
     (e): e is OfficialPlanEntry =>
       e.kind === 'offiziell' && (modul.courseId !== '' ? e.courseId === modul.courseId : e.name === modul.name),
@@ -177,6 +177,16 @@ export function CourseSelectionScreen() {
               ),
             }))}
             contentContainerStyle={styles.liste}
+            fuss={
+              auswahl.length > 0 ? (
+                <View style={styles.weiterZurPlanung}>
+                  <AppButton
+                    label={t('schedule.weiterZurPlanung')}
+                    onPress={() => router.push({ pathname: '/planung', params: { module: auswahl.join(',') } })}
+                  />
+                </View>
+              ) : undefined
+            }
           />
         )}
       </AsyncStates>
@@ -253,4 +263,5 @@ const styles = StyleSheet.create({
   zeileText: { flex: 1 },
   bestaetigung: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10, marginVertical: 6 },
   bestaetigungAktionen: { flexDirection: 'row', gap: 10 },
+  weiterZurPlanung: { marginTop: 12 },
 });

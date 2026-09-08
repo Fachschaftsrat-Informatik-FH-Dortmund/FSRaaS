@@ -57,6 +57,18 @@ function fuelle(felder: Record<string, string>) {
   }
 }
 
+/** Öffnet die Zeit-/Datumsauswahl über das zugehörige Anzeigefeld und löst die Wahl über den nativen Picker-Ersatz aus (`jest.setup.js`). */
+function waehleZeit(label: string, testId: string, stunden: number, minuten: number) {
+  fireEvent.press(screen.getByLabelText(label));
+  const datum = new Date(2000, 0, 1, stunden, minuten);
+  fireEvent(screen.getByTestId(testId), 'change', { type: 'set' }, datum);
+}
+
+function waehleDatum(jahr: number, monat: number, tag: number) {
+  fireEvent.press(screen.getByLabelText('Datum'));
+  fireEvent(screen.getByTestId('datum-picker'), 'change', { type: 'set' }, new Date(jahr, monat - 1, tag));
+}
+
 beforeEach(() => jest.clearAllMocks());
 afterEach(cleanup);
 
@@ -65,8 +77,10 @@ describe('Anlegen eigener Termine', () => {
     await seed([]);
     await zeige();
 
-    fuelle({ Titel: 'Lerngruppe', 'Beginn (HH:MM)': '14:00', 'Ende (HH:MM)': '15:30' });
-    fireEvent.press(screen.getByLabelText('Donnerstag'));
+    fuelle({ Titel: 'Lerngruppe' });
+    fireEvent(screen.getByTestId('wochentag-picker'), 'valueChange', 'Thu');
+    waehleZeit('Beginn', 'beginn-picker', 14, 0);
+    waehleZeit('Ende', 'ende-picker', 15, 30);
     fireEvent.press(screen.getByLabelText('Termin anlegen'));
 
     await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
@@ -89,10 +103,8 @@ describe('Anlegen eigener Termine', () => {
     expect(screen.getByText('Bitte gib einen Titel an.')).toBeTruthy();
 
     fuelle({ Titel: 'Lerngruppe' });
-    fireEvent.press(screen.getByLabelText('Termin anlegen'));
-    expect(screen.getByText('Bitte gib Beginn und Ende als Uhrzeit an, zum Beispiel 08:00.')).toBeTruthy();
-
-    fuelle({ 'Beginn (HH:MM)': '15:00', 'Ende (HH:MM)': '14:00' });
+    waehleZeit('Beginn', 'beginn-picker', 15, 0);
+    waehleZeit('Ende', 'ende-picker', 14, 0);
     fireEvent.press(screen.getByLabelText('Termin anlegen'));
     expect(screen.getByText('Das Ende muss nach dem Beginn liegen.')).toBeTruthy();
 
@@ -108,8 +120,6 @@ describe('Zusatzangaben beim Anlegen eigener Termine', () => {
 
     fuelle({
       Titel: 'Lerngruppe',
-      'Beginn (HH:MM)': '14:00',
-      'Ende (HH:MM)': '15:30',
       'Raum (optional)': 'B.114',
       'Lehrende Person (optional)': 'Tutorin',
     });
@@ -126,7 +136,7 @@ describe('Wiederkehrend oder einmalig bei eigenen Terminen', () => {
     await seed([]);
     await zeige();
 
-    fuelle({ Titel: 'Lerngruppe', 'Beginn (HH:MM)': '14:00', 'Ende (HH:MM)': '15:30' });
+    fuelle({ Titel: 'Lerngruppe' });
     fireEvent.press(screen.getByLabelText('Termin anlegen'));
 
     await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
@@ -138,28 +148,15 @@ describe('Wiederkehrend oder einmalig bei eigenen Terminen', () => {
     await seed([]);
     await zeige();
 
-    fuelle({ Titel: 'Klausur', 'Beginn (HH:MM)': '09:00', 'Ende (HH:MM)': '11:00' });
+    fuelle({ Titel: 'Klausur' });
     fireEvent(screen.getByLabelText('Wöchentlich wiederkehrend'), 'valueChange', false);
-    fuelle({ 'Datum (TT.MM.JJJJ)': '24.11.2026' });
+    waehleDatum(2026, 11, 24);
     fireEvent.press(screen.getByLabelText('Termin anlegen'));
 
     await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
     const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
     const erwartet = Math.floor(new Date(2026, 10, 24, 12, 0, 0).getTime() / 1000);
     expect(eintrag).toMatchObject({ wiederkehrend: false, gueltigVon: erwartet, gueltigBis: erwartet });
-  });
-
-  it('weist ein unlesbares Datum zurück, statt zu schreiben', async () => {
-    await seed([]);
-    await zeige();
-
-    fuelle({ Titel: 'Klausur', 'Beginn (HH:MM)': '09:00', 'Ende (HH:MM)': '11:00' });
-    fireEvent(screen.getByLabelText('Wöchentlich wiederkehrend'), 'valueChange', false);
-    fuelle({ 'Datum (TT.MM.JJJJ)': '31.02.2026' });
-    fireEvent.press(screen.getByLabelText('Termin anlegen'));
-
-    expect(screen.getByText('Bitte gib ein Datum an, zum Beispiel 24.11.2026.')).toBeTruthy();
-    expect(await readScheduleEntries()).toHaveLength(0);
   });
 });
 
@@ -168,7 +165,7 @@ describe('Eigenen Termin als Prüfung kennzeichnen', () => {
     await seed([]);
     await zeige();
 
-    fuelle({ Titel: 'Klausur Analysis', 'Beginn (HH:MM)': '09:00', 'Ende (HH:MM)': '11:00' });
+    fuelle({ Titel: 'Klausur Analysis' });
     fireEvent(screen.getByLabelText('Dieser Termin ist eine Prüfung'), 'valueChange', true);
     fireEvent.press(screen.getByLabelText('Termin anlegen'));
 
@@ -183,7 +180,8 @@ describe('Bearbeiten und Löschen eigener Termine über sichtbaren Weg', () => {
     await zeige();
 
     expect(screen.getByLabelText('Titel').props.value).toBe('Lerngruppe');
-    fuelle({ Titel: 'Lerngruppe neu', 'Ende (HH:MM)': '15:00' });
+    fuelle({ Titel: 'Lerngruppe neu' });
+    waehleZeit('Ende', 'ende-picker', 15, 0);
     fireEvent.press(screen.getByLabelText('Änderungen speichern'));
 
     await waitFor(async () => {
@@ -193,6 +191,41 @@ describe('Bearbeiten und Löschen eigener Termine über sichtbaren Weg', () => {
       expect(gespeichert[0]!.timeEndMin).toBe(900);
     });
     expect(mockBack).toHaveBeenCalled();
+  });
+});
+
+describe('Erfassung von Uhrzeit und Datum über systemeigene Auswahl', () => {
+  it('erfasst die Beginnzeit über die systemeigene Zeitauswahl, sodass eine unzulässige Uhrzeit nicht entstehen kann', async () => {
+    await seed([]);
+    await zeige();
+
+    // Vor dem Antippen ist die Auswahl geschlossen — kein Freitextfeld mehr.
+    expect(screen.queryByTestId('beginn-picker')).toBeNull();
+
+    fuelle({ Titel: 'Lerngruppe' });
+    waehleZeit('Beginn', 'beginn-picker', 9, 15);
+    fireEvent.press(screen.getByLabelText('Termin anlegen'));
+
+    await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
+    const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
+    expect(eintrag!.timeBeginMin).toBe(9 * 60 + 15);
+  });
+
+  it('erfasst das Datum eines einmaligen Termins über die systemeigene Datumsauswahl', async () => {
+    await seed([]);
+    await zeige();
+
+    fuelle({ Titel: 'Klausur' });
+    fireEvent(screen.getByLabelText('Wöchentlich wiederkehrend'), 'valueChange', false);
+    expect(screen.queryByTestId('datum-picker')).toBeNull();
+
+    waehleDatum(2027, 2, 3);
+    fireEvent.press(screen.getByLabelText('Termin anlegen'));
+
+    await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
+    const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
+    const erwartet = Math.floor(new Date(2027, 1, 3, 12, 0, 0).getTime() / 1000);
+    expect(eintrag!.gueltigVon).toBe(erwartet);
   });
 });
 
