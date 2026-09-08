@@ -11,7 +11,7 @@
 // Stelle getreten ist — gilt als nicht angenommen und erzeugt einen Hinweis.
 
 import { ueberschneidenSich } from './time';
-import type { PlanEntry } from './typen';
+import type { PlanEntry, Weekday } from './typen';
 
 export interface Konfliktpaar {
   a: PlanEntry;
@@ -65,4 +65,38 @@ export function ermittleKonflikte(tagesTermine: readonly PlanEntry[]): Konflikte
   }
 
   return { offen, angenommen, hinweisIds, angenommenIds };
+}
+
+/**
+ * Requirements „Konfliktprüfung paralleler Termine" und „Konfliktprüfung
+ * gegenüber angepinnten Terminen" (design.md, Entscheidung 3): Kollidiert
+ * *dieser eine* Kandidat mit dem Zwischenstand — dem gesicherten Plan samt
+ * allen in der laufenden Sitzung getroffenen, noch ungesicherten
+ * Entscheidungen? Angepinnte Termine (eigenes, noch unumgesetztes
+ * Requirement) gehen, sobald es sie gibt, in denselben `zwischenstand` ein,
+ * ohne dass sich diese Prüfung ändert. Ein Kandidat, zu dem noch keine
+ * Entscheidung getroffen wurde, trägt per Konstruktion keinen Eintrag im
+ * Zwischenstand und wird deshalb nicht mitgerechnet — die Vollkombinatorik
+ * über mehrere gleichzeitig unentschiedene Kandidaten bleibt ausgeschlossen.
+ *
+ * Requirement „Kein Konflikthinweis bei vorgemerkten Terminen": Diese
+ * Funktion prüft — anders als `ermittleKonflikte` für die Wochenansicht —
+ * auch gegen vorgemerkte Termine des Zwischenstands, aber als eigene,
+ * zurückgenommene Stufe zwischen „konfliktfrei" und „Konflikt": Im
+ * Planungsmodus wird gerade entschieden, ob aus dem Vorgemerkten etwas Festes
+ * wird, und das ist der Gegenstand der Arbeit, keine Störung.
+ */
+export type KandidatKonfliktstufe = 'konfliktfrei' | 'konflikt' | 'vorgemerkterKonflikt';
+
+export function pruefeKandidatGegenZwischenstand(
+  kandidat: { weekday: Weekday; timeBeginMin: number; timeEndMin: number },
+  zwischenstand: readonly PlanEntry[],
+): KandidatKonfliktstufe {
+  const amTag = zwischenstand.filter((e) => e.weekday === kandidat.weekday);
+  const ueberschneidet = (e: PlanEntry) =>
+    ueberschneidenSich(kandidat.timeBeginMin, kandidat.timeEndMin, e.timeBeginMin, e.timeEndMin);
+
+  if (amTag.some((e) => e.status === 'fest' && ueberschneidet(e))) return 'konflikt';
+  if (amTag.some((e) => e.status === 'vorgemerkt' && ueberschneidet(e))) return 'vorgemerkterKonflikt';
+  return 'konfliktfrei';
 }
