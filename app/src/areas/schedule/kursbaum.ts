@@ -1,14 +1,19 @@
-// Requirement „Gliederung der Modulauswahl nach Fachsemester"
+// Requirement „Gliederung der Modulauswahl nach Fachsemester" und
+// „Anzeigename paralleler Termingruppen ohne bedeutungslose Endzahl"
 // (`openspec/specs/schedule/spec.md`). Verdichtet den flachen INT-002-
 // Terminbestand mehrerer gewählter Endpunkte zu Modulen (Gruppierungsschlüssel
-// `courseId`, Rückfall auf `name`, wie schon vor diesem Change) und gliedert
-// sie in Abschnitte: je Modul das Fachsemester, wenn seine Termine eines
-// tragen — sonst der Name des Endpunkts, aus dem es stammt (Bachelor-
+// `courseId` und Fachsemester, Rückfall auf `name` statt `courseId`) und
+// gliedert sie in Abschnitte: je Modul das Fachsemester, wenn seine Termine
+// eines tragen — sonst der Name des Endpunkts, aus dem es stammt (Bachelor-
 // Endpunkte mit echter Fachsemesterliste liefern verwertbare `grade`-Werte;
 // Master, Blockwochen, Tutorien, Seminare und Wahlpflicht liefern
 // durchgängig `grade: 0`, dort trennt eine Fachsemester-Gliederung nichts).
-// Reine Funktion ohne React; Vorbild `canteen/consolidate.ts` (Gruppierung
-// mit stabiler Eingabereihenfolge über eine `Map`).
+// Da das Fachsemester bereits Teil des Gruppierungsschlüssels ist, trägt ein
+// Modul per Konstruktion höchstens ein Fachsemester — ein Wiederholerangebot
+// mit abweichendem Fachsemester bildet dadurch ein eigenständiges Modul statt
+// mehrdeutig in den Endpunkt-Abschnitt zu fallen. Reine Funktion ohne React;
+// Vorbild `canteen/consolidate.ts` (Gruppierung mit stabiler
+// Eingabereihenfolge über eine `Map`).
 
 import type { OfficialTermin } from './typen';
 
@@ -21,7 +26,7 @@ export interface EndpunktTermine {
 
 /** Ein Modul im Auswahlbestand — die Rohtermine bleiben erhalten (Grundlage der späteren Veranstaltungsart-/Slot-Wahl im Planungsmodus). */
 export interface Modul {
-  /** Gruppierungsschlüssel: `courseId`, ersatzweise `name`. */
+  /** Gruppierungsschlüssel: `courseId` (ersatzweise `name`), gefolgt von `'|'` und dem normalisierten Fachsemester. */
   key: string;
   courseId: string;
   name: string;
@@ -37,26 +42,60 @@ export interface ModulAbschnitt {
   module: Modul[];
 }
 
+/** `'0'` und leer gelten beide als „kein auswertbares Fachsemester" und werden auf einen leeren String vereinheitlicht. */
+function normalisiertesFachsemester(termin: OfficialTermin): string {
+  return termin.grade && termin.grade !== '0' ? termin.grade : '';
+}
+
 function modulSchluessel(termin: OfficialTermin): string {
-  return termin.courseId.trim() !== '' ? termin.courseId : termin.name;
+  const basis = termin.courseId.trim() !== '' ? termin.courseId : termin.name;
+  return `${basis}|${normalisiertesFachsemester(termin)}`;
+}
+
+/** Gemeinsamer Namensstamm einer angehängten Zahl, z. B. „Technisches Englisch 1" → „Technisches Englisch". */
+function namensstamm(name: string): string | null {
+  const treffer = /^(.*?)\s*\d+$/.exec(name);
+  return treffer ? treffer[1]! : null;
+}
+
+/**
+ * Requirement „Anzeigename paralleler Termingruppen ohne bedeutungslose
+ * Endzahl": Tragen die Termine eines Moduls mehrere unterschiedliche Namen,
+ * die sich nur durch eine angehängte Zahl unterscheiden und im Namensstamm
+ * übereinstimmen, wird der Namensstamm ohne Zahl verwendet. Tritt nur eine
+ * einzige Zahl auf (auch mehrfach wiederholt) oder unterscheiden sich die
+ * Namen über die Zahl hinaus, bleibt der zuerst beobachtete Name unverändert.
+ */
+function anzeigename(erstName: string, termine: readonly OfficialTermin[]): string {
+  const namen = new Set(termine.map((t) => t.name));
+  if (namen.size <= 1) return erstName;
+
+  const staemme = new Set<string>();
+  for (const name of namen) {
+    const stamm = namensstamm(name);
+    if (stamm === null) return erstName;
+    staemme.add(stamm);
+  }
+  if (staemme.size !== 1) return erstName;
+  return [...staemme][0]!;
 }
 
 /**
  * Baut den Auswahlbestand als Module gegliedert in Abschnitte (Requirement
- * „Gliederung der Modulauswahl nach Fachsemester"). Ein Modul, dessen Termine
- * mehr als ein auswertbares Fachsemester tragen — sollte das je vorkommen —,
- * fällt ebenfalls auf den Endpunktnamen zurück, da ein einzelner Abschnitt es
- * dann nicht eindeutig trüge. Reihenfolge folgt der Eingabereihenfolge der
- * Endpunkte und ihrer Termine (stabile Gruppierung, kein Sortieren), nur die
+ * „Gliederung der Modulauswahl nach Fachsemester"). Da das Fachsemester
+ * bereits Teil des Gruppierungsschlüssels ist, trägt jedes Modul höchstens
+ * ein Fachsemester (oder durchgängig keines, dann Rückfall auf den
+ * Endpunktnamen). Reihenfolge folgt der Eingabereihenfolge der Endpunkte und
+ * ihrer Termine (stabile Gruppierung, kein Sortieren), nur die
  * Fachsemester-Abschnitte werden zusätzlich numerisch vorangestellt.
  */
 export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAbschnitt[] {
   interface ModulAccum {
     index: number;
     courseId: string;
+    grade: string;
     name: string;
     termine: OfficialTermin[];
-    grades: Set<string>;
     erstesEndpunkt: { sname: string; name: string };
   }
 
@@ -71,15 +110,14 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
         m = {
           index: modulIndex++,
           courseId: termin.courseId,
+          grade: normalisiertesFachsemester(termin),
           name: termin.name,
           termine: [],
-          grades: new Set(),
           erstesEndpunkt: { sname: endpunkt.sname, name: endpunkt.name },
         };
         module.set(schluessel, m);
       }
       m.termine.push(termin);
-      if (termin.grade && termin.grade !== '0') m.grades.add(termin.grade);
     }
   }
 
@@ -93,8 +131,7 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
   let abschnittIndex = 0;
 
   for (const [schluessel, m] of module) {
-    const gradeListe = [...m.grades];
-    const grade = gradeListe.length === 1 ? gradeListe[0]! : null;
+    const grade = m.grade !== '' ? m.grade : null;
     const abschnittSchluessel = grade !== null ? `fachsemester:${grade}` : `endpunkt:${m.erstesEndpunkt.sname}`;
 
     let a = abschnitte.get(abschnittSchluessel);
@@ -106,7 +143,7 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
       };
       abschnitte.set(abschnittSchluessel, a);
     }
-    a.module.push({ key: schluessel, courseId: m.courseId, name: m.name, termine: m.termine });
+    a.module.push({ key: schluessel, courseId: m.courseId, name: anzeigename(m.name, m.termine), termine: m.termine });
   }
 
   return [...abschnitte.values()]

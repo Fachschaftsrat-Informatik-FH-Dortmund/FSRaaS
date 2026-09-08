@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AnkerListe } from '@/ui/AnkerListe';
 import { useTheme } from '@/theme';
-import { AppButton, MessageView, SegmentedControl } from '@/ui/primitives';
+import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
 import { useStudiengaenge, useTermineFuerEndpunkte } from '../api';
@@ -18,14 +18,14 @@ import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
 // Modulauswahl (Requirement „Modulauswahl ohne Veranstaltungsart und Gruppen-
 // Slot"): reine Ankreuzliste, die nur beantwortet „welche Module belege ich".
 // Aufgebaut auf `kursbaum.baueModulliste`/`kurssuche.filtereModulAbschnitte`,
-// Abschnittsnavigation über `AnkerListe` (design.md, Entscheidung 5). Die
+// Abschnittsnavigation über `AnkerListe` (design.md, Entscheidung 5) — die
+// einzige Fachsemester-Navigation, kein zusätzliches Filterelement
+// (Requirement „Gliederung der Modulauswahl nach Fachsemester"). Die
 // Modulauswahl schreibt noch nichts in den persönlichen Plan (design.md,
 // Non-Goal) — sie sammelt Kandidaten; welche Veranstaltungsart und welcher
 // Gruppen-Slot gilt, entscheidet der Planungsmodus (eigener Change). Ein
 // bereits vorhandener Planeintrag zu einem Modul zeigt es dennoch angekreuzt
 // (Requirement „Abwahl eines Moduls mit vorhandenen Planeinträgen").
-
-const ALLE_FACHSEMESTER = 'alle';
 
 function planEintraegeFuerModul(entries: readonly PlanEntry[], modul: Modul): OfficialPlanEntry[] {
   return entries.filter(
@@ -70,7 +70,6 @@ export function CourseSelectionScreen() {
   };
 
   const [suchtext, setSuchtext] = useState('');
-  const [gradeFilter, setGradeFilter] = useState<string | undefined>(undefined);
   const [auswahl, setAuswahl] = useState<string[]>([]);
   const [bestaetigungFuer, setBestaetigungFuer] = useState<string | null>(null);
   const seedRef = useRef(false);
@@ -109,13 +108,7 @@ export function CourseSelectionScreen() {
     );
   }
 
-  const fachsemesterOptionen = abschnitte
-    .map((a) => a.kennung)
-    .filter((k): k is Extract<ModulAbschnitt['kennung'], { art: 'fachsemester' }> => k.art === 'fachsemester')
-    .map((k) => k.grade);
-
-  const filterAktiv = suchtext.trim() !== '' || gradeFilter !== undefined;
-  const gefiltert = filtereModulAbschnitte(abschnitte, { text: suchtext, grade: gradeFilter });
+  const gefiltert = filtereModulAbschnitte(abschnitte, { text: suchtext });
 
   function modulUmschalten(modul: Modul) {
     const aktuell = auswahl.includes(modul.key);
@@ -148,29 +141,6 @@ export function CourseSelectionScreen() {
         onChangeText={setSuchtext}
         style={[styles.suche, { borderColor: colors.border, color: colors.text }]}
       />
-
-      {fachsemesterOptionen.length > 1 ? (
-        <SegmentedControl
-          label={t('schedule.kurseFachsemesterLabel')}
-          value={gradeFilter ?? ALLE_FACHSEMESTER}
-          onChange={(v) => setGradeFilter(v === ALLE_FACHSEMESTER ? undefined : v)}
-          options={[
-            { value: ALLE_FACHSEMESTER, label: t('schedule.kurseFilterAlle') },
-            ...fachsemesterOptionen.map((g) => ({ value: g, label: t('schedule.fachsemesterOption', { grade: g }) })),
-          ]}
-        />
-      ) : null}
-
-      {filterAktiv ? (
-        <AppButton
-          variant="secondary"
-          label={t('schedule.kurseFilterZuruecksetzen')}
-          onPress={() => {
-            setSuchtext('');
-            setGradeFilter(undefined);
-          }}
-        />
-      ) : null}
 
       <AsyncStates<OfficialTermin[]>
         query={aggregat}
