@@ -49,7 +49,7 @@
 
 ## 7. Abschluss
 
-- [ ] 7.1 Prüfprotokoll zur Bedienbarkeit des Planungsmodus anlegen (Datum, Gerät, Beobachtungen), einschließlich der Lesbarkeit der Kennzeichnungen bei aktivierter Systemschriftvergrößerung
-- [ ] 7.2 `node tools/spec-check/src/cli.js` läuft ohne Befund
-- [ ] 7.3 `openspec validate stundenplan-planungsmodus-feinauswahl --strict` läuft ohne Befund
-- [ ] 7.4 Vollständige Testsuite der App grün
+- [x] 7.1 Prüfprotokoll zur Bedienbarkeit des Planungsmodus anlegen (Datum, Gerät, Beobachtungen), einschließlich der Lesbarkeit der Kennzeichnungen bei aktivierter Systemschriftvergrößerung
+- [x] 7.2 `node tools/spec-check/src/cli.js` läuft ohne Befund
+- [x] 7.3 `openspec validate stundenplan-planungsmodus-feinauswahl --strict` läuft ohne Befund (nur die projektweit bekannten SHALL/MUST-Warnungen bei deutschsprachigen Specs)
+- [x] 7.4 Vollständige Testsuite der App grün (89 Suiten / 1122 Tests)
