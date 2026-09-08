@@ -535,7 +535,7 @@ describe('Leerer Tag bei wirksamem Filter', () => {
     expect(mockPush).toHaveBeenCalledWith('/einrichtung');
   });
 
-  it('bietet bei leerem Plan trotz vorhandener Einrichtung einen Bedienweg zur Kursauswahl und zum eigenen Termin', async () => {
+  it('bietet bei leerem Plan trotz vorhandener Einrichtung einen Bedienweg zur Kursauswahl', async () => {
     await seed([]);
     await zeige();
 
@@ -543,9 +543,16 @@ describe('Leerer Tag bei wirksamem Filter', () => {
 
     fireEvent.press(screen.getByLabelText('Weiter zur Kursauswahl'));
     expect(mockPush).toHaveBeenCalledWith('/kurse');
+  });
 
-    fireEvent.press(screen.getByLabelText('Eigenen Termin anlegen'));
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/termin', params: { wochentag: 'Wed' } });
+  // Requirement „Zweckbestimmung eigener Termine": der Bedienweg zum Anlegen
+  // eigener Termine führt seit diesem Change über den Planungsmodus, nicht
+  // mehr über die Wochenansicht (`PlanungScreen.test.tsx`).
+  it('bietet keinen Bedienweg zum Anlegen eigener Termine an', async () => {
+    await seed([]);
+    await zeige();
+
+    expect(screen.queryByLabelText('Eigenen Termin anlegen')).toBeNull();
   });
 });
 

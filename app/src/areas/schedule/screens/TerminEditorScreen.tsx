@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 
 import { useTheme } from '@/theme';
-import { AppButton, MessageView, RadioList } from '@/ui/primitives';
+import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { farbeFuerVeranstaltung } from '../farbe';
 import { einmaligerGueltigkeitszeitraum, useScheduleEntries } from '../planStore';
@@ -12,47 +14,23 @@ import type { CustomPlanEntry, Weekday } from '../typen';
 
 // Editor für eigene Termine (Requirements „Anlegen eigener Termine",
 // „Zusatzangaben beim Anlegen eigener Termine", „Wiederkehrend oder einmalig
-// bei eigenen Terminen", „Eigenen Termin als Prüfung kennzeichnen"). Anlegen
-// und Bearbeiten teilen sich diesen Bildschirm: Die Felder sind identisch, und
+// bei eigenen Terminen", „Eigenen Termin als Prüfung kennzeichnen",
+// „Erfassung von Uhrzeit und Datum über systemeigene Auswahl"). Anlegen und
+// Bearbeiten teilen sich diesen Bildschirm: Die Felder sind identisch, und
 // zwei getrennte Bildschirme liefen bei jeder Feldänderung auseinander
 // (design.md, Entscheidung 5). Ob bearbeitet wird, entscheidet der
 // Routenparameter `id`.
 //
-// Geschrieben wird ausschließlich über `planStore.ts` (DATA-F-010), und erst
-// nach der Prüfung aller Pflichtangaben: Ein unvollständiger Eintrag darf den
-// gespeicherten Bestand nicht unlesbar machen.
+// Uhrzeit, Datum und Wochentag kommen über die systemeigene Auswahl
+// (`@react-native-community/datetimepicker`, `@react-native-picker/picker")
+// statt über Freitext — eine unzulässige Uhrzeit oder ein ungültiges Datum
+// kann dadurch gar nicht erst entstehen. Geschrieben wird ausschließlich über
+// `planStore.ts` (DATA-F-010), und erst nach der Prüfung aller
+// Pflichtangaben: Ein unvollständiger Eintrag darf den gespeicherten Bestand
+// nicht unlesbar machen.
 
 const WOCHENTAGE: readonly Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MINUTEN_JE_STUNDE = 60;
-
-/** `"HH:MM"` als Minuten seit Mitternacht, oder `null` bei unlesbarer Eingabe. */
-export function parseUhrzeit(text: string): number | null {
-  const treffer = /^([0-9]{1,2}):([0-9]{2})$/.exec(text.trim());
-  if (!treffer) return null;
-  const stunden = Number(treffer[1]);
-  const minuten = Number(treffer[2]);
-  if (stunden > 23 || minuten > 59) return null;
-  return stunden * MINUTEN_JE_STUNDE + minuten;
-}
-
-/**
- * `"TT.MM.JJJJ"` als Unix-Sekunden zur Mittagszeit, oder `null` bei unlesbarer
- * Eingabe. Deutsche Datumskonvention unabhängig von der Oberflächensprache
- * (NFR-F-120); die Mittagszeit macht den Vergleich mit `gueltigVon`/`gueltigBis`
- * unempfindlich gegenüber Zeitzonen-Randfällen.
- */
-export function parseDatum(text: string): number | null {
-  const treffer = /^([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{4})$/.exec(text.trim());
-  if (!treffer) return null;
-  const tag = Number(treffer[1]);
-  const monat = Number(treffer[2]);
-  const jahr = Number(treffer[3]);
-  const datum = new Date(jahr, monat - 1, tag, 12, 0, 0);
-  if (datum.getFullYear() !== jahr || datum.getMonth() !== monat - 1 || datum.getDate() !== tag) {
-    return null;
-  }
-  return Math.floor(datum.getTime() / 1000);
-}
 
 function formatZeit(minutenSeitMitternacht: number): string {
   const stunden = Math.floor(minutenSeitMitternacht / MINUTEN_JE_STUNDE);
@@ -63,6 +41,27 @@ function formatZeit(minutenSeitMitternacht: number): string {
 function formatDatum(unixSekunden: number): string {
   const datum = new Date(unixSekunden * 1000);
   return `${String(datum.getDate()).padStart(2, '0')}.${String(datum.getMonth() + 1).padStart(2, '0')}.${datum.getFullYear()}`;
+}
+
+/** Minuten seit Mitternacht als `Date` mit beliebigem Kalendertag — nur die Uhrzeit zählt (Vorgabewert für die Zeitauswahl). */
+function zeitZuDate(minutenSeitMitternacht: number): Date {
+  const datum = new Date(2000, 0, 1);
+  datum.setHours(Math.floor(minutenSeitMitternacht / MINUTEN_JE_STUNDE), minutenSeitMitternacht % MINUTEN_JE_STUNDE, 0, 0);
+  return datum;
+}
+
+function dateZuZeitMin(datum: Date): number {
+  return datum.getHours() * MINUTEN_JE_STUNDE + datum.getMinutes();
+}
+
+/** Unix-Sekunden (Mittagszeit) als `Date` — Vorgabewert für die Datumsauswahl. */
+function unixZuDate(unixSekunden: number): Date {
+  return new Date(unixSekunden * 1000);
+}
+
+/** `Date` (nur Kalendertag zählt) als Unix-Sekunden zur Mittagszeit — unempfindlich gegenüber Zeitzonen-Randfällen. */
+function dateZuUnixMittag(datum: Date): number {
+  return Math.floor(new Date(datum.getFullYear(), datum.getMonth(), datum.getDate(), 12, 0, 0).getTime() / 1000);
 }
 
 function neueId(): string {
@@ -107,6 +106,8 @@ export function TerminEditorScreen() {
   return <Formular bestand={bestand} vorgabeWochentag={vorgabeWochentag} />;
 }
 
+type OffenerPicker = 'beginn' | 'ende' | 'datum' | null;
+
 function Formular({
   bestand,
   vorgabeWochentag,
@@ -121,18 +122,17 @@ function Formular({
 
   const [titel, setTitel] = useState(bestand?.title ?? '');
   const [wochentag, setWochentag] = useState<Weekday>(bestand?.weekday ?? vorgabeWochentag);
-  const [beginn, setBeginn] = useState(bestand ? formatZeit(bestand.timeBeginMin) : '');
-  const [ende, setEnde] = useState(bestand ? formatZeit(bestand.timeEndMin) : '');
+  const [beginn, setBeginn] = useState(zeitZuDate(bestand?.timeBeginMin ?? 480));
+  const [ende, setEnde] = useState(zeitZuDate(bestand?.timeEndMin ?? 570));
   const [raum, setRaum] = useState(bestand?.roomId ?? '');
   const [lehrperson, setLehrperson] = useState(bestand?.lecturerName ?? '');
   const [wiederkehrend, setWiederkehrend] = useState(bestand?.wiederkehrend ?? true);
   const [datum, setDatum] = useState(
-    bestand && !bestand.wiederkehrend && bestand.gueltigVon !== null
-      ? formatDatum(bestand.gueltigVon)
-      : '',
+    bestand && !bestand.wiederkehrend && bestand.gueltigVon !== null ? unixZuDate(bestand.gueltigVon) : new Date(),
   );
   const [istPruefung, setIstPruefung] = useState(bestand?.istPruefung ?? false);
   const [fehler, setFehler] = useState<string | null>(null);
+  const [offenerPicker, setOffenerPicker] = useState<OffenerPicker>(null);
 
   /** Prüft alle Pflichtangaben, bevor geschrieben wird — Fehler werden benannt, nicht verschluckt. */
   function pruefeUndSpeichere() {
@@ -140,12 +140,8 @@ function Formular({
       setFehler(t('schedule.terminFehlerTitel'));
       return;
     }
-    const beginnMin = parseUhrzeit(beginn);
-    const endeMin = parseUhrzeit(ende);
-    if (beginnMin === null || endeMin === null) {
-      setFehler(t('schedule.terminFehlerZeit'));
-      return;
-    }
+    const beginnMin = dateZuZeitMin(beginn);
+    const endeMin = dateZuZeitMin(ende);
     if (endeMin <= beginnMin) {
       setFehler(t('schedule.terminFehlerReihenfolge'));
       return;
@@ -154,12 +150,7 @@ function Formular({
     let gueltigVon: number | null = null;
     let gueltigBis: number | null = null;
     if (!wiederkehrend) {
-      const zeitpunkt = parseDatum(datum);
-      if (zeitpunkt === null) {
-        setFehler(t('schedule.terminFehlerDatum'));
-        return;
-      }
-      ({ gueltigVon, gueltigBis } = einmaligerGueltigkeitszeitraum(zeitpunkt));
+      ({ gueltigVon, gueltigBis } = einmaligerGueltigkeitszeitraum(dateZuUnixMittag(datum)));
     }
 
     const felder = {
@@ -193,20 +184,55 @@ function Formular({
     <Screen scroll tight hideScrollbar>
       <Feld label={t('schedule.terminTitelLabel')} wert={titel} onChange={setTitel} />
 
-      <RadioList<Weekday>
-        label={t('schedule.terminWochentagLabel')}
-        value={wochentag}
-        onChange={setWochentag}
-        options={WOCHENTAGE.map((tag) => ({ value: tag, label: t(`schedule.weekdayLang.${tag}`) }))}
-      />
+      <View style={styles.feld}>
+        <Text style={{ color: colors.textMuted, fontSize: 13 }}>{t('schedule.terminWochentagLabel')}</Text>
+        <Picker
+          testID="wochentag-picker"
+          accessibilityLabel={t('schedule.terminWochentagLabel')}
+          selectedValue={wochentag}
+          onValueChange={(value) => setWochentag(value as Weekday)}
+        >
+          {WOCHENTAGE.map((tag) => (
+            <Picker.Item key={tag} label={t(`schedule.weekdayLang.${tag}`)} value={tag} />
+          ))}
+        </Picker>
+      </View>
 
-      <Feld
+      <AuswahlFeld
         label={t('schedule.terminBeginnLabel')}
-        wert={beginn}
-        onChange={setBeginn}
-        platzhalter="08:00"
+        wert={formatZeit(dateZuZeitMin(beginn))}
+        onPress={() => setOffenerPicker('beginn')}
       />
-      <Feld label={t('schedule.terminEndeLabel')} wert={ende} onChange={setEnde} platzhalter="09:30" />
+      {offenerPicker === 'beginn' ? (
+        <DateTimePicker
+          testID="beginn-picker"
+          value={beginn}
+          mode="time"
+          is24Hour
+          onChange={(_event, gewaehlt) => {
+            setOffenerPicker(null);
+            if (gewaehlt) setBeginn(gewaehlt);
+          }}
+        />
+      ) : null}
+
+      <AuswahlFeld
+        label={t('schedule.terminEndeLabel')}
+        wert={formatZeit(dateZuZeitMin(ende))}
+        onPress={() => setOffenerPicker('ende')}
+      />
+      {offenerPicker === 'ende' ? (
+        <DateTimePicker
+          testID="ende-picker"
+          value={ende}
+          mode="time"
+          is24Hour
+          onChange={(_event, gewaehlt) => {
+            setOffenerPicker(null);
+            if (gewaehlt) setEnde(gewaehlt);
+          }}
+        />
+      ) : null}
 
       <Feld label={t('schedule.terminRaumLabel')} wert={raum} onChange={setRaum} />
       <Feld label={t('schedule.terminLehrpersonLabel')} wert={lehrperson} onChange={setLehrperson} />
@@ -217,12 +243,24 @@ function Formular({
         onChange={setWiederkehrend}
       />
       {!wiederkehrend ? (
-        <Feld
-          label={t('schedule.terminDatumLabel')}
-          wert={datum}
-          onChange={setDatum}
-          platzhalter="24.11.2026"
-        />
+        <>
+          <AuswahlFeld
+            label={t('schedule.terminDatumLabel')}
+            wert={formatDatum(dateZuUnixMittag(datum))}
+            onPress={() => setOffenerPicker('datum')}
+          />
+          {offenerPicker === 'datum' ? (
+            <DateTimePicker
+              testID="datum-picker"
+              value={datum}
+              mode="date"
+              onChange={(_event, gewaehlt) => {
+                setOffenerPicker(null);
+                if (gewaehlt) setDatum(gewaehlt);
+              }}
+            />
+          ) : null}
+        </>
       ) : null}
 
       <SchalterZeile
@@ -249,12 +287,10 @@ function Feld({
   label,
   wert,
   onChange,
-  platzhalter,
 }: {
   label: string;
   wert: string;
   onChange: (wert: string) => void;
-  platzhalter?: string;
 }) {
   const { colors } = useTheme();
   return (
@@ -262,12 +298,28 @@ function Feld({
       <Text style={{ color: colors.textMuted, fontSize: 13 }}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
-        placeholder={platzhalter}
-        placeholderTextColor={colors.textMuted}
         value={wert}
         onChangeText={onChange}
         style={[styles.eingabe, { borderColor: colors.border, color: colors.text }]}
       />
+    </View>
+  );
+}
+
+/** Zeigt den aktuellen Wert und öffnet auf Antippen die systemeigene Auswahl (Zeit oder Datum). */
+function AuswahlFeld({ label, wert, onPress }: { label: string; wert: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.feld}>
+      <Text style={{ color: colors.textMuted, fontSize: 13 }}>{label}</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={onPress}
+        style={[styles.eingabe, styles.auswahlFeld, { borderColor: colors.border }]}
+      >
+        <Text style={{ color: colors.text, fontSize: 16 }}>{wert}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -293,5 +345,6 @@ function SchalterZeile({
 const styles = StyleSheet.create({
   feld: { gap: 4 },
   eingabe: { minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 16 },
+  auswahlFeld: { justifyContent: 'center' },
   schalterZeile: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 12 },
 });

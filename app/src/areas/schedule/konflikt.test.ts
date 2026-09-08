@@ -1,4 +1,4 @@
-import { ermittleKonflikte } from './konflikt';
+import { ermittleKonflikte, pruefeKandidatGegenZwischenstand } from './konflikt';
 import type { PlanEntry } from './typen';
 
 function termin(überschreibung: Partial<PlanEntry> & { id: string }): PlanEntry {
@@ -112,5 +112,81 @@ describe('Kein Konflikthinweis bei vorgemerkten Terminen', () => {
 
     expect(konflikte.offen).toHaveLength(0);
     expect(konflikte.hinweisIds.size).toBe(0);
+  });
+
+  it('im Planungsmodus macht eine vorgemerkte Überschneidung sich zurückgenommen bemerkbar', () => {
+    const zwischenstand = [termin({ id: 'a', status: 'vorgemerkt', timeBeginMin: 480, timeEndMin: 570 })];
+
+    const stufe = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
+      zwischenstand,
+    );
+
+    expect(stufe).toBe('vorgemerkterKonflikt');
+  });
+});
+
+describe('Konfliktprüfung paralleler Termine', () => {
+  it('ein Kandidat, der mit einem festen Termin des Zwischenstands überschneidet, gilt als Konflikt', () => {
+    const zwischenstand = [termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 })];
+
+    const stufe = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
+      zwischenstand,
+    );
+
+    expect(stufe).toBe('konflikt');
+  });
+
+  it('ohne Überschneidung gilt der Kandidat als konfliktfrei', () => {
+    const zwischenstand = [termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 })];
+
+    const stufe = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 570, timeEndMin: 660 },
+      zwischenstand,
+    );
+
+    expect(stufe).toBe('konfliktfrei');
+  });
+
+  it('zwei in derselben Sitzung nacheinander gewählte, kollidierende Termine zeigen den Konflikt sofort', () => {
+    // Die Nutzerin hat Termin A bereits ausgewählt (noch ungesichert, aber
+    // Teil des Zwischenstands) und wählt nun Termin B, der damit kollidiert —
+    // ohne dass zwischendurch gesichert wurde.
+    const zwischenstandNachA = [termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 })];
+
+    const stufeFuerB = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
+      zwischenstandNachA,
+    );
+
+    expect(stufeFuerB).toBe('konflikt');
+  });
+});
+
+describe('Konfliktprüfung gegenüber angepinnten Terminen', () => {
+  it('zwei gleichzeitig unentschiedene Kandidaten werden nicht gegeneinander geprüft', () => {
+    // Zu keinem der beiden Kandidaten liegt eine Entscheidung vor — der
+    // Zwischenstand ist leer, beide bleiben konfliktfrei.
+    const zwischenstand: PlanEntry[] = [];
+
+    const stufeA = pruefeKandidatGegenZwischenstand({ weekday: 'Mon', timeBeginMin: 480, timeEndMin: 570 }, zwischenstand);
+    const stufeB = pruefeKandidatGegenZwischenstand({ weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 }, zwischenstand);
+
+    expect(stufeA).toBe('konfliktfrei');
+    expect(stufeB).toBe('konfliktfrei');
+  });
+
+  it('eine in der laufenden Sitzung getroffene, noch ungesicherte Entscheidung zählt für nachfolgende Kandidaten', () => {
+    const zwischenstandMitUngesicherterEntscheidung = [
+      termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 }),
+    ];
+
+    const stufe = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
+      zwischenstandMitUngesicherterEntscheidung,
+    );
+
+    expect(stufe).toBe('konflikt');
   });
 });
