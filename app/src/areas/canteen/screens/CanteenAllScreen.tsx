@@ -11,7 +11,7 @@ import { useGerichtFilter, type GerichtKennzeichen } from '../filter';
 import { gruppiereNachKategorie } from '../consolidate';
 import { preisText } from '../preise';
 import { isoHeute } from '../tageswahl';
-import { AnkerListe } from '../ui/AnkerListe';
+import { AnkerListe } from '@/ui/AnkerListe';
 
 // MENSA-F-130 bis F-150: Ansicht aller vom Backend gelieferten Mensen für den aus
 // der Hauptansicht übernommenen Tag, nach Mensa getrennt untereinander mit

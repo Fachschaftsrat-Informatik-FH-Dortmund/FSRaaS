@@ -3,12 +3,12 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { logError } from '@/errors/AppError';
 import { readJson, writeJson } from '@/storage/kv';
 
-// SCHED-F-020/F-040/F-640: die einmalig gewählte Einrichtung des Stundenplans —
-// Studiengang (`sname`) mit Fachsemester (`grade`), optionale Gruppenkennung
-// (SCHED-F-040, Muster `^[A-Z][0-9]+$` — Buchstabe und Zahl beide
-// verpflichtend, SCHED-F-720) und die zusätzlich abgerufenen Fachsemester
-// desselben Studiengangs (SCHED-F-640, z. B. für Wiederholerinnen oder
-// Vorzieherinnen). Rein gerätelokal (DATA-F-010). Reaktiver Modul-Speicher wie
+// Requirements „Auswahl der Endpunkte des Lehrangebots" und „Gruppenkennung
+// ohne Matrikelnummer": die einmalig gewählte Einrichtung des Stundenplans —
+// beliebig viele Endpunkte des Lehrangebots (`endpunkte`, INT-001-Kurznamen,
+// gleichrangig, kein Hauptendpunkt) und optionale Gruppenkennung (Muster
+// `^[A-Z][0-9]+$` — Buchstabe und Zahl beide verpflichtend, SCHED-F-720).
+// Rein gerätelokal (DATA-F-010). Reaktiver Modul-Speicher wie
 // `canteen/selection.ts`, damit alle Stundenplan-Bildschirme denselben Stand
 // teilen.
 //
@@ -29,20 +29,16 @@ const KEY = 'scheduleSetup';
 export const GRUPPENKENNUNG_MUSTER = /^[A-Z][0-9]+$/;
 
 export interface Einrichtung {
-  sname: string | null;
-  grade: string | null;
+  /** Requirement „Auswahl der Endpunkte des Lehrangebots": gewählte INT-001-Kurznamen (`sname`), gleichrangig. */
+  endpunkte: string[];
   gruppenkennung: string | null;
-  /** SCHED-F-640: weitere, zusätzlich abgerufene Fachsemester desselben Studiengangs. */
-  zusatzFachsemester: string[];
   /** SCHED-F-700: per INT-019 ermittelte, noch nicht bestätigte Gruppenkennung. */
   gruppenkennungVorschlag: string | null;
 }
 
 const LEER: Einrichtung = {
-  sname: null,
-  grade: null,
+  endpunkte: [],
   gruppenkennung: null,
-  zusatzFachsemester: [],
   gruppenkennungVorschlag: null,
 };
 
@@ -55,16 +51,27 @@ function melden() {
   for (const h of hoerer) h();
 }
 
+/**
+ * design.md Entscheidung 4: migriert einen gespeicherten Stand alter Gestalt
+ * (`sname`/`grade`/`zusatzFachsemester`, vormals SCHED-F-020/F-640) auf
+ * `endpunkte`. `grade` und `zusatzFachsemester` entfallen ersatzlos — ihre
+ * Veranstaltungen sind über den Abruf mit `grade=*` ohnehin im Bestand. Ein
+ * bereits in neuer Gestalt gespeicherter Stand (`endpunkte` vorhanden) wird
+ * unverändert gelesen.
+ */
 function bereinige(v: unknown): Einrichtung {
-  const roh = (v ?? {}) as Partial<Record<keyof Einrichtung, unknown>>;
+  const roh = (v ?? {}) as Partial<Record<string, unknown>> & { endpunkte?: unknown; sname?: unknown };
   const alsStringOderNull = (x: unknown): string | null => (typeof x === 'string' && x !== '' ? x : null);
   const alsStringListe = (x: unknown): string[] =>
     Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : [];
+
+  const legacySname = alsStringOderNull(roh.sname);
+  const endpunkte =
+    'endpunkte' in roh ? alsStringListe(roh.endpunkte) : legacySname ? [legacySname] : [];
+
   return {
-    sname: alsStringOderNull(roh.sname),
-    grade: alsStringOderNull(roh.grade),
+    endpunkte,
     gruppenkennung: alsStringOderNull(roh.gruppenkennung),
-    zusatzFachsemester: alsStringListe(roh.zusatzFachsemester),
     gruppenkennungVorschlag: alsStringOderNull(roh.gruppenkennungVorschlag),
   };
 }
@@ -73,7 +80,7 @@ function subscribe(cb: () => void): () => void {
   hoerer.add(cb);
   if (!ladeGestartet) {
     ladeGestartet = true;
-    readJson<Einrichtung>(KEY, LEER)
+    readJson<unknown>(KEY, LEER)
       .then((v) => {
         snapshot = bereinige(v);
       })
@@ -96,7 +103,7 @@ function schreiben(next: Einrichtung) {
 }
 
 export function readEinrichtung(): Promise<Einrichtung> {
-  return readJson<Einrichtung>(KEY, LEER).then(bereinige);
+  return readJson<unknown>(KEY, LEER).then(bereinige);
 }
 
 /** Nur für Tests: Modulzustand zurücksetzen. */
@@ -111,29 +118,18 @@ export function useEinrichtung() {
   const einrichtung = useSyncExternalStore(subscribe, () => snapshot);
   const loaded = useSyncExternalStore(subscribe, () => geladen);
 
-  /** SCHED-F-020: Studiengang und Fachsemester gemeinsam setzen (ein neuer Studiengang verwirft SCHED-F-640-Zusatzsemester). */
-  const setStudiengangUndFachsemester = useCallback((sname: string, grade: string) => {
-    schreiben({ ...snapshot, sname, grade, zusatzFachsemester: [] });
-  }, []);
-
-  const setFachsemester = useCallback((grade: string) => {
-    schreiben({ ...snapshot, grade });
+  /** Requirement „Auswahl der Endpunkte des Lehrangebots": einen Endpunkt an- oder abwählen. */
+  const endpunktUmschalten = useCallback((sname: string) => {
+    const naechste = snapshot.endpunkte.includes(sname)
+      ? snapshot.endpunkte.filter((e) => e !== sname)
+      : [...snapshot.endpunkte, sname];
+    schreiben({ ...snapshot, endpunkte: naechste });
   }, []);
 
   /** SCHED-F-040: Gruppenkennung setzen (großgeschrieben) oder mit `null` entfernen. */
   const setGruppenkennung = useCallback((wert: string | null) => {
     const bereinigt = wert && wert.trim() !== '' ? wert.trim().toUpperCase() : null;
     schreiben({ ...snapshot, gruppenkennung: bereinigt });
-  }, []);
-
-  /** SCHED-F-640: ein weiteres Fachsemester desselben Studiengangs zusätzlich abrufen. */
-  const zusatzFachsemesterHinzufuegen = useCallback((grade: string) => {
-    if (snapshot.zusatzFachsemester.includes(grade)) return;
-    schreiben({ ...snapshot, zusatzFachsemester: [...snapshot.zusatzFachsemester, grade] });
-  }, []);
-
-  const zusatzFachsemesterEntfernen = useCallback((grade: string) => {
-    schreiben({ ...snapshot, zusatzFachsemester: snapshot.zusatzFachsemester.filter((g) => g !== grade) });
   }, []);
 
   /** SCHED-F-700: eine per INT-019 ermittelte Kennung als Vorschlag ablegen — noch nicht übernommen. */
@@ -157,11 +153,8 @@ export function useEinrichtung() {
   return {
     einrichtung,
     loaded,
-    setStudiengangUndFachsemester,
-    setFachsemester,
+    endpunktUmschalten,
     setGruppenkennung,
-    zusatzFachsemesterHinzufuegen,
-    zusatzFachsemesterEntfernen,
     gruppenkennungVorschlagSetzen,
     gruppenkennungVorschlagBestaetigen,
     gruppenkennungVorschlagVerwerfen,

@@ -4,7 +4,14 @@ import { createElement, type ReactNode } from 'react';
 
 import { api, unwrap } from '@/net/client';
 import { holeGruppenkennungZuMatrikelnummer, holeStudiengaenge, holeTermine } from './fbwsClient';
-import { ermittleGruppenkennung, useGruppenkennungErmitteln, useStudiengaenge, useTermine, useWahlpflichtTermine } from './api';
+import {
+  ermittleGruppenkennung,
+  useGruppenkennungErmitteln,
+  useStudiengaenge,
+  useTermine,
+  useTermineFuerEndpunkte,
+  useWahlpflichtTermine,
+} from './api';
 
 jest.mock('./fbwsClient', () => ({
   holeStudiengaenge: jest.fn(),
@@ -90,6 +97,47 @@ describe('SCHED-F-030 Terminabruf für ein Studiengang/Fachsemester-Paar', () =>
     const { result } = renderHook(() => useTermine(undefined, undefined), { wrapper: wrapper() });
     expect(result.current.fetchStatus).toBe('idle');
     expect(holeTermine).not.toHaveBeenCalled();
+  });
+});
+
+describe('Terminabruf nach Auswahl', () => {
+  it('führt bei drei gewählten Endpunkten drei Abrufe durch und vereinigt deren Termine', async () => {
+    (holeTermine as jest.Mock).mockImplementation((sname: string) =>
+      Promise.resolve([{ ...rohTermin, name: `Termin ${sname}` }]),
+    );
+
+    const { result } = renderHook(
+      () =>
+        useTermineFuerEndpunkte([
+          { sname: 'INPBPI', name: 'Bachelor Informatik (StgPO 2019)' },
+          { sname: 'Blockwoche1', name: 'Blockwoche 1 (13.04.-17.04.2026)' },
+          { sname: 'TUPB', name: 'Tutorien' },
+        ]),
+      { wrapper: wrapper() },
+    );
+    await waitFor(() => expect(result.current.alleGeladen).toBe(true));
+
+    expect(holeTermine).toHaveBeenCalledTimes(3);
+    expect(holeTermine).toHaveBeenCalledWith('INPBPI', '*');
+    expect(holeTermine).toHaveBeenCalledWith('Blockwoche1', '*');
+    expect(holeTermine).toHaveBeenCalledWith('TUPB', '*');
+    expect(result.current.termine.map((t) => t.name)).toEqual([
+      'Termin INPBPI',
+      'Termin Blockwoche1',
+      'Termin TUPB',
+    ]);
+  });
+
+  it('wendet den aus dem Endpunktnamen gelesenen Gültigkeitszeitraum auf dessen Termine an', async () => {
+    (holeTermine as jest.Mock).mockResolvedValue([rohTermin]);
+
+    const { result } = renderHook(
+      () => useTermineFuerEndpunkte([{ sname: 'Blockwoche1', name: 'Blockwoche 1 (13.04.-17.04.2026)' }]),
+      { wrapper: wrapper() },
+    );
+    await waitFor(() => expect(result.current.alleGeladen).toBe(true));
+
+    expect(new Date(result.current.termine[0]!.gueltigVon! * 1000).toISOString().slice(0, 10)).toBe('2026-04-13');
   });
 });
 
