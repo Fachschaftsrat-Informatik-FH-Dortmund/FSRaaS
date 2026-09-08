@@ -140,6 +140,12 @@ describe('Modulauswahl ohne Veranstaltungsart und Gruppen-Slot', () => {
     expect(screen.getAllByText('Fachsemester 2').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Tutorien').length).toBeGreaterThan(0); // Abschnittsüberschrift für TUPB (kein Fachsemester)
   });
+
+  it('bietet kein eigenständiges Fachsemester-Filterelement — die Abschnittsgliederung ist die einzige Navigation', () => {
+    renderScreen();
+    expect(screen.queryByText('Alle Fachsemester')).toBeNull();
+    expect(screen.queryByText('Filter zurücksetzen')).toBeNull();
+  });
 });
 
 describe('Freitextsuche im Auswahlbestand', () => {
