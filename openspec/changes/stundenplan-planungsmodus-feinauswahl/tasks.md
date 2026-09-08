@@ -2,18 +2,18 @@
 
 ## 1. Abhängigkeiten prüfen und aufnehmen
 
-- [ ] 1.1 `@react-native-community/datetimepicker` und `@react-native-picker/picker` auf Lizenz und transitive Abhängigkeiten prüfen; Ergebnis als datiertes Prüfprotokoll ablegen, das die Vereinbarkeit mit den F-Droid-Auflagen der Capability `non-functional` belegt
-- [ ] 1.2 Beide Pakete aufnehmen und `npx expo prebuild` erfolgreich durchlaufen lassen; der Android-Build entsteht weiterhin ohne Firebase
+- [x] 1.1 `@react-native-community/datetimepicker` und `@react-native-picker/picker` auf Lizenz und transitive Abhängigkeiten prüfen; Ergebnis als datiertes Prüfprotokoll ablegen, das die Vereinbarkeit mit den F-Droid-Auflagen der Capability `non-functional` belegt
+- [x] 1.2 Beide Pakete aufnehmen und `npx expo prebuild` erfolgreich durchlaufen lassen; der Android-Build entsteht weiterhin ohne Firebase
 
 ## 2. Planungsstand als Fachlogik
 
-- [ ] 2.1 Modul `planungsstand.ts` nach `design.md` Entscheidung 2: reine Funktion von gewählten Modulen, Auswahlbestand und Plan auf den Stand je (Modul, Veranstaltungsart)
-- [ ] 2.2 Test `describe('Vorbelegung eindeutiger Veranstaltungen', …)` für beide Szenarien — genau ein Slot vorbelegt, mehrere Slots nicht vorbelegt trotz passender Gruppenkennung
-- [ ] 2.3 Test `describe('Kennzeichnung des Planungsstands je Veranstaltung', …)` für alle drei Szenarien, einschließlich des Zählers bei mehreren gewählten Slots
-- [ ] 2.4 Kollisionsprüfung eines einzelnen Kandidaten gegen die festen Termine des Zwischenstands ergänzen — nicht gegen den gesicherten Plan; Tests `describe('Konfliktprüfung paralleler Termine', …)` für beide Szenarien, darunter die Kollision zweier in derselben Sitzung gewählter Termine
-- [ ] 2.5 Kandidaten ohne getroffene Entscheidung von der Bezugsgröße ausnehmen, ungesicherte Entscheidungen einbeziehen; Tests `describe('Konfliktprüfung gegenüber angepinnten Terminen', …)` für beide Szenarien — die Vollkombinatorik bleibt ausgeschlossen
-- [ ] 2.6 Dritte Stufe zwischen „konfliktfrei" und „Konflikt" für vorgemerkte Termine, statt sie wie heute hart wegzufiltern; Tests `describe('Kein Konflikthinweis bei vorgemerkten Terminen', …)` für beide Szenarien — in der Wochenansicht stumm, im Planungsmodus zurückgenommen sichtbar
-- [ ] 2.7 Test mit dem realen Bestand `INPBPI`/`grade=*` und Kennung `C8`: von dreizehn Kombinationen sind sieben vorbelegt, zwei stehen offen — der Fall aus `design.md`
+- [x] 2.1 Modul `planungsstand.ts` nach `design.md` Entscheidung 2: reine Funktion von gewählten Modulen, Auswahlbestand und Plan auf den Stand je (Modul, Veranstaltungsart)
+- [x] 2.2 Test `describe('Vorbelegung eindeutiger Veranstaltungen', …)` für beide Szenarien — genau ein Slot vorbelegt, mehrere Slots nicht vorbelegt trotz passender Gruppenkennung
+- [x] 2.3 Test `describe('Kennzeichnung des Planungsstands je Veranstaltung', …)` für alle drei Szenarien, einschließlich des Zählers bei mehreren gewählten Slots
+- [x] 2.4 Kollisionsprüfung eines einzelnen Kandidaten gegen die festen Termine des Zwischenstands ergänzen — nicht gegen den gesicherten Plan; Tests `describe('Konfliktprüfung paralleler Termine', …)` für beide Szenarien, darunter die Kollision zweier in derselben Sitzung gewählter Termine
+- [x] 2.5 Kandidaten ohne getroffene Entscheidung von der Bezugsgröße ausnehmen, ungesicherte Entscheidungen einbeziehen; Tests `describe('Konfliktprüfung gegenüber angepinnten Terminen', …)` für beide Szenarien — die Vollkombinatorik bleibt ausgeschlossen
+- [x] 2.6 Dritte Stufe zwischen „konfliktfrei" und „Konflikt" für vorgemerkte Termine, statt sie wie heute hart wegzufiltern; Tests `describe('Kein Konflikthinweis bei vorgemerkten Terminen', …)` für beide Szenarien — in der Wochenansicht stumm, im Planungsmodus zurückgenommen sichtbar
+- [x] 2.7 Test mit dem realen Bestand `INPBPI`/`grade=*` und Kennung `C8`: von dreizehn Kombinationen sind sieben vorbelegt, zwei stehen offen — der Fall aus `design.md`
 
 ## 3. Planungsmodus-Bildschirm
 

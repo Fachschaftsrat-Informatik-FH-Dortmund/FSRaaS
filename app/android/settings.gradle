@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'FB4'
+rootProject.name = 'FSR Informatik'
 
 dependencyResolutionManagement {
   versionCatalogs {
