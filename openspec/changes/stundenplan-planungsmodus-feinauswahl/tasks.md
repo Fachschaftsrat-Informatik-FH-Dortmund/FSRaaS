@@ -20,6 +20,7 @@
 - [ ] 3.3 Kennzeichnungen je Zeile aus `planungsstand.ts` anbinden — kürzere Beschriftungen als in der Wochenansicht, da die Zeile bereits Zeit, Titel, Art, Gruppe und Raum trägt
 - [ ] 3.4 Leiste am unteren Rand mit den Namen des Ausstehenden; Test `describe('Leiste der ausstehenden Veranstaltungen', …)` für beide Szenarien, einschließlich des Sprungs auf den betreffenden Wochentag
 - [ ] 3.5 Rückweg zur Modulauswahl aus dem Planungsmodus heraus sicherstellen (Risiko aus `design.md`)
+- [ ] 3.6 Jede Wahl unmittelbar über `planStore` schreiben, kein Sammelschritt und keine Rückfrage beim Verlassen; Tests zu den Szenarien „Wahl wirkt sofort" und „Bildschirm verlassen"
 
 ## 4. Statusvergabe
 

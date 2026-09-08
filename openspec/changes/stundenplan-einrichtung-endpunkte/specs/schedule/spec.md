@@ -76,6 +76,22 @@ Die Modulauswahl darf ausschließlich die Wahl der Module verlangen; sie darf we
 - **WHEN** die Nutzerin ein Modul in der Modulauswahl ankreuzt
 - **THEN** führt das System es als Kandidat für die Planung, ohne eine Veranstaltungsart oder einen Gruppen-Slot zu erfragen
 
+### Requirement: Abwahl eines Moduls mit vorhandenen Planeinträgen
+
+Wenn die Nutzerin ein Modul abwählt, zu dem bereits Termine im persönlichen Plan stehen, dann muss das System erfragen, ob diese Termine mit entfernt werden sollen, und diese Frage mit „nein" vorbelegen. Ein selbsttätiges Entfernen ist ausgeschlossen; ein wortloses Stehenlassen ohne Hinweis ebenso. Herkunft: NEU, entschieden 2026-09-08. Folgt aus dem Requirement „Bestätigung vor zerstörender Aktion" der Capability `ux-and-theming` und dem Requirement „Kein selbsttätiges Entfernen des Stundenplans" der Capability `data-and-storage`: Planeinträge sind Nutzerdaten, ihr Verlust braucht eine Zustimmung. Die Vorbelegung auf „nein" folgt derselben Erwägung wie bei den Löschaktionen — wer sich vertippt, verliert nichts.
+
+#### Scenario: Modul mit Planeinträgen abgewählt
+- **WHEN** die Nutzerin ein Modul abwählt, zu dem Termine im persönlichen Plan stehen
+- **THEN** erfragt das System, ob diese Termine mit entfernt werden sollen, vorbelegt auf „nein"
+
+#### Scenario: Termine sollen bleiben
+- **WHEN** die Nutzerin die Abwahl bestätigt, ohne dem Entfernen der Termine zuzustimmen
+- **THEN** bleiben die Termine im Plan erhalten und der Planungsmodus führt sie weiterhin
+
+#### Scenario: Modul ohne Planeinträge abgewählt
+- **WHEN** die Nutzerin ein Modul abwählt, zu dem noch kein Termin im Plan steht
+- **THEN** entfällt die Rückfrage, und die Abwahl wirkt unmittelbar
+
 ## MODIFIED Requirements
 
 ### Requirement: Terminabruf nach Auswahl

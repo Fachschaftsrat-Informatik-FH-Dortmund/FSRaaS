@@ -80,6 +80,22 @@ Falls an einem Wochentag kein Termin dargestellt wird, muss das System diesen Ta
 - **WHEN** an einem Wochentag ohnehin kein Termin liegt
 - **THEN** kennzeichnet das System den Tag als leer, ohne einen Grund zu behaupten
 
+### Requirement: Unterscheidung von Entfernen und Löschen im Termindetail
+
+Das System muss im Termindetail zwischen dem Entfernen eines offiziellen Termins aus dem persönlichen Plan und dem Löschen eines selbst angelegten Termins unterscheiden. Das Entfernen eines offiziellen Termins darf nicht als zerstörende Aktion beschriftet oder gestaltet werden und braucht keine Bestätigung; das Löschen eines eigenen Termins muss als zerstörende Aktion gestaltet und vor der Ausführung bestätigt werden. Herkunft: NEU, entschieden 2026-09-08. Folgt aus den Requirements „Bestätigung vor zerstörender Aktion" und „Keine zerstörende Aktion als Primäraktion" der Capability `ux-and-theming`: Ein offizieller Termin besteht im FBWS unverändert fort, erscheint nach dem Entfernen im Planungsmodus als nicht eingeplant und wird dort von der Leiste der ausstehenden Veranstaltungen benannt — er ist jederzeit wiederherstellbar und damit nicht zerstörend. Ein eigener Termin ist Handarbeit, steht in keinem Fremdsystem und ist nach dem Löschen verloren. Die bisherige Umsetzung stellte beide gleich, mit demselben rot gestalteten Knopf „Termin löschen".
+
+#### Scenario: Offiziellen Termin aus dem Plan nehmen
+- **WHEN** die Nutzerin einen offiziellen Termin aus ihrem Plan nimmt
+- **THEN** benennt und gestaltet das System die Aktion als Entfernen aus dem Plan, nicht als Löschen, und führt sie ohne Bestätigung aus
+
+#### Scenario: Eigenen Termin löschen
+- **WHEN** die Nutzerin einen selbst angelegten Termin löscht
+- **THEN** gestaltet das System die Aktion als zerstörend und holt vor der Ausführung eine Bestätigung ein
+
+#### Scenario: Entfernter offizieller Termin bleibt auffindbar
+- **WHEN** ein offizieller Termin aus dem Plan genommen wurde und sein Modul weiterhin gewählt ist
+- **THEN** führt der Planungsmodus die betreffende Veranstaltungsart als nicht eingeplant und benennt sie in der Leiste der ausstehenden Veranstaltungen
+
 ### Requirement: Rückkehr zur laufenden Woche über die Wochenangabe
 
 Das System muss die Rückkehr zur laufenden Woche über die Wochenangabe selbst ermöglichen und einen ergänzenden Hinweis darauf nur dann einblenden, wenn eine andere als die laufende Woche angezeigt wird. Ein zusätzliches Bedienelement, dessen Erscheinen die Anordnung der übrigen verschiebt, ist ausgeschlossen. Herkunft: NEU, entschieden 2026-09-08, Muster übernommen aus der Mensa-Tagesauswahl (Capability `canteen`). Die bisherige Umsetzung setzte einen zweiten Knopf neben die Wochenangabe, der beim Blättern erschien und verschwand und dabei die Blätterpfeile verschob.

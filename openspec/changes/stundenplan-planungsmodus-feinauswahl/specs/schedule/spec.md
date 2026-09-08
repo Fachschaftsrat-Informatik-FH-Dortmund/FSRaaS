@@ -2,11 +2,19 @@
 
 ### Requirement: Planungsmodus mit Wochentagsgliederung
 
-Das System muss die Wahl von Veranstaltungsart und Gruppen-Slot in einem eigenen Bildschirm führen, der die Termine der gewählten Module nach Wochentagen gliedert und innerhalb eines Wochentags aufsteigend nach Beginnzeit ordnet. Der Bildschirm muss nach dem erstmaligen Zusammenstellen jederzeit erneut erreichbar sein. Herkunft: NEU, entschieden 2026-09-08, Form übernommen aus alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java. Die Android-Alt-App gliedert ihren Auswahlbildschirm über einen `TabLayout` je Wochentag mit einer chronologischen Kartenliste je Tag; diese Form hat sich bewährt. Übernommen wird sie mit zwei Unterschieden: Sie zeigt nur die Termine zuvor gewählter Module statt des gesamten Bestands, und sie trägt die Kennzeichnungen des Planungsstands, die der Alt-App fehlen.
+Das System muss die Wahl von Veranstaltungsart und Gruppen-Slot in einem eigenen Bildschirm führen, der die Termine der gewählten Module nach Wochentagen gliedert und innerhalb eines Wochentags aufsteigend nach Beginnzeit ordnet. Jede einzelne Wahl muss unmittelbar in den persönlichen Plan wirken; ein gesammeltes Übernehmen am Ende und eine Rückfrage beim Verlassen sind ausgeschlossen. Der Bildschirm muss nach dem erstmaligen Zusammenstellen jederzeit erneut erreichbar sein. Herkunft: NEU, entschieden 2026-09-08, Form übernommen aus alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java. Die Android-Alt-App gliedert ihren Auswahlbildschirm über einen `TabLayout` je Wochentag mit einer chronologischen Kartenliste je Tag; diese Form hat sich bewährt. Übernommen wird sie mit drei Unterschieden: Sie zeigt nur die Termine zuvor gewählter Module statt des gesamten Bestands, sie trägt die Kennzeichnungen des Planungsstands, die der Alt-App fehlen, und sie schreibt sofort. Das gesammelte Speichern der Alt-App samt ihrem Dialog `verlassenSpeichern` wird ausdrücklich nicht übernommen: Jeder gerätelokale Speicher dieser App schreibt unmittelbar, ein abweichendes Verhalten an einer einzelnen Stelle wäre nicht erwartbar, und eine sofort wirkende Wahl lässt sich durch dieselbe Geste zurücknehmen, mit der sie getroffen wurde.
 
 #### Scenario: Planungsmodus öffnen
 - **WHEN** die Nutzerin nach der Modulauswahl in den Planungsmodus wechselt
 - **THEN** zeigt das System die Termine der gewählten Module nach Wochentagen gegliedert, je Wochentag aufsteigend nach Beginnzeit
+
+#### Scenario: Wahl wirkt sofort
+- **WHEN** die Nutzerin einen Termin auswählt oder abwählt
+- **THEN** wirkt die Änderung unmittelbar im persönlichen Plan, ohne dass sie gesondert übernommen werden muss
+
+#### Scenario: Bildschirm verlassen
+- **WHEN** die Nutzerin den Planungsmodus verlässt
+- **THEN** verlässt das System ihn ohne Rückfrage, da nichts ungesichert offen ist
 
 #### Scenario: Erneuter Aufruf
 - **WHEN** ein persönlicher Plan bereits besteht und die Nutzerin eine einzelne Entscheidung ändern will
@@ -26,7 +34,7 @@ Wenn eine Veranstaltungsart eines gewählten Moduls genau einen Gruppen-Slot anb
 
 ### Requirement: Hervorhebung der eigenen Gruppe im Planungsmodus
 
-Das System muss im Planungsmodus die Termine, deren `studentSet` die eigene Gruppenkennung einschließt, gegenüber den übrigen hervorheben und diese Bedeutung zusätzlich zur Farbe über Text oder Symbol tragen. Es darf dabei keinen Termin ausblenden. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java:688-692. Die Alt-App färbt passende Karten orange ein und blendet trotz des Klassennamens `LetterFilter` nichts aus; der Buchstabe musste dort über einen Menüdialog eingegeben werden, während er hier aus der Einrichtung stammt. Die zusätzliche Kennzeichnung über Text oder Symbol verlangt die Capability `ux-and-theming`.
+Das System muss im Planungsmodus die Termine, deren `studentSet` die eigene Gruppenkennung einschließt, gegenüber den übrigen hervorheben und diese Bedeutung zusätzlich zur Farbe über Text oder Symbol tragen. Es darf dabei keinen Termin ausblenden. Das bestehende Requirement „Kennzeichnung fremder Gruppenzugehörigkeit zusätzlich zur Farbe" der Capability `ux-and-theming` gilt unverändert weiter und betrifft die Gegenrichtung: Auch die nicht zugehörigen Termine tragen ihre Bedeutung über Text oder Symbol. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java:688-692. Die Alt-App färbt passende Karten orange ein und blendet trotz des Klassennamens `LetterFilter` nichts aus; der Buchstabe musste dort über einen Menüdialog eingegeben werden, während er hier aus der Einrichtung stammt.
 
 #### Scenario: Termin der eigenen Gruppe
 - **WHEN** ein Termin die eigene Gruppenkennung einschließt

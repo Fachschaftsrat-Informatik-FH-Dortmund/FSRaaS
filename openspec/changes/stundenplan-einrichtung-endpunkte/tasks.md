@@ -41,6 +41,7 @@
 - [ ] 6.3 `CourseSelectionScreen` auf die reine Ankreuzliste reduzieren — Veranstaltungsart-Schalter, Slot-Zeilen und der Übernehmen-Pfad in den Plan entfallen; Test `describe('Modulauswahl ohne Veranstaltungsart und Gruppen-Slot', …)`
 - [ ] 6.4 Freitextsuche und Fachsemester-Filter der bisherigen Kursauswahl auf die Modulebene ziehen; die bestehenden Tests zu `describe('Freitextsuche im Auswahlbestand', …)` entsprechend nachziehen
 - [ ] 6.5 Test `describe('Gliederung des Auswahlbestands', …)` auf die zwei Szenarien des MODIFIED-Deltas umstellen
+- [ ] 6.6 Rückfrage beim Abwählen eines Moduls mit vorhandenen Planeinträgen, vorbelegt auf „nein"; Tests `describe('Abwahl eines Moduls mit vorhandenen Planeinträgen', …)` für alle drei Szenarien, einschließlich des Falls ohne Planeinträge, in dem die Rückfrage entfällt
 
 ## 7. Abschluss
 
