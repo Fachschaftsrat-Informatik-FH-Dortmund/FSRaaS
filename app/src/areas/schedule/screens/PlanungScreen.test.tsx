@@ -1,0 +1,359 @@
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+
+import { ThemeProvider } from '@/theme';
+import { __resetPlanungAktionForTest } from '../planungAktion';
+import { PlanungSpeichernZugang } from '../ui/PlanungSpeichernZugang';
+import { PlanungScreen } from './PlanungScreen';
+
+const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
+let mockParams: Record<string, string> = {};
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useLocalSearchParams: () => mockParams,
+}));
+
+const mockDispatch = jest.fn();
+let letztePreventRemove: { verhindern: boolean; callback: (e: { data: { action: unknown } }) => void } | null = null;
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ dispatch: mockDispatch }),
+  usePreventRemove: (verhindern: boolean, callback: (e: { data: { action: unknown } }) => void) => {
+    letztePreventRemove = { verhindern, callback };
+  },
+}));
+
+let mockEinrichtung: { endpunkte: string[]; gruppenkennung: string | null };
+let mockEntries: any[];
+const mockMehrereUebernehmen = jest.fn();
+
+jest.mock('../einrichtung', () => ({
+  useEinrichtung: () => ({ einrichtung: mockEinrichtung, loaded: true }),
+}));
+
+jest.mock('../planStore', () => ({
+  useScheduleEntries: () => ({ entries: mockEntries, loaded: true, mehrereUebernehmen: mockMehrereUebernehmen }),
+}));
+
+let mockStudiengaenge: { sname: string; name: string; grades: string[]; po: string | null }[];
+let mockTermineQuery: any;
+
+jest.mock('../api', () => ({
+  useStudiengaenge: () => ({ studiengaenge: mockStudiengaenge }),
+  useTermineFuerEndpunkte: () => mockTermineQuery,
+}));
+
+function termin(over: Record<string, unknown>) {
+  return {
+    courseId: 'INF999',
+    name: 'Mathematik für Informatik 3',
+    courseType: 'V',
+    lecturerName: 'Prof. Beispiel',
+    studentSet: '*',
+    roomId: 'A.1.01',
+    weekday: 'Mon',
+    timeBeginMin: 480,
+    timeEndMin: 570,
+    gueltigVon: null,
+    gueltigBis: null,
+    grade: '2',
+    ...over,
+  };
+}
+
+// Modul „Mathematik für Informatik 3": V hat genau einen Slot (wird
+// vorbelegt), Ü hat zwei Slots — einer passt zur Gruppenkennung C8.
+const MATHE3_V = termin({});
+const MATHE3_UE_FREMD = termin({
+  courseType: 'Ü',
+  studentSet: 'A-B',
+  weekday: 'Tue',
+  timeBeginMin: 600,
+  timeEndMin: 690,
+});
+const MATHE3_UE_EIGEN = termin({
+  courseType: 'Ü',
+  studentSet: 'C5-E',
+  weekday: 'Tue',
+  timeBeginMin: 720,
+  timeEndMin: 810,
+});
+const MODUL_KEY = 'INF999|2';
+
+function offiziellerEintrag(over: Record<string, unknown>) {
+  return {
+    id: 'bestehend-1',
+    kind: 'offiziell',
+    status: 'fest',
+    color: '#1E88E5',
+    weekday: 'Mon',
+    timeBeginMin: 480,
+    timeEndMin: 570,
+    gruppenzugehoerig: true,
+    abweichendeGruppe: false,
+    akzeptierteKonflikte: [],
+    istPruefung: false,
+    gueltigVon: null,
+    gueltigBis: null,
+    courseId: 'INF999',
+    name: 'Mathematik für Informatik 3',
+    courseType: 'V',
+    lecturerName: 'Prof. Beispiel',
+    studentSet: '*',
+    roomId: 'A.1.01',
+    ...over,
+  };
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  __resetPlanungAktionForTest();
+  letztePreventRemove = null;
+  mockParams = { module: MODUL_KEY };
+  mockEinrichtung = { endpunkte: ['INPBPI'], gruppenkennung: 'C8' };
+  mockEntries = [];
+  mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'], po: '2019' }];
+  mockTermineQuery = {
+    termine: [MATHE3_V, MATHE3_UE_FREMD, MATHE3_UE_EIGEN],
+    perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [MATHE3_V, MATHE3_UE_FREMD, MATHE3_UE_EIGEN] }],
+    alleGeladen: true,
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  };
+});
+
+afterEach(cleanup);
+
+function renderScreen() {
+  return render(
+    <ThemeProvider>
+      <PlanungScreen />
+      <PlanungSpeichernZugang />
+    </ThemeProvider>,
+  );
+}
+
+describe('Planungsmodus mit Wochentagsgliederung', () => {
+  it('zeigt die Termine der gewählten Module nach Wochentagen gegliedert, je Wochentag aufsteigend nach Beginnzeit', () => {
+    renderScreen();
+
+    // Montag ist zunächst aktiv: die Vorlesung (V) liegt dort.
+    expect(screen.getByText(/08:00–09:30/)).toBeTruthy();
+    expect(screen.queryByText(/10:00–11:30/)).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    const zeit1 = screen.getByText(/10:00–11:30/);
+    const zeit2 = screen.getByText(/12:00–13:30/);
+    expect(zeit1).toBeTruthy();
+    expect(zeit2).toBeTruthy();
+  });
+
+  it('bleibt bei bestehendem Plan erneut erreichbar, ohne dass die Modulauswahl wiederholt werden muss', () => {
+    mockParams = {}; // kein Routenparameter — wie bei einem erneuten Aufruf
+    mockEntries = [offiziellerEintrag({})];
+    renderScreen();
+
+    expect(screen.getAllByText(/Mathematik für Informatik 3/).length).toBeGreaterThan(0);
+  });
+});
+
+describe('Hervorhebung der eigenen Gruppe im Planungsmodus', () => {
+  it('hebt einen Termin der eigenen Gruppe hervor, zusätzlich zur Farbe über Text', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    expect(screen.getByText(/Eigene Gruppe/)).toBeTruthy();
+  });
+
+  it('zeigt einen gruppenfremden Termin weiterhin und lässt seine Wahl zu', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    const fremderTermin = screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/);
+    expect(fremderTermin).toBeTruthy();
+    fireEvent.press(fremderTermin);
+    expect(fremderTermin.props.accessibilityState.checked).toBe(true);
+  });
+});
+
+describe('Leiste der ausstehenden Veranstaltungen', () => {
+  it('nennt eine an einem anderen Wochentag liegende, noch nicht eingeplante Veranstaltung beim Namen und springt dorthin', () => {
+    renderScreen();
+
+    expect(screen.getByLabelText('Mathematik für Informatik 3 Ü')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Mathematik für Informatik 3 Ü'));
+
+    expect(screen.getByLabelText('Dienstag').props.accessibilityState.selected).toBe(true);
+  });
+
+  it('meldet, dass nichts mehr aussteht, sobald jede Veranstaltungsart mindestens einen Termin trägt', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    expect(screen.getByText('Nichts steht mehr aus')).toBeTruthy();
+  });
+});
+
+describe('Ausdrückliches Sichern der Planung', () => {
+  it('lässt den persönlichen Plan vor dem Sichern unverändert und weist die Änderung als ungesichert aus', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    expect(mockMehrereUebernehmen).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeTruthy();
+  });
+
+  it('übernimmt beim Sichern sämtliche getroffenen Entscheidungen gemeinsam in den persönlichen Plan', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+
+    expect(mockMehrereUebernehmen).toHaveBeenCalledTimes(1);
+    const [hinzuzufuegen] = mockMehrereUebernehmen.mock.calls[0]!;
+    // Die vorbelegte Vorlesung (Montag) UND die frisch gewählte Übung (Dienstag)
+    // wirken gemeinsam in einem Schreibvorgang.
+    expect(hinzuzufuegen).toHaveLength(2);
+  });
+
+  it('weist ohne jede Änderung keine ungesicherten Änderungen aus', () => {
+    // Beide Veranstaltungsarten sind bereits gespeichert — nichts ist vorzubelegen.
+    mockEntries = [
+      offiziellerEintrag({ id: 'v', courseType: 'V', weekday: 'Mon', timeBeginMin: 480, timeEndMin: 570 }),
+      offiziellerEintrag({
+        id: 'ue',
+        courseType: 'Ü',
+        weekday: 'Tue',
+        timeBeginMin: 720,
+        timeEndMin: 810,
+        studentSet: 'C5-E',
+        status: 'vorgemerkt',
+      }),
+    ];
+    renderScreen();
+
+    expect(screen.getByLabelText('Planung sichern')).toBeTruthy();
+    expect(screen.queryByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeNull();
+  });
+});
+
+describe('Rückfrage beim Verlassen mit ungesicherten Änderungen', () => {
+  it('fragt beim Verlassen mit ungesicherten Änderungen nach und bietet Sichern, Verwerfen und Zurückkehren an', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    expect(letztePreventRemove!.verhindern).toBe(true);
+    act(() => letztePreventRemove!.callback({ data: { action: { type: 'POP' } } }));
+
+    expect(screen.getByText('Es gibt ungesicherte Änderungen. Was möchtest du tun?')).toBeTruthy();
+    expect(screen.getByText('Sichern')).toBeTruthy();
+    expect(screen.getByText('Verwerfen')).toBeTruthy();
+    expect(screen.getByText('Zurück zur Bearbeitung')).toBeTruthy();
+  });
+
+  it('verlässt den Planungsmodus ohne Rückfrage, wenn nichts geändert wurde', () => {
+    mockEntries = [
+      offiziellerEintrag({ id: 'v', courseType: 'V' }),
+      offiziellerEintrag({ id: 'ue', courseType: 'Ü', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 810, studentSet: 'C5-E' }),
+    ];
+    renderScreen();
+
+    expect(letztePreventRemove!.verhindern).toBe(false);
+  });
+
+  it('bleibt bei „Zurück zur Bearbeitung" im Planungsmodus mit sämtlichen ungesicherten Änderungen erhalten', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+    act(() => letztePreventRemove!.callback({ data: { action: { type: 'POP' } } }));
+
+    fireEvent.press(screen.getByText('Zurück zur Bearbeitung'));
+
+    expect(screen.queryByText('Es gibt ungesicherte Änderungen. Was möchtest du tun?')).toBeNull();
+    expect(mockDispatch).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/).props.accessibilityState.checked).toBe(
+      true,
+    );
+  });
+});
+
+// Requirement „Kennzeichnung des Planungsstands je Veranstaltung", Prüfung
+// gegen Aufgabe 5.4: Der stille Fehlschlag der bisherigen Kursauswahl
+// (`artUmschalten` wählte wortlos keinen Slot, wenn keiner zur Gruppenkennung
+// passte) kann hier nicht mehr auftreten — der Planungsmodus fragt nie nach
+// der Gruppenkennung ab, sondern zeigt jede Veranstaltungsart mit all ihren
+// Slots, gleich ob einer zur Kennung passt oder nicht.
+describe('Kennzeichnung des Planungsstands je Veranstaltung', () => {
+  it('eine Veranstaltungsart ohne zur Gruppenkennung passenden Slot erscheint sichtbar als offen, nicht stillschweigend unverändert', () => {
+    mockEinrichtung = { endpunkte: ['INPBPI'], gruppenkennung: 'X9' }; // passt zu keinem der Ü-Slots
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    const fremd = screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/);
+    const eigen = screen.getByLabelText(/12:00–13:30 Mathematik für Informatik 3 Ü/);
+    expect(fremd.props.accessibilityState.checked).toBe(false);
+    expect(eigen.props.accessibilityState.checked).toBe(false);
+    expect(screen.getByLabelText('Mathematik für Informatik 3 Ü')).toBeTruthy(); // Leiste der Ausstehenden
+  });
+});
+
+describe('Zweckbestimmung eigener Termine', () => {
+  it('bietet den Bedienweg zum Anlegen eigener Termine im Planungsmodus an', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Eigenen Termin anlegen'));
+    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/termin', params: { wochentag: 'Mon' } });
+  });
+});
+
+describe('Hinweis bei fehlender konfliktfreier Option', () => {
+  it('teilt mit, wenn für eine Veranstaltungsart kein konfliktfreier Termin existiert, statt sie auszublenden', () => {
+    // Ein fester Termin belegt bereits beide Zeiten der Übung.
+    mockEntries = [
+      offiziellerEintrag({ id: 'v', courseType: 'V' }),
+      offiziellerEintrag({
+        id: 'blockiert',
+        courseType: 'PR',
+        weekday: 'Tue',
+        timeBeginMin: 600,
+        timeEndMin: 900,
+        studentSet: '*',
+      }),
+    ];
+    renderScreen();
+
+    expect(screen.getByText('Kein konfliktfreier Termin verfügbar')).toBeTruthy();
+    // Die Termine bleiben trotzdem sichtbar und wählbar.
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    expect(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/)).toBeTruthy();
+  });
+});
+
+describe('Bewusste Übernahme trotz Konflikt', () => {
+  it('übernimmt einen Termin trotz erkannter Kollision und kennzeichnet ihn dauerhaft als angenommenen Konflikt', () => {
+    mockEntries = [
+      offiziellerEintrag({
+        id: 'kollidierend',
+        courseType: 'PR',
+        weekday: 'Tue',
+        timeBeginMin: 660,
+        timeEndMin: 750,
+        studentSet: '*',
+      }),
+    ];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+
+    const [hinzuzufuegen, , aktualisierungen] = mockMehrereUebernehmen.mock.calls[0]!;
+    const neuerEintrag = hinzuzufuegen.find((e: any) => e.courseType === 'Ü');
+    expect(neuerEintrag.akzeptierteKonflikte).toContain('kollidierend');
+    const aktualisierungFuerBestehenden = aktualisierungen.find((a: any) => a.id === 'kollidierend');
+    expect(aktualisierungFuerBestehenden.patch.akzeptierteKonflikte).toContain(neuerEintrag.id);
+  });
+});
