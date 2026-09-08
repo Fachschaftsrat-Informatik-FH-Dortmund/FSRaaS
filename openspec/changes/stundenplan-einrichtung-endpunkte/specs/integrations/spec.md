@@ -108,6 +108,16 @@ Endpunkte, deren INT-001-`grades` nur `*` enthält, liefern durchgängig `grade:
 
 Der `courseType`-Bestand ist größer als bisher geführt: `PR` tritt in `Blockwoche1` auf (5 von 30 Terminen), `S` in `SMPB` (8 von 8). Beide sind oben ergänzt; die Capability `schedule` darf keine abgeschlossene Werteliste voraussetzen.
 
+**Befund: Blockwochen-Termine geben sich als wöchentliche Semestertermine aus (2026-09-08).** Der Endpunkt `Blockwoche1` heißt `Blockwoche 1 (13.04.-17.04.2026)`, seine Termine liefern jedoch:
+
+| Feld | Wert | erwartet wäre |
+|---|---|---|
+| `dateBegin` / `dateEnd` | 25.05.2026 / 25.07.2026 | 13.04.2026 / 17.04.2026 |
+| `timestampBegin` / `timestampEnd` | 24.05.2026 / 24.07.2026 | ebenso |
+| `interval` | `weekly` | ein einmaliger Block |
+
+Die Werte sind identisch mit denen der regulären Veranstaltungen desselben Semesters. Der tatsächliche Zeitraum einer Blockwoche steht **ausschließlich als Fließtext im `name` des Endpunkts** (INT-001) und in keinem auswertbaren Feld. Wer die gelieferten Felder unbesehen übernimmt, führt eine Blockwoche als wöchentliche Veranstaltung über das gesamte Semester und erzeugt damit Kollisionen mit dem regulären Plan, die keine sind. Die Capability `schedule` wertet deshalb den Datumsbereich aus dem Endpunktnamen aus; die Regel und ihr Rückfall stehen dort.
+
 **Authentifizierung:** Keine. **Eigentümer/Betreiber:** Fachbereich Informatik, FH Dortmund (siehe INT-001). **Verfügbarkeit:** Nicht dokumentiert, kein bekanntes SLA.
 
 **Cache-Regel (Vorschlag):** Je Studiengang/Semester geräteseitig mit kurzer Ablaufzeit (Vorschlag: ein Tag) cachen. Für die Raumbelegung (siehe Nutzungshinweis unten) serverseitig periodisch abrufen und aggregieren, nicht bei jeder Anfrage neu über alle Kombinationen iterieren.
