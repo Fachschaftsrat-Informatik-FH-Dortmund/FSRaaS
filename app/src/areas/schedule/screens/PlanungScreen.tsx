@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove, type NavigationAction } from '@react-navigation/native';
@@ -152,8 +152,8 @@ export function PlanungScreen() {
 
   const hatUngesicherteAenderungen = sessionEntscheidungen.length > 0 || entfernteIds.size > 0;
 
-  function aktualisierungenAlsListe() {
-    return Object.entries(gespeicherteAktualisierungen).map(([id, zusaetzlich]) => ({
+  const sichern = useCallback(() => {
+    const aktualisierungen = Object.entries(gespeicherteAktualisierungen).map(([id, zusaetzlich]) => ({
       id,
       patch: {
         akzeptierteKonflikte: [
@@ -161,23 +161,19 @@ export function PlanungScreen() {
         ],
       },
     }));
-  }
-
-  function sichern() {
-    mehrereUebernehmen(sessionEntscheidungen, [...entfernteIds], aktualisierungenAlsListe());
+    mehrereUebernehmen(sessionEntscheidungen, [...entfernteIds], aktualisierungen);
     setSessionEntscheidungen([]);
     setEntfernteIds(new Set());
     setFesteSchluesselJeArt({});
     setGespeicherteAktualisierungen({});
-  }
+  }, [sessionEntscheidungen, entfernteIds, gespeicherteAktualisierungen, gespeichertSichtbar, mehrereUebernehmen]);
 
   // Requirement „Ausdrückliches Sichern der Planung": Speichern-Symbol in der
   // Kopfzeile (außerhalb dieses Komponentenbaums, `_layout.tsx`).
   useEffect(() => {
     registriereePlanungAktion({ hatUngesicherteAenderungen, sichern });
     return () => registriereePlanungAktion(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hatUngesicherteAenderungen, sessionEntscheidungen, entfernteIds]);
+  }, [hatUngesicherteAenderungen, sichern]);
 
   // Requirement „Rückfrage beim Verlassen mit ungesicherten Änderungen".
   const [pendingAction, setPendingAction] = useState<NavigationAction | null>(null);
@@ -542,7 +538,15 @@ const styles = StyleSheet.create({
   zeileText: { flex: 1, gap: 2 },
   alsFest: { paddingHorizontal: 10, minHeight: 44, justifyContent: 'center' },
   leiste: { flexDirection: 'row', gap: 8, minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 8, alignItems: 'center' },
-  ausstehendChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, gap: 2 },
+  ausstehendChip: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 2,
+    justifyContent: 'center',
+  },
   verlassenBestaetigung: { position: 'absolute', left: 12, right: 12, bottom: 12, borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },
   verlassenAktionen: { gap: 8 },
 });
