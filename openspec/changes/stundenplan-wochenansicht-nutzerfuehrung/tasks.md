@@ -51,7 +51,9 @@
 - [ ] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
 - [ ] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
 - [ ] 8.4 Statusumschalter „fest/vorgemerkt" um eine Erklärung ergänzen, was „vorgemerkt" bewirkt — kein Konflikthinweis
-- [ ] 8.5 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
+- [ ] 8.5 Gültigkeitszeitraum im Termindetail änderbar machen — Beginn und Ende einzeln, jeweils auch offen, über die Datumsauswahl aus dem vorangehenden Change; Tests `describe('Gültigkeitszeitraum je Eintrag änderbar', …)` für alle vier Szenarien
+- [ ] 8.6 `wiederkehrend` aus dem Zeitraum ableiten statt unabhängig führen (`design.md` Entscheidung 8); Test belegt, dass ein eigener Termin mit Zeitraum über einen einzigen Tag als einmalig gilt und einer über mehrere Tage als wiederkehrend
+- [ ] 8.7 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
 
 ## 9. Abschluss
 
