@@ -38,6 +38,8 @@ Die Wochenansicht ist der meistgenutzte Bildschirm der App. Sechs Befunde aus de
 
 **Die Jetzt-Anzeige wird zweispaltig** — laufende und nächste Veranstaltung nebeneinander — und nennt Zeiträume in lesbarer Form. Der Jetzt-Strich auf der Achse bleibt sichtbar, wenn „jetzt" außerhalb der zugeschnittenen Tagesspanne liegt, indem er an den Rand geheftet wird.
 
+**Der Gültigkeitszeitraum wird je Eintrag änderbar.** Beginn und Ende einzeln, jeweils auch offen, für offizielle wie für eigene Einträge. Die Felder `gueltigVon` und `gueltigBis` bestehen an jedem Eintrag und werden von der Wochenansicht bereits ausgewertet — es fehlte allein der Bedienweg. Das ist zugleich das Auffangnetz für die Ableitung des Zeitraums aus dem Endpunktnamen: Bricht deren Namensmuster weg, erscheint eine Blockwoche als durchgehende wöchentliche Veranstaltung, und die Nutzerin korrigiert das von Hand, statt einem Fehler des Fremdsystems ausgeliefert zu sein.
+
 **Die Farbwahl wirkt auf das Modul.** Beim Verlassen des Termindetails nach einer Farbänderung fragt das System, ob sie für alle Veranstaltungen des Moduls oder nur für die geöffnete gelten soll. Ein Palettenwert „keine Farbe" führt zur Automatik zurück; die Automatik selbst ist im Ansichts-Blatt abschaltbar. Der Statusumschalter „fest/vorgemerkt" bekommt eine Erklärung, was „vorgemerkt" bewirkt.
 
 ## Capabilities

@@ -84,7 +84,26 @@ Der Schalter „alle Veranstaltungen der gewählten Module einblenden" verlangt 
 
 **Der Alternativen-Schalter macht die Wochenansicht netzabhängig** → Nur für die Alternativen. Der persönliche Plan bleibt rein gerätelokal, wie die Capability `data-and-storage` es verlangt; ohne Netz zeigt die Ansicht ihn unverändert vollständig.
 
-### 8. Entfernen und Löschen sind nicht dasselbe
+### 8. Der Zeitraum je Eintrag braucht nur einen Bedienweg
+
+`gueltigVon` und `gueltigBis` liegen an jedem `PlanEntry`, `null` steht für „offen", und `imGueltigkeitszeitraum` wertet beide bereits richtig aus. Der Change fügt keine Fachlogik hinzu, sondern einen Bedienweg — dieselbe Lage wie bei `planStore.clear()` und `toggleSprungZuHeute`.
+
+Zwei Punkte, die dabei zu regeln sind:
+
+**Der gesetzte Zeitraum ist maßgeblich.** Ein Planeintrag ist eine gerätelokale Abschrift des FBWS-Termins; es gibt heute keinen Pfad, der ihn nachträglich aus INT-002 auffrischt. Die Anforderung hält das trotzdem ausdrücklich fest, damit ein künftiger Abgleich die Handkorrektur nicht stillschweigend überschreibt.
+
+**`wiederkehrend` bleibt widerspruchsfrei.** Bei eigenen Terminen bedeutet „einmalig" intern `gueltigVon === gueltigBis` (`einmaligerGueltigkeitszeitraum`). Wer den Zeitraum im Detail frei setzt, könnte sonst einen als „einmalig" geführten Eintrag über drei Wochen spannen. Die Regel ist daher: Ein Zeitraum von genau einem Tag heißt einmalig, ein längerer heißt wiederkehrend innerhalb dieses Zeitraums. Das Kennzeichen wird aus dem Zeitraum abgeleitet, statt beide unabhängig zu führen.
+
+```
+  gueltigVon == gueltigBis      -> einmalig, erscheint an genau diesem Datum
+  gueltigVon <  gueltigBis      -> wöchentlich innerhalb des Zeitraums
+  beide null                    -> wöchentlich ohne Begrenzung
+  Ende vor Beginn               -> zurückgewiesen, alter Zeitraum bleibt
+```
+
+Die Datumsauswahl kommt aus dem vorangehenden Change (`@react-native-community/datetimepicker`); dieser Change nimmt dafür keine neue Abhängigkeit auf.
+
+### 9. Entfernen und Löschen sind nicht dasselbe
 
 Das Termindetail führt heute für beide Fälle denselben rot gestalteten Knopf „Termin löschen". Die beiden Fälle unterscheiden sich aber in genau dem Merkmal, an dem `ux-and-theming` die zerstörende Gestaltung festmacht — der Wiederherstellbarkeit:
 

@@ -80,6 +80,26 @@ Falls an einem Wochentag kein Termin dargestellt wird, muss das System diesen Ta
 - **WHEN** an einem Wochentag ohnehin kein Termin liegt
 - **THEN** kennzeichnet das System den Tag als leer, ohne einen Grund zu behaupten
 
+### Requirement: Gültigkeitszeitraum je Eintrag änderbar
+
+Das System muss der Nutzerin ermöglichen, den Gültigkeitszeitraum eines einzelnen Eintrags des persönlichen Plans über einen sichtbaren Bedienweg zu ändern, Beginn und Ende je einzeln und jeweils auch offen. Das gilt für offizielle wie für selbst angelegte Einträge. Ein von der Nutzerin gesetzter Zeitraum ist gegenüber den aus INT-002 übernommenen Angaben maßgeblich und darf von keinem Abgleich überschrieben werden. Liegt das Ende vor dem Beginn, muss das System die Eingabe zurückweisen und den Grund benennen. Herkunft: NEU, entschieden 2026-09-08. Die Felder `gueltigVon` und `gueltigBis` bestehen bereits an jedem Eintrag und werden von der Wochenansicht ausgewertet; es fehlte allein der Bedienweg. Die Anforderung ist zugleich das Auffangnetz für die Ableitung des Zeitraums aus dem Endpunktnamen (Capability `schedule`, Requirement „Gültigkeitszeitraum aus dem Endpunktnamen"): Bricht deren Namensmuster weg, erscheint eine Blockwoche als durchgehende wöchentliche Veranstaltung — die Nutzerin korrigiert das dann von Hand, statt einem Fehler des Fremdsystems ausgeliefert zu sein.
+
+#### Scenario: Zeitraum eines offiziellen Termins einschränken
+- **WHEN** die Nutzerin für einen offiziellen Termin einen abweichenden Gültigkeitszeitraum festlegt
+- **THEN** erscheint der Termin nur noch innerhalb dieses Zeitraums, unabhängig von den aus INT-002 übernommenen Angaben
+
+#### Scenario: Offenes Ende
+- **WHEN** die Nutzerin einen Beginn festlegt und das Ende offen lässt
+- **THEN** gilt der Termin ab dem Beginn ohne Enddatum
+
+#### Scenario: Ende vor Beginn
+- **WHEN** die Nutzerin ein Ende vor dem Beginn angibt
+- **THEN** weist das System die Eingabe zurück und benennt den Grund, ohne den bisherigen Zeitraum zu verwerfen
+
+#### Scenario: Eigener Termin auf einen Tag begrenzt
+- **WHEN** die Nutzerin den Zeitraum eines selbst angelegten Termins auf einen einzigen Tag setzt
+- **THEN** führt das System ihn als einmalig, sodass Zeitraum und die Angabe „wiederkehrend oder einmalig" einander nicht widersprechen
+
 ### Requirement: Unterscheidung von Entfernen und Löschen im Termindetail
 
 Das System muss im Termindetail zwischen dem Entfernen eines offiziellen Termins aus dem persönlichen Plan und dem Löschen eines selbst angelegten Termins unterscheiden. Das Entfernen eines offiziellen Termins darf nicht als zerstörende Aktion beschriftet oder gestaltet werden und braucht keine Bestätigung; das Löschen eines eigenen Termins muss als zerstörende Aktion gestaltet und vor der Ausführung bestätigt werden. Herkunft: NEU, entschieden 2026-09-08. Folgt aus den Requirements „Bestätigung vor zerstörender Aktion" und „Keine zerstörende Aktion als Primäraktion" der Capability `ux-and-theming`: Ein offizieller Termin besteht im FBWS unverändert fort, erscheint nach dem Entfernen im Planungsmodus als nicht eingeplant und wird dort von der Leiste der ausstehenden Veranstaltungen benannt — er ist jederzeit wiederherstellbar und damit nicht zerstörend. Ein eigener Termin ist Handarbeit, steht in keinem Fremdsystem und ist nach dem Löschen verloren. Die bisherige Umsetzung stellte beide gleich, mit demselben rot gestalteten Knopf „Termin löschen".
