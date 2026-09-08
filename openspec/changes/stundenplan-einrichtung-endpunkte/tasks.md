@@ -11,10 +11,10 @@
 
 ## 2. Endpunktgruppierung als Fachlogik
 
-- [ ] 2.1 Modul `endpunkte.ts` mit den Ableitungsregeln aus `design.md` Entscheidung 1; reine Funktionen ohne React
-- [ ] 2.2 Test `describe('Gruppierung der Endpunkte in der Auswahl', …)` prüft die Zuordnung aller 21 verwertbaren Endpunkte des Bestands vom 2026-09-08, einschließlich `FemINF` mit `po: "NULL"` und der Trennung dualer Studiengänge
-- [ ] 2.3 Test `describe('Auffangkorb für nicht zuzuordnende Endpunkte', …)`: ein erfundener Endpunkt ohne passendes Merkmal erscheint im Auffangkorb, nicht im Nichts
-- [ ] 2.4 Prüfungsordnung aus `name` ableiten, wenn `po` fehlt; Test mit einem Datensatz in der Gestalt der Rückfallliste des eigenen Backends (ohne `po`)
+- [x] 2.1 Modul `endpunkte.ts` mit den Ableitungsregeln aus `design.md` Entscheidung 1; reine Funktionen ohne React
+- [x] 2.2 Test `describe('Gruppierung der Endpunkte in der Auswahl', …)` prüft die Zuordnung aller 21 verwertbaren Endpunkte des Bestands vom 2026-09-08, einschließlich `FemINF` mit `po: "NULL"` und der Trennung dualer Studiengänge
+- [x] 2.3 Test `describe('Auffangkorb für nicht zuzuordnende Endpunkte', …)`: ein erfundener Endpunkt ohne passendes Merkmal erscheint im Auffangkorb, nicht im Nichts
+- [x] 2.4 Prüfungsordnung aus `name` ableiten, wenn `po` fehlt; Test mit einem Datensatz in der Gestalt der Rückfallliste des eigenen Backends (ohne `po`)
 
 ## 3. Einrichtungsstand und Migration
 
