@@ -19,16 +19,37 @@ beforeEach(async () => {
   __resetMatrikelnummerForTest();
 });
 
-describe('SCHED-F-020 Auswahl von Studiengang und Fachsemester', () => {
-  it('speichert Studiengang und Fachsemester gemeinsam und persistiert das', async () => {
+describe('Auswahl der Endpunkte des Lehrangebots', () => {
+  it('wählt einen Endpunkt und persistiert das', async () => {
     const { result } = renderHook(() => useEinrichtung());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
-    act(() => result.current.setStudiengangUndFachsemester('INPBPI', '2'));
-    await waitFor(() => expect(result.current.einrichtung.sname).toBe('INPBPI'));
-    expect(result.current.einrichtung.grade).toBe('2');
+    act(() => result.current.endpunktUmschalten('INPBPI'));
+    await waitFor(() => expect(result.current.einrichtung.endpunkte).toEqual(['INPBPI']));
 
-    expect(await readEinrichtung()).toMatchObject({ sname: 'INPBPI', grade: '2' });
+    expect(await readEinrichtung()).toMatchObject({ endpunkte: ['INPBPI'] });
+  });
+
+  it('Mehrere Endpunkte gewählt: nimmt weitere Endpunkte gleichrangig hinzu', async () => {
+    const { result } = renderHook(() => useEinrichtung());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.endpunktUmschalten('INPBPI'));
+    act(() => result.current.endpunktUmschalten('Blockwoche1'));
+    act(() => result.current.endpunktUmschalten('TUPB'));
+    await waitFor(() => expect(result.current.einrichtung.endpunkte).toEqual(['INPBPI', 'Blockwoche1', 'TUPB']));
+  });
+
+  it('Endpunkt wieder abgewählt: entfernt genau diesen Endpunkt aus der Auswahl', async () => {
+    const { result } = renderHook(() => useEinrichtung());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.endpunktUmschalten('INPBPI'));
+    act(() => result.current.endpunktUmschalten('TUPB'));
+    await waitFor(() => expect(result.current.einrichtung.endpunkte).toEqual(['INPBPI', 'TUPB']));
+
+    act(() => result.current.endpunktUmschalten('INPBPI'));
+    await waitFor(() => expect(result.current.einrichtung.endpunkte).toEqual(['TUPB']));
   });
 
   it('teilt den Stand über alle Hook-Instanzen', async () => {
@@ -36,8 +57,40 @@ describe('SCHED-F-020 Auswahl von Studiengang und Fachsemester', () => {
     const b = renderHook(() => useEinrichtung());
     await waitFor(() => expect(b.result.current.loaded).toBe(true));
 
-    act(() => a.result.current.setStudiengangUndFachsemester('INPBPI', '4'));
-    await waitFor(() => expect(b.result.current.einrichtung.grade).toBe('4'));
+    act(() => a.result.current.endpunktUmschalten('INPBPI'));
+    await waitFor(() => expect(b.result.current.einrichtung.endpunkte).toEqual(['INPBPI']));
+  });
+});
+
+describe('Migration des gerätelokalen Stands', () => {
+  it('überführt einen gespeicherten Stand alter Gestalt (sname/grade/zusatzFachsemester) verlustfrei in endpunkte', async () => {
+    await AsyncStorage.setItem(
+      'fb4:scheduleSetup',
+      JSON.stringify({
+        sname: 'INPBPI',
+        grade: '2',
+        zusatzFachsemester: ['4'],
+        gruppenkennung: 'C8',
+      }),
+    );
+
+    const { result } = renderHook(() => useEinrichtung());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.einrichtung.endpunkte).toEqual(['INPBPI']);
+    expect(result.current.einrichtung.gruppenkennung).toBe('C8');
+  });
+
+  it('liest einen bereits in neuer Gestalt gespeicherten Stand unverändert', async () => {
+    await AsyncStorage.setItem(
+      'fb4:scheduleSetup',
+      JSON.stringify({ endpunkte: ['INPBPI', 'Blockwoche1'], gruppenkennung: 'C8', gruppenkennungVorschlag: null }),
+    );
+
+    const { result } = renderHook(() => useEinrichtung());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.einrichtung.endpunkte).toEqual(['INPBPI', 'Blockwoche1']);
   });
 });
 
@@ -62,46 +115,8 @@ describe('SCHED-F-040 Eingabe einer Gruppenkennung nach dem Muster ^[A-Z][0-9]*$
   });
 });
 
-describe('SCHED-F-640 zusätzlich abgerufene Fachsemester desselben Studiengangs', () => {
-  it('nimmt ein weiteres Fachsemester auf und entfernt es wieder', async () => {
-    const { result } = renderHook(() => useEinrichtung());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-
-    act(() => result.current.setStudiengangUndFachsemester('INPBPI', '2'));
-    act(() => result.current.zusatzFachsemesterHinzufuegen('4'));
-    await waitFor(() => expect(result.current.einrichtung.zusatzFachsemester).toEqual(['4']));
-
-    act(() => result.current.zusatzFachsemesterEntfernen('4'));
-    await waitFor(() => expect(result.current.einrichtung.zusatzFachsemester).toEqual([]));
-  });
-
-  it('führt ein Fachsemester nicht doppelt, wenn es erneut hinzugefügt wird', async () => {
-    const { result } = renderHook(() => useEinrichtung());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-
-    act(() => result.current.zusatzFachsemesterHinzufuegen('4'));
-    act(() => result.current.zusatzFachsemesterHinzufuegen('4'));
-    await waitFor(() => expect(result.current.einrichtung.zusatzFachsemester).toEqual(['4']));
-  });
-
-  it('verwirft die Zusatzsemester, wenn ein anderer Studiengang gewählt wird', async () => {
-    const { result } = renderHook(() => useEinrichtung());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-
-    act(() => result.current.setStudiengangUndFachsemester('INPBPI', '2'));
-    act(() => result.current.zusatzFachsemesterHinzufuegen('4'));
-    await waitFor(() => expect(result.current.einrichtung.zusatzFachsemester).toEqual(['4']));
-
-    act(() => result.current.setStudiengangUndFachsemester('INPBTI', '2'));
-    await waitFor(() => expect(result.current.einrichtung.zusatzFachsemester).toEqual([]));
-  });
-});
-
 describe('SCHED-F-720 Gruppenkennung ohne Matrikelnummer: manuelle Angabe verlangt Buchstabe und Zahl', () => {
   it('weist eine Gruppenkennung aus nur einem Buchstaben zurück', () => {
-    // Umkehr der Festlegung vom 2026-09-04: Fünf der 21 real vorkommenden
-    // studentSet-Werte tragen eine Zahl an einer Bereichsgrenze, an der sie
-    // mitentscheidet (C5-E, M5-P, J-M4, H5-J, F-H4).
     expect(GRUPPENKENNUNG_MUSTER.test('C')).toBe(false);
     expect(GRUPPENKENNUNG_MUSTER.test('H')).toBe(false);
   });
@@ -127,7 +142,7 @@ describe('SCHED-F-720 Gruppenkennung ohne Matrikelnummer: manuelle Angabe verlan
   it('lässt die Einrichtung vollständig ohne Angabe einer Matrikelnummer abschließen', async () => {
     const einrichtung = renderHook(() => useEinrichtung());
     await waitFor(() => expect(einrichtung.result.current.loaded).toBe(true));
-    act(() => einrichtung.result.current.setStudiengangUndFachsemester('INPBPI', '2'));
+    act(() => einrichtung.result.current.endpunktUmschalten('INPBPI'));
     act(() => einrichtung.result.current.setGruppenkennung('C8'));
     await waitFor(() => expect(einrichtung.result.current.einrichtung.gruppenkennung).toBe('C8'));
 
@@ -216,8 +231,8 @@ describe('Keine Speicherung der Matrikelnummer', () => {
 
     const einrichtung = renderHook(() => useEinrichtung());
     await waitFor(() => expect(einrichtung.result.current.loaded).toBe(true));
-    act(() => einrichtung.result.current.setStudiengangUndFachsemester('INPBPI', '2'));
-    await waitFor(() => expect(einrichtung.result.current.einrichtung.sname).toBe('INPBPI'));
+    act(() => einrichtung.result.current.endpunktUmschalten('INPBPI'));
+    await waitFor(() => expect(einrichtung.result.current.einrichtung.endpunkte).toEqual(['INPBPI']));
 
     const roh = await AsyncStorage.getItem('fb4:scheduleSetup');
     expect(roh).not.toBeNull();

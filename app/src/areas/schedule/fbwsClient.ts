@@ -20,12 +20,19 @@ if (!FBWS_BASIS.startsWith('https://')) {
   throw new Error('FBWS_BASIS muss https:// sein');
 }
 
-/** Ein FBWS-Studiengang aus INT-001, bereits auf die drei relevanten Felder reduziert. */
+/** Ein FBWS-Studiengang aus INT-001, bereits auf die relevanten Felder reduziert. */
 export interface FbwsStudiengang {
   name: string;
   sname: string;
   /** Fachsemester des Studiengangs (INT-001 `grades[].grade`), als Zeichenketten. */
   grades: string[];
+  /**
+   * Prüfungsordnung, z. B. `"2019"`. `null` bei Angeboten ohne Prüfungsordnung
+   * (Blockwochen, Tutorien, Seminare, Wahlpflicht) — INT-001 liefert dafür
+   * sowohl `null` als auch die Zeichenkette `"NULL"` (`FemINF`); beides wird
+   * hier bereits vereinheitlicht.
+   */
+  po: string | null;
 }
 
 async function holeJson(url: string, kontext: string): Promise<unknown> {
@@ -74,7 +81,7 @@ export async function holeStudiengaenge(): Promise<FbwsStudiengang[]> {
       logError('fbwsClient.studiengang.form', new Error('Eintrag ist kein Objekt'));
       continue;
     }
-    const { name, sname, grades } = eintrag as Record<string, unknown>;
+    const { name, sname, grades, po } = eintrag as Record<string, unknown>;
     if (grades === null || grades === undefined) continue; // INT-001: bewusst verworfen
 
     if (typeof name !== 'string' || typeof sname !== 'string' || !Array.isArray(grades)) {
@@ -87,7 +94,11 @@ export async function holeStudiengaenge(): Promise<FbwsStudiengang[]> {
       .filter((g): g is string | number => g !== null && g !== undefined)
       .map((g) => String(g));
 
-    ergebnis.push({ name, sname, grades: gradeListe });
+    // INT-001: `po` kommt sowohl als `null` als auch als Zeichenkette `"NULL"`
+    // vor (`FemINF`) — beides bedeutet „keine Prüfungsordnung".
+    const poWert = typeof po === 'string' && po !== 'NULL' ? po : null;
+
+    ergebnis.push({ name, sname, grades: gradeListe, po: poWert });
   }
   return ergebnis;
 }

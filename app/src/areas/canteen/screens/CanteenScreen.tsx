@@ -44,7 +44,7 @@ import {
   nachholenBeimAppStart,
 } from '../registerBackgroundTask';
 import { useCanteenSelection } from '../selection';
-import { AnkerListe } from '../ui/AnkerListe';
+import { AnkerListe } from '@/ui/AnkerListe';
 import { wischRichtung } from '../gesten';
 import { oeffnungszeitFuer } from '../oeffnungszeiten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';

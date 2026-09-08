@@ -112,10 +112,8 @@ async function seed(entries: PlanEntry[], einstellungen: Record<string, unknown>
   await AsyncStorage.clear();
   await writeJson('scheduleEntries', entries);
   await writeJson('scheduleSetup', {
-    sname: 'INPBPI',
-    grade: '2',
+    endpunkte: ['INPBPI'],
     gruppenkennung: 'C8',
-    zusatzFachsemester: [],
     gruppenkennungVorschlag: null,
   });
   await writeJson('scheduleViewSettings', {
@@ -443,23 +441,38 @@ describe('Visuelle Kennzeichnung von Prüfungsterminen', () => {
 });
 
 describe('Hinweis bei Semesterwechsel', () => {
-  it('weist auf eine mögliche Anpassung hin, wenn sich die Fachsemester geändert haben', async () => {
-    mockStudiengaenge = [{ sname: 'INPBPI', name: 'Praktische Informatik', grades: ['1', '2', '3'] }];
+  it('weist auf eine mögliche Anpassung hin, wenn sich das Lehrangebot geändert hat (Semesterbeginn erkannt)', async () => {
+    mockStudiengaenge = [
+      { sname: 'INPBPI', name: 'Praktische Informatik', grades: ['1', '2', '3'] },
+      { sname: 'Blockwoche1', name: 'Blockwoche 1 (13.04.-17.04.2026)', grades: ['0'] },
+    ];
     await seed([ANALYSIS]);
-    await writeJson('scheduleSemesterstand', { grades: ['1', '2'] });
+    await writeJson('scheduleSemesterstand', { endpunkte: ['INPBPI'] });
     __resetSemesterstandForTest();
     await zeige();
 
     await waitFor(() =>
       expect(
-        screen.getByText(
-          'Die Fachsemester deines Studiengangs haben sich geändert. Prüfe dein Fachsemester und deine Gruppenkennung.',
-        ),
+        screen.getByText('Das Lehrangebot hat sich geändert. Prüfe deine Endpunktauswahl und deine Gruppenkennung.'),
       ).toBeTruthy(),
     );
 
     fireEvent.press(screen.getByLabelText('Passt so'));
-    await waitFor(() => expect(screen.queryByText(/Fachsemester deines Studiengangs/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/Das Lehrangebot hat sich geändert/)).toBeNull());
+  });
+
+  it('Gewählter Endpunkt entfallen: weist darauf hin, ohne die Auswahl selbsttätig zu ändern', async () => {
+    mockStudiengaenge = [{ sname: 'TUPB', name: 'Tutorien', grades: ['0'] }]; // INPBPI ist verschwunden
+    await seed([ANALYSIS]);
+    await writeJson('scheduleSemesterstand', { endpunkte: ['INPBPI', 'TUPB'] });
+    __resetSemesterstandForTest();
+    await zeige();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Das Lehrangebot hat sich geändert. Prüfe deine Endpunktauswahl und deine Gruppenkennung.'),
+      ).toBeTruthy(),
+    );
   });
 
   it('weist beim erstmaligen Einrichten nicht auf einen Wechsel hin', async () => {
@@ -467,7 +480,19 @@ describe('Hinweis bei Semesterwechsel', () => {
     await seed([ANALYSIS]);
     await zeige();
 
-    expect(screen.queryByText(/Fachsemester deines Studiengangs/)).toBeNull();
+    expect(screen.queryByText(/Das Lehrangebot hat sich geändert/)).toBeNull();
+  });
+});
+
+describe('Dauerhafter Zugang zur Einrichtung', () => {
+  it('bietet bei gefülltem Plan ein jederzeit sichtbares Kopfzeilen-Element zur Einrichtung an', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    const link = screen.getByLabelText('Einrichtung bearbeiten');
+    expect(link).toBeTruthy();
+    fireEvent.press(link);
+    expect(mockPush).toHaveBeenCalledWith('/einrichtung');
   });
 });
 

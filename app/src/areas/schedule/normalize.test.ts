@@ -127,6 +127,20 @@ describe('SEC-F-060 unerwartete, aber vorhandene Werte werden protokolliert stat
   });
 });
 
+describe('SCHED-F-030 courseType kennt auch PR (Blockwochen) und S (Seminare)', () => {
+  it('übernimmt PR ohne es als unbekannt zu protokollieren (Live-Befund 2026-09-08, Blockwoche1)', () => {
+    const ergebnis = normalizeOfficialTermin({ ...VOLLSTAENDIGER_ROHSATZ, courseType: 'PR' });
+    expect(ergebnis?.courseType).toBe('PR');
+    expect(logErrorMock).not.toHaveBeenCalledWith('normalize.courseType.unbekannt', expect.anything());
+  });
+
+  it('übernimmt S ohne es als unbekannt zu protokollieren (Live-Befund 2026-09-08, SMPB)', () => {
+    const ergebnis = normalizeOfficialTermin({ ...VOLLSTAENDIGER_ROHSATZ, courseType: 'S' });
+    expect(ergebnis?.courseType).toBe('S');
+    expect(logErrorMock).not.toHaveBeenCalledWith('normalize.courseType.unbekannt', expect.anything());
+  });
+});
+
 describe('normalizeOfficialTermine verarbeitet eine Liste', () => {
   it('lässt übersprungene Sätze im Ergebnis weg, ohne die Liste abzubrechen', () => {
     const { name, ...unvollstaendig } = VOLLSTAENDIGER_ROHSATZ;

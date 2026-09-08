@@ -1,4 +1,4 @@
-import { baueKursbaum } from './kursbaum';
+import { baueModulliste, type EndpunktTermine } from './kursbaum';
 import type { OfficialTermin } from './typen';
 
 function termin(überschreibung: Partial<OfficialTermin>): OfficialTermin {
@@ -18,90 +18,90 @@ function termin(überschreibung: Partial<OfficialTermin>): OfficialTermin {
   };
 }
 
-describe('SCHED-F-600 Gliederung Veranstaltung → Veranstaltungsart → Gruppen-Slot', () => {
-  it('gruppiert nach courseId und darunter nach courseType', () => {
-    const baum = baueKursbaum(
-      [
-        termin({ courseId: '42012', courseType: 'V' }),
-        termin({ courseId: '42012', courseType: 'Ü' }),
-        termin({ courseId: '42099', name: 'Softwaretechnik', courseType: 'V' }),
+describe('Gliederung der Modulauswahl nach Fachsemester', () => {
+  it('Bachelor-Endpunkt mit Fachsemestern: gliedert dessen Module in die Abschnitte der drei Fachsemester', () => {
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [
+        termin({ courseId: '1', name: 'Erstsemestermodul', grade: '2' }),
+        termin({ courseId: '2', name: 'Softwaretechnik', grade: '4' }),
+        termin({ courseId: '3', name: 'Bachelorarbeit', grade: '6' }),
       ],
-      null,
-    );
+    };
+    const abschnitte = baueModulliste([endpunkt]);
 
-    expect(baum).toHaveLength(2);
-    expect(baum[0]!.key).toBe('42012');
-    expect(baum[0]!.arten.map((a) => a.courseType)).toEqual(['V', 'Ü']);
-    expect(baum[1]!.key).toBe('42099');
-    expect(baum[1]!.name).toBe('Softwaretechnik');
+    expect(abschnitte.map((a) => a.kennung)).toEqual([
+      { art: 'fachsemester', grade: '2' },
+      { art: 'fachsemester', grade: '4' },
+      { art: 'fachsemester', grade: '6' },
+    ]);
+    expect(abschnitte[0]!.module.map((m) => m.name)).toEqual(['Erstsemestermodul']);
   });
 
-  it('fällt bei leerem courseId auf die Bezeichnung als Gruppierungsschlüssel zurück', () => {
-    const baum = baueKursbaum(
-      [
-        termin({ courseId: '', name: 'Lern- und Arbeitstechniken', roomId: 'A.2.03' }),
-        termin({ courseId: '', name: 'Lern- und Arbeitstechniken', roomId: 'A.3.03' }),
-        termin({ courseId: '', name: 'Anderes Fach' }),
+  it('Endpunkt ohne Fachsemester: führt dessen Module in einem nach dem Endpunkt benannten Abschnitt', () => {
+    const endpunkt: EndpunktTermine = {
+      sname: 'TUPB',
+      name: 'Tutorien',
+      termine: [
+        termin({ courseId: '10', name: 'Tutorium Mathematik', grade: '0' }),
+        termin({ courseId: '11', name: 'Tutorium Programmieren', grade: '0' }),
       ],
-      null,
-    );
+    };
+    const abschnitte = baueModulliste([endpunkt]);
 
-    expect(baum).toHaveLength(2);
-    const lat = baum.find((k) => k.name === 'Lern- und Arbeitstechniken');
-    expect(lat).toBeDefined();
-    expect(lat!.key).toBe('Lern- und Arbeitstechniken');
-    expect(lat!.arten[0]!.slots).toHaveLength(2);
+    expect(abschnitte).toHaveLength(1);
+    expect(abschnitte[0]!.kennung).toEqual({ art: 'endpunkt', name: 'Tutorien' });
+    expect(abschnitte[0]!.module.map((m) => m.name)).toEqual(['Tutorium Mathematik', 'Tutorium Programmieren']);
   });
 
-  it('behält die Eingabereihenfolge der Veranstaltungen und Veranstaltungsarten bei', () => {
-    const baum = baueKursbaum(
-      [
-        termin({ courseId: '2', name: 'Zweite', courseType: 'Ü' }),
-        termin({ courseId: '1', name: 'Erste', courseType: 'P' }),
-        termin({ courseId: '2', name: 'Zweite', courseType: 'V' }),
+  it('mehrere Termine desselben Moduls (Veranstaltungsarten/Slots) bleiben unter einem Eintrag zusammengefasst', () => {
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [
+        termin({ courseId: '1', courseType: 'V', grade: '2' }),
+        termin({ courseId: '1', courseType: 'Ü', grade: '2', studentSet: 'A-M' }),
+        termin({ courseId: '1', courseType: 'Ü', grade: '2', studentSet: 'N-P' }),
       ],
-      null,
-    );
+    };
+    const abschnitte = baueModulliste([endpunkt]);
 
-    expect(baum.map((k) => k.key)).toEqual(['2', '1']);
-    expect(baum[0]!.arten.map((a) => a.courseType)).toEqual(['Ü', 'V']);
-  });
-});
-
-describe('SCHED-F-140 Gruppenzugehörigkeit je Gruppen-Slot', () => {
-  it('kennzeichnet jeden Slot einzeln als gruppenzugehörig oder gruppenfremd', () => {
-    const baum = baueKursbaum(
-      [
-        termin({ courseId: '1', studentSet: 'C8' }),
-        termin({ courseId: '1', studentSet: 'D3', roomId: 'A.2.02' }),
-      ],
-      'C8',
-    );
-
-    const slots = baum[0]!.arten[0]!.slots;
-    expect(slots).toHaveLength(2);
-    expect(slots[0]!.gruppenzugehoerig).toBe(true);
-    expect(slots[1]!.gruppenzugehoerig).toBe(false);
+    expect(abschnitte).toHaveLength(1);
+    expect(abschnitte[0]!.module).toHaveLength(1);
+    expect(abschnitte[0]!.module[0]!.termine).toHaveLength(3);
   });
 
-  it('ohne Gruppenkennung gelten alle Slots als zugehörig (SCHED-F-050)', () => {
-    const baum = baueKursbaum([termin({ courseId: '1', studentSet: 'C8' })], null);
-    expect(baum[0]!.arten[0]!.slots[0]!.gruppenzugehoerig).toBe(true);
-  });
-});
-
-describe('SCHED-F-620 mehrere Gruppen-Slots derselben Veranstaltung bleiben gleichzeitig wählbar', () => {
-  it('beide Slots derselben Veranstaltungsart bleiben unabhängig voneinander in der Liste erhalten', () => {
-    const baum = baueKursbaum(
-      [
-        termin({ courseId: '1', weekday: 'Mon', studentSet: 'A-M' }),
-        termin({ courseId: '1', weekday: 'Wed', studentSet: 'N-P' }),
+  it('fällt bei leerem courseId auf den Klarnamen als Gruppierungsschlüssel zurück', () => {
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [
+        termin({ courseId: '', name: 'Lern- und Arbeitstechniken', roomId: 'A.2.03', grade: '2' }),
+        termin({ courseId: '', name: 'Lern- und Arbeitstechniken', roomId: 'A.3.03', grade: '2' }),
       ],
-      null,
-    );
+    };
+    const abschnitte = baueModulliste([endpunkt]);
+    expect(abschnitte[0]!.module).toHaveLength(1);
+    expect(abschnitte[0]!.module[0]!.key).toBe('Lern- und Arbeitstechniken');
+  });
 
-    const slots = baum[0]!.arten[0]!.slots;
-    expect(slots).toHaveLength(2);
-    expect(slots.map((s) => s.termin.weekday)).toEqual(['Mon', 'Wed']);
+  it('mehrere gewählte Endpunkte tragen ihre Module gemeinsam in den Auswahlbestand ein', () => {
+    const bachelor: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [termin({ courseId: '1', grade: '2' })],
+    };
+    const blockwoche: EndpunktTermine = {
+      sname: 'Blockwoche1',
+      name: 'Blockwoche 1 (13.04.-17.04.2026)',
+      termine: [termin({ courseId: '99', name: 'IT-Landschaft', grade: '0' })],
+    };
+    const abschnitte = baueModulliste([bachelor, blockwoche]);
+
+    expect(abschnitte).toEqual([
+      { kennung: { art: 'fachsemester', grade: '2' }, module: expect.any(Array) },
+      { kennung: { art: 'endpunkt', name: 'Blockwoche 1 (13.04.-17.04.2026)' }, module: expect.any(Array) },
+    ]);
   });
 });

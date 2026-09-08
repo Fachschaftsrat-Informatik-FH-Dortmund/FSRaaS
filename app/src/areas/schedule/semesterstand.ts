@@ -3,11 +3,12 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { logError } from '@/errors/AppError';
 import { readJson, writeJson } from '@/storage/kv';
 
-// Der zuletzt gesehene Stand der Fachsemester-Liste des gewählten Studiengangs.
-// `semesterwechsel.erkenneSemesterwechsel` vergleicht ihn mit der aktuell aus
-// INT-001 gelieferten Liste; welche Liste als „zuletzt gespeichert" gilt, legt
-// laut jenem Modul die aufrufende Stelle fest — das ist dieser Speicher. Rein
-// gerätelokal, reaktiver Modul-Speicher wie `einrichtung.ts`.
+// Der zuletzt gesehene Stand der über INT-001 gelieferten Endpunktliste
+// (Kurznamen, `sname`). `semesterwechsel.erkenneSemesterwechsel` vergleicht
+// ihn mit der aktuell gelieferten Liste; welche Liste als „zuletzt
+// gespeichert" gilt, legt laut jenem Modul die aufrufende Stelle fest — das
+// ist dieser Speicher. Rein gerätelokal, reaktiver Modul-Speicher wie
+// `einrichtung.ts`.
 //
 // Eigener Speicherschlüssel statt eines Feldes in `einrichtung.ts`: Der Stand
 // ist kein Teil der von der Nutzerin getroffenen Einrichtung, sondern ein
@@ -17,10 +18,10 @@ const KEY = 'scheduleSemesterstand';
 
 interface Semesterstand {
   /** `null` = noch kein Stand vorhanden (erstmalige Einrichtung, kein Wechsel). */
-  grades: string[] | null;
+  endpunkte: string[] | null;
 }
 
-const LEER: Semesterstand = { grades: null };
+const LEER: Semesterstand = { endpunkte: null };
 
 let snapshot: Semesterstand = LEER;
 let geladen = false;
@@ -33,9 +34,9 @@ function melden() {
 
 function bereinige(v: unknown): Semesterstand {
   if (typeof v !== 'object' || v === null) return LEER;
-  const roh = (v as Record<string, unknown>).grades;
+  const roh = (v as Record<string, unknown>).endpunkte;
   if (!Array.isArray(roh)) return LEER;
-  return { grades: roh.filter((g): g is string => typeof g === 'string') };
+  return { endpunkte: roh.filter((e): e is string => typeof e === 'string') };
 }
 
 function subscribe(cb: () => void): () => void {
@@ -66,15 +67,15 @@ export function __resetSemesterstandForTest(): void {
 }
 
 export function useSemesterstand() {
-  const gespeicherteGrades = useSyncExternalStore(subscribe, () => snapshot.grades);
+  const gespeicherteEndpunkte = useSyncExternalStore(subscribe, () => snapshot.endpunkte);
   const loaded = useSyncExternalStore(subscribe, () => geladen);
 
-  const merkeGrades = useCallback((grades: readonly string[]) => {
-    snapshot = { grades: [...grades] };
+  const merkeEndpunkte = useCallback((endpunkte: readonly string[]) => {
+    snapshot = { endpunkte: [...endpunkte] };
     geladen = true;
     melden();
     writeJson(KEY, snapshot).catch((error) => logError('semesterstand.save', error));
   }, []);
 
-  return { gespeicherteGrades, loaded, merkeGrades };
+  return { gespeicherteEndpunkte, loaded, merkeEndpunkte };
 }

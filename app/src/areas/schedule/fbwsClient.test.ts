@@ -16,7 +16,7 @@ function mockFetchOnce(status: number, body: unknown): jest.Mock {
   return fn;
 }
 
-describe('INT-001 Abruf der FBWS-Studiengänge', () => {
+describe('INT-001 — FBWS Studiengänge', () => {
   it('ruft die dokumentierte HTTPS-Adresse ohne weitere Parameter außer Accept auf', async () => {
     const fetchMock = mockFetchOnce(200, {});
     await holeStudiengaenge();
@@ -26,22 +26,37 @@ describe('INT-001 Abruf der FBWS-Studiengänge', () => {
 
   it('wertet die Antwort als Map aus und verwirft Einträge mit grades: null', async () => {
     mockFetchOnce(200, {
-      INPBPI: { name: 'Praktische Informatik', sname: 'INPBPI', grades: [{ grade: 2 }, { grade: 4 }] },
+      INPBPI: { name: 'Praktische Informatik', sname: 'INPBPI', grades: [{ grade: 2 }, { grade: 4 }], po: '2019' },
       Verworfen: { name: 'Ohne Fachsemester', sname: 'X', grades: null },
     });
 
     const studiengaenge = await holeStudiengaenge();
-    expect(studiengaenge).toEqual([{ name: 'Praktische Informatik', sname: 'INPBPI', grades: ['2', '4'] }]);
+    expect(studiengaenge).toEqual([
+      { name: 'Praktische Informatik', sname: 'INPBPI', grades: ['2', '4'], po: '2019' },
+    ]);
+  });
+
+  it('wertet po sowohl als null als auch als Zeichenkette "NULL" als „keine Prüfungsordnung" aus', async () => {
+    mockFetchOnce(200, {
+      OhnePo: { name: 'Blockwoche 1', sname: 'Blockwoche1', grades: [{ grade: 0 }], po: null },
+      StringNull: { name: 'FemINF', sname: 'FemINF', grades: [{ grade: 0 }], po: 'NULL' },
+    });
+
+    const studiengaenge = await holeStudiengaenge();
+    expect(studiengaenge).toEqual([
+      { name: 'Blockwoche 1', sname: 'Blockwoche1', grades: ['0'], po: null },
+      { name: 'FemINF', sname: 'FemINF', grades: ['0'], po: null },
+    ]);
   });
 
   it('SEC-F-060: überspringt einen strukturell unerwarteten Eintrag statt den gesamten Abruf scheitern zu lassen', async () => {
     mockFetchOnce(200, {
       Kaputt: { name: 'Kaputt' /* sname fehlt */, grades: [{ grade: 2 }] },
-      Gueltig: { name: 'Gültig', sname: 'GUELTIG', grades: [{ grade: 2 }] },
+      Gueltig: { name: 'Gültig', sname: 'GUELTIG', grades: [{ grade: 2 }], po: null },
     });
 
     const studiengaenge = await holeStudiengaenge();
-    expect(studiengaenge).toEqual([{ name: 'Gültig', sname: 'GUELTIG', grades: ['2'] }]);
+    expect(studiengaenge).toEqual([{ name: 'Gültig', sname: 'GUELTIG', grades: ['2'], po: null }]);
   });
 });
 
@@ -66,6 +81,17 @@ describe('INT-002 Abruf der FBWS-Termine', () => {
     const roh = [{ name: 'X', courseType: 'V' }];
     mockFetchOnce(200, roh);
     expect(await holeTermine('INPBPI', '2')).toEqual(roh);
+  });
+
+  it('liefert bei grade=* für einen Bachelor-Endpunkt Termine mehrerer Fachsemester, jeder mit eigenem grade-Feld (Live-Befund 2026-09-08)', async () => {
+    const roh = [
+      { name: 'Algorithmen und Datenstrukturen', courseType: 'V', grade: 2 },
+      { name: 'Softwaretechnik', courseType: 'V', grade: 4 },
+      { name: 'Bachelorarbeit-Kolloquium', courseType: 'SV', grade: 6 },
+    ];
+    mockFetchOnce(200, roh);
+    const termine = await holeTermine('INPBPI', '*');
+    expect(termine.map((t) => t.grade)).toEqual([2, 4, 6]);
   });
 });
 
