@@ -84,7 +84,29 @@ Der Schalter „alle Veranstaltungen der gewählten Module einblenden" verlangt 
 
 **Der Alternativen-Schalter macht die Wochenansicht netzabhängig** → Nur für die Alternativen. Der persönliche Plan bleibt rein gerätelokal, wie die Capability `data-and-storage` es verlangt; ohne Netz zeigt die Ansicht ihn unverändert vollständig.
 
+### 8. Entfernen und Löschen sind nicht dasselbe
+
+Das Termindetail führt heute für beide Fälle denselben rot gestalteten Knopf „Termin löschen". Die beiden Fälle unterscheiden sich aber in genau dem Merkmal, an dem `ux-and-theming` die zerstörende Gestaltung festmacht — der Wiederherstellbarkeit:
+
+```
+  offizieller Termin              eigener Termin
+  ------------------              --------------
+  steht im FBWS                   nur auf diesem Gerät
+  Modul bleibt gewählt            keine Quelle
+  Planungsmodus zeigt ihn         nirgends nachschlagbar
+    als "nicht eingeplant"
+  Ausstehenden-Leiste nennt ihn
+  -> ein Tipp stellt ihn her      -> unwiederbringlich
+
+  nicht zerstörend                zerstörend
+  keine Bestätigung               Bestätigung
+  "Aus meinem Plan nehmen"        "Termin löschen"
+```
+
+Die Sicherheitsnetze aus Change `stundenplan-planungsmodus-feinauswahl` — Kennzeichnung „wird nirgends besucht" und die Leiste der ausstehenden Veranstaltungen — sind der Grund, warum beim offiziellen Termin auf eine Bestätigung verzichtet werden kann: Ein Fehlgriff bleibt sichtbar, statt unbemerkt zu wirken.
+
 ## Open Questions
 
 - Ob zusätzlich zur Kappung auf drei eine Mindestbreite je Kachel gelten soll, entscheidet sich beim Prüfprotokoll auf dem Gerät. Ändert weder Specs noch Aufgabenschnitt.
 - Die Gestalt eines Termins bei abgeschalteter Farbautomatik — neutrale Fläche oder Umriss — ist eine Gestaltungsfrage. Gefordert ist nur, dass eigene Farbwahlen unberührt bleiben.
+- Ob die zwölf Farbkreise im Termindetail dauerhaft sichtbar bleiben oder hinter einen Bedienschritt wandern. Ebenfalls Gestaltung: Die Geltung der Farbwahl ändert sich mit diesem Change, ihre Darstellung nicht. Beide Fragen gehören ins Prüfprotokoll.

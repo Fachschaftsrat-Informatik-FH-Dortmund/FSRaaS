@@ -55,5 +55,9 @@ Setzt `stundenplan-einrichtung-endpunkte` voraus: Ohne dessen Modulauswahl gibt 
 
 ## Offene Entscheidungen
 
-- **Was „Übernehmen" genau tut und wie man in den Planungsmodus zurückkehrt,** ist nicht bis ins Letzte entschieden. Dieser Change legt fest, dass der Modus jederzeit erneut erreichbar sein muss und die Übernahme nichts ungefragt entfernt; ob es zusätzlich eine Rückfrage beim Verlassen mit ungesicherten Änderungen gibt — die Alt-App hatte eine —, bleibt der Umsetzung überlassen.
-- **Was beim Abwählen eines Moduls mit bestehenden Planeinträgen geschieht,** ist weiterhin offen (siehe `stundenplan-einrichtung-endpunkte`).
+Keine.
+
+Zwei zunächst offene Fragen sind entschieden und in die Requirements eingegangen:
+
+- **Was „Übernehmen" tut und wie man zurückkehrt.** Es gibt kein gesammeltes Übernehmen: Jede Wahl wirkt unmittelbar im Plan, das Verlassen braucht keine Rückfrage, und der Modus ist jederzeit erneut erreichbar. Die Entscheidung ergab sich aus dem Bestand — `planStore`, `einrichtung` und `ansichtEinstellungen` schreiben sämtlich unmittelbar; ein abweichendes Verhalten an einer einzelnen Stelle wäre nicht erwartbar. Das gesammelte Speichern samt Dialog `verlassenSpeichern` der Android-Alt-App wird ausdrücklich nicht übernommen.
+- **Was beim Abwählen eines Moduls mit bestehenden Planeinträgen geschieht,** ist im Change `stundenplan-einrichtung-endpunkte` entschieden: Das System fragt, ob die Termine mit entfernt werden sollen, vorbelegt auf „nein".

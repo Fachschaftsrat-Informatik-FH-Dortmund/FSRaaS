@@ -51,11 +51,12 @@
 - [ ] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
 - [ ] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
 - [ ] 8.4 Statusumschalter „fest/vorgemerkt" um eine Erklärung ergänzen, was „vorgemerkt" bewirkt — kein Konflikthinweis
+- [ ] 8.5 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
 
 ## 9. Abschluss
 
 - [ ] 9.1 Prüfprotokoll auf dem Gerät anlegen (Datum, Gerät, Beobachtungen): Lesbarkeit der Zeitachse mit Stauchung und Bruchzeichen, Bedienbarkeit des Stapels, Kontrast der Stundenlinien in hellem und dunklem Erscheinungsbild
-- [ ] 9.2 Prüfen, ob zusätzlich zur Kappung auf drei eine Mindestbreite je Kachel nötig ist (offene Frage aus `design.md`), Ergebnis im Prüfprotokoll festhalten
+- [ ] 9.2 Die drei Gestaltungsfragen aus `design.md` am Gerät entscheiden und im Prüfprotokoll festhalten: Mindestbreite je Kachel zusätzlich zur Kappung auf drei; Gestalt eines Termins bei abgeschalteter Farbautomatik; ob die zwölf Farbkreise im Termindetail dauerhaft sichtbar bleiben
 - [ ] 9.3 `node tools/spec-check/src/cli.js` läuft ohne Befund
 - [ ] 9.4 `openspec validate stundenplan-wochenansicht-nutzerfuehrung --strict` läuft ohne Befund
 - [ ] 9.5 Vollständige Testsuite der App grün

@@ -91,6 +91,14 @@ Tabs je Wochentag zeigen immer nur einen Tag. Genau deshalb trägt die untere Le
 
 **Ohne den vorangehenden Change gibt es keine Kandidaten** → Dieser Change ist ohne `stundenplan-einrichtung-endpunkte` nicht lauffähig. Die Reihenfolge ist verbindlich.
 
+### 6. Jede Wahl schreibt sofort
+
+Kein gesammeltes „Übernehmen", kein Speichern-Dialog beim Verlassen. Der Bestand gibt die Antwort vor: `planStore`, `einrichtung` und `ansichtEinstellungen` rufen sämtlich unmittelbar `schreiben()`, sobald sich etwas ändert; ein Bildschirm, der stattdessen sammelt, verhielte sich als einziger anders.
+
+Das Argument für ein Sammeln wäre, dass eine versehentliche Berührung sofort den Plan ändert. Es trägt hier nicht: Das Bedienelement ist ein Ankreuzfeld, dieselbe Berührung nimmt die Änderung zurück, und die Kennzeichnungen aus Entscheidung 2 zeigen den Stand fortlaufend an. Der Dialog `verlassenSpeichern` der Alt-App existiert dort nur, weil sie sammelt — er löst ein Problem, das ohne Sammeln nicht entsteht.
+
+*Alternative: sammeln und beim Verlassen fragen, wie die Alt-App.* Verworfen aus dem obigen Grund. Sollte sich beim Prüfprotokoll zeigen, dass Fehlberührungen häufig sind, wäre die Antwort eine Rücknahme-Möglichkeit, kein Sammelschritt.
+
 ## Open Questions
 
-- Ob beim Verlassen des Planungsmodus mit ungesicherten Änderungen eine Rückfrage erscheint. Die Android-Alt-App hatte eine (`verlassenSpeichern`). Ändert weder Specs noch Aufgabenschnitt und lässt sich bei der Umsetzung entscheiden; gefordert ist nur, dass nichts ungefragt verlorengeht.
+Keine.

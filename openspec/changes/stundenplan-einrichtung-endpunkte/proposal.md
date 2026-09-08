@@ -57,5 +57,6 @@ Roadmap-Schritt 5 (Stundenplan), Etappe „Einrichtung". Bewusst **nicht** entha
 
 ## Offene Entscheidungen
 
-- **Was beim Abwählen eines Moduls geschieht, das bereits im Plan steht,** ist nicht entschieden. Bis dahin bleibt die Abwahl folgenlos für vorhandene Planeinträge; sie ungefragt zu entfernen wäre ein Datenverlust ohne Rückfrage und ist ausgeschlossen (Capability `data-and-storage`).
-- **Ob ein Master-Wahlpflicht-Endpunkt existiert,** ist offen. Im Bestand vom 2026-09-08 gibt es nur `WFPB` (Bachelor). Die Gruppe „Wahlpflicht" trägt daher vorerst genau einen Eintrag.
+- **Ob ein Master-Wahlpflicht-Endpunkt existiert,** ist offen und von außen bestimmt. Im Bestand vom 2026-09-08 gibt es nur `WFPB` (Bachelor); die Capability `integrations` führt das bereits als unverifiziert. Die Gruppe „Wahlpflicht" trägt daher vorerst genau einen Eintrag. Legt der Fachbereich einen an, erscheint er ohne Zutun in derselben Gruppe.
+
+Die zunächst offene Frage, **was beim Abwählen eines Moduls mit bestehenden Planeinträgen geschieht,** ist entschieden und als Requirement „Abwahl eines Moduls mit vorhandenen Planeinträgen" aufgenommen: Das System fragt, ob die Termine mit entfernt werden sollen, vorbelegt auf „nein". Sie ergab sich aus zwei bestehenden Anforderungen — „Bestätigung vor zerstörender Aktion" (`ux-and-theming`) und „Kein selbsttätiges Entfernen des Stundenplans" (`data-and-storage`) — und brauchte deshalb keine eigene Festlegung.

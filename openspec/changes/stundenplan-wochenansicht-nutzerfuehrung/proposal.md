@@ -69,6 +69,8 @@ Roadmap-Schritt 5 (Stundenplan), Etappe „Plan". Bewusst **nicht** enthalten: d
 
 ## Offene Entscheidungen
 
-- **Ob die Farbpalette im Termindetail hinter einen Bedienschritt wandert,** ist nicht entschieden; zwölf Farbkreise stehen dort heute dauerhaft. Dieser Change ändert die Geltung der Farbwahl, nicht ihre Darstellung.
-- **Ob „Termin löschen" bei offiziellen Terminen anders heißen soll,** ist offen. Fachlich handelt es sich um „aus meinem Plan nehmen" — der Termin besteht im FBWS weiter und lässt sich jederzeit erneut übernehmen.
-- **Wie ein Termin ohne Farbe aussieht,** wenn die Automatik abgeschaltet ist, bleibt der Gestaltung überlassen; gefordert ist nur, dass eigene Farbwahlen davon unberührt bleiben.
+Keine.
+
+Die zunächst offene Frage, **ob „Termin löschen" bei offiziellen Terminen anders heißen soll,** ist entschieden und als Requirement „Unterscheidung von Entfernen und Löschen im Termindetail" aufgenommen. Sie ergab sich aus zwei bestehenden Anforderungen der Capability `ux-and-theming` — „Bestätigung vor zerstörender Aktion" und „Keine zerstörende Aktion als Primäraktion": Ein offizieller Termin besteht im FBWS fort und ist über den Planungsmodus wiederherstellbar, ein eigener Termin nicht. Beide gleich zu gestalten überzeichnet die eine Folge und verharmlost die andere.
+
+Zwei weitere Punkte sind **Gestaltungsfragen und keine offenen Entscheidungen**: ob die zwölf Farbkreise im Termindetail hinter einen Bedienschritt wandern, und wie ein Termin bei abgeschalteter Farbautomatik aussieht. Die Capability `quality-and-testing` führt Gestaltung als protokollpflichtig statt spezifikationspflichtig; beide stehen deshalb als offene Fragen in `design.md` und als Punkte des Prüfprotokolls in `tasks.md`.
