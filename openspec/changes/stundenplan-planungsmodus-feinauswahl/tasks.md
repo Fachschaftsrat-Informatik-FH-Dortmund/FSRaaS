@@ -10,7 +10,7 @@
 - [ ] 2.1 Modul `planungsstand.ts` nach `design.md` Entscheidung 2: reine Funktion von gewählten Modulen, Auswahlbestand und Plan auf den Stand je (Modul, Veranstaltungsart)
 - [ ] 2.2 Test `describe('Vorbelegung eindeutiger Veranstaltungen', …)` für beide Szenarien — genau ein Slot vorbelegt, mehrere Slots nicht vorbelegt trotz passender Gruppenkennung
 - [ ] 2.3 Test `describe('Kennzeichnung des Planungsstands je Veranstaltung', …)` für alle drei Szenarien, einschließlich des Zählers bei mehreren gewählten Slots
-- [ ] 2.4 Kollisionsprüfung eines einzelnen Kandidaten gegen die festen Termine des Plans ergänzen; Test belegt, dass vorgemerkte Termine dabei keinen Konflikthinweis erzeugen (bestehendes Requirement „Kein Konflikthinweis bei vorgemerkten Terminen")
+- [ ] 2.4 Kollisionsprüfung eines einzelnen Kandidaten gegen die festen Termine des Zwischenstands ergänzen — nicht gegen den gespeicherten Plan, damit eine Kollision schon vor dem Sichern sichtbar wird; Test belegt, dass vorgemerkte Termine dabei keinen Konflikthinweis erzeugen (bestehendes Requirement „Kein Konflikthinweis bei vorgemerkten Terminen")
 - [ ] 2.5 Test mit dem realen Bestand `INPBPI`/`grade=*` und Kennung `C8`: von dreizehn Kombinationen sind sieben vorbelegt, zwei stehen offen — der Fall aus `design.md`
 
 ## 3. Planungsmodus-Bildschirm
@@ -20,7 +20,9 @@
 - [ ] 3.3 Kennzeichnungen je Zeile aus `planungsstand.ts` anbinden — kürzere Beschriftungen als in der Wochenansicht, da die Zeile bereits Zeit, Titel, Art, Gruppe und Raum trägt
 - [ ] 3.4 Leiste am unteren Rand mit den Namen des Ausstehenden; Test `describe('Leiste der ausstehenden Veranstaltungen', …)` für beide Szenarien, einschließlich des Sprungs auf den betreffenden Wochentag
 - [ ] 3.5 Rückweg zur Modulauswahl aus dem Planungsmodus heraus sicherstellen (Risiko aus `design.md`)
-- [ ] 3.6 Jede Wahl unmittelbar über `planStore` schreiben, kein Sammelschritt und keine Rückfrage beim Verlassen; Tests zu den Szenarien „Wahl wirkt sofort" und „Bildschirm verlassen"
+- [ ] 3.6 Zwischenstand im Bildschirmzustand halten, ohne den Plan zu berühren; Speichern-Symbol in der Kopfzeile als einzige hervorgehobene Primäraktion, das den Zwischenstand gesammelt über `planStore` schreibt; Tests `describe('Ausdrückliches Sichern der Planung', …)` für alle drei Szenarien
+- [ ] 3.7 Ungesicherte Änderungen sichtbar ausweisen, damit das Speichern-Symbol als nötig erkennbar ist; im Test über den Szenario-Nachweis „Wahl vor dem Sichern" abgedeckt
+- [ ] 3.8 Rückfrage beim Verlassen mit ungesicherten Änderungen, mit den drei Wegen sichern, verwerfen und zur Bearbeitung zurück; Tests `describe('Rückfrage beim Verlassen mit ungesicherten Änderungen', …)` für alle drei Szenarien
 
 ## 4. Statusvergabe
 
