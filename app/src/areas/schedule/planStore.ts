@@ -226,6 +226,31 @@ export function useScheduleEntries() {
 
   const clear = useCallback(() => schreiben([]), []);
 
+  /**
+   * Requirement „Ausdrückliches Sichern der Planung": übernimmt die im
+   * Planungsmodus gesammelten Entscheidungen in **einem** Schreibvorgang —
+   * neue Einträge, Löschungen abgewählter bestehender Einträge und
+   * Aktualisierungen (z. B. eine im Planungsmodus akzeptierte Kollision mit
+   * einem bereits gespeicherten Termin) wirken gemeinsam, nicht schrittweise.
+   */
+  const mehrereUebernehmen = useCallback(
+    (
+      hinzuzufuegen: readonly PlanEntry[],
+      zuEntfernendeIds: readonly string[],
+      aktualisierungen: readonly { id: string; patch: Partial<PlanEntry> }[] = [],
+    ) => {
+      const patchesJeId = new Map(aktualisierungen.map((a) => [a.id, a.patch]));
+      const rest = snapshot
+        .filter((e) => !zuEntfernendeIds.includes(e.id))
+        .map((e) => {
+          const patch = patchesJeId.get(e.id);
+          return patch ? ({ ...e, ...patch } as PlanEntry) : e;
+        });
+      schreiben([...rest, ...hinzuzufuegen]);
+    },
+    [],
+  );
+
   return {
     entries,
     loaded,
@@ -236,6 +261,7 @@ export function useScheduleEntries() {
     statusUmschalten,
     farbeSetzen,
     konfliktAnnehmen,
+    mehrereUebernehmen,
     clear,
   };
 }

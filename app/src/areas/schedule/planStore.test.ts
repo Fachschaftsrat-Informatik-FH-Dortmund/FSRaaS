@@ -260,3 +260,26 @@ describe('Bewusste Übernahme trotz Konflikt', () => {
     expect(geladen.some((e) => e.akzeptierteKonflikte.includes('b'))).toBe(false);
   });
 });
+
+describe('Ausdrückliches Sichern der Planung', () => {
+  it('übernimmt Neuanlagen, Entfernungen und Aktualisierungen in einem gemeinsamen Schreibvorgang', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'bestehend' })));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'abzuwaehlen', timeBeginMin: 540, timeEndMin: 630 })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(2));
+
+    act(() =>
+      result.current.mehrereUebernehmen(
+        [eigenerTermin({ id: 'neu', timeBeginMin: 660, timeEndMin: 750 })],
+        ['abzuwaehlen'],
+        [{ id: 'bestehend', patch: { akzeptierteKonflikte: ['neu'] } }],
+      ),
+    );
+
+    await waitFor(() => expect(result.current.entries.map((e) => e.id).sort()).toEqual(['bestehend', 'neu']));
+    expect(result.current.entries.find((e) => e.id === 'bestehend')!.akzeptierteKonflikte).toEqual(['neu']);
+    expect(await readScheduleEntries()).toHaveLength(2);
+  });
+});

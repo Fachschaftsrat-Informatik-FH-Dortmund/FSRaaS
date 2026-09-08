@@ -1,5 +1,5 @@
 import { pruefeKandidatGegenZwischenstand } from './konflikt';
-import { ermittlePlanungsstand, terminEntsprichtEintrag, vorbelegteSlots } from './planungsstand';
+import { bestimmeStatus, ermittlePlanungsstand, terminEntsprichtEintrag, vorbelegteSlots } from './planungsstand';
 import type { Modul } from './kursbaum';
 import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from './typen';
 
@@ -173,5 +173,56 @@ describe('Kennzeichnung des Planungsstands je Veranstaltung', () => {
     const stufe = pruefeKandidatGegenZwischenstand(kandidat, zwischenstand);
 
     expect(stufe).toBe('konflikt');
+  });
+});
+
+describe('Status „fest" oder „vorgemerkt"', () => {
+  it('genau ein neu gewählter Termin ohne bestehenden Planeintrag gilt als „fest"', () => {
+    const slot = rohtermin({ courseType: 'V' });
+
+    expect(bestimmeStatus(0, [slot], slot)).toBe('fest');
+  });
+
+  it('von zwei neu gewählten Terminen derselben Veranstaltungsart bestimmt die Nutzerin, welcher „fest" ist', () => {
+    const a = rohtermin({ courseType: 'ÜPP', studentSet: 'A-B', timeBeginMin: 480, timeEndMin: 570 });
+    const b = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E', timeBeginMin: 600, timeEndMin: 690 });
+
+    expect(bestimmeStatus(0, [a, b], a)).toBe('fest'); // ohne Angabe: der erste in Eingabereihenfolge
+    expect(bestimmeStatus(0, [a, b], b)).toBe('vorgemerkt');
+
+    const bSchluessel = 'INF123|ÜPP|Mon|600|690|R1|C5-E';
+    expect(bestimmeStatus(0, [a, b], a, bSchluessel)).toBe('vorgemerkt');
+    expect(bestimmeStatus(0, [a, b], b, bSchluessel)).toBe('fest');
+  });
+
+  it('bereits gespeicherte Planeinträge behalten ihren Status: ein neu hinzugewählter Slot derselben Art wird „vorgemerkt"', () => {
+    const neuerSlot = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E' });
+
+    expect(bestimmeStatus(1, [neuerSlot], neuerSlot)).toBe('vorgemerkt');
+  });
+});
+
+describe('Mehrere Gruppen-Slots übernehmen', () => {
+  it('zwei Gruppen-Slots derselben Veranstaltung können gemeinsam gewählt werden', () => {
+    const a = rohtermin({ courseType: 'ÜPP', studentSet: 'A-B', timeBeginMin: 480, timeEndMin: 570 });
+    const b = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E', timeBeginMin: 600, timeEndMin: 690 });
+    const m = modul('Algorithmen und Datenstrukturen', [a, b]);
+    const zwischenstand = [planeintragFuer(a), planeintragFuer(b)];
+
+    const [stand] = ermittlePlanungsstand([m], zwischenstand);
+
+    expect(stand!.gewaehlteSlots).toHaveLength(2);
+  });
+
+  it('die Anzahl der übernommenen Slots ist am Stand erkennbar', () => {
+    const a = rohtermin({ courseType: 'ÜPP', studentSet: 'A-B', timeBeginMin: 480, timeEndMin: 570 });
+    const b = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E', timeBeginMin: 600, timeEndMin: 690 });
+    const m = modul('Algorithmen und Datenstrukturen', [a, b]);
+
+    const [einSlot] = ermittlePlanungsstand([m], [planeintragFuer(a)]);
+    const [zweiSlots] = ermittlePlanungsstand([m], [planeintragFuer(a), planeintragFuer(b)]);
+
+    expect(einSlot!.gewaehlteSlots).toHaveLength(1);
+    expect(zweiSlots!.gewaehlteSlots).toHaveLength(2);
   });
 });

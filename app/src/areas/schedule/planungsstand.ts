@@ -112,17 +112,25 @@ export function ermittlePlanungsstand(
  * Requirement „Status „fest" oder „vorgemerkt"": Ist zu einer Veranstaltungsart
  * genau ein Termin gewählt, gilt er als „fest"; sind mehrere gewählt, bestimmt
  * die Nutzerin, welcher davon „fest" ist — die übrigen gelten als
- * „vorgemerkt". `festerSchluessel` benennt bei mehreren gewählten Slots den von
- * der Nutzerin bestimmten (Requirement „Mehrere Gruppen-Slots übernehmen");
- * ohne Angabe fällt die Wahl auf den ersten in Eingabereihenfolge, statt gar
- * keinen als „fest" zu führen.
+ * „vorgemerkt". Trägt der gesicherte Plan zu dieser Veranstaltungsart bereits
+ * einen Termin, behält der seinen Status (Requirement, Scenario „bereits
+ * gespeicherte Planeinträge behalten ihren Status"): Jeder in dieser Sitzung
+ * neu gewählte Slot derselben Art gilt dann automatisch als „vorgemerkt",
+ * statt zwei „feste" Termine derselben Art entstehen zu lassen.
+ *
+ * `festerSchluessel` benennt bei mehreren *neu* gewählten Slots ohne
+ * bestehenden Planeintrag den von der Nutzerin bestimmten (Requirement
+ * „Mehrere Gruppen-Slots übernehmen"); ohne Angabe fällt die Wahl auf den
+ * ersten in Eingabereihenfolge, statt gar keinen als „fest" zu führen.
  */
 export function bestimmeStatus(
-  gewaehlteSlots: readonly OfficialTermin[],
+  bereitsGespeicherteAnzahl: number,
+  neuGewaehlteSlots: readonly OfficialTermin[],
   slot: OfficialTermin,
   festerSchluessel?: string,
 ): 'fest' | 'vorgemerkt' {
-  if (gewaehlteSlots.length <= 1) return 'fest';
-  const fest = festerSchluessel ?? terminSchluessel(gewaehlteSlots[0]!);
+  if (bereitsGespeicherteAnzahl > 0) return 'vorgemerkt';
+  if (neuGewaehlteSlots.length <= 1) return 'fest';
+  const fest = festerSchluessel ?? terminSchluessel(neuGewaehlteSlots[0]!);
   return terminSchluessel(slot) === fest ? 'fest' : 'vorgemerkt';
 }
