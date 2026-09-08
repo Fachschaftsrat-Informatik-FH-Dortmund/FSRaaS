@@ -43,9 +43,9 @@
 ## 6. Eigene Termine
 
 - [x] 6.1 Bedienweg „eigenen Termin anlegen" in den Planungsmodus verlegen; Test `describe('Zweckbestimmung eigener Termine', …)`
-- [ ] 6.2 Zeit- und Datumsauswahl auf die systemeigenen Auswahlräder umstellen, Wochentag als Auswahlfeld; Tests `describe('Erfassung von Uhrzeit und Datum über systemeigene Auswahl', …)` für beide Szenarien
-- [ ] 6.3 `parseUhrzeit` und `parseDatum` samt ihrer Tests nur so weit zurückbauen, wie sie nicht mehr gebraucht werden — das Lesen gespeicherter Bestände bleibt nötig
-- [ ] 6.4 Die Wahl „wiederkehrend oder einmalig" bleibt unverändert; Test belegt, dass ein als Prüfung gekennzeichneter einmaliger Termin weiterhin anlegbar ist
+- [x] 6.2 Zeit- und Datumsauswahl auf die systemeigenen Auswahlräder umstellen, Wochentag als Auswahlfeld; Tests `describe('Erfassung von Uhrzeit und Datum über systemeigene Auswahl', …)` für beide Szenarien
+- [x] 6.3 `parseUhrzeit` und `parseDatum` samt ihrer Tests nur so weit zurückbauen, wie sie nicht mehr gebraucht werden — das Lesen gespeicherter Bestände bleibt nötig
+- [x] 6.4 Die Wahl „wiederkehrend oder einmalig" bleibt unverändert; Test belegt, dass ein als Prüfung gekennzeichneter einmaliger Termin weiterhin anlegbar ist
 
 ## 7. Abschluss
 

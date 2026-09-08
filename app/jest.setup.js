@@ -25,6 +25,26 @@ jest.spyOn(require('react-native').AccessibilityInfo, 'isReduceMotionEnabled')
 jest.spyOn(require('react-native').AccessibilityInfo, 'addEventListener')
   .mockReturnValue({ remove: jest.fn() });
 
+// Requirement „Erfassung von Uhrzeit und Datum über systemeigene Auswahl":
+// beide Pakete haben nativen Anteil, der im Jest-Umfeld fehlt. Der Ersatz
+// reicht alle Props unverändert durch — ein Test löst eine Wahl über
+// `fireEvent(getByTestId(id), 'onChange', event, date)` bzw.
+// `fireEvent(getByTestId(id), 'valueChange', wert)` aus, wie es die
+// tatsächlichen Bibliotheken als Callback aufrufen.
+jest.mock('@react-native-community/datetimepicker', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return { __esModule: true, default: (props) => React.createElement(View, props) };
+});
+
+jest.mock('@react-native-picker/picker', () => {
+  const React = require('react');
+  const { View, Text } = require('react-native');
+  const Picker = (props) => React.createElement(View, props, props.children);
+  Picker.Item = (props) => React.createElement(Text, {}, props.label);
+  return { __esModule: true, Picker };
+});
+
 jest.mock('react-native-safe-area-context', () =>
   require('react-native-safe-area-context/jest/mock').default,
 );
