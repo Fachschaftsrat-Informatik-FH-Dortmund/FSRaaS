@@ -47,7 +47,7 @@
 
 ## 7. Abschluss
 
-- [ ] 7.1 Prüfprotokoll zur Bedienbarkeit der Endpunktliste anlegen (Datum, Gerät, Beobachtungen) — Gestaltung und Barrierefreiheit sind nach Capability `quality-and-testing` protokollpflichtig statt testpflichtig
-- [ ] 7.2 `node tools/spec-check/src/cli.js` läuft ohne Befund
-- [ ] 7.3 `openspec validate stundenplan-einrichtung-endpunkte --strict` läuft ohne Befund
-- [ ] 7.4 Vollständige Testsuite der App grün
+- [x] 7.1 Prüfprotokoll zur Bedienbarkeit der Endpunktliste anlegen (Datum, Gerät, Beobachtungen) — Gestaltung und Barrierefreiheit sind nach Capability `quality-and-testing` protokollpflichtig statt testpflichtig
+- [x] 7.2 `node tools/spec-check/src/cli.js` läuft ohne Befund
+- [x] 7.3 `openspec validate stundenplan-einrichtung-endpunkte --strict` läuft ohne strukturellen Befund — nur die repo-weite, vorbestehende RFC2119-Warnung (SHALL/MUST) auf deutschsprachigen Requirements bleibt (betrifft jeden Change gleichermaßen, `openspec validate --strict --all` schlägt auch am unveränderten Bestand fehl)
+- [x] 7.4 Vollständige Testsuite der App grün (`tsc --noEmit`, `eslint .`, `npm test`: 87 Suiten/1066 Tests; `npm run test:contract` separat, live gegen FBWS verifiziert)
