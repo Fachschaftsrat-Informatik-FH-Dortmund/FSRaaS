@@ -491,14 +491,22 @@ function AusstehendLeiste({
 
   if (ausstehend.length === 0) {
     return (
-      <View style={[styles.leiste, { borderColor: colors.border }]} accessibilityLiveRegion="polite">
+      <View
+        style={[styles.leisteRahmen, styles.leisteInhalt, { borderColor: colors.border }]}
+        accessibilityLiveRegion="polite"
+      >
         <Text style={{ color: colors.textMuted }}>{t('schedule.planungNichtsAusstehend')}</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.leiste, { borderColor: colors.border }]}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={[styles.leisteRahmen, { borderColor: colors.border }]}
+      contentContainerStyle={styles.leisteInhalt}
+    >
       {ausstehend.map((stand) => {
         const ersterSlot = stand.slots[0]!;
         // Requirement „Hinweis bei fehlender konfliktfreier Option": keine der
@@ -537,7 +545,12 @@ const styles = StyleSheet.create({
   zeileInhalt: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },
   zeileText: { flex: 1, gap: 2 },
   alsFest: { paddingHorizontal: 10, minHeight: 44, justifyContent: 'center' },
-  leiste: { flexDirection: 'row', gap: 8, minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 8, alignItems: 'center' },
+  // ScrollView-Kinderlayout (flexDirection/gap/alignItems) muss über
+  // contentContainerStyle laufen, nicht über style (sonst Warning
+  // "ScrollView child layout must be applied through the contentContainerStyle
+  // prop") — daher getrennt von der Rahmenoptik der Leiste.
+  leisteRahmen: { minHeight: 44, borderTopWidth: StyleSheet.hairlineWidth },
+  leisteInhalt: { flexDirection: 'row', gap: 8, paddingVertical: 8, alignItems: 'center' },
   ausstehendChip: {
     minHeight: 44,
     borderWidth: 1,
