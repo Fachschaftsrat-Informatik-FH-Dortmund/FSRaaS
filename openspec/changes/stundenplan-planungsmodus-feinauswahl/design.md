@@ -61,9 +61,9 @@ Eine reine Funktion nimmt die gewählten Module, den Auswahlbestand und den aktu
 
 Daraus speisen sich beide Anzeigen — die Kennzeichnung je Zeile und die Leiste am unteren Rand. Eine Quelle, zwei Darstellungen; die Leiste kann nicht etwas anderes behaupten als die Liste.
 
-### 3. Die Kollisionsprüfung läuft gegen den Plan, nicht gegen die Auswahl
+### 3. Die Kollisionsprüfung läuft gegen den Zwischenstand
 
-`konflikt.ts` prüft heute innerhalb einer Terminmenge. Für den Planungsmodus wird gefragt: Kollidiert *dieser eine* Kandidat mit dem, was schon gewählt ist? Das ist eine schmalere Frage und bekommt eine eigene Funktion, statt `ermittleKonflikte` zu überladen. Die bestehenden Requirements „Konfliktprüfung paralleler Termine", „Hinweis bei fehlender konfliktfreier Option" und „Bewusste Übernahme trotz Konflikt" setzen darauf auf und werden mit diesem Change erstmals umgesetzt, ohne dass ihr Text sich ändert.
+`konflikt.ts` prüft heute innerhalb einer Terminmenge. Für den Planungsmodus wird gefragt: Kollidiert *dieser eine* Kandidat mit dem, was gerade gewählt ist? Bezugsgröße ist der Zwischenstand des Bildschirms, nicht der gespeicherte Plan — wer zwei Termine nacheinander ankreuzt, soll ihre Kollision sofort sehen und nicht erst nach dem Sichern (Entscheidung 6). Das ist eine schmalere Frage als `ermittleKonflikte` und bekommt eine eigene Funktion, statt jene zu überladen. Die bestehenden Requirements „Konfliktprüfung paralleler Termine", „Hinweis bei fehlender konfliktfreier Option" und „Bewusste Übernahme trotz Konflikt" setzen darauf auf und werden mit diesem Change erstmals umgesetzt, ohne dass ihr Text sich ändert.
 
 Vorgemerkte Termine erzeugen dabei keinen Konflikthinweis — das bestehende Requirement „Kein Konflikthinweis bei vorgemerkten Terminen" gilt unverändert und muss in der neuen Prüfung berücksichtigt werden.
 
@@ -91,13 +91,33 @@ Tabs je Wochentag zeigen immer nur einen Tag. Genau deshalb trägt die untere Le
 
 **Ohne den vorangehenden Change gibt es keine Kandidaten** → Dieser Change ist ohne `stundenplan-einrichtung-endpunkte` nicht lauffähig. Die Reihenfolge ist verbindlich.
 
-### 6. Jede Wahl schreibt sofort
+### 6. Der Planungsmodus sammelt und sichert auf Auslösung
 
-Kein gesammeltes „Übernehmen", kein Speichern-Dialog beim Verlassen. Der Bestand gibt die Antwort vor: `planStore`, `einrichtung` und `ansichtEinstellungen` rufen sämtlich unmittelbar `schreiben()`, sobald sich etwas ändert; ein Bildschirm, der stattdessen sammelt, verhielte sich als einziger anders.
+Entschieden 2026-09-08: Ein Speichern-Symbol in der Kopfzeile; die Entscheidungen wirken erst beim Antippen im Plan. Damit weicht dieser eine Bildschirm bewusst vom Muster der übrigen gerätelokalen Speicher ab — `planStore`, `einrichtung` und `ansichtEinstellungen` rufen sämtlich unmittelbar `schreiben()`. Die Begründung liegt in der Sache: Das Zusammenstellen eines Stundenplans ist eine zusammenhängende Überlegung über mehrere Wochentage hinweg. Wer am Donnerstag etwas probiert, um am Montag zu sehen, ob es passt, will diesen Zwischenstand nicht bereits im Plan haben.
 
-Das Argument für ein Sammeln wäre, dass eine versehentliche Berührung sofort den Plan ändert. Es trägt hier nicht: Das Bedienelement ist ein Ankreuzfeld, dieselbe Berührung nimmt die Änderung zurück, und die Kennzeichnungen aus Entscheidung 2 zeigen den Stand fortlaufend an. Der Dialog `verlassenSpeichern` der Alt-App existiert dort nur, weil sie sammelt — er löst ein Problem, das ohne Sammeln nicht entsteht.
+*Erwogen und verworfen: sofort schreiben, wie überall sonst.* Wäre einheitlicher und käme ohne Zwischenzustand aus. Die Entscheidung fiel dennoch für das Sammeln, weil der Bildschirm anders als jeder andere Schreibpfad der App nicht eine einzelne Angabe entgegennimmt, sondern eine Reihe voneinander abhängiger Entscheidungen.
 
-*Alternative: sammeln und beim Verlassen fragen, wie die Alt-App.* Verworfen aus dem obigen Grund. Sollte sich beim Prüfprotokoll zeigen, dass Fehlberührungen häufig sind, wäre die Antwort eine Rücknahme-Möglichkeit, kein Sammelschritt.
+**Der Zwischenstand zieht zwei Pflichten nach sich**, die in den Requirements stehen und nicht der Umsetzung überlassen bleiben:
+
+```
+  Zustand                       Folge
+  -----------------------       ------------------------------------------
+  ungesicherte Änderung         Bildschirm weist sie sichtbar aus, sonst
+  vorhanden                     ist das Speichern-Symbol nicht auffindbar
+
+  Verlassen mit                 Rückfrage mit drei Wegen: sichern,
+  ungesicherter Änderung        verwerfen, zur Bearbeitung zurück
+                                (Datenverlust ohne Rückfrage ist
+                                 ausgeschlossen, data-and-storage)
+```
+
+Der Zwischenstand lebt allein im Bildschirmzustand, nicht in einem Speicher: Ein Absturz oder ein Wechsel in einen anderen Tab verwirft ihn, ohne dass etwas an gespeicherten Daten Schaden nimmt. Das ist vertretbar, weil der Plan bis zum Sichern unverändert bleibt — es geht nur die Zwischenüberlegung verloren, nie ein zuvor gesicherter Stand.
+
+Die Konfliktprüfung aus Entscheidung 3 läuft folgerichtig gegen den **Zwischenstand**, nicht gegen den gespeicherten Plan: Wer zwei Termine nacheinander ankreuzt, soll ihre Kollision sofort sehen und nicht erst nach dem Sichern.
+
+### 7. Das Speichern-Symbol ist die Primäraktion des Bildschirms
+
+`ux-and-theming` lässt je Ansicht höchstens eine hervorgehobene Primäraktion zu. Im Planungsmodus ist das die Sicherungsaktion; der Rückweg zur Modulauswahl und das Anlegen eigener Termine bleiben unauffällig gestaltet.
 
 ## Open Questions
 

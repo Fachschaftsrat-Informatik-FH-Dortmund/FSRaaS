@@ -22,6 +22,8 @@
 
 **Die eigene Gruppe wird hervorgehoben**, wie in der Alt-App. Dort geschieht das über eine orange Karteneinfärbung; der Buchstabe musste über einen Menüdialog eingetippt werden. Bei uns steht die Kennung in der Einrichtung, die Hervorhebung greift von selbst. Sie darf nach Capability `ux-and-theming` nicht die einzige Trägerin dieser Bedeutung sein und bekommt deshalb zusätzlich Text oder Symbol.
 
+**Gesichert wird auf Auslösung, über ein Speichern-Symbol in der Kopfzeile.** Die Entscheidungen wirken erst beim Antippen im Plan; bis dahin bleibt er unverändert, und der Bildschirm weist ungesicherte Änderungen aus. Wer den Modus mit ungesicherten Änderungen verlässt, wird gefragt und kann sichern, verwerfen oder zur Bearbeitung zurückkehren. Der Planungsmodus weicht damit bewusst von den übrigen gerätelokalen Speichern der App ab, die unmittelbar schreiben — er nimmt keine einzelne Angabe entgegen, sondern eine Reihe voneinander abhängiger Entscheidungen über mehrere Wochentage hinweg.
+
 **Der Status „fest"/„vorgemerkt" wird hier vergeben**, nicht mehr nach Auswahlreihenfolge. Was eindeutig ist, wird fest; wer bewusst zwei Slots derselben Veranstaltungsart behält, bestimmt selbst, welcher fest und welcher vorgemerkt ist.
 
 **Eigene Termine werden hier angelegt** — und bekommen eine Zweckbestimmung, die bisher fehlte: Sie bilden **wiederkehrende Lehrveranstaltungen** ab, die im FBWS fehlen, etwa die Arbeitsgruppe einer lehrenden Person oder einen Endpunkt, der nicht sauber liefert. **Die App ist kein Kalender**; private Termine gehören nicht hinein. Die Wahl „einmalig" bleibt trotzdem, weil Prüfungen, Nachhol- und Blockveranstaltungen einmalige Lehrtermine sind.
@@ -59,5 +61,7 @@ Keine.
 
 Zwei zunächst offene Fragen sind entschieden und in die Requirements eingegangen:
 
-- **Was „Übernehmen" tut und wie man zurückkehrt.** Es gibt kein gesammeltes Übernehmen: Jede Wahl wirkt unmittelbar im Plan, das Verlassen braucht keine Rückfrage, und der Modus ist jederzeit erneut erreichbar. Die Entscheidung ergab sich aus dem Bestand — `planStore`, `einrichtung` und `ansichtEinstellungen` schreiben sämtlich unmittelbar; ein abweichendes Verhalten an einer einzelnen Stelle wäre nicht erwartbar. Das gesammelte Speichern samt Dialog `verlassenSpeichern` der Android-Alt-App wird ausdrücklich nicht übernommen.
+- **Wie gesichert wird und wie man zurückkehrt.** Entschieden 2026-09-08: Ein Speichern-Symbol in der Kopfzeile; die Entscheidungen wirken erst beim Antippen im Plan. Der Modus ist jederzeit erneut erreichbar. Daraus folgt zwingend eine Rückfrage beim Verlassen mit ungesicherten Änderungen — ein Zwischenstand, der verlorengehen kann, darf nach der Capability `data-and-storage` nicht stillschweigend verworfen werden. Beides ist als eigenes Requirement aufgenommen.
+
+  Die Alternative — sofort schreiben wie jeder andere Speicher der App — war vorgeschlagen und wurde verworfen. Der Grund steht in `design.md` Entscheidung 6: Der Bildschirm nimmt keine einzelne Angabe entgegen, sondern eine Reihe voneinander abhängiger Entscheidungen über mehrere Wochentage hinweg; deren Zwischenstände gehören nicht in den Plan.
 - **Was beim Abwählen eines Moduls mit bestehenden Planeinträgen geschieht,** ist im Change `stundenplan-einrichtung-endpunkte` entschieden: Das System fragt, ob die Termine mit entfernt werden sollen, vorbelegt auf „nein".

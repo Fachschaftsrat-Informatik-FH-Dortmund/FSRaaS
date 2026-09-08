@@ -2,23 +2,47 @@
 
 ### Requirement: Planungsmodus mit Wochentagsgliederung
 
-Das System muss die Wahl von Veranstaltungsart und Gruppen-Slot in einem eigenen Bildschirm führen, der die Termine der gewählten Module nach Wochentagen gliedert und innerhalb eines Wochentags aufsteigend nach Beginnzeit ordnet. Jede einzelne Wahl muss unmittelbar in den persönlichen Plan wirken; ein gesammeltes Übernehmen am Ende und eine Rückfrage beim Verlassen sind ausgeschlossen. Der Bildschirm muss nach dem erstmaligen Zusammenstellen jederzeit erneut erreichbar sein. Herkunft: NEU, entschieden 2026-09-08, Form übernommen aus alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java. Die Android-Alt-App gliedert ihren Auswahlbildschirm über einen `TabLayout` je Wochentag mit einer chronologischen Kartenliste je Tag; diese Form hat sich bewährt. Übernommen wird sie mit drei Unterschieden: Sie zeigt nur die Termine zuvor gewählter Module statt des gesamten Bestands, sie trägt die Kennzeichnungen des Planungsstands, die der Alt-App fehlen, und sie schreibt sofort. Das gesammelte Speichern der Alt-App samt ihrem Dialog `verlassenSpeichern` wird ausdrücklich nicht übernommen: Jeder gerätelokale Speicher dieser App schreibt unmittelbar, ein abweichendes Verhalten an einer einzelnen Stelle wäre nicht erwartbar, und eine sofort wirkende Wahl lässt sich durch dieselbe Geste zurücknehmen, mit der sie getroffen wurde.
+Das System muss die Wahl von Veranstaltungsart und Gruppen-Slot in einem eigenen Bildschirm führen, der die Termine der gewählten Module nach Wochentagen gliedert und innerhalb eines Wochentags aufsteigend nach Beginnzeit ordnet. Der Bildschirm muss nach dem erstmaligen Zusammenstellen jederzeit erneut erreichbar sein. Herkunft: NEU, entschieden 2026-09-08, Form übernommen aus alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java. Die Android-Alt-App gliedert ihren Auswahlbildschirm über einen `TabLayout` je Wochentag mit einer chronologischen Kartenliste je Tag; diese Form hat sich bewährt. Übernommen wird sie mit zwei Unterschieden: Sie zeigt nur die Termine zuvor gewählter Module statt des gesamten Bestands, und sie trägt die Kennzeichnungen des Planungsstands, die der Alt-App fehlen.
 
 #### Scenario: Planungsmodus öffnen
 - **WHEN** die Nutzerin nach der Modulauswahl in den Planungsmodus wechselt
 - **THEN** zeigt das System die Termine der gewählten Module nach Wochentagen gegliedert, je Wochentag aufsteigend nach Beginnzeit
 
-#### Scenario: Wahl wirkt sofort
-- **WHEN** die Nutzerin einen Termin auswählt oder abwählt
-- **THEN** wirkt die Änderung unmittelbar im persönlichen Plan, ohne dass sie gesondert übernommen werden muss
-
-#### Scenario: Bildschirm verlassen
-- **WHEN** die Nutzerin den Planungsmodus verlässt
-- **THEN** verlässt das System ihn ohne Rückfrage, da nichts ungesichert offen ist
-
 #### Scenario: Erneuter Aufruf
 - **WHEN** ein persönlicher Plan bereits besteht und die Nutzerin eine einzelne Entscheidung ändern will
 - **THEN** ist der Planungsmodus erneut erreichbar, ohne dass der Plan geleert oder die Modulauswahl wiederholt werden muss
+
+### Requirement: Ausdrückliches Sichern der Planung
+
+Das System muss die im Planungsmodus getroffenen Entscheidungen erst dann in den persönlichen Plan übernehmen, wenn die Nutzerin eine dafür vorgesehene Sicherungsaktion auslöst. Bis dahin darf keine Wahl den Plan verändern. Der Bildschirm muss erkennbar machen, ob ungesicherte Änderungen vorliegen. Herkunft: NEU, entschieden 2026-09-08, Muster übernommen aus alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java (Menüeintrag `speichern`). Der Planungsmodus weicht damit bewusst von den übrigen gerätelokalen Speichern der App ab, die unmittelbar schreiben: Das Zusammenstellen eines Stundenplans ist eine zusammenhängende Überlegung über mehrere Wochentage hinweg, deren Zwischenstände nicht schon im Plan stehen sollen.
+
+#### Scenario: Wahl vor dem Sichern
+- **WHEN** die Nutzerin einen Termin auswählt oder abwählt, ohne zu sichern
+- **THEN** bleibt der persönliche Plan unverändert, und der Bildschirm weist die Änderung als ungesichert aus
+
+#### Scenario: Sichern auslösen
+- **WHEN** die Nutzerin die Sicherungsaktion auslöst
+- **THEN** übernimmt das System sämtliche getroffenen Entscheidungen gemeinsam in den persönlichen Plan
+
+#### Scenario: Nichts geändert
+- **WHEN** die Nutzerin den Planungsmodus öffnet und nichts ändert
+- **THEN** weist der Bildschirm keine ungesicherten Änderungen aus
+
+### Requirement: Rückfrage beim Verlassen mit ungesicherten Änderungen
+
+Wenn die Nutzerin den Planungsmodus mit ungesicherten Änderungen verlässt, dann muss das System vor dem Verwerfen nachfragen und dabei das Sichern, das Verwerfen und das Zurückkehren zur Bearbeitung anbieten. Ein stillschweigendes Verwerfen ist ausgeschlossen. Herkunft: NEU, entschieden 2026-09-08. Folgt zwingend aus dem Requirement „Ausdrückliches Sichern der Planung": Sobald Entscheidungen erst auf Auslösung wirksam werden, gibt es einen Zwischenstand, der verlorengehen kann — und die Capability `data-and-storage` schließt Datenverlust ohne Rückfrage aus. Die Android-Alt-App führt an derselben Stelle denselben Dialog (`verlassenSpeichern`) mit denselben drei Möglichkeiten.
+
+#### Scenario: Verlassen mit ungesicherten Änderungen
+- **WHEN** die Nutzerin den Planungsmodus verlässt und ungesicherte Änderungen vorliegen
+- **THEN** fragt das System nach und bietet Sichern, Verwerfen und Zurückkehren zur Bearbeitung an
+
+#### Scenario: Verlassen ohne Änderungen
+- **WHEN** die Nutzerin den Planungsmodus verlässt, ohne etwas geändert zu haben
+- **THEN** verlässt das System ihn ohne Rückfrage
+
+#### Scenario: Zurückkehren zur Bearbeitung
+- **WHEN** die Nutzerin in der Rückfrage die Rückkehr zur Bearbeitung wählt
+- **THEN** bleibt sie im Planungsmodus, und sämtliche ungesicherten Änderungen bleiben erhalten
 
 ### Requirement: Vorbelegung eindeutiger Veranstaltungen
 
