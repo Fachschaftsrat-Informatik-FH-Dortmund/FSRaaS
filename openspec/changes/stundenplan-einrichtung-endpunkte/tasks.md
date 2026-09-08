@@ -18,32 +18,32 @@
 
 ## 3. Einrichtungsstand und Migration
 
-- [ ] 3.1 `Einrichtung` von `sname`/`grade`/`zusatzFachsemester` auf `endpunkte: string[]` umstellen
-- [ ] 3.2 Migration in `bereinige()` nach `design.md` Entscheidung 4; Test lädt einen gespeicherten Stand alter Gestalt und belegt, dass Endpunkt und Gruppenkennung erhalten bleiben
-- [ ] 3.3 `useTermine`/`useQueries` auf einen Abruf je gewähltem Endpunkt umstellen; Test `describe('Terminabruf nach Auswahl', …)` prüft die Zahl der Abrufe bei drei gewählten Endpunkten und die Vereinigung der Ergebnisse
-- [ ] 3.4 `semesterwechsel.ts` auf den Vergleich von Endpunktmengen umstellen; Tests `describe('Hinweis bei Semesterwechsel', …)` für beide Szenarien — neu erschienener Endpunkt und entfallener gewählter Endpunkt — samt Nachweis, dass keine Auswahl selbsttätig geändert wird
+- [x] 3.1 `Einrichtung` von `sname`/`grade`/`zusatzFachsemester` auf `endpunkte: string[]` umstellen
+- [x] 3.2 Migration in `bereinige()` nach `design.md` Entscheidung 4; Test lädt einen gespeicherten Stand alter Gestalt und belegt, dass Endpunkt und Gruppenkennung erhalten bleiben
+- [x] 3.3 `useTermine`/`useQueries` auf einen Abruf je gewähltem Endpunkt umstellen; Test `describe('Terminabruf nach Auswahl', …)` prüft die Zahl der Abrufe bei drei gewählten Endpunkten und die Vereinigung der Ergebnisse
+- [x] 3.4 `semesterwechsel.ts` auf den Vergleich von Endpunktmengen umstellen; Tests `describe('Hinweis bei Semesterwechsel', …)` für beide Szenarien — neu erschienener Endpunkt und entfallener gewählter Endpunkt — samt Nachweis, dass keine Auswahl selbsttätig geändert wird
 
 ## 4. Einrichtungs-Bildschirm
 
-- [ ] 4.1 Gruppenkennung als einzelnes Textfeld mit Großschreibung und ohne Autokorrektur; Tests `describe('Gruppenkennung ohne Matrikelnummer', …)` für die drei Szenarien, darunter die Eingabe `c8`
-- [ ] 4.2 Matrikelnummer-Weg und manuelles Feld untereinander statt hinter einem Umschalter; der Test zum Szenario „Voreingestellter Weg" prüft die Reihenfolge im Baum, nicht mehr einen aktiven Tab
-- [ ] 4.3 Endpunktliste mit Gruppenüberschriften und Mehrfachauswahl; Tests `describe('Auswahl der Endpunkte des Lehrangebots', …)` für alle drei Szenarien, darunter der Nachweis, dass die Abwahl eines Endpunkts keine Planeinträge entfernt
-- [ ] 4.4 Freitextsuche über Klar- und Kurzname; Test `describe('Freitextsuche in der Endpunktauswahl', …)`
-- [ ] 4.5 Fachsemester-Abschnitt und Zusatz-Fachsemester-Schalter aus dem Bildschirm entfernen; bestehende Tests dazu entfallen mit dem REMOVED-Delta
+- [x] 4.1 Gruppenkennung als einzelnes Textfeld mit Großschreibung und ohne Autokorrektur; Tests `describe('Gruppenkennung ohne Matrikelnummer', …)` für die drei Szenarien, darunter die Eingabe `c8`
+- [x] 4.2 Matrikelnummer-Weg und manuelles Feld untereinander statt hinter einem Umschalter; der Test zum Szenario „Voreingestellter Weg" prüft die Reihenfolge im Baum, nicht mehr einen aktiven Tab
+- [x] 4.3 Endpunktliste mit Gruppenüberschriften und Mehrfachauswahl; Tests `describe('Auswahl der Endpunkte des Lehrangebots', …)` für alle drei Szenarien, darunter der Nachweis, dass die Abwahl eines Endpunkts keine Planeinträge entfernt
+- [x] 4.4 Freitextsuche über Klar- und Kurzname; Test `describe('Freitextsuche in der Endpunktauswahl', …)`
+- [x] 4.5 Fachsemester-Abschnitt und Zusatz-Fachsemester-Schalter aus dem Bildschirm entfernen; bestehende Tests dazu entfallen mit dem REMOVED-Delta
 
 ## 5. Zugang zur Einrichtung
 
-- [ ] 5.1 Kopfzeilen-Element im Stundenplan-Stack, das die Einrichtung jederzeit öffnet; Test `describe('Dauerhafter Zugang zur Einrichtung', …)` bei gefülltem Plan
-- [ ] 5.2 Prüfen, dass Leerzustände und Semesterwechsel-Hinweis weiterhin dorthin führen — kein Bedienweg geht verloren
+- [x] 5.1 Kopfzeilen-Element im Stundenplan-Stack, das die Einrichtung jederzeit öffnet; Test `describe('Dauerhafter Zugang zur Einrichtung', …)` bei gefülltem Plan
+- [x] 5.2 Prüfen, dass Leerzustände und Semesterwechsel-Hinweis weiterhin dorthin führen — kein Bedienweg geht verloren
 
 ## 6. Modulauswahl
 
-- [ ] 6.1 `AnkerListe` von `areas/canteen/ui/` nach `ui/` verschieben, Mensa-Ansichten auf den neuen Pfad ziehen; die bestehenden Mensa-Tests müssen unverändert grün bleiben
-- [ ] 6.2 `kursbaum.ts` auf Module statt auf den dreistufigen Baum umstellen, Abschnitte nach Fachsemester bzw. Endpunktname; Tests `describe('Gliederung der Modulauswahl nach Fachsemester', …)` für beide Szenarien
-- [ ] 6.3 `CourseSelectionScreen` auf die reine Ankreuzliste reduzieren — Veranstaltungsart-Schalter, Slot-Zeilen und der Übernehmen-Pfad in den Plan entfallen; Test `describe('Modulauswahl ohne Veranstaltungsart und Gruppen-Slot', …)`
-- [ ] 6.4 Freitextsuche und Fachsemester-Filter der bisherigen Kursauswahl auf die Modulebene ziehen; die bestehenden Tests zu `describe('Freitextsuche im Auswahlbestand', …)` entsprechend nachziehen
-- [ ] 6.5 Test `describe('Gliederung des Auswahlbestands', …)` auf die zwei Szenarien des MODIFIED-Deltas umstellen
-- [ ] 6.6 Rückfrage beim Abwählen eines Moduls mit vorhandenen Planeinträgen, vorbelegt auf „nein"; Tests `describe('Abwahl eines Moduls mit vorhandenen Planeinträgen', …)` für alle drei Szenarien, einschließlich des Falls ohne Planeinträge, in dem die Rückfrage entfällt
+- [x] 6.1 `AnkerListe` von `areas/canteen/ui/` nach `ui/` verschieben, Mensa-Ansichten auf den neuen Pfad ziehen; die bestehenden Mensa-Tests müssen unverändert grün bleiben
+- [x] 6.2 `kursbaum.ts` auf Module statt auf den dreistufigen Baum umstellen, Abschnitte nach Fachsemester bzw. Endpunktname; Tests `describe('Gliederung der Modulauswahl nach Fachsemester', …)` für beide Szenarien
+- [x] 6.3 `CourseSelectionScreen` auf die reine Ankreuzliste reduzieren — Veranstaltungsart-Schalter, Slot-Zeilen und der Übernehmen-Pfad in den Plan entfallen; Test `describe('Modulauswahl ohne Veranstaltungsart und Gruppen-Slot', …)`
+- [x] 6.4 Freitextsuche und Fachsemester-Filter der bisherigen Kursauswahl auf die Modulebene ziehen; die bestehenden Tests zu `describe('Freitextsuche im Auswahlbestand', …)` entsprechend nachziehen
+- [x] 6.5 Test `describe('Gliederung des Auswahlbestands', …)` auf die zwei Szenarien des MODIFIED-Deltas umstellen — nur Szenario „Auswahlbestand öffnen" ist in diesem Screen testbar; Szenario „Veranstaltungsart und Slot wählen" gehört laut proposal.md ausdrücklich zum separaten Change `stundenplan-planungsmodus-feinauswahl`
+- [x] 6.6 Rückfrage beim Abwählen eines Moduls mit vorhandenen Planeinträgen, vorbelegt auf „nein"; Tests `describe('Abwahl eines Moduls mit vorhandenen Planeinträgen', …)` für alle drei Szenarien, einschließlich des Falls ohne Planeinträge, in dem die Rückfrage entfällt
 
 ## 7. Abschluss
 

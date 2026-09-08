@@ -21,8 +21,8 @@ import { textfarbeFuerHintergrund } from '../farbe';
 import { ermittleJetztStatus } from '../jetzt';
 import { ermittleKonflikte, type Konflikte } from '../konflikt';
 import { useScheduleEntries } from '../planStore';
-import { erkenneSemesterwechsel } from '../semesterwechsel';
 import { useSemesterstand } from '../semesterstand';
+import { erkenneSemesterwechsel } from '../semesterwechsel';
 import type { DaySlot, PlanEntry, Weekday } from '../typen';
 import { spanneDerWoche } from '../zeitachse';
 import { isoDatumVon, leerGrund, termineDerWoche, termineDesTages } from '../wochenansicht';
@@ -174,10 +174,11 @@ export function ScheduleScreen() {
     refetch: () => undefined,
   };
 
-  const keineEinrichtung = !einrichtung.sname || !einrichtung.grade;
+  const keineEinrichtung = einrichtung.endpunkte.length === 0;
 
   return (
     <Screen scroll tight hideScrollbar>
+      <EinrichtungHeaderLink />
       <SemesterwechselHinweis />
 
       <AsyncStates<PlanEntry[]>
@@ -302,8 +303,31 @@ function useJetzt(): Date {
 }
 
 /**
- * Requirement „Hinweis bei Semesterwechsel": Die aktuell aus INT-001 gelieferte
- * Fachsemester-Liste wird gegen den zuletzt gesehenen Stand gehalten.
+ * Requirement „Dauerhafter Zugang zur Einrichtung": ein jederzeit sichtbares
+ * Kopfzeilen-Element, unabhängig davon, ob bereits ein persönlicher Plan
+ * besteht — anders als die Leerzustände und der Semesterwechsel-Hinweis, die
+ * nur unter bestimmten Bedingungen zur Einrichtung führen.
+ */
+function EinrichtungHeaderLink() {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const router = useRouter();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('schedule.einrichtungBearbeiten')}
+      onPress={() => router.push('/einrichtung')}
+      style={styles.einrichtungLink}
+    >
+      <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('schedule.einrichtungBearbeiten')}</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * Requirement „Hinweis bei Semesterwechsel": Die aktuell über INT-001
+ * gelieferte Endpunktliste wird gegen den zuletzt gesehenen Stand gehalten.
+ * Ohne gewählte Endpunkte gibt es nichts abzugleichen.
  */
 function SemesterwechselHinweis() {
   const { t } = useTranslation();
@@ -311,12 +335,12 @@ function SemesterwechselHinweis() {
   const router = useRouter();
   const { einrichtung } = useEinrichtung();
   const { studiengaenge } = useStudiengaenge();
-  const { gespeicherteGrades, loaded, merkeGrades } = useSemesterstand();
+  const { gespeicherteEndpunkte, loaded, merkeEndpunkte } = useSemesterstand();
 
-  const aktuelle = studiengaenge.find((s) => s.sname === einrichtung.sname)?.grades;
-  if (!loaded || !aktuelle) return null;
+  if (!loaded || einrichtung.endpunkte.length === 0 || studiengaenge.length === 0) return null;
 
-  const ergebnis = erkenneSemesterwechsel(gespeicherteGrades, aktuelle);
+  const aktuelle = studiengaenge.map((s) => s.sname);
+  const ergebnis = erkenneSemesterwechsel(gespeicherteEndpunkte, aktuelle);
   if (!ergebnis.geaendert) return null;
 
   return (
@@ -331,7 +355,7 @@ function SemesterwechselHinweis() {
         <AppButton
           variant="secondary"
           label={t('schedule.semesterwechselVerstanden')}
-          onPress={() => merkeGrades(ergebnis.nachher)}
+          onPress={() => merkeEndpunkte(ergebnis.nachher)}
         />
       </View>
     </View>
@@ -747,6 +771,7 @@ function SchalterZeile({
 
 const styles = StyleSheet.create({
   inhalt: { gap: 12 },
+  einrichtungLink: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   leerAktionen: { gap: 10, alignItems: 'stretch' },
   banner: { padding: 12, borderRadius: 8, gap: 8 },
   bannerAktionen: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },

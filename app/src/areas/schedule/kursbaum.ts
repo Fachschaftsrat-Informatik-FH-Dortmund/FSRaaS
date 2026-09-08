@@ -1,82 +1,121 @@
-// SCHED-F-600: verdichtet den flachen INT-002-Terminbestand zu einem Baum
-// Veranstaltung → Veranstaltungsart → Gruppen-Slot, statt ihn als flache Liste
-// darzustellen (Live-Prüfung 2026-09-04: 121 bzw. 161 Einträge je Abruf — als
-// flache Liste nicht bedienbar). Gruppierungsschlüssel einer Veranstaltung ist
-// `courseId`, mit Rückfall auf `name`, wenn `courseId` leer ist (INT-002 liefert
-// `courseId` beobachtet leer). Je Slot wird die Gruppenzugehörigkeit nach
-// `groupMatch.ts` mitgeführt (SCHED-F-140), damit der eigene Slot vorgewählt
-// werden kann. Reine Funktion ohne React; Vorbild `canteen/consolidate.ts`
-// (Gruppierung mit stabiler Eingabereihenfolge über eine `Map`).
+// Requirement „Gliederung der Modulauswahl nach Fachsemester"
+// (`openspec/specs/schedule/spec.md`). Verdichtet den flachen INT-002-
+// Terminbestand mehrerer gewählter Endpunkte zu Modulen (Gruppierungsschlüssel
+// `courseId`, Rückfall auf `name`, wie schon vor diesem Change) und gliedert
+// sie in Abschnitte: je Modul das Fachsemester, wenn seine Termine eines
+// tragen — sonst der Name des Endpunkts, aus dem es stammt (Bachelor-
+// Endpunkte mit echter Fachsemesterliste liefern verwertbare `grade`-Werte;
+// Master, Blockwochen, Tutorien, Seminare und Wahlpflicht liefern
+// durchgängig `grade: 0`, dort trennt eine Fachsemester-Gliederung nichts).
+// Reine Funktion ohne React; Vorbild `canteen/consolidate.ts` (Gruppierung
+// mit stabiler Eingabereihenfolge über eine `Map`).
 
-import { gruppenzugehoerig } from './groupMatch';
-import type { CourseType, OfficialTermin } from './typen';
+import type { OfficialTermin } from './typen';
 
-/** Ein einzelner Termin innerhalb einer Veranstaltungsart — ein Gruppenangebot. */
-export interface KursSlot {
-  termin: OfficialTermin;
-  /** Ergebnis von `groupMatch.ts` (SCHED-F-050 bis F-090) für die aktuelle Gruppenkennung. */
-  gruppenzugehoerig: boolean;
+/** Alle Termine eines gewählten Endpunkts, mit dessen Klarnamen für den Abschnitts-Rückfall. */
+export interface EndpunktTermine {
+  sname: string;
+  name: string;
+  termine: readonly OfficialTermin[];
 }
 
-export interface KursArt {
-  courseType: CourseType;
-  /**
-   * Mehrere Slots derselben Veranstaltungsart bleiben nebeneinander bestehen
-   * und sind unabhängig voneinander wählbar (SCHED-F-620) — diese Struktur
-   * schließt keinen Slot aufgrund eines anderen aus.
-   */
-  slots: KursSlot[];
-}
-
-export interface Kurs {
-  /** Gruppierungsschlüssel: `courseId`, ersatzweise `name` (siehe Moduldoku oben). */
+/** Ein Modul im Auswahlbestand — die Rohtermine bleiben erhalten (Grundlage der späteren Veranstaltungsart-/Slot-Wahl im Planungsmodus). */
+export interface Modul {
+  /** Gruppierungsschlüssel: `courseId`, ersatzweise `name`. */
   key: string;
   courseId: string;
   name: string;
-  arten: KursArt[];
+  termine: OfficialTermin[];
 }
 
-function kursSchluessel(termin: OfficialTermin): string {
+export type ModulAbschnittKennung =
+  | { art: 'fachsemester'; grade: string }
+  | { art: 'endpunkt'; name: string };
+
+export interface ModulAbschnitt {
+  kennung: ModulAbschnittKennung;
+  module: Modul[];
+}
+
+function modulSchluessel(termin: OfficialTermin): string {
   return termin.courseId.trim() !== '' ? termin.courseId : termin.name;
 }
 
 /**
- * Baut den dreistufigen Auswahlbestand (SCHED-F-600) aus einer flachen Liste
- * normalisierter Termine. `gruppenkennung` ist `null`/leer, solange keine
- * Gruppenkennung eingegeben wurde (SCHED-F-050). Reihenfolge folgt der
- * Eingabereihenfolge der Termine (stabile Gruppierung, kein Sortieren).
+ * Baut den Auswahlbestand als Module gegliedert in Abschnitte (Requirement
+ * „Gliederung der Modulauswahl nach Fachsemester"). Ein Modul, dessen Termine
+ * mehr als ein auswertbares Fachsemester tragen — sollte das je vorkommen —,
+ * fällt ebenfalls auf den Endpunktnamen zurück, da ein einzelner Abschnitt es
+ * dann nicht eindeutig trüge. Reihenfolge folgt der Eingabereihenfolge der
+ * Endpunkte und ihrer Termine (stabile Gruppierung, kein Sortieren), nur die
+ * Fachsemester-Abschnitte werden zusätzlich numerisch vorangestellt.
  */
-export function baueKursbaum(
-  termine: readonly OfficialTermin[],
-  gruppenkennung: string | null | undefined,
-): Kurs[] {
-  const kurse = new Map<string, { index: number; courseId: string; name: string; arten: Map<CourseType, { index: number; slots: KursSlot[] }> }>();
-  let kursIndex = 0;
-
-  for (const termin of termine) {
-    const schluessel = kursSchluessel(termin);
-    let kurs = kurse.get(schluessel);
-    if (!kurs) {
-      kurs = { index: kursIndex++, courseId: termin.courseId, name: termin.name, arten: new Map() };
-      kurse.set(schluessel, kurs);
-    }
-
-    let art = kurs.arten.get(termin.courseType);
-    if (!art) {
-      art = { index: kurs.arten.size, slots: [] };
-      kurs.arten.set(termin.courseType, art);
-    }
-    art.slots.push({ termin, gruppenzugehoerig: gruppenzugehoerig(gruppenkennung, termin.studentSet) });
+export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAbschnitt[] {
+  interface ModulAccum {
+    index: number;
+    courseId: string;
+    name: string;
+    termine: OfficialTermin[];
+    grades: Set<string>;
+    erstesEndpunkt: { sname: string; name: string };
   }
 
-  return [...kurse.entries()]
-    .sort((a, b) => a[1].index - b[1].index)
-    .map(([key, kurs]) => ({
-      key,
-      courseId: kurs.courseId,
-      name: kurs.name,
-      arten: [...kurs.arten.entries()]
-        .sort((a, b) => a[1].index - b[1].index)
-        .map(([courseType, art]) => ({ courseType, slots: art.slots })),
-    }));
+  const module = new Map<string, ModulAccum>();
+  let modulIndex = 0;
+
+  for (const endpunkt of perEndpunkt) {
+    for (const termin of endpunkt.termine) {
+      const schluessel = modulSchluessel(termin);
+      let m = module.get(schluessel);
+      if (!m) {
+        m = {
+          index: modulIndex++,
+          courseId: termin.courseId,
+          name: termin.name,
+          termine: [],
+          grades: new Set(),
+          erstesEndpunkt: { sname: endpunkt.sname, name: endpunkt.name },
+        };
+        module.set(schluessel, m);
+      }
+      m.termine.push(termin);
+      if (termin.grade && termin.grade !== '0') m.grades.add(termin.grade);
+    }
+  }
+
+  interface AbschnittAccum {
+    index: number;
+    kennung: ModulAbschnittKennung;
+    module: Modul[];
+  }
+
+  const abschnitte = new Map<string, AbschnittAccum>();
+  let abschnittIndex = 0;
+
+  for (const [schluessel, m] of module) {
+    const gradeListe = [...m.grades];
+    const grade = gradeListe.length === 1 ? gradeListe[0]! : null;
+    const abschnittSchluessel = grade !== null ? `fachsemester:${grade}` : `endpunkt:${m.erstesEndpunkt.sname}`;
+
+    let a = abschnitte.get(abschnittSchluessel);
+    if (!a) {
+      a = {
+        index: abschnittIndex++,
+        kennung: grade !== null ? { art: 'fachsemester', grade } : { art: 'endpunkt', name: m.erstesEndpunkt.name },
+        module: [],
+      };
+      abschnitte.set(abschnittSchluessel, a);
+    }
+    a.module.push({ key: schluessel, courseId: m.courseId, name: m.name, termine: m.termine });
+  }
+
+  return [...abschnitte.values()]
+    .sort((a, b) => {
+      if (a.kennung.art === 'fachsemester' && b.kennung.art === 'fachsemester') {
+        return Number(a.kennung.grade) - Number(b.kennung.grade);
+      }
+      if (a.kennung.art !== b.kennung.art) return a.kennung.art === 'fachsemester' ? -1 : 1;
+      return a.index - b.index;
+    })
+    .map(({ kennung, module: modListe }) => ({ kennung, module: modListe }));
 }
