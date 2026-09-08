@@ -6,8 +6,11 @@
  * INT-002 selbst liefert im geprüften Bestand nur Mon..Fri (integrations.md). */
 export type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 
-/** Veranstaltungsart, beobachtete INT-002-Werte (integrations.md, Feld `courseType`). */
-export type CourseType = 'V' | 'Ü' | 'ÜPP' | 'P' | 'SV' | 'T';
+/** Veranstaltungsart, beobachtete INT-002-Werte (integrations.md, Feld `courseType`).
+ * `PR` (Blockwochen) und `S` (Seminare) ergänzt über die Live-Abfrage vom
+ * 2026-09-08 — keine abgeschlossene Werteliste, `normalize.ts` übernimmt auch
+ * unbekannte Werte, protokolliert sie aber. */
+export type CourseType = 'V' | 'Ü' | 'ÜPP' | 'P' | 'SV' | 'T' | 'PR' | 'S';
 
 /** SCHED-F-570: „fest" wird auf Konflikte geprüft, „vorgemerkt" nicht (SCHED-F-590). */
 export type PlanEntryStatus = 'fest' | 'vorgemerkt';

@@ -128,7 +128,7 @@ describe('SCHED-F-254 Rückfall auf die Backend-Liste, falls INT-001 nicht errei
 
     expect(api.GET).toHaveBeenCalledWith('/stundenplan/studiengaenge');
     expect(result.current.studiengaenge).toEqual([
-      { name: 'Praktische Informatik', sname: 'INPBPI', grades: ['2', '4'] },
+      { name: 'Praktische Informatik', sname: 'INPBPI', grades: ['2', '4'], po: null },
     ]);
     expect(unwrap).toHaveBeenCalled();
   });

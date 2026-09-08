@@ -11,6 +11,7 @@
     "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:contract": "jest --config jest.contract.config.js",
     "lint": "eslint ."
   },
   "dependencies": {

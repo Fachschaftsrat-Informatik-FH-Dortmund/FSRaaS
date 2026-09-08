@@ -2,12 +2,12 @@
 
 ## 1. Vertrag und Fremdsystem
 
-- [ ] 1.1 `fbwsClient.holeStudiengaenge` um das Feld `po` erweitern, `null` und die Zeichenkette `"NULL"` gleich behandeln; Test `describe('INT-001 — FBWS Studiengänge', …)` prüft beide Gestalten und dass ein Eintrag ohne `grades` weiterhin verworfen wird
-- [ ] 1.2 Vertragstest gegen den echten INT-001-Bestand: schlägt sichtbar fehl, wenn `po` verschwindet oder ein Pflichtfeld die Gestalt wechselt (Capability `quality-and-testing`)
-- [ ] 1.3 `holeTermine` für den Abruf mit `grade=*` je Endpunkt anpassen; Test belegt anhand eines Bachelor-Endpunkts, dass Termine mehrerer Fachsemester zurückkommen und jeder sein eigenes `grade` trägt
-- [ ] 1.4 `normalize.ts` auf die `courseType`-Werte `PR` und `S` prüfen — keine abgeschlossene Werteliste voraussetzen; Test mit je einem Termin beider Arten
-- [ ] 1.5 Datumsbereich aus dem Endpunktnamen lesen und als Gültigkeitszeitraum der Termine dieses Endpunkts setzen; Tests `describe('Gültigkeitszeitraum aus dem Endpunktnamen', …)` für alle drei Szenarien, einschließlich des protokollierten Rückfalls bei nicht lesbarem Bereich
-- [ ] 1.6 Vertragstest, der anschlägt, sobald `Blockwoche`-Endpunkte ihren Zeitraum nicht mehr im Namen führen — dann trägt die Ableitung nicht mehr und muss auffallen, statt still auf das Semester zurückzufallen
+- [x] 1.1 `fbwsClient.holeStudiengaenge` um das Feld `po` erweitern, `null` und die Zeichenkette `"NULL"` gleich behandeln; Test `describe('INT-001 — FBWS Studiengänge', …)` prüft beide Gestalten und dass ein Eintrag ohne `grades` weiterhin verworfen wird
+- [x] 1.2 Vertragstest gegen den echten INT-001-Bestand: schlägt sichtbar fehl, wenn `po` verschwindet oder ein Pflichtfeld die Gestalt wechselt (Capability `quality-and-testing`)
+- [x] 1.3 `holeTermine` für den Abruf mit `grade=*` je Endpunkt anpassen; Test belegt anhand eines Bachelor-Endpunkts, dass Termine mehrerer Fachsemester zurückkommen und jeder sein eigenes `grade` trägt
+- [x] 1.4 `normalize.ts` auf die `courseType`-Werte `PR` und `S` prüfen — keine abgeschlossene Werteliste voraussetzen; Test mit je einem Termin beider Arten
+- [x] 1.5 Datumsbereich aus dem Endpunktnamen lesen und als Gültigkeitszeitraum der Termine dieses Endpunkts setzen; Tests `describe('Gültigkeitszeitraum aus dem Endpunktnamen', …)` für alle drei Szenarien, einschließlich des protokollierten Rückfalls bei nicht lesbarem Bereich
+- [x] 1.6 Vertragstest, der anschlägt, sobald `Blockwoche`-Endpunkte ihren Zeitraum nicht mehr im Namen führen — dann trägt die Ableitung nicht mehr und muss auffallen, statt still auf das Semester zurückzufallen
 
 ## 2. Endpunktgruppierung als Fachlogik
 
