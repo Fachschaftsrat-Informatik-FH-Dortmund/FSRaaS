@@ -35,17 +35,17 @@ const abschnitte = () =>
 describe('Freitextsuche im Auswahlbestand', () => {
   it('findet ein Modul über einen Teil der Bezeichnung, diakritika- und großschreibungstolerant', () => {
     const treffer = filtereModulAbschnitte(abschnitte(), { text: 'ALGORITHMEN' });
-    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42012']);
+    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42012|2']);
   });
 
   it('findet ein Modul über die Modulnummer', () => {
     const treffer = filtereModulAbschnitte(abschnitte(), { text: '42099' });
-    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42099']);
+    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42099|4']);
   });
 
   it('findet ein Modul über die lehrende Person, diakritikatolerant (Özdemir ↔ ozdemir)', () => {
     const treffer = filtereModulAbschnitte(abschnitte(), { text: 'ozdemir' });
-    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42012']);
+    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42012|2']);
   });
 
   it('liefert alle Module ohne Text', () => {
@@ -55,16 +55,5 @@ describe('Freitextsuche im Auswahlbestand', () => {
 
   it('liefert keinen Treffer für einen nicht vorkommenden Text', () => {
     expect(filtereModulAbschnitte(abschnitte(), { text: 'xyz-nichts' })).toEqual([]);
-  });
-});
-
-describe('Filter nach Fachsemester', () => {
-  it('lässt nur den Abschnitt des gewählten Fachsemesters übrig', () => {
-    const treffer = filtereModulAbschnitte(abschnitte(), { grade: '4' });
-    expect(treffer.flatMap((a) => a.module.map((m) => m.key))).toEqual(['42099']);
-  });
-
-  it('ohne Fachsemester-Filter bleiben alle Abschnitte erhalten', () => {
-    expect(filtereModulAbschnitte(abschnitte(), {})).toHaveLength(2);
   });
 });

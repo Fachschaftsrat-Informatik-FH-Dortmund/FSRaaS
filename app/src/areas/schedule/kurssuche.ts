@@ -1,17 +1,16 @@
 // Requirement „Freitextsuche im Auswahlbestand" (unverändert, weiterhin
 // aktiv) — Freitextsuche über Bezeichnung, Modulnummer (`courseId`) und
-// lehrende Person, diakritika- und großschreibungstolerant, jetzt auf der
+// lehrende Person, diakritika- und großschreibungstolerant, auf der
 // Modulebene (Requirement „Modulauswahl ohne Veranstaltungsart und Gruppen-
-// Slot"). Dazu ein Filter auf ein einzelnes Fachsemester. Reine Funktion
-// ohne React.
+// Slot"). Kein struktureller Fachsemester-Filter (Requirement „Gliederung
+// der Modulauswahl nach Fachsemester" — die Abschnittsgliederung selbst ist
+// die einzige Fachsemester-Navigation). Reine Funktion ohne React.
 
 import type { ModulAbschnitt } from './kursbaum';
 
 export interface ModulFilter {
   /** Freitext; leer/undefiniert = kein Textfilter. */
   text?: string;
-  /** Nur der Abschnitt dieses Fachsemesters bleibt sichtbar; undefiniert = alle Abschnitte. */
-  grade?: string;
 }
 
 /** Entfernt Diakritika und vereinheitlicht Groß-/Kleinschreibung für den Vergleich. */
@@ -23,22 +22,17 @@ function normalisiereText(wert: string): string {
 }
 
 /**
- * Wendet den Fachsemester-Filter strukturell auf die Abschnitte an und danach
- * die Freitextsuche auf die verbleibenden Module. Ein Abschnitt ohne
- * verbleibendes Modul fällt vollständig aus dem Ergebnis.
+ * Wendet die Freitextsuche auf die Module aller Abschnitte an. Ein Abschnitt
+ * ohne verbleibendes Modul fällt vollständig aus dem Ergebnis.
  */
 export function filtereModulAbschnitte(
   abschnitte: readonly ModulAbschnitt[],
   filter: ModulFilter,
 ): ModulAbschnitt[] {
-  const strukturellGefiltert = abschnitte.filter(
-    (a) => filter.grade === undefined || (a.kennung.art === 'fachsemester' && a.kennung.grade === filter.grade),
-  );
-
   const suchtext = filter.text?.trim() ? normalisiereText(filter.text.trim()) : '';
-  if (!suchtext) return strukturellGefiltert;
+  if (!suchtext) return [...abschnitte];
 
-  return strukturellGefiltert
+  return abschnitte
     .map((a) => ({
       ...a,
       module: a.module.filter(
