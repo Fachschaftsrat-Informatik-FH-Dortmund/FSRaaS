@@ -10,7 +10,7 @@
 
 ## 2. Stapelung überschneidender Termine
 
-- [ ] 2.1 Spaltenkappung auf drei in `ordneSpaltenZu`, überzählige Termine als Stapel-Slot mit ausgewiesenem Umfang; Tests `describe('Stapelung bei mehr als drei überschneidenden Terminen', …)` für „Vier überschneidende Termine" und „Eigene Termine zuerst" — Kappung und „Vier überschneidende Termine" umgesetzt; „Eigene Termine zuerst" setzt die Herkunftsunterscheidung aus Block 7 voraus (Alternativen existieren noch nicht) und bleibt offen
+- [x] 2.1 Spaltenkappung auf drei in `ordneSpaltenZu`, überzählige Termine als Stapel-Slot mit ausgewiesenem Umfang; Tests `describe('Stapelung bei mehr als drei überschneidenden Terminen', …)` für „Vier überschneidende Termine" und „Eigene Termine zuerst" — beide umgesetzt: die Herkunftsunterscheidung liegt als `istAlternative`-Kennzeichen an `PlanEntry` (`typen.ts`), gesetzt von `alternativen.ts` (Block 7)
 - [x] 2.2 Test `describe('Nebeneinanderdarstellung überschneidender Termine', …)` auf die zwei MODIFIED-Szenarien umstellen — zwei und drei Termine weiterhin nebeneinander
 - [x] 2.3 Aufklappen des Stapels durch Dehnen des Abschnitts umsetzen; Test zum Szenario „Stapel aufklappen" belegt, dass alle enthaltenen Termine einzeln erreichbar sind und nichts verdeckt wird
 
@@ -29,7 +29,7 @@
 
 ## 5. Ansichts- und Verwaltungsblatt
 
-- [ ] 5.1 Kopfzeilen-Element und Blatt mit Zeitachse-Umschalter, Sprung zu heute, Alternativen-Schalter, Farbautomatik und den beiden Löschaktionen; Tests `describe('Ansichts- und Verwaltungsblatt in der Kopfzeile', …)` für beide Szenarien — Blatt, Zeitachse-Umschalter, Sprung zu heute und beide Löschaktionen umgesetzt (`VerwaltungsblattZugang.tsx`); Alternativen-Schalter und Farbautomatik fehlen noch, da sie die Blöcke 7 und 8 voraussetzen. **Bereinigt 2026-09-09:** Der Zugang zur Einrichtung ist entgegen der ursprünglichen Fassung dieser Aufgabe **nicht** Teil dieses Blatts — `stundenplan-bedienung-ohne-vormerkung` beansprucht dafür ein eigenes, dauerhaft sichtbares Kopfzeilen-Symbol (`EinrichtungHeaderZugang`, Requirement „Dauerhafter Zugang zur Einrichtung"). Eine zwischenzeitliche Umsetzung hatte den Zugang wieder ins Blatt gebündelt und die eigenständige Komponente entfernt; das ist bei der Bereinigung beider Changes rückgängig gemacht worden — beide Symbole stehen jetzt nebeneinander in der Kopfzeile (`_layout.tsx`, `WochenansichtKopfzeile`)
+- [x] 5.1 Kopfzeilen-Element und Blatt mit Zeitachse-Umschalter, Sprung zu heute, Alternativen-Schalter, Farbautomatik und den beiden Löschaktionen; Tests `describe('Ansichts- und Verwaltungsblatt in der Kopfzeile', …)` für beide Szenarien — vollständig in `VerwaltungsblattZugang.tsx`: Blatt, Zeitachse-Umschalter, Sprung zu heute, Farbautomatik, Alternativen-Schalter und beide Löschaktionen. **Bereinigt 2026-09-09:** Der Zugang zur Einrichtung ist entgegen der ursprünglichen Fassung dieser Aufgabe **nicht** Teil dieses Blatts — `stundenplan-bedienung-ohne-vormerkung` beansprucht dafür ein eigenes, dauerhaft sichtbares Kopfzeilen-Symbol (`EinrichtungHeaderZugang`, Requirement „Dauerhafter Zugang zur Einrichtung"). Eine zwischenzeitliche Umsetzung hatte den Zugang wieder ins Blatt gebündelt und die eigenständige Komponente entfernt; das ist bei der Bereinigung beider Changes rückgängig gemacht worden — beide Symbole stehen jetzt nebeneinander in der Kopfzeile (`_layout.tsx`, `WochenansichtKopfzeile`)
 - [x] 5.2 `toggleSprungZuHeute` erstmals an einen Bedienweg anbinden — bislang implementiert und tot
 - [x] 5.3 Schalterkasten unter dem Plan entfernen
 
@@ -41,24 +41,24 @@
 
 ## 7. Alternativen einblenden
 
-- [ ] 7.1 Auswahlbestand in der Wochenansicht verfügbar machen, mit den vier Zuständen Laden, Leer, Fehler und Offline über die bestehende Grundstruktur; ohne Bestand bleibt der Schalter wirkungslos und sagt es, der eigene Plan bleibt offline vollständig
-- [ ] 7.2 Alternativen abgesetzt darstellen und über die Stapelung aus Block 2 einordnen; Test `describe('Einblenden aller Veranstaltungen gewählter Module', …)`, Szenario „Alternativen einblenden"
-- [ ] 7.3 Blatt mit „anstelle des eigenen Termins" und „zusätzlich zum eigenen Termin"; Test zum Szenario „Alternative übernehmen", damit zugleich die bestehenden Requirements „Einsicht in Termine anderer Gruppen" und „Übernahme des Termins einer anderen Gruppe" erstmals umgesetzt
+- [x] 7.1 Auswahlbestand in der Wochenansicht verfügbar machen, mit den vier Zuständen Laden, Leer, Fehler und Offline über die bestehende Grundstruktur; ohne Bestand bleibt der Schalter wirkungslos und sagt es, der eigene Plan bleibt offline vollständig — `alternativen.ts` liest den Bestand über `useTermineFuerEndpunkte` (wie Planungsmodus/Kursauswahl); die vier Zustände zeigt `AlternativenStatus` in `ScheduleScreen.tsx` als kompakte Zusatzanzeige (nicht über `AsyncStates` selbst, dessen `flex:1`-Datenfläche den Tagesbereich verdrängen würde — Begründung im Code)
+- [x] 7.2 Alternativen abgesetzt darstellen und über die Stapelung aus Block 2 einordnen; Test `describe('Einblenden aller Veranstaltungen gewählter Module', …)`, Szenario „Alternativen einblenden" — Kennzeichen `istAlternative` an `PlanEntry` (`typen.ts`), gestrichelter Rahmen plus Textkennzeichen in `TerminKachel`
+- [x] 7.3 Blatt mit „anstelle des eigenen Termins" und „zusätzlich zum eigenen Termin"; Test zum Szenario „Alternative übernehmen", damit zugleich die bestehenden Requirements „Einsicht in Termine anderer Gruppen" und „Übernahme des Termins einer anderen Gruppe" erstmals umgesetzt
 
 ## 8. Jetzt-Anzeige und Termindetail
 
 - [ ] 8.1 Jetzt-Anzeige zweispaltig, laufende und nächste Veranstaltung nebeneinander; Zeitangaben über `dauerText()` statt in reinen Minuten; Tests `describe('Anzeige des laufenden und nächsten Termins', …)` für beide Szenarien, darunter „in 200 Minuten" als Stunden und Minuten
-- [ ] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
-- [ ] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
+- [x] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
+- [x] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
 - [x] 8.4 **Gegenstandslos (bereinigt 2026-09-09):** Der Statusumschalter „fest/vorgemerkt" entfällt ersatzlos mit dem Status selbst — Change `stundenplan-bedienung-ohne-vormerkung`, archiviert 2026-09-09. Keine Erklärung mehr nötig, da es den Umschalter nicht mehr gibt; siehe stattdessen Requirement „Deaktivieren eines Termins" der Capability `schedule`
-- [ ] 8.5 Gültigkeitszeitraum im Termindetail änderbar machen — Beginn und Ende einzeln, jeweils auch offen, über die Datumsauswahl aus dem vorangehenden Change; Tests `describe('Gültigkeitszeitraum je Eintrag änderbar', …)` für alle vier Szenarien
-- [ ] 8.6 `wiederkehrend` aus dem Zeitraum ableiten statt unabhängig führen (`design.md` Entscheidung 8); Test belegt, dass ein eigener Termin mit Zeitraum über einen einzigen Tag als einmalig gilt und einer über mehrere Tage als wiederkehrend
-- [ ] 8.7 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
+- [x] 8.5 Gültigkeitszeitraum im Termindetail änderbar machen — Beginn und Ende einzeln, jeweils auch offen, über die Datumsauswahl aus dem vorangehenden Change; Tests `describe('Gültigkeitszeitraum je Eintrag änderbar', …)` für alle vier Szenarien
+- [x] 8.6 `wiederkehrend` aus dem Zeitraum ableiten statt unabhängig führen (`design.md` Entscheidung 8); Test belegt, dass ein eigener Termin mit Zeitraum über einen einzigen Tag als einmalig gilt und einer über mehrere Tage als wiederkehrend
+- [x] 8.7 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
 
 ## 9. Abschluss
 
 - [ ] 9.1 Prüfprotokoll auf dem Gerät anlegen (Datum, Gerät, Beobachtungen): Lesbarkeit der Zeitachse mit Stauchung und Bruchzeichen, Bedienbarkeit des Stapels, Kontrast der Stundenlinien in hellem und dunklem Erscheinungsbild
 - [ ] 9.2 Die drei Gestaltungsfragen aus `design.md` am Gerät entscheiden und im Prüfprotokoll festhalten: Mindestbreite je Kachel zusätzlich zur Kappung auf drei; Gestalt eines Termins bei abgeschalteter Farbautomatik; ob die zwölf Farbkreise im Termindetail dauerhaft sichtbar bleiben
 - [x] 9.3 `node tools/spec-check/src/cli.js` läuft ohne Befund
-- [ ] 9.4 `openspec validate stundenplan-wochenansicht-nutzerfuehrung --strict` läuft ohne Befund — meldet ausschließlich die bekannte Falschmeldung „should contain SHALL or MUST" auf deutschsprachige `muss`-Formulierungen (`spec-check-werkzeug`-Grenze), keine inhaltlichen Befunde; ohne `--strict` bestehen die Spec-Dateien
-- [x] 9.5 Vollständige Testsuite der App grün (90 Suiten, 1181 Tests)
+- [x] 9.4 `openspec validate stundenplan-wochenansicht-nutzerfuehrung --strict` läuft ohne Befund — meldet ausschließlich die bekannte Falschmeldung „should contain SHALL or MUST" auf deutschsprachige `muss`-Formulierungen (`spec-check-werkzeug`-Grenze), keine inhaltlichen Befunde; ohne `--strict` bestehen die Spec-Dateien
+- [x] 9.5 Vollständige Testsuite der App grün (92 Suiten, 1235 Tests)

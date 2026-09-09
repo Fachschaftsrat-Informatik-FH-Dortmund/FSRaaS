@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useNavigation, usePreventRemove, type NavigationAction } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useTheme } from '@/theme';
 import { SCHEDULE_PALETTE } from '@/theme/tokens';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
-import { textfarbeFuerHintergrund } from '../farbe';
+import { farbeFuerVeranstaltung, textfarbeFuerHintergrund } from '../farbe';
 import { ermittleKonflikte } from '../konflikt';
-import { useScheduleEntries } from '../planStore';
+import { useScheduleEntries, wiederkehrendAusZeitraum } from '../planStore';
 import { istAktiv } from '../time';
 import type { PlanEntry } from '../typen';
 import { endeDesNaechstenVorkommens } from '../wochenrechnung';
+
+/** Schlüssel der automatischen Farbvergabe (`farbe.ts`) für einen Planeintrag — courseId, ersatzweise Name/Titel (wie `kursbaum.ts`). */
+function automatikSchluessel(entry: PlanEntry): string {
+  if (entry.kind === 'offiziell') return entry.courseId.trim() !== '' ? entry.courseId : entry.name;
+  return entry.title;
+}
 
 // Termindetails (Requirement „Anzeige der Termindetails"). Der Bildschirm zeigt
 // alle Angaben des Eintrags und trägt die Bedienwege, die die Anforderungen
@@ -43,17 +51,59 @@ function formatZeitpunkt(unixSekunden: number): string {
   return `${tag}.${monat}. ${uhrzeit}`;
 }
 
+function formatDatum(unixSekunden: number): string {
+  const datum = new Date(unixSekunden * 1000);
+  return `${String(datum.getDate()).padStart(2, '0')}.${String(datum.getMonth() + 1).padStart(2, '0')}.${datum.getFullYear()}`;
+}
+
+/** `Date` (nur Kalendertag zählt) als Unix-Sekunden zur Mittagszeit — unempfindlich gegenüber Zeitzonen-Randfällen. */
+function dateZuUnixMittag(datum: Date): number {
+  return Math.floor(new Date(datum.getFullYear(), datum.getMonth(), datum.getDate(), 12, 0, 0).getTime() / 1000);
+}
+
 export function TerminDetailScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { entries, loaded, deaktivierungSetzen, farbeSetzen, entfernen, konfliktAnnehmen } =
-    useScheduleEntries();
+  const {
+    entries,
+    loaded,
+    deaktivierungSetzen,
+    farbeSetzen,
+    farbeFuerModulSetzen,
+    entfernen,
+    konfliktAnnehmen,
+    aktualisieren,
+  } = useScheduleEntries();
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
   const jetztSek = Math.floor(Date.now() / 1000);
 
   const entry = entries.find((e) => e.id === params.id);
+
+  // Requirement „Farbwahl je Termin", Szenario „Geltungsbereich erfragen": vor
+  // dem Verlassen der Ansicht nach einer Farbänderung erfragen, ob sie für
+  // alle Veranstaltungen des Moduls oder nur für den geöffneten Termin gelten
+  // soll. Nur ein offizieller Termin gehört einem Modul an; ein eigener
+  // Termin trägt seine Farbe allein und braucht keine Rückfrage.
+  const navigation = useNavigation();
+  const [farbeGeaendert, setFarbeGeaendert] = useState(false);
+  const [pendingAction, setPendingAction] = useState<NavigationAction | null>(null);
+  usePreventRemove(farbeGeaendert && entry?.kind === 'offiziell', ({ data }) => {
+    setPendingAction(data.action);
+  });
+
+  function geltungsbereichEinzeln() {
+    if (pendingAction) navigation.dispatch(pendingAction);
+    setPendingAction(null);
+    setFarbeGeaendert(false);
+  }
+  function geltungsbereichModul() {
+    if (entry && entry.kind === 'offiziell') farbeFuerModulSetzen(entry.courseId, entry.name, entry.color);
+    if (pendingAction) navigation.dispatch(pendingAction);
+    setPendingAction(null);
+    setFarbeGeaendert(false);
+  }
 
   if (!loaded) {
     return (
@@ -84,6 +134,11 @@ export function TerminDetailScreen() {
   const angenommeneGegenparts = konflikte.angenommen
     .filter((paar) => paar.a.id === entry.id || paar.b.id === entry.id)
     .map((paar) => (paar.a.id === entry.id ? paar.b : paar.a));
+
+  // Requirement „Farbwahl je Termin", Szenario „Zurück zur Automatik": die
+  // automatisch vergebene Farbe lässt sich jederzeit neu berechnen — sie wird
+  // nirgends als eigener Zustand geführt (`farbe.ts` ist deterministisch).
+  const automatischeFarbe = farbeFuerVeranstaltung(automatikSchluessel(entry));
 
   const zeitraum = `${t(`schedule.weekday.${entry.weekday}`)} ${formatZeit(entry.timeBeginMin)}–${formatZeit(
     entry.timeEndMin,
@@ -135,6 +190,8 @@ export function TerminDetailScreen() {
         ) : null}
       </View>
 
+      <GueltigkeitszeitraumAbschnitt entry={entry} onSetzen={aktualisieren} />
+
       <DeaktivierenAbschnitt entry={entry} jetztSek={jetztSek} onSetzen={deaktivierungSetzen} />
 
       <View>
@@ -148,7 +205,10 @@ export function TerminDetailScreen() {
                 accessibilityRole="radio"
                 accessibilityState={{ selected: gewaehlt }}
                 accessibilityLabel={t('schedule.farbeWaehlen', { farbe })}
-                onPress={() => farbeSetzen(entry.id, farbe)}
+                onPress={() => {
+                  farbeSetzen(entry.id, farbe);
+                  setFarbeGeaendert(true);
+                }}
                 style={[styles.farbe, { backgroundColor: farbe, borderColor: colors.border }]}
               >
                 <Text style={{ color: textfarbeFuerHintergrund(farbe), fontSize: 16 }}>
@@ -157,6 +217,19 @@ export function TerminDetailScreen() {
               </Pressable>
             );
           })}
+          {/* Requirement „Farbwahl je Termin", Szenario „Zurück zur Automatik". */}
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: entry.color === automatischeFarbe }}
+            accessibilityLabel={t('schedule.farbeKeine')}
+            onPress={() => {
+              farbeSetzen(entry.id, automatischeFarbe);
+              setFarbeGeaendert(true);
+            }}
+            style={[styles.farbe, styles.farbeKeine, { borderColor: colors.border }]}
+          >
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('schedule.farbeKeineKurz')}</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -191,7 +264,24 @@ export function TerminDetailScreen() {
         />
       ) : null}
 
-      {loeschenBestaetigen ? (
+      {/*
+        Requirement „Unterscheidung von Entfernen und Löschen im Termindetail":
+        Ein offizieller Termin besteht im FBWS unverändert fort — er lässt sich
+        im Planungsmodus jederzeit wiederherstellen (`planungsstand.ts` liest
+        ausschließlich den aktuellen Plan, kein zusätzlicher Code nötig) — und
+        ist damit nicht zerstörend: weder rot gestaltet noch bestätigungspflichtig.
+        Ein eigener Termin ist Handarbeit ohne Quelle und bleibt zerstörend.
+      */}
+      {entry.kind === 'offiziell' ? (
+        <AppButton
+          variant="secondary"
+          label={t('schedule.terminAusPlanNehmen')}
+          onPress={() => {
+            entfernen(entry.id);
+            router.back();
+          }}
+        />
+      ) : loeschenBestaetigen ? (
         <View style={[styles.loeschen, { borderColor: colors.danger }]}>
           <Text style={{ color: colors.text }}>{t('schedule.terminLoeschenFrage')}</Text>
           <View style={styles.loeschenAktionen}>
@@ -217,7 +307,138 @@ export function TerminDetailScreen() {
           onPress={() => setLoeschenBestaetigen(true)}
         />
       )}
+
+      {pendingAction ? (
+        <View style={[styles.geltungsbereich, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <Text style={{ color: colors.text }}>{t('schedule.farbeGeltungFrage')}</Text>
+          <View style={styles.loeschenAktionen}>
+            <AppButton label={t('schedule.farbeGeltungModul')} onPress={geltungsbereichModul} />
+            <AppButton variant="secondary" label={t('schedule.farbeGeltungEinzeln')} onPress={geltungsbereichEinzeln} />
+          </View>
+        </View>
+      ) : null}
     </Screen>
+  );
+}
+
+type OffenerPicker = 'von' | 'bis' | null;
+
+/**
+ * Requirement „Gültigkeitszeitraum je Eintrag änderbar": Beginn und Ende
+ * einzeln setzbar, jeweils auch offen, für offizielle wie eigene Einträge.
+ * Jede Änderung wirkt sofort (wie Farbe und Deaktivieren auf diesem
+ * Bildschirm) — es gibt keinen gesonderten Speicherschritt. Eine Eingabe, die
+ * das Ende vor den Beginn setzen würde, wird zurückgewiesen und benennt den
+ * Grund, ohne den bisherigen Zeitraum zu verwerfen. Bei einem eigenen Termin
+ * wird `wiederkehrend` bei jeder Änderung aus dem neuen Zeitraum abgeleitet
+ * (design.md, Entscheidung 8) — kein unabhängiger Zustand.
+ */
+function GueltigkeitszeitraumAbschnitt({
+  entry,
+  onSetzen,
+}: {
+  entry: PlanEntry;
+  onSetzen: (id: string, patch: Partial<PlanEntry>) => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const [offenerPicker, setOffenerPicker] = useState<OffenerPicker>(null);
+  const [fehler, setFehler] = useState<string | null>(null);
+
+  function uebernehmen(gueltigVon: number | null, gueltigBis: number | null) {
+    if (gueltigVon !== null && gueltigBis !== null && gueltigBis < gueltigVon) {
+      setFehler(t('schedule.gueltigFehlerReihenfolge'));
+      return;
+    }
+    setFehler(null);
+    onSetzen(entry.id, {
+      gueltigVon,
+      gueltigBis,
+      ...(entry.kind === 'eigen' ? { wiederkehrend: wiederkehrendAusZeitraum(gueltigVon, gueltigBis) } : {}),
+    });
+  }
+
+  return (
+    <View>
+      <Text style={[styles.abschnitt, { color: colors.text }]}>{t('schedule.detailGueltigkeitszeitraum')}</Text>
+      {fehler ? (
+        <Text accessibilityLiveRegion="polite" style={{ color: colors.danger, marginBottom: 8 }}>
+          {fehler}
+        </Text>
+      ) : null}
+      <ZeitraumFeld
+        label={t('schedule.gueltigVonLabel')}
+        wert={entry.gueltigVon}
+        offenLabel={t('schedule.gueltigOffenSetzen')}
+        onAendern={() => setOffenerPicker('von')}
+        onOffenSetzen={() => uebernehmen(null, entry.gueltigBis)}
+      />
+      {offenerPicker === 'von' ? (
+        <DateTimePicker
+          testID="gueltig-von-picker"
+          value={entry.gueltigVon !== null ? new Date(entry.gueltigVon * 1000) : new Date()}
+          mode="date"
+          onChange={(_event, gewaehlt) => {
+            setOffenerPicker(null);
+            if (gewaehlt) uebernehmen(dateZuUnixMittag(gewaehlt), entry.gueltigBis);
+          }}
+        />
+      ) : null}
+
+      <ZeitraumFeld
+        label={t('schedule.gueltigBisLabel')}
+        wert={entry.gueltigBis}
+        offenLabel={t('schedule.gueltigOffenSetzen')}
+        onAendern={() => setOffenerPicker('bis')}
+        onOffenSetzen={() => uebernehmen(entry.gueltigVon, null)}
+      />
+      {offenerPicker === 'bis' ? (
+        <DateTimePicker
+          testID="gueltig-bis-picker"
+          value={entry.gueltigBis !== null ? new Date(entry.gueltigBis * 1000) : new Date()}
+          mode="date"
+          onChange={(_event, gewaehlt) => {
+            setOffenerPicker(null);
+            if (gewaehlt) uebernehmen(entry.gueltigVon, dateZuUnixMittag(gewaehlt));
+          }}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function ZeitraumFeld({
+  label,
+  wert,
+  offenLabel,
+  onAendern,
+  onOffenSetzen,
+}: {
+  label: string;
+  wert: number | null;
+  offenLabel: string;
+  onAendern: () => void;
+  onOffenSetzen: () => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  return (
+    <View style={styles.zeitraumZeile}>
+      <Text style={{ color: colors.textMuted, fontSize: 13, flexBasis: '100%' }}>{label}</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={onAendern}
+        style={[styles.eingabe, styles.zeitraumWert, { borderColor: colors.border }]}
+      >
+        <Text style={{ color: colors.text, fontSize: 16 }}>
+          {wert !== null ? formatDatum(wert) : t('schedule.gueltigOffen')}
+        </Text>
+      </Pressable>
+      {wert !== null ? (
+        <AppButton variant="secondary" label={offenLabel} onPress={onOffenSetzen} />
+      ) : null}
+    </View>
   );
 }
 
@@ -288,6 +509,9 @@ const styles = StyleSheet.create({
   angaben: { gap: 10 },
   angabe: { gap: 2 },
   abschnitt: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
+  eingabe: { minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12 },
+  zeitraumZeile: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
+  zeitraumWert: { flex: 1, minWidth: 120, justifyContent: 'center' },
   farben: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   farbe: {
     width: 44,
@@ -297,9 +521,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  farbeKeine: { borderStyle: 'dashed' },
   deaktivierenAktionen: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   konflikte: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 8 },
   konfliktZeile: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   loeschen: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },
   loeschenAktionen: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  geltungsbereich: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },
 });

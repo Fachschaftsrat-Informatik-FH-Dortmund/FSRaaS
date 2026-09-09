@@ -166,6 +166,22 @@ describe('Stapelung bei mehr als drei überschneidenden Terminen', () => {
     const abschnitt = belegteAbschnitte(layoutTag([a, b, c], 8 * 60, 18 * 60))[0]!;
     expect(abschnitt.slots.some((s) => s.art === 'stapel')).toBe(false);
   });
+
+  it('Eigene Termine zuerst', () => {
+    // Reihenfolge in der Eingabe bewusst gemischt: zwei Alternativen vor den
+    // eigenen Terminen — trotzdem müssen die beiden eigenen Termine die
+    // sichtbaren Plätze belegen und die Alternativen in den Stapel wandern.
+    const alt1 = { ...termin('alt1', 9 * 60, 11 * 60), istAlternative: true };
+    const alt2 = { ...termin('alt2', 9 * 60, 11 * 60), istAlternative: true };
+    const eigen1 = termin('eigen1', 9 * 60, 11 * 60);
+    const eigen2 = termin('eigen2', 9 * 60, 11 * 60);
+    const abschnitt = belegteAbschnitte(layoutTag([alt1, alt2, eigen1, eigen2], 8 * 60, 18 * 60))[0]!;
+
+    const sichtbar = terminSlotsVon(abschnitt.slots).map((s) => s.entry.id);
+    const stapel = abschnitt.slots.find((s): s is Extract<BelegtSlot, { art: 'stapel' }> => s.art === 'stapel')!;
+    expect(sichtbar).toEqual(['eigen1', 'eigen2', 'alt1']);
+    expect(stapel.entries.map((e) => e.id)).toEqual(['alt2']);
+  });
 });
 
 describe('SCHED-F-540 Spalten werden wiederverwendet', () => {

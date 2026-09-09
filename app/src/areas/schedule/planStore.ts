@@ -156,6 +156,19 @@ export function einmaligerGueltigkeitszeitraum(datum: number): { gueltigVon: num
   return { gueltigVon: datum, gueltigBis: datum };
 }
 
+/**
+ * Requirement „Gültigkeitszeitraum je Eintrag änderbar" (design.md,
+ * Entscheidung 8): `wiederkehrend` wird aus dem Zeitraum abgeleitet, statt
+ * unabhängig davon geführt zu werden — sonst ließe sich ein als „einmalig"
+ * geführter Eintrag über einen freien Zeitraum auf mehrere Wochen spannen,
+ * ohne dass das Kennzeichen mitzöge. Nur ein Zeitraum von genau einem Tag
+ * (`gueltigVon === gueltigBis`, beide gesetzt) gilt als einmalig; ein
+ * offener oder mehrtägiger Zeitraum gilt als wiederkehrend.
+ */
+export function wiederkehrendAusZeitraum(gueltigVon: number | null, gueltigBis: number | null): boolean {
+  return !(gueltigVon !== null && gueltigVon === gueltigBis);
+}
+
 /** Nur für Tests: Modulzustand zurücksetzen. */
 export function __resetScheduleEntriesForTest(): void {
   snapshot = [];
@@ -209,6 +222,24 @@ export function useScheduleEntries() {
   /** SCHED-F-247: Farbe eines einzelnen Termins abweichend von der Vorbelegung setzen. */
   const farbeSetzen = useCallback((id: string, color: string) => {
     schreiben(snapshot.map((e) => (e.id === id ? { ...e, color } : e)));
+  }, []);
+
+  /**
+   * Requirement „Farbwahl je Termin", Szenario „Geltungsbereich erfragen":
+   * setzt die Farbe für alle offiziellen Planeinträge desselben Moduls —
+   * derselbe Gruppierungsschlüssel wie in `kursbaum.ts` (`courseId`,
+   * ersatzweise `name`). Eigene Termine kennen kein Modul und sind hier nie
+   * betroffen.
+   */
+  const farbeFuerModulSetzen = useCallback((courseId: string, name: string, color: string) => {
+    const basis = courseId.trim() !== '' ? courseId : name;
+    schreiben(
+      snapshot.map((e) => {
+        if (e.kind !== 'offiziell') return e;
+        const eBasis = e.courseId.trim() !== '' ? e.courseId : e.name;
+        return eBasis === basis ? { ...e, color } : e;
+      }),
+    );
   }, []);
 
   /**
@@ -275,6 +306,7 @@ export function useScheduleEntries() {
     entfernen,
     deaktivierungSetzen,
     farbeSetzen,
+    farbeFuerModulSetzen,
     konfliktAnnehmen,
     mehrereUebernehmen,
     clear,
