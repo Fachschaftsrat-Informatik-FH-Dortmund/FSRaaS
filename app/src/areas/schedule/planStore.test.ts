@@ -141,6 +141,21 @@ describe('SCHED-F-247 Farbe eines einzelnen Termins ändern', () => {
   });
 });
 
+describe('Herkunft der Terminfarbe', () => {
+  it('hält beim Wählen einer Farbe fest, dass sie von der Nutzerin stammt', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'a', color: '#1E88E5' })));
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+    expect(result.current.entries[0]!.farbeVonNutzer).toBeUndefined();
+
+    act(() => result.current.farbeSetzen('a', '#D81B60'));
+    await waitFor(() => expect(result.current.entries[0]!.farbeVonNutzer).toBe(true));
+    expect(result.current.entries[0]!.color).toBe('#D81B60');
+  });
+});
+
 describe('DATA-F-020 inkonsistenter gespeicherter Bestand wird nicht kommentarlos gelöscht', () => {
   it('behält gültige Einträge und verwirft nur die ungültigen, mit Protokoll und Zähler', async () => {
     await writeJson('scheduleEntries', [

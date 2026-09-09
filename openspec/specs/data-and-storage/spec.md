@@ -12,6 +12,18 @@ Das System muss den Stundenplan der Nutzerin ausschließlich lokal auf dem Gerä
 - **WHEN** eine Nutzerin ihren Stundenplan bearbeitet
 - **THEN** speichert die App die Änderung ausschließlich lokal auf dem Gerät
 
+### Requirement: Herkunft der Terminfarbe
+
+Das System muss je Termin des persönlichen Stundenplans festhalten, ob dessen Farbe von der Nutzerin gewählt oder automatisch vergeben wurde. Die Farbe selbst muss in beiden Fällen gespeichert werden, damit das Abschalten der automatischen Vergabe umkehrbar bleibt. Ein gespeicherter Termin ohne diesen Vermerk gilt als automatisch eingefärbt; das Fehlen des Vermerks darf nicht zum Verwerfen des Eintrags führen. Herkunft: NEU, entschieden 2026-09-09. Bislang wurde beim Anlegen entweder die automatische oder eine neutrale Platzhalterfarbe in den Eintrag geschrieben, ohne die Herkunft zu vermerken. Das Abschalten der Automatik konnte deshalb weder einen bestehenden Plan erfassen noch rückgängig gemacht werden, ohne eigene Farbwahlen zu gefährden (Prüfprotokoll 2026-09-09, Abschnitt 3).
+
+#### Scenario: Eigene Farbwahl wird als solche vermerkt
+- **WHEN** die Nutzerin für einen Termin eine Farbe wählt
+- **THEN** hält das System neben der Farbe fest, dass sie von der Nutzerin stammt
+
+#### Scenario: Bestand ohne Vermerk
+- **WHEN** ein gespeicherter Termin keinen Vermerk zur Herkunft seiner Farbe trägt
+- **THEN** behandelt das System ihn als automatisch eingefärbt und behält ihn im Bestand
+
 ### Requirement: Kein kommentarloses Löschen bei inkonsistentem Bestand
 
 Falls beim Laden des lokal gespeicherten Stundenplans eine unerwartete oder inkonsistente Datenmenge festgestellt wird, muss das System den Fehler protokollieren und die Nutzerin informieren, statt den Bestand kommentarlos zu löschen. Herkunft: Alt: bewusst verworfen (vormals DATA-F-020). Die Flutter-Alt-App löscht bei einer unerwarteten Eintragsanzahl den gesamten Bestand kommentarlos und legt ihn neu an — Datenverlust ohne Rückfrage, ausdrücklich nicht übernommen.
@@ -19,6 +31,18 @@ Falls beim Laden des lokal gespeicherten Stundenplans eine unerwartete oder inko
 #### Scenario: Inkonsistenter Stundenplan-Bestand
 - **WHEN** beim Laden des lokal gespeicherten Stundenplans eine inkonsistente Datenmenge festgestellt wird
 - **THEN** protokolliert das System den Fehler und informiert die Nutzerin, statt den Bestand zu löschen
+
+### Requirement: Kein selbsttätiges Entfernen des Stundenplans
+
+Das System darf den persönlichen Stundenplan ausschließlich auf ausdrückliche Auslösung durch die Nutzerin entfernen. Ein selbsttätiges Leeren oder Zurücksetzen — insbesondere bei einem erkannten Semesterwechsel, bei geänderter Endpunktliste, bei einer entfallenen Auswahl oder bei einem unerwarteten Antwortumfang eines Fremdsystems — ist ausgeschlossen. Herkunft: NEU, entschieden 2026-09-08. Ergänzt das Requirement „Kein kommentarloses Löschen bei inkonsistentem Bestand" um den Fall, dass ein erkanntes Ereignis das Entfernen naheliegend erscheinen lässt. Die Flutter-Alt-App löscht bei unerwarteter Eintragsanzahl den gesamten Bestand kommentarlos; mit dem Hinweis bei Semesterwechsel und dem Abgleich der Endpunktliste entstehen zwei weitere Anlässe, an denen dieselbe Versuchung besteht. Beide dürfen anbieten, nie ausführen.
+
+#### Scenario: Semesterwechsel erkannt
+- **WHEN** das System einen Semesterwechsel oder eine geänderte Endpunktliste erkennt
+- **THEN** weist es darauf hin und bietet das Leeren oder Zurücksetzen an, führt es aber nicht selbsttätig aus
+
+#### Scenario: Gewählter Endpunkt entfallen
+- **WHEN** ein von der Nutzerin gewählter Endpunkt in der aktuellen Fremdsystem-Antwort fehlt
+- **THEN** bleiben die daraus entstandenen Termine im Plan erhalten, bis die Nutzerin selbst etwas anderes veranlasst
 
 ### Requirement: Lokale Speicherung des Semesterticket-Bilds
 
@@ -132,6 +156,34 @@ Das System muss eine Nutzeraktion „Alle lokalen Daten löschen“ bereitstelle
 - **WHEN** eine Nutzerin „Alle lokalen Daten löschen“ auslöst
 - **THEN** entfernt die App alle in der Datenklassen-Übersicht gelisteten Datenklassen vom Gerät
 
+### Requirement: Nutzeraktion „Stundenplan leeren"
+
+Das System muss eine Nutzeraktion bereitstellen, die alle Termine des persönlichen Stundenplans entfernt und die Einrichtung — gewählte Endpunkte und Gruppenkennung — unangetastet lässt. Die Aktion muss vor der Ausführung bestätigt werden und dabei gesondert erfragen, ob die selbst angelegten Termine mitentfernt werden sollen; diese Zusatzfrage ist mit „nein" vorbelegt. Herkunft: NEU, entschieden 2026-09-08. Der Fall ist das Neuzusammenstellen des Plans innerhalb desselben Semesters. Bislang bot die Capability nur die globale Aktion „Alle lokalen Daten löschen", die auch Semesterticket, Benachrichtigungsregeln und Mensa-Einstellungen entfernt, sowie das Löschen einzelner Termine. Die Vorbelegung auf „nein" folgt daraus, dass selbst angelegte Termine Handarbeit sind und im FBWS nicht stehen: Sie lassen sich nicht wiederbeschaffen, die offiziellen jederzeit.
+
+#### Scenario: Plan leeren, Einrichtung behalten
+- **WHEN** die Nutzerin „Stundenplan leeren" auslöst und bestätigt
+- **THEN** entfernt das System die offiziellen Termine des Plans und behält gewählte Endpunkte und Gruppenkennung
+
+#### Scenario: Eigene Termine behalten
+- **WHEN** die Nutzerin die Aktion bestätigt, ohne der Mitentfernung eigener Termine zuzustimmen
+- **THEN** bleiben die selbst angelegten Termine im Plan erhalten
+
+#### Scenario: Eigene Termine mitentfernen
+- **WHEN** die Nutzerin der Mitentfernung eigener Termine ausdrücklich zustimmt
+- **THEN** entfernt das System auch diese
+
+### Requirement: Nutzeraktion „Stundenplan zurücksetzen"
+
+Das System muss eine Nutzeraktion bereitstellen, die zusätzlich zu allen Terminen auch die Einrichtung des Stundenplans entfernt — gewählte Endpunkte und Gruppenkennung — und die App damit in den Zustand vor der ersten Einrichtung zurückversetzt. Die Aktion muss vor der Ausführung bestätigt werden und dabei gesondert erfragen, ob die selbst angelegten Termine mitentfernt werden sollen; diese Zusatzfrage ist mit „nein" vorbelegt. Herkunft: NEU, entschieden 2026-09-08. Der Fall ist das Semesterende. Sie ist von „Stundenplan leeren" getrennt, weil beide Fälle verschiedene Absichten haben: neu zusammenstellen gegenüber von vorn beginnen.
+
+#### Scenario: Zurücksetzen
+- **WHEN** die Nutzerin „Stundenplan zurücksetzen" auslöst und bestätigt
+- **THEN** entfernt das System Termine, gewählte Endpunkte und Gruppenkennung, und der Stundenplan zeigt den Zustand vor der ersten Einrichtung
+
+#### Scenario: Andere Bereiche unberührt
+- **WHEN** die Nutzerin den Stundenplan zurücksetzt
+- **THEN** bleiben Daten anderer Bereiche — Semesterticket, Benachrichtigungsregeln, Mensa-Einstellungen — unverändert erhalten
+
 ### Requirement: Ablage ausschließlich im App-eigenen Speicherbereich
 
 Das System muss alle lokalen Daten aus Abschnitt „Datenklassen“ ausschließlich im App-eigenen Speicherbereich ablegen, sodass eine Deinstallation sie vollständig entfernt. Herkunft: NEU (vormals DATA-F-170).
@@ -222,7 +274,7 @@ Es gibt keine Datenübernahme aus den Alt-Apps. Gründe: andere Plattform (Flutt
 
 ## Löschkonzept
 
-„Alle lokalen Daten löschen“ ist eine Nutzeraktion, die sämtliche in der Datenklassen-Übersicht gelisteten Datenklassen vom Gerät entfernt. Bei Deinstallation entfernt das Betriebssystem alle App-eigenen Daten automatisch, sofern die App keine Daten außerhalb ihres eigenen Speicherbereichs ablegt. Löschung serverseitig gespeicherter personenbezogener Daten (Konto, Bewertungen, Helfer-Anmeldungen) ist Sache der Capability `identity-and-moderation`, nicht dieser Capability.
+„Alle lokalen Daten löschen“ ist eine Nutzeraktion, die sämtliche in der Datenklassen-Übersicht gelisteten Datenklassen vom Gerät entfernt. Daneben stehen zwei engere Nutzeraktionen allein für den Stundenplan: „Stundenplan leeren“ entfernt dessen Termine und behält die Einrichtung, „Stundenplan zurücksetzen“ entfernt zusätzlich gewählte Endpunkte und Gruppenkennung. Beide lassen Daten anderer Bereiche unberührt und fragen gesondert, ob die selbst angelegten Termine mitentfernt werden sollen. Bei Deinstallation entfernt das Betriebssystem alle App-eigenen Daten automatisch, sofern die App keine Daten außerhalb ihres eigenen Speicherbereichs ablegt. Löschung serverseitig gespeicherter personenbezogener Daten (Konto, Bewertungen, Helfer-Anmeldungen) ist Sache der Capability `identity-and-moderation`, nicht dieser Capability.
 
 ## Offene Fragen
 
