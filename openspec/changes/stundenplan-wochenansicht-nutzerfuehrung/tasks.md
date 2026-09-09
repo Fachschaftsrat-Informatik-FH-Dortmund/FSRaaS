@@ -47,7 +47,7 @@
 
 ## 8. Jetzt-Anzeige und Termindetail
 
-- [ ] 8.1 Jetzt-Anzeige zweispaltig, laufende und nächste Veranstaltung nebeneinander; Zeitangaben über `dauerText()` statt in reinen Minuten; Tests `describe('Anzeige des laufenden und nächsten Termins', …)` für beide Szenarien, darunter „in 200 Minuten" als Stunden und Minuten
+- [x] 8.1 Jetzt-Anzeige zweispaltig, laufende und nächste Veranstaltung nebeneinander; Zeitangaben über `dauerText()` statt in reinen Minuten; Tests `describe('Anzeige des laufenden und nächsten Termins', …)` für beide Szenarien, darunter „in 200 Minuten" als Stunden und Minuten
 - [x] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
 - [x] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
 - [x] 8.4 **Gegenstandslos (bereinigt 2026-09-09):** Der Statusumschalter „fest/vorgemerkt" entfällt ersatzlos mit dem Status selbst — Change `stundenplan-bedienung-ohne-vormerkung`, archiviert 2026-09-09. Keine Erklärung mehr nötig, da es den Umschalter nicht mehr gibt; siehe stattdessen Requirement „Deaktivieren eines Termins" der Capability `schedule`
