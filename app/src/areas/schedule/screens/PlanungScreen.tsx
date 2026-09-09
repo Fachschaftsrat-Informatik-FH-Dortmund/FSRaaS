@@ -55,17 +55,17 @@ function neueId(): string {
 }
 
 /**
- * Requirement „Farbwahl je Termin": bei abgeschalteter Farbautomatik erhält
+ * Requirement „Farbwahl je Termin": ein neuer Eintrag erhält
  * ein neu angelegter Termin eine neutrale Platzhalterfarbe statt der
  * automatisch berechneten — bereits gesetzte Farben bleiben davon unberührt,
  * da diese Funktion nur beim Anlegen greift (`ansichtEinstellungen.ts`).
  */
-function baueSessionEintrag(slot: OfficialTermin, farbautomatik: boolean): OfficialPlanEntry {
+function baueSessionEintrag(slot: OfficialTermin): OfficialPlanEntry {
   return {
     kind: 'offiziell',
     id: neueId(),
     deaktiviertBis: null,
-    color: farbautomatik ? farbeFuerVeranstaltung(slot.courseId || slot.name) : SCHEDULE_NEUTRAL,
+    color: farbeFuerVeranstaltung(slot.courseId || slot.name),
     weekday: slot.weekday,
     timeBeginMin: slot.timeBeginMin,
     timeEndMin: slot.timeEndMin,
@@ -158,7 +158,7 @@ export function PlanungScreen() {
       (slot) => !gespeicherterPlanRelevant.some((e) => terminEntsprichtEintrag(slot, e)),
     );
     if (vorbelegbar.length > 0) {
-      setSessionEntscheidungen(vorbelegbar.map((slot) => baueSessionEintrag(slot, ansichtEinstellungen.farbautomatik)));
+      setSessionEntscheidungen(vorbelegbar.map((slot) => baueSessionEintrag(slot)));
     }
   }, [allesGeladen, relevanteModule, gespeicherterPlanRelevant, ansichtEinstellungen.farbautomatik]);
 
@@ -250,7 +250,7 @@ export function PlanungScreen() {
       return;
     }
 
-    const neu = baueSessionEintrag(slot, ansichtEinstellungen.farbautomatik);
+    const neu = baueSessionEintrag(slot);
 
     // Requirement „Bewusste Übernahme trotz Konflikt": eine Wahl trotz
     // erkannter Kollision bleibt möglich (kein Ausblenden, kein Verhindern,

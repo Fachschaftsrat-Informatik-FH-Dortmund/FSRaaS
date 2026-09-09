@@ -386,8 +386,13 @@ describe('Nebeneinanderdarstellung überschneidender Termine', () => {
   });
 });
 
-describe('Stapelung bei mehr als drei überschneidenden Terminen', () => {
-  it('Vier überschneidende Termine', async () => {
+describe('Nebeneinanderdarstellung überschneidender Termine', () => {
+  // Prüfprotokoll 2026-09-09, Abschnitt 1: Die Stapelung ab dem vierten Termin
+  // ist ersatzlos entfallen — sie war am Gerät schlecht bedienbar. Ohne
+  // Obergrenze bleibt jeder Termin sichtbar und einzeln auswählbar; wer sich
+  // viele überschneidende Veranstaltungen wählt, bekommt schmale Kacheln und
+  // weicht für den Überblick auf die nicht maßstabsgetreue Ansicht aus.
+  it('stellt auch mehr als drei überschneidende Termine einzeln dar, ohne einen davon zu verbergen', async () => {
     await seed([
       offiziell({ id: 'a', name: 'Analysis', timeBeginMin: 480, timeEndMin: 600 }),
       offiziell({ id: 'b', name: 'Datenbanken', timeBeginMin: 480, timeEndMin: 600 }),
@@ -396,29 +401,11 @@ describe('Stapelung bei mehr als drei überschneidenden Terminen', () => {
     ]);
     await zeige();
 
-    expect(screen.getByLabelText(/^08:00–10:00 · Analysis/)).toBeTruthy();
-    expect(screen.getByLabelText(/^08:00–10:00 · Datenbanken/)).toBeTruthy();
-    expect(screen.getByLabelText(/^08:00–10:00 · Praktikum/)).toBeTruthy();
-    expect(screen.queryByLabelText(/^08:00–10:00 · Softwaretechnik/)).toBeNull();
-    expect(screen.getByText('+1')).toBeTruthy();
-  });
-
-  it('Stapel aufklappen', async () => {
-    await seed([
-      offiziell({ id: 'a', name: 'Analysis', timeBeginMin: 480, timeEndMin: 600 }),
-      offiziell({ id: 'b', name: 'Datenbanken', timeBeginMin: 480, timeEndMin: 600 }),
-      offiziell({ id: 'c', name: 'Praktikum', timeBeginMin: 480, timeEndMin: 600 }),
-      offiziell({ id: 'd', name: 'Softwaretechnik', timeBeginMin: 480, timeEndMin: 600 }),
-    ]);
-    await zeige();
-
-    fireEvent.press(screen.getByLabelText('1 weitere Termine, zum Aufklappen antippen'));
-
-    // Alle vier Termine sind nun einzeln erreichbar, keiner verdeckt.
     expect(screen.getByLabelText(/^08:00–10:00 · Analysis/)).toBeTruthy();
     expect(screen.getByLabelText(/^08:00–10:00 · Datenbanken/)).toBeTruthy();
     expect(screen.getByLabelText(/^08:00–10:00 · Praktikum/)).toBeTruthy();
     expect(screen.getByLabelText(/^08:00–10:00 · Softwaretechnik/)).toBeTruthy();
+    expect(screen.queryByText('+1')).toBeNull();
   });
 });
 

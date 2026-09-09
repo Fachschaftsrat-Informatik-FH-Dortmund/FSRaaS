@@ -281,8 +281,6 @@
     "alternativeAnstelle": "Anstelle des eigenen Termins",
     "alternativeZusaetzlich": "Zusätzlich zum eigenen Termin",
     "verwaltungSchliessen": "Schließen",
-    "stapelUmfang": "+{{count}}",
-    "stapelLabel": "{{count}} weitere Termine, zum Aufklappen antippen",
     "planLeeren": "Stundenplan leeren",
     "planLeerenFrage": "Alle offiziellen Termine werden aus deinem Plan entfernt. Deine Einrichtung — gewählte Endpunkte und Gruppenkennung — bleibt bestehen.",
     "planLeerenEigeneMitentfernen": "Auch selbst angelegte Termine entfernen",

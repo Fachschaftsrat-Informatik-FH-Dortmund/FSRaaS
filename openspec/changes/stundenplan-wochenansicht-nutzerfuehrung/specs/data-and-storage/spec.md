@@ -28,6 +28,18 @@ Das System muss eine Nutzeraktion bereitstellen, die zusätzlich zu allen Termin
 - **WHEN** die Nutzerin den Stundenplan zurücksetzt
 - **THEN** bleiben Daten anderer Bereiche — Semesterticket, Benachrichtigungsregeln, Mensa-Einstellungen — unverändert erhalten
 
+### Requirement: Herkunft der Terminfarbe
+
+Das System muss je Termin des persönlichen Stundenplans festhalten, ob dessen Farbe von der Nutzerin gewählt oder automatisch vergeben wurde. Die Farbe selbst muss in beiden Fällen gespeichert werden, damit das Abschalten der automatischen Vergabe umkehrbar bleibt. Ein gespeicherter Termin ohne diesen Vermerk gilt als automatisch eingefärbt; das Fehlen des Vermerks darf nicht zum Verwerfen des Eintrags führen. Herkunft: NEU, entschieden 2026-09-09. Bislang wurde beim Anlegen entweder die automatische oder eine neutrale Platzhalterfarbe in den Eintrag geschrieben, ohne die Herkunft zu vermerken. Das Abschalten der Automatik konnte deshalb weder einen bestehenden Plan erfassen noch rückgängig gemacht werden, ohne eigene Farbwahlen zu gefährden (Prüfprotokoll 2026-09-09, Abschnitt 3).
+
+#### Scenario: Eigene Farbwahl wird als solche vermerkt
+- **WHEN** die Nutzerin für einen Termin eine Farbe wählt
+- **THEN** hält das System neben der Farbe fest, dass sie von der Nutzerin stammt
+
+#### Scenario: Bestand ohne Vermerk
+- **WHEN** ein gespeicherter Termin keinen Vermerk zur Herkunft seiner Farbe trägt
+- **THEN** behandelt das System ihn als automatisch eingefärbt und behält ihn im Bestand
+
 ### Requirement: Kein selbsttätiges Entfernen des Stundenplans
 
 Das System darf den persönlichen Stundenplan ausschließlich auf ausdrückliche Auslösung durch die Nutzerin entfernen. Ein selbsttätiges Leeren oder Zurücksetzen — insbesondere bei einem erkannten Semesterwechsel, bei geänderter Endpunktliste, bei einer entfallenen Auswahl oder bei einem unerwarteten Antwortumfang eines Fremdsystems — ist ausgeschlossen. Herkunft: NEU, entschieden 2026-09-08. Ergänzt das Requirement „Kein kommentarloses Löschen bei inkonsistentem Bestand" um den Fall, dass ein erkanntes Ereignis das Entfernen naheliegend erscheinen lässt. Die Flutter-Alt-App löscht bei unerwarteter Eintragsanzahl den gesamten Bestand kommentarlos; mit dem Hinweis bei Semesterwechsel und dem Abgleich der Endpunktliste entstehen zwei weitere Anlässe, an denen dieselbe Versuchung besteht. Beide dürfen anbieten, nie ausführen.

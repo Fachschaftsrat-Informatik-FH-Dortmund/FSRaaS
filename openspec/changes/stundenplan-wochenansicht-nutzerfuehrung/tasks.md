@@ -5,12 +5,12 @@
 - [x] 1.1 `zeitachse.ts` auf eine Spanne je Tag umstellen — erster bis letzter Termin des angezeigten Tages, keine Randlücken; Test `describe('Proportionale Zeitachse', …)` mit dem Szenario „Kein Leerraum an den Tagesrändern"
 - [x] 1.2 Lückenschwellen in `dayLayout.ts`: unter fünfzehn Minuten ohne Block und ohne Beschriftung, über einer Stunde auf Stundenhöhe gestaucht mit Bruchzeichen und tatsächlicher Dauer; Tests für die Szenarien „Kurze Lücke" und „Lange Lücke"
 - [x] 1.3 `dayLayout` liefert Abschnitte mit eigener Höhe statt einer linearen Spanne (`design.md` Entscheidung 1); die Umrechnung auf Pixel bleibt in der Darstellungsschicht, ohne Fachlogik
-- [x] 1.4 Stundenlinien ohne Beschriftung zeichnen, in gestauchten Lücken keine; Tests `describe('Stundenlinien auf der Zeitachse', …)` für beide Szenarien
+- [x] 1.4 **Zurückgenommen (Prüfprotokoll 2026-09-09, Aufgabe 10.3):** Stundenlinien wurden wie beschrieben umgesetzt und am Gerät verworfen. Berechnung, Feld, Darstellung und Tests sind entfernt, das zugehörige Requirement aus dem Spec-Delta gestrichen
 - [x] 1.5 Jetzt-Strich an den Rand heften, wenn die aktuelle Uhrzeit außerhalb der Tagesspanne liegt; Test zum Szenario „Uhrzeit vor dem ersten Termin"
 
 ## 2. Stapelung überschneidender Termine
 
-- [x] 2.1 Spaltenkappung auf drei in `ordneSpaltenZu`, überzählige Termine als Stapel-Slot mit ausgewiesenem Umfang; Tests `describe('Stapelung bei mehr als drei überschneidenden Terminen', …)` für „Vier überschneidende Termine" und „Eigene Termine zuerst" — beide umgesetzt: die Herkunftsunterscheidung liegt als `istAlternative`-Kennzeichen an `PlanEntry` (`typen.ts`), gesetzt von `alternativen.ts` (Block 7)
+- [x] 2.1 **Zurückgenommen (Prüfprotokoll 2026-09-09, Aufgabe 10.4):** Spaltenkappung und Stapel-Slot wurden wie beschrieben umgesetzt und am Gerät als schlecht bedienbar verworfen. `ordneSpaltenZu` vergibt seither ohne Obergrenze eine Spalte je Termin; das zugehörige Requirement ist aus dem Spec-Delta gestrichen. Das `istAlternative`-Kennzeichen an `PlanEntry` bleibt — es trägt weiterhin die Absetzung eingeblendeter Alternativen (Block 7)
 - [x] 2.2 Test `describe('Nebeneinanderdarstellung überschneidender Termine', …)` auf die zwei MODIFIED-Szenarien umstellen — zwei und drei Termine weiterhin nebeneinander
 - [x] 2.3 Aufklappen des Stapels durch Dehnen des Abschnitts umsetzen; Test zum Szenario „Stapel aufklappen" belegt, dass alle enthaltenen Termine einzeln erreichbar sind und nichts verdeckt wird
 
@@ -57,8 +57,27 @@
 
 ## 9. Abschluss
 
-- [ ] 9.1 Prüfprotokoll auf dem Gerät anlegen (Datum, Gerät, Beobachtungen): Lesbarkeit der Zeitachse mit Stauchung und Bruchzeichen, Bedienbarkeit des Stapels, Kontrast der Stundenlinien in hellem und dunklem Erscheinungsbild
-- [ ] 9.2 Die drei Gestaltungsfragen aus `design.md` am Gerät entscheiden und im Prüfprotokoll festhalten: Mindestbreite je Kachel zusätzlich zur Kappung auf drei; Gestalt eines Termins bei abgeschalteter Farbautomatik; ob die zwölf Farbkreise im Termindetail dauerhaft sichtbar bleiben
+- [x] 9.1 Prüfprotokoll auf dem Gerät angelegt (2026-09-09, Android, helles und dunkles Erscheinungsbild): Lesbarkeit der Zeitachse mit Stauchung und Bruchzeichen, Bedienbarkeit des Stapels, Kontrast der Stundenlinien — **nicht bestanden**. Rahmen um die Lücke, Bruchzeichen, Stundenlinien und Stapelung werden zurückgenommen; Stauchung und Dauerangabe bleiben. Umsetzung in Block 10 (`specs/pruefprotokolle/2026-09-09-stundenplan-wochenansicht-nutzerfuehrung.md`, Abschnitt 1)
+- [x] 9.2 Die drei Gestaltungsfragen aus `design.md` am Gerät entschieden und im Prüfprotokoll festgehalten: Mindestbreite je Kachel **gegenstandslos** (die Kappung entfällt mit der Stapelung); Gestalt bei abgeschalteter Farbautomatik **neutrale Fläche**; die zwölf Farbkreise bleiben **dauerhaft sichtbar**. Dabei gefunden: Die Farbautomatik ließ sich praktisch nicht abschalten (Abschnitt 3 des Protokolls) — Abhilfe in Block 10
 - [x] 9.3 `node tools/spec-check/src/cli.js` läuft ohne Befund
 - [x] 9.4 `openspec validate stundenplan-wochenansicht-nutzerfuehrung --strict` läuft ohne Befund — meldet ausschließlich die bekannte Falschmeldung „should contain SHALL or MUST" auf deutschsprachige `muss`-Formulierungen (`spec-check-werkzeug`-Grenze), keine inhaltlichen Befunde; ohne `--strict` bestehen die Spec-Dateien
 - [x] 9.5 Vollständige Testsuite der App grün (92 Suiten, 1235 Tests)
+
+## 10. Nacharbeit aus dem Prüfprotokoll vom 2026-09-09
+
+Die Aufgaben 9.1 und 9.2 haben vier gestalterische Mittel dieses Changes
+widerlegt und einen Fehler an der Farbautomatik zutage gefördert. Da die
+betroffenen Requirements aus dem eigenen, noch nicht archivierten Spec-Delta
+dieses Changes stammen, werden sie hier zurückgenommen, statt erst archiviert
+und dann widerrufen zu werden — nach dem Muster des Prüfprotokolls vom
+2026-09-09 zu `stundenplan-bedienung-ohne-vormerkung`.
+
+- [x] 10.1 Rahmen um die Lücke entfernen; die Dauerangabe bleibt und trägt die Aussage allein (`ScheduleScreen.tsx`, `styles.luecke`). MODIFIED-Delta „Proportionale Zeitachse" entsprechend gefasst
+- [x] 10.2 Bruchzeichen `⌇` der gestauchten Lücke ersatzlos entfernen (`ScheduleScreen.tsx`); Szenario „Lange Lücke" im Delta nennt nur noch Stauchung und tatsächliche Dauer
+- [x] 10.3 Stundenlinien vollständig entfernen — Berechnung (`dayLayout.stundenmarkenIn`), Feld `stundenlinien` an beiden `DaySlot`-Varianten (`typen.ts`), Darstellung und Stil (`ScheduleScreen.tsx`). ADDED-Requirement „Stundenlinien auf der Zeitachse" aus dem Delta gestrichen, `design.md` Entscheidung 4 als zurückgenommen ausgewiesen
+- [x] 10.4 Stapelung vollständig entfernen — `MAX_SICHTBARE_SPALTEN` und der Stapelzweig in `ordneSpaltenZu`, `StapelSlot`/`BelegtSlot` (`typen.ts`), `StapelKachel`, Aufklappzustand und Höhendehnung (`ScheduleScreen.tsx`). ADDED-Requirement „Stapelung bei mehr als drei überschneidenden Terminen" gestrichen, `design.md` Entscheidungen 2 und 3 als zurückgenommen ausgewiesen
+- [x] 10.5 MODIFIED-Delta „Nebeneinanderdarstellung überschneidender Termine" ohne Obergrenze fassen, Szenario „Mehr als drei überschneidende Termine" ergänzt; Tests `describe('Nebeneinanderdarstellung überschneidender Termine', …)` in `dayLayout.test.ts` und `ScheduleScreen.test.tsx` belegen, dass vier überschneidende Termine einzeln sichtbar bleiben und keiner verborgen wird
+- [x] 10.6 Farbherkunft je Eintrag speichern (`farbeVonNutzer`, `typen.ts`); `farbeSetzen` vermerkt die eigene Wahl, neu `farbeAufAutomatikSetzen` für „keine Farbe" (`planStore.ts`). Neues ADDED-Requirement „Herkunft der Terminfarbe" im `data-and-storage`-Delta
+- [x] 10.7 Anzeige aus der Herkunft ableiten (`anzeigeFarbe`, `farbe.ts`) statt die neutrale Farbe beim Anlegen festzuschreiben; `PlanungScreen` und `TerminEditorScreen` speichern immer die automatische Farbe, `ScheduleScreen` und `TerminDetailScreen` zeigen sie über `anzeigeFarbe`. Tests `describe('Farbwahl je Termin: Abschalten der Automatik wirkt auf den bestehenden Plan', …)` für alle vier Fälle, einschließlich Umkehrbarkeit und Bestand ohne Vermerk
+- [x] 10.8 MODIFIED-Delta „Farbwahl je Termin" um Wirkung auf den bestehenden Plan und Umkehrbarkeit ergänzt, mit zwei zusätzlichen Szenarien
+- [x] 10.9 Vollständige Testsuite der App grün (92 Suiten, 1234 Tests), `node tools/spec-check/src/cli.js` und `openspec validate` ohne Befund

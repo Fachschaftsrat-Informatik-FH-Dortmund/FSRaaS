@@ -5,7 +5,8 @@
 // UX-N-010 geforderten Mindestkontrast von 4,5:1 (WCAG „AA", normaler Text).
 // Reine Funktionen ohne React.
 
-import { SCHEDULE_PALETTE } from '@/theme/tokens';
+import { SCHEDULE_NEUTRAL, SCHEDULE_PALETTE } from '@/theme/tokens';
+import type { PlanEntry } from './typen';
 
 /** Stabiler String-Hash (djb2) — deterministisch, keine Abhängigkeit von Objekt-/Map-Reihenfolge. */
 function hashText(text: string): number {
@@ -30,6 +31,19 @@ export function farbeFuerVeranstaltung(
   }
   const index = hashText(schluessel) % palette.length;
   return palette[index]!;
+}
+
+/**
+ * Requirement „Farbwahl je Termin": entscheidet, welche Farbe ein Eintrag
+ * tatsächlich zeigt. `entry.color` trägt immer eine echte Farbe — automatisch
+ * vergeben oder von der Nutzerin gewählt. Ist die Automatik abgeschaltet,
+ * erscheinen nur die automatisch vergebenen Farben als neutrale Fläche; eine
+ * eigene Farbwahl (`farbeVonNutzer`) bleibt sichtbar und geht dadurch nicht
+ * verloren. Das Abschalten wirkt damit auch auf einen bereits bestehenden Plan
+ * und ist umkehrbar (Prüfprotokoll 2026-09-09, Abschnitt 3).
+ */
+export function anzeigeFarbe(entry: PlanEntry, farbautomatik: boolean): string {
+  return farbautomatik || entry.farbeVonNutzer === true ? entry.color : SCHEDULE_NEUTRAL;
 }
 
 function hexZuRgb(hex: string): { r: number; g: number; b: number } {
