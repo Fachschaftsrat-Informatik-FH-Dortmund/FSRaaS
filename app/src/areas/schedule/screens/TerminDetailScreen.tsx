@@ -5,18 +5,20 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
 import { SCHEDULE_PALETTE } from '@/theme/tokens';
-import { AppButton, MessageView, SegmentedControl } from '@/ui/primitives';
+import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { textfarbeFuerHintergrund } from '../farbe';
 import { ermittleKonflikte } from '../konflikt';
 import { useScheduleEntries } from '../planStore';
-import type { PlanEntry, PlanEntryStatus } from '../typen';
+import { istAktiv } from '../time';
+import type { PlanEntry } from '../typen';
+import { endeDesNaechstenVorkommens } from '../wochenrechnung';
 
 // Termindetails (Requirement „Anzeige der Termindetails"). Der Bildschirm zeigt
 // alle Angaben des Eintrags und trägt die Bedienwege, die die Anforderungen
-// ausdrücklich als sichtbar verlangen: Farbwahl je Termin, Statuswechsel
-// „fest"/„vorgemerkt", Bearbeiten und Löschen eines eigenen Termins sowie die
-// bewusste Übernahme trotz Konflikt.
+// ausdrücklich als sichtbar verlangen: Farbwahl je Termin, Deaktivieren mit den
+// zwei Reichweiten (Requirement „Deaktivieren eines Termins"), Bearbeiten und
+// Löschen eines eigenen Termins sowie die bewusste Übernahme trotz Konflikt.
 //
 // Er schreibt ausschließlich über `planStore.ts`, also rein gerätelokal
 // (DATA-F-010).
@@ -33,14 +35,23 @@ function titelVon(entry: PlanEntry): string {
   return entry.kind === 'offiziell' ? entry.name : entry.title;
 }
 
+function formatZeitpunkt(unixSekunden: number): string {
+  const datum = new Date(unixSekunden * 1000);
+  const tag = String(datum.getDate()).padStart(2, '0');
+  const monat = String(datum.getMonth() + 1).padStart(2, '0');
+  const uhrzeit = `${String(datum.getHours()).padStart(2, '0')}:${String(datum.getMinutes()).padStart(2, '0')}`;
+  return `${tag}.${monat}. ${uhrzeit}`;
+}
+
 export function TerminDetailScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { entries, loaded, statusUmschalten, farbeSetzen, entfernen, konfliktAnnehmen } =
+  const { entries, loaded, deaktivierungSetzen, farbeSetzen, entfernen, konfliktAnnehmen } =
     useScheduleEntries();
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
+  const jetztSek = Math.floor(Date.now() / 1000);
 
   const entry = entries.find((e) => e.id === params.id);
 
@@ -66,7 +77,7 @@ export function TerminDetailScreen() {
   }
 
   const tagesTermine = entries.filter((e) => e.weekday === entry.weekday);
-  const konflikte = ermittleKonflikte(tagesTermine);
+  const konflikte = ermittleKonflikte(tagesTermine, jetztSek);
   const offeneGegenparts = konflikte.offen
     .filter((paar) => paar.a.id === entry.id || paar.b.id === entry.id)
     .map((paar) => (paar.a.id === entry.id ? paar.b : paar.a));
@@ -124,17 +135,7 @@ export function TerminDetailScreen() {
         ) : null}
       </View>
 
-      <SegmentedControl<PlanEntryStatus>
-        label={t('schedule.detailStatus')}
-        value={entry.status}
-        onChange={(naechster) => {
-          if (naechster !== entry.status) statusUmschalten(entry.id);
-        }}
-        options={[
-          { value: 'fest', label: t('schedule.statusFest') },
-          { value: 'vorgemerkt', label: t('schedule.statusVorgemerkt') },
-        ]}
-      />
+      <DeaktivierenAbschnitt entry={entry} jetztSek={jetztSek} onSetzen={deaktivierungSetzen} />
 
       <View>
         <Text style={[styles.abschnitt, { color: colors.text }]}>{t('schedule.detailFarbe')}</Text>
@@ -220,6 +221,57 @@ export function TerminDetailScreen() {
   );
 }
 
+/**
+ * Requirement „Deaktivieren eines Termins": bietet die zwei Reichweiten als
+ * getrennte Einträge an (design.md, Entscheidung 4) und die Rücknahme, sobald
+ * der Termin deaktiviert ist. Der aktuelle Zustand steht als Text davor —
+ * die Bedeutung hängt nicht allein an der Farbe der Wochenansicht.
+ */
+function DeaktivierenAbschnitt({
+  entry,
+  jetztSek,
+  onSetzen,
+}: {
+  entry: PlanEntry;
+  jetztSek: number;
+  onSetzen: (id: string, deaktiviertBis: null | 'dauerhaft' | number) => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const aktiv = istAktiv(entry, jetztSek);
+
+  return (
+    <View>
+      <Text style={[styles.abschnitt, { color: colors.text }]}>{t('schedule.detailDeaktivieren')}</Text>
+      <Text style={{ color: colors.textMuted, marginBottom: 8 }}>
+        {entry.deaktiviertBis === null
+          ? t('schedule.detailAktivZustand')
+          : entry.deaktiviertBis === 'dauerhaft'
+            ? t('schedule.detailDeaktiviertDauerhaft')
+            : t('schedule.detailDeaktiviertBis', { zeitpunkt: formatZeitpunkt(entry.deaktiviertBis) })}
+      </Text>
+      {aktiv ? (
+        <View style={styles.deaktivierenAktionen}>
+          <AppButton
+            variant="secondary"
+            label={t('schedule.detailDeaktivierenDauerhaft')}
+            onPress={() => onSetzen(entry.id, 'dauerhaft')}
+          />
+          <AppButton
+            variant="secondary"
+            label={t('schedule.detailDeaktivierenEinmalig')}
+            onPress={() =>
+              onSetzen(entry.id, endeDesNaechstenVorkommens(jetztSek, entry.weekday, entry.timeEndMin))
+            }
+          />
+        </View>
+      ) : (
+        <AppButton label={t('schedule.detailAktivieren')} onPress={() => onSetzen(entry.id, null)} />
+      )}
+    </View>
+  );
+}
+
 function Angabe({ label, wert }: { label: string; wert: string }) {
   const { colors } = useTheme();
   return (
@@ -245,6 +297,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  deaktivierenAktionen: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   konflikte: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 8 },
   konfliktZeile: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   loeschen: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },

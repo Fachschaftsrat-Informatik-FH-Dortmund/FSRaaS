@@ -12,6 +12,8 @@ import { useSyncExternalStore } from 'react';
 export interface PlanungAktion {
   hatUngesicherteAenderungen: boolean;
   sichern: () => void;
+  /** Requirement „Verwerfen der Auswahl im Planungsmodus" (design.md, Entscheidung 7). */
+  verwerfen: () => void;
 }
 
 let aktuelleAktion: PlanungAktion | null = null;

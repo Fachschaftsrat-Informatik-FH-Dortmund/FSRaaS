@@ -6,7 +6,7 @@ function termin(id: string, timeBeginMin: number, timeEndMin: number): CustomPla
     kind: 'eigen',
     id,
     title: id,
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#000000',
     weekday: 'Mon',
     timeBeginMin,

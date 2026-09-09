@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
+import { __resetModulauswahlAktionForTest } from '../modulauswahlAktion';
+import { ModulauswahlVerwerfenZugang } from '../ui/ModulauswahlVerwerfenZugang';
 import { CourseSelectionScreen } from './CourseSelectionScreen';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
@@ -60,6 +62,7 @@ function perEndpunkt() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  __resetModulauswahlAktionForTest();
   mockEinrichtung = { endpunkte: ['INPBPI', 'TUPB'], gruppenkennung: 'C8', gruppenkennungVorschlag: null };
   mockEntries = [];
   mockStudiengaenge = [
@@ -83,6 +86,7 @@ function renderScreen() {
   return render(
     <ThemeProvider>
       <CourseSelectionScreen />
+      <ModulauswahlVerwerfenZugang />
     </ThemeProvider>,
   );
 }
@@ -91,7 +95,7 @@ function offiziellerEintrag(over: Record<string, unknown>) {
   return {
     id: 'bestehend-1',
     kind: 'offiziell',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: 'Mon',
     timeBeginMin: 480,
@@ -204,6 +208,33 @@ describe('Abwahl eines Moduls mit vorhandenen Planeinträgen', () => {
 
     expect(screen.queryByText(/stehen bereits Termine/)).toBeNull();
     expect(screen.getByLabelText('Softwaretechnik 1').props.accessibilityState.checked).toBe(false);
+  });
+});
+
+describe('Verwerfen der Modulauswahl', () => {
+  it('nimmt nach Bestätigung sämtliche Modulhaken auf einmal zurück', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
+    fireEvent.press(screen.getByLabelText('Tutorium Mathematik'));
+
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+    fireEvent.press(screen.getByText('Verwerfen'));
+
+    expect(screen.getByLabelText('Softwaretechnik 1').props.accessibilityState.checked).toBe(false);
+    expect(screen.getByLabelText('Tutorium Mathematik').props.accessibilityState.checked).toBe(false);
+  });
+
+  it('fragt bei verworfenen Modulen mit Planeinträgen nach deren Verbleib, wie die Abwahl eines einzelnen Moduls', () => {
+    mockEntries = [offiziellerEintrag({ id: 'bestehend-1' })];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
+
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+    fireEvent.press(screen.getByText('Verwerfen'));
+
+    expect(screen.getByText(/stehen bereits Termine/)).toBeTruthy();
+    fireEvent.press(screen.getByText('Ja, Termine entfernen'));
+    expect(mockEntfernen).toHaveBeenCalledWith('bestehend-1');
   });
 });
 

@@ -23,10 +23,11 @@ import { ermittleKonflikte, type Konflikte } from '../konflikt';
 import { useScheduleEntries } from '../planStore';
 import { useSemesterstand } from '../semesterstand';
 import { erkenneSemesterwechsel } from '../semesterwechsel';
+import { istAktiv } from '../time';
 import type { DaySlot, PlanEntry, Weekday } from '../typen';
 import { spanneDerWoche } from '../zeitachse';
 import { isoDatumVon, leerGrund, termineDerWoche, termineDesTages } from '../wochenansicht';
-import { belegungsvorschauJeTag, sichtbareWochentage } from '../wochentage';
+import { sichtbareWochentage } from '../wochentage';
 import {
   datumFuerWochentag,
   verschiebeWoche,
@@ -35,6 +36,7 @@ import {
   wochentagVonDatum,
   zielWochentagBeimOeffnen,
 } from '../wochenrechnung';
+import { WochentagsLeiste } from '../ui/WochentagsLeiste';
 
 // Wochenansicht des Stundenplans (Roadmap-Schritt 5, Etappe 3). Sie verdrahtet
 // die vorhandene, für sich getestete Logikschicht des Bereichs — `wochentage`,
@@ -99,6 +101,7 @@ export function ScheduleScreen() {
   const vorlesungszeit = useVorlesungszeit();
 
   const jetzt = useJetzt();
+  const jetztSek = Math.floor(jetzt.getTime() / 1000);
   const heuteDatum = isoDatumVon(jetzt);
   const heutigerWochentag = wochentagVonDatum(heuteDatum);
   const laufendeWoche = wochenanfang(heuteDatum);
@@ -149,16 +152,12 @@ export function ScheduleScreen() {
     () => sichtbareWochentage((tag) => wocheTermine.some((e) => e.weekday === tag)),
     [wocheTermine],
   );
-  const belegung = useMemo(
-    () => belegungsvorschauJeTag(wocheTermine, wochentage),
-    [wocheTermine, wochentage],
-  );
 
   const tagesTermine = useMemo(
     () => (stand ? termineDesTages(entries, stand.wochenanfang, stand.wochentag, filter) : []),
     [entries, stand, filter],
   );
-  const konflikte = useMemo(() => ermittleKonflikte(tagesTermine), [tagesTermine]);
+  const konflikte = useMemo(() => ermittleKonflikte(tagesTermine, jetztSek), [tagesTermine, jetztSek]);
   const spanne = useMemo(() => spanneDerWoche(wocheTermine), [wocheTermine]);
 
   // Der lokale Plan als `QueryLike`, damit Laden und Leerzustand über dieselbe
@@ -178,7 +177,6 @@ export function ScheduleScreen() {
 
   return (
     <Screen scroll tight hideScrollbar>
-      <EinrichtungHeaderLink />
       <SemesterwechselHinweis />
 
       <AsyncStates<PlanEntry[]>
@@ -206,6 +204,7 @@ export function ScheduleScreen() {
                     : []
                 }
                 jetztMin={jetzt.getHours() * MINUTEN_JE_STUNDE + jetzt.getMinutes()}
+                jetztSek={jetztSek}
               />
 
               <Wochenkopf
@@ -217,7 +216,6 @@ export function ScheduleScreen() {
               <Wochentagsleiste
                 stand={stand}
                 wochentage={wochentage}
-                belegung={belegung}
                 heutigerWochentag={stand.wochenanfang === laufendeWoche ? heutigerWochentag : null}
                 onWaehle={(wochentag) => wechsleStand({ ...stand, wochentag })}
               />
@@ -243,6 +241,7 @@ export function ScheduleScreen() {
                   slots={layoutTag(tagesTermine, spanne.vonMin, spanne.bisMin)}
                   spanne={spanne}
                   konflikte={konflikte}
+                  jetztSek={jetztSek}
                   jetztMin={
                     stand.wochenanfang === laufendeWoche && stand.wochentag === heutigerWochentag
                       ? jetzt.getHours() * MINUTEN_JE_STUNDE + jetzt.getMinutes()
@@ -254,6 +253,7 @@ export function ScheduleScreen() {
                 <KompakteListe
                   termine={tagesTermine}
                   konflikte={konflikte}
+                  jetztSek={jetztSek}
                   onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
                 />
               )}
@@ -284,28 +284,6 @@ function useJetzt(): Date {
     return () => clearInterval(timer);
   }, []);
   return jetzt;
-}
-
-/**
- * Requirement „Dauerhafter Zugang zur Einrichtung": ein jederzeit sichtbares
- * Kopfzeilen-Element, unabhängig davon, ob bereits ein persönlicher Plan
- * besteht — anders als die Leerzustände und der Semesterwechsel-Hinweis, die
- * nur unter bestimmten Bedingungen zur Einrichtung führen.
- */
-function EinrichtungHeaderLink() {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-  const router = useRouter();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={t('schedule.einrichtungBearbeiten')}
-      onPress={() => router.push('/einrichtung')}
-      style={styles.einrichtungLink}
-    >
-      <Text style={{ color: colors.accent, fontWeight: '600' }}>{t('schedule.einrichtungBearbeiten')}</Text>
-    </Pressable>
-  );
 }
 
 /**
@@ -347,10 +325,18 @@ function SemesterwechselHinweis() {
 }
 
 /** Requirement „Anzeige des laufenden und nächsten Termins" — eigene Anzeige über dem Plan. */
-function JetztAnzeige({ termine, jetztMin }: { termine: readonly PlanEntry[]; jetztMin: number }) {
+function JetztAnzeige({
+  termine,
+  jetztMin,
+  jetztSek,
+}: {
+  termine: readonly PlanEntry[];
+  jetztMin: number;
+  jetztSek: number;
+}) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const status = ermittleJetztStatus(termine, jetztMin);
+  const status = ermittleJetztStatus(termine, jetztMin, jetztSek);
   if (!status.laufend && !status.naechster) return null;
 
   return (
@@ -426,19 +412,19 @@ function Wochenkopf({
 }
 
 /**
- * Requirements „Wochentagsleiste mit bedarfsweisem Samstag", „Belegungsvorschau
- * je Tag" und „Kalenderdatum je Wochentag".
+ * Requirements „Wochentagsleiste mit bedarfsweisem Samstag" und „Wochentagsleiste
+ * über die volle Bildschirmbreite": Wochentag und Kalenderdatum je Eintrag, ohne
+ * Terminanzahl (Requirement, Belegungsvorschau je Tag entfallen), über die
+ * gemeinsame Komponente `WochentagsLeiste` (design.md, Entscheidung 8).
  */
 function Wochentagsleiste({
   stand,
   wochentage,
-  belegung,
   heutigerWochentag,
   onWaehle,
 }: {
   stand: Ansichtsstand;
   wochentage: readonly Weekday[];
-  belegung: readonly { wochentag: Weekday; anzahl: number }[];
   heutigerWochentag: Weekday | null;
   onWaehle: (wochentag: Weekday) => void;
 }) {
@@ -446,41 +432,28 @@ function Wochentagsleiste({
   const { colors } = useTheme();
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.leiste}>
-      {wochentage.map((wochentag) => {
+    <WochentagsLeiste
+      aktiverWochentag={stand.wochentag}
+      onWaehle={onWaehle}
+      eintraege={wochentage.map((wochentag) => {
         const datum = datumFuerWochentag(stand.wochenanfang, wochentag);
-        const anzahl = belegung.find((b) => b.wochentag === wochentag)?.anzahl ?? 0;
         const aktiv = wochentag === stand.wochentag;
-        return (
-          <Pressable
-            key={wochentag}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: aktiv }}
-            accessibilityLabel={`${t(`schedule.weekday.${wochentag}`)} ${formatTagesdatum(datum)} · ${t(
-              'schedule.belegung',
-              { count: anzahl },
-            )}`}
-            onPress={() => onWaehle(wochentag)}
-            style={[
-              styles.tagChip,
-              { borderColor: colors.border },
-              aktiv && styles.tagChipAktiv,
-              aktiv && { backgroundColor: colors.accent, borderColor: colors.accent },
-            ]}
-          >
-            <Text style={{ color: aktiv ? colors.onAccent : colors.text, fontWeight: '600' }}>
-              {`${heutigerWochentag === wochentag ? '• ' : ''}${t(`schedule.weekday.${wochentag}`)}`}
-            </Text>
-            <Text style={{ color: aktiv ? colors.onAccent : colors.textMuted, fontSize: 12 }}>
-              {formatTagesdatum(datum)}
-            </Text>
-            <Text style={{ color: aktiv ? colors.onAccent : colors.textMuted, fontSize: 12 }}>
-              {t('schedule.belegung', { count: anzahl })}
-            </Text>
-          </Pressable>
-        );
+        return {
+          wochentag,
+          accessibilityLabel: `${t(`schedule.weekday.${wochentag}`)} ${formatTagesdatum(datum)}`,
+          inhalt: (
+            <>
+              <Text style={{ color: aktiv ? colors.onAccent : colors.text, fontWeight: '600' }}>
+                {`${heutigerWochentag === wochentag ? '• ' : ''}${t(`schedule.weekday.${wochentag}`)}`}
+              </Text>
+              <Text style={{ color: aktiv ? colors.onAccent : colors.textMuted, fontSize: 12 }}>
+                {formatTagesdatum(datum)}
+              </Text>
+            </>
+          ),
+        };
       })}
-    </ScrollView>
+    />
   );
 }
 
@@ -530,12 +503,14 @@ function Zeitachse({
   spanne,
   konflikte,
   jetztMin,
+  jetztSek,
   onOeffne,
 }: {
   slots: readonly DaySlot[];
   spanne: { vonMin: number; bisMin: number };
   konflikte: Konflikte;
   jetztMin: number | null;
+  jetztSek: number;
   onOeffne: (id: string) => void;
 }) {
   const { t } = useTranslation();
@@ -584,6 +559,7 @@ function Zeitachse({
             <TerminKachel
               entry={slot.entry}
               konflikte={konflikte}
+              jetztSek={jetztSek}
               laeuft={
                 jetztMin !== null &&
                 slot.entry.timeBeginMin <= jetztMin &&
@@ -613,16 +589,25 @@ function Zeitachse({
 function KompakteListe({
   termine,
   konflikte,
+  jetztSek,
   onOeffne,
 }: {
   termine: readonly PlanEntry[];
   konflikte: Konflikte;
+  jetztSek: number;
   onOeffne: (id: string) => void;
 }) {
   return (
     <View style={styles.liste}>
       {termine.map((entry) => (
-        <TerminKachel key={entry.id} entry={entry} konflikte={konflikte} laeuft={false} onOeffne={onOeffne} />
+        <TerminKachel
+          key={entry.id}
+          entry={entry}
+          konflikte={konflikte}
+          jetztSek={jetztSek}
+          laeuft={false}
+          onOeffne={onOeffne}
+        />
       ))}
     </View>
   );
@@ -630,29 +615,34 @@ function KompakteListe({
 
 /**
  * Ein Termin im Plan. Trägt alle Kennzeichnungen, die die Anforderungen
- * verlangen — eigen, vorgemerkt, gruppenfremd, Prüfung, Konflikthinweis und
+ * verlangen — eigen, deaktiviert, gruppenfremd, Prüfung, Konflikthinweis und
  * angenommener Konflikt —, jede zusätzlich zur Farbe als Text oder Symbol
  * (UX-F-070). Die Beschriftungsfarbe kommt aus `farbe.ts` und hält damit den
- * Mindestkontrast 4,5:1 ein (UX-N-010).
+ * Mindestkontrast 4,5:1 ein (UX-N-010). Ein deaktivierter Termin
+ * (`istAktiv`, Requirement „Wirkung eines deaktivierten Termins") bleibt an
+ * seinem Platz, wird aber zusätzlich zur Zurücknahme über Text erkennbar.
  */
 export function TerminKachel({
   entry,
   konflikte,
+  jetztSek,
   laeuft,
   onOeffne,
 }: {
   entry: PlanEntry;
   konflikte: Konflikte;
+  jetztSek: number;
   laeuft: boolean;
   onOeffne: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const textfarbe = textfarbeFuerHintergrund(entry.color);
+  const deaktiviert = !istAktiv(entry, jetztSek);
 
   const kennzeichen: string[] = [];
   if (entry.kind === 'eigen') kennzeichen.push(t('schedule.kennzeichenEigen'));
-  if (entry.status === 'vorgemerkt') kennzeichen.push(t('schedule.kennzeichenVorgemerkt'));
+  if (deaktiviert) kennzeichen.push(t('schedule.kennzeichenDeaktiviert'));
   if (!entry.gruppenzugehoerig) kennzeichen.push(t('schedule.kennzeichenGruppenfremd'));
   if (entry.istPruefung) kennzeichen.push(t('schedule.kennzeichenPruefung'));
   if (konflikte.hinweisIds.has(entry.id)) kennzeichen.push(t('schedule.konfliktHinweis'));
@@ -671,6 +661,7 @@ export function TerminKachel({
         { backgroundColor: entry.color },
         entry.istPruefung && [styles.kachelPruefung, { borderLeftColor: textfarbe }],
         laeuft && { borderColor: colors.text, borderWidth: 3 },
+        deaktiviert && styles.kachelDeaktiviert,
       ]}
     >
       <Text style={[styles.kachelZeit, { color: textfarbe }]} numberOfLines={1}>
@@ -755,27 +746,12 @@ function SchalterZeile({
 
 const styles = StyleSheet.create({
   inhalt: { gap: 12 },
-  einrichtungLink: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   banner: { padding: 12, borderRadius: 8, gap: 8 },
   bannerAktionen: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   jetzt: { borderWidth: 1, borderRadius: 8, padding: 10, gap: 2 },
   wochenkopf: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   blaettern: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   wochenText: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '600' },
-  leiste: { gap: 8, paddingVertical: 4 },
-  tagChip: {
-    minWidth: 64,
-    minHeight: 60,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // UX-F-070: Der gewählte Tag ist zusätzlich zur Farbfläche an der dickeren
-  // unteren Kante erkennbar — die Auswahl hängt nicht allein an der Farbe.
-  tagChipAktiv: { borderBottomWidth: 4 },
   hinweisFlaeche: { flexGrow: 0, paddingVertical: 32 },
   achse: { position: 'relative', marginTop: 4 },
   luecke: {
@@ -793,6 +769,9 @@ const styles = StyleSheet.create({
   liste: { gap: 8 },
   kachel: { flex: 1, minHeight: 44, borderRadius: 8, padding: 8, gap: 2, justifyContent: 'flex-start' },
   kachelPruefung: { borderLeftWidth: 6 },
+  // Requirement „Wirkung eines deaktivierten Termins": zurückgenommen dargestellt,
+  // die Bedeutung trägt zusätzlich das Textkennzeichen (nie allein die Opazität).
+  kachelDeaktiviert: { opacity: 0.55 },
   kachelZeit: { fontSize: 12, fontWeight: '600' },
   kachelTitel: { fontSize: 14, fontWeight: '700' },
   kachelZeile: { fontSize: 12 },

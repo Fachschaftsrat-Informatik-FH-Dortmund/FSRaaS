@@ -47,3 +47,16 @@ export function sortiereNachBeginnzeit<T extends { timeBeginMin: number }>(
 ): T[] {
   return [...termine].sort((a, b) => a.timeBeginMin - b.timeBeginMin);
 }
+
+/**
+ * Requirement „Wirkung eines deaktivierten Termins" / „Selbsttätiges Ende einer
+ * einmaligen Deaktivierung" (design.md, Entscheidung 3): einzige Auswertung des
+ * Felds `deaktiviertBis` (`typen.ts`). Ausgewertet beim Lesen, nicht durch einen
+ * Aufräumlauf — ein einmalig deaktivierter Termin wird von selbst wieder aktiv,
+ * sobald `jetztSek` seinen Zeitpunkt erreicht oder überschreitet.
+ */
+export function istAktiv(e: { deaktiviertBis: null | 'dauerhaft' | number }, jetztSek: number): boolean {
+  if (e.deaktiviertBis === null) return true;
+  if (e.deaktiviertBis === 'dauerhaft') return false;
+  return jetztSek >= e.deaktiviertBis;
+}
