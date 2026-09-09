@@ -403,3 +403,101 @@ geteilten Geheimnisse rotieren:**
 | Hetzner-Konsole / Storage-Box | in der Hetzner-Oberfläche |
 
 Beim jährlichen FSR-Technik-Wechsel ohnehin alle vier.
+
+---
+
+## 9. Android-Testbuild-Direktdownload
+
+Informeller, vorübergehender Testkanal für Zwischenstände der Android-App vor
+der eigentlichen Store-Auslieferung (Roadmap Schritt 10) — kein Ersatz für App
+Store/Play Store/F-Droid (ADR 0008). Spec-Grundlage:
+`../openspec/specs/android-test-distribution/spec.md`.
+
+```
+Actions → Android-Testbuild (Direktdownload) → Run workflow   (nur manuell)
+                                    │
+   expo prebuild + gradlew assembleRelease (auf dem GitHub-Runner)
+                                    │
+        Monotonie-Prüfung (SSH: app-latest.versioncode vs. neuer versionCode)
+                                    │
+              scp app-latest.apk  ──►  /var/www/fsrfb4aas-downloads/
+                                    │
+                    ssh: app-latest.versioncode aktualisieren
+```
+
+Download-URL: `https://api.fb4.it/downloads/app-latest.apk` — öffentlich, ohne
+GitHub-Anmeldung.
+
+### 9.1 Versions-Bump vor einem neuen Testbuild
+
+Der Workflow bricht ab, wenn der `versionCode` nicht strikt größer ist als der
+des zuletzt veröffentlichten Testbuilds (Sidecar-Datei
+`app-latest.versioncode`). Vor jedem neuen Testbuild:
+
+1. In `app/app.json` `expo.android.versionCode` erhöhen (und bei Bedarf
+   `expo.version`/`versionName`).
+2. `npx expo prebuild --platform android` lokal ausführen.
+3. Den resultierenden Diff in `android/app/build.gradle` (nur der
+   `versionCode`/`versionName`-Wert sollte sich ändern) im selben Merge wie die
+   `app.json`-Änderung committen.
+4. Erst danach den Workflow auslösen.
+
+`app.json` ist die Quelle der Wahrheit — `android/app/build.gradle` folgt ihr,
+nie umgekehrt.
+
+### 9.2 Ersteinrichtung des Downloads-Verzeichnisses (einmalig)
+
+Auf dem VPS, als Nutzer mit `sudo`. Eigentümer ist bewusst der Deploy-Nutzer
+selbst (nicht `fsrfb4aas`), analog zu `/opt/fsrfb4aas/incoming` (Abschnitt
+2.6) — dadurch erreicht `deploy.yml`s `sudo rm -rf /var/www/fsrfb4aas` dieses
+Verzeichnis strukturell nicht (anderer Pfad, anderer Eigentümer):
+
+```bash
+sudo mkdir -p /var/www/fsrfb4aas-downloads
+sudo chown deploy-fsrfb4aas:deploy-fsrfb4aas /var/www/fsrfb4aas-downloads
+ls -la /var/www/   # Eigentümer gegenprüfen
+```
+
+Anschließend die neue `location /downloads/` aus
+[`nginx-fsrfb4aas.conf`](nginx-fsrfb4aas.conf) ausrollen (derselbe
+`server_name`, kein neues Zertifikat nötig):
+
+```bash
+sudo cp deploy/nginx-fsrfb4aas.conf /etc/nginx/sites-available/api.fb4.it
+sudo nginx -t && sudo systemctl reload nginx
+curl -I https://api.fb4.it/downloads/app-latest.apk   # 404 ist vor dem ersten Testbuild korrekt
+```
+
+### 9.3 Upload-Keystore (einmalig, außerhalb dieses Repos)
+
+Der Upload-Keystore selbst wird lokal erzeugt und nie ins Repo aufgenommen:
+
+```bash
+keytool -genkeypair -v -keystore upload.keystore -alias fb4-upload \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Danach `upload.keystore` **und** die drei Passwörter/den Alias in das
+Vaultwarden-Depot des FSR-Vorstands legen (Backup — geht die Datei verloren,
+verweigert Android jede weitere Installation über eine bestehende
+Test-Installation hinweg, siehe design.md „Risks").
+
+### 9.4 GitHub-Secrets (zusätzlich zu Abschnitt 3)
+
+*Settings → Secrets and variables → Actions → New repository secret*
+
+| Secret | Wert |
+|---|---|
+| `ANDROID_RELEASE_KEYSTORE_BASE64` | `base64 -w0 upload.keystore` |
+| `ANDROID_RELEASE_STORE_PASSWORD` | Store-Passwort des Upload-Keystores |
+| `ANDROID_RELEASE_KEY_ALIAS` | Key-Alias, z. B. `fb4-upload` |
+| `ANDROID_RELEASE_KEY_PASSWORD` | Key-Passwort |
+
+`SERVER_HOST`, `SERVER_USER`, `SSH_PRIVATE_KEY` werden von Abschnitt 3
+wiederverwendet — derselbe Deploy-Zugang wie beim Backend-Deployment.
+
+**Rotation:** Wie in Abschnitt 8 — beim jährlichen FSR-Technik-Wechsel und bei
+jedem Ausscheiden einer Person mit Zugriff auf das Vaultwarden-Depot rotieren
+alle vier Werte (neuer Keystore bedeutet aber einen Signaturwechsel, siehe
+9.3 — in der Praxis rotieren meist nur die drei Passwort-/Alias-Secrets, ohne
+den Keystore selbst zu ersetzen).

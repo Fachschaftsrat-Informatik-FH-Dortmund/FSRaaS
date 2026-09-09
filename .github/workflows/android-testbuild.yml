@@ -1,0 +1,136 @@
+name: Android-Testbuild (Direktdownload)
+
+# Baut eine signierte Android-Release-APK und veroeffentlicht sie unter
+# https://api.fb4.it/downloads/app-latest.apk — informeller, vorlaeufiger
+# Testkanal, kein Ersatz fuer App Store/Play Store/F-Droid (ADR 0008).
+# Ausschliesslich manuell ausgeloest, nie automatisch bei einem Merge.
+# Ablauf, Ersteinrichtung und Secret-Rotation: deploy/README.md.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nie zwei Testbuild-Veroeffentlichungen gleichzeitig — sonst koennten sich
+# Sidecar-Datei und APK zweier Laeufe ueberholen.
+concurrency:
+  group: android-testbuild
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Vertragstypen erzeugen
+        run: |
+          npm --prefix tools/contract-codegen ci
+          node tools/contract-codegen/src/generate.mjs
+
+      - name: App-Abhaengigkeiten installieren
+        working-directory: app
+        run: npm ci
+
+      - name: versionCode aus app.json lesen
+        id: version
+        working-directory: app
+        run: |
+          VERSION_CODE=$(node -e "console.log(require('./app.json').expo.android.versionCode)")
+          if [ -z "$VERSION_CODE" ] || [ "$VERSION_CODE" = "undefined" ]; then
+            echo "::error::expo.android.versionCode fehlt in app/app.json."
+            exit 1
+          fi
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Nativen Android-Ordner erzeugen (expo prebuild)
+        working-directory: app
+        run: npx expo prebuild --platform android
+
+      - name: Upload-Keystore aus Secret dekodieren
+        working-directory: app/android/app
+        run: |
+          echo "${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}" | base64 -d > upload.keystore
+
+      - name: Signierte Release-APK bauen
+        working-directory: app/android
+        env:
+          ANDROID_RELEASE_KEYSTORE_PATH: upload.keystore
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+
+      - name: Keystore-Datei vom Runner entfernen
+        if: always()
+        run: rm -f app/android/app/upload.keystore
+
+      # Requirement „Eindeutig aufsteigende Versionsnummer je Testbuild": bricht
+      # ab, bevor irgendetwas hochgeladen wird, wenn der neue versionCode nicht
+      # strikt groesser ist als der zuletzt veroeffentlichte (Sidecar-Datei).
+      # Fehlt die Sidecar-Datei (erster Lauf), gilt die Pruefung als bestanden.
+      - name: Monotonie-Pruefung des versionCode
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          NEW_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NEW_VERSION_CODE
+          script_stop: true
+          script: |
+            set -e
+            REMOTE_FILE=/var/www/fsrfb4aas-downloads/app-latest.versioncode
+            if [ -f "$REMOTE_FILE" ]; then
+              CURRENT_VERSION_CODE=$(cat "$REMOTE_FILE")
+            else
+              CURRENT_VERSION_CODE=0
+            fi
+            echo "Bisheriger versionCode: $CURRENT_VERSION_CODE, neuer versionCode: $NEW_VERSION_CODE"
+            if [ "$NEW_VERSION_CODE" -le "$CURRENT_VERSION_CODE" ]; then
+              echo "versionCode $NEW_VERSION_CODE ist nicht strikt groesser als der zuletzt veroeffentlichte $CURRENT_VERSION_CODE." >&2
+              exit 1
+            fi
+
+      - name: APK fuer die Veroeffentlichung vorbereiten
+        run: cp app/android/app/build/outputs/apk/release/app-release.apk app-latest.apk
+
+      # Reihenfolge zwingend APK-zuerst: bricht der Upload ab, bleibt die
+      # Sidecar-Datei auf dem alten, korrekten Stand stehen (design.md).
+      - name: APK hochladen
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "app-latest.apk"
+          target: "/var/www/fsrfb4aas-downloads"
+          rm: false
+
+      - name: Sidecar-Datei aktualisieren
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          NEW_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NEW_VERSION_CODE
+          script_stop: true
+          script: |
+            set -e
+            echo -n "$NEW_VERSION_CODE" > /var/www/fsrfb4aas-downloads/app-latest.versioncode
+            echo "Veroeffentlicht: versionCode $NEW_VERSION_CODE"
