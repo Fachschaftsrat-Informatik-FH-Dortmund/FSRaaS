@@ -255,7 +255,15 @@ export function useScheduleEntries() {
     );
   }, []);
 
-  const clear = useCallback(() => schreiben([]), []);
+  /**
+   * Requirement „Nutzeraktion „Stundenplan leeren"": entfernt die offiziellen
+   * Termine, lässt selbst angelegte (`kind: 'eigen'`) stehen, sofern
+   * `eigeneMitentfernen` nicht ausdrücklich zustimmt — sie sind Handarbeit und
+   * im FBWS nicht wiederbeschaffbar, anders als die offiziellen.
+   */
+  const clear = useCallback((eigeneMitentfernen: boolean = false) => {
+    schreiben(eigeneMitentfernen ? [] : snapshot.filter((e) => e.kind === 'eigen'));
+  }, []);
 
   /**
    * Requirement „Ausdrückliches Sichern der Planung": übernimmt die im

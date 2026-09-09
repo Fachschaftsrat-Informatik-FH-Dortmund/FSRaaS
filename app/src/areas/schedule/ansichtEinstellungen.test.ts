@@ -31,17 +31,6 @@ describe('SCHED-F-530 proportionale Zeitachse gegen kompakte Liste abschaltbar',
   });
 });
 
-describe('SCHED-F-145 Schalter zum Ausblenden gruppenfremder Termine', () => {
-  it('beginnt ausgeschaltet (gruppenfremde Termine bleiben sichtbar, SCHED-F-140) und lässt sich umschalten', async () => {
-    const { result } = renderHook(() => useAnsichtEinstellungen());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-    expect(result.current.einstellungen.gruppenfremdeAusblenden).toBe(false);
-
-    act(() => result.current.toggleGruppenfremdeAusblenden());
-    await waitFor(() => expect(result.current.einstellungen.gruppenfremdeAusblenden).toBe(true));
-  });
-});
-
 describe('SCHED-F-150 Sprung zum aktuellen Wochentag beim Öffnen', () => {
   it('beginnt aktiv und lässt sich abschalten, persistiert das', async () => {
     const { result } = renderHook(() => useAnsichtEinstellungen());
@@ -54,45 +43,17 @@ describe('SCHED-F-150 Sprung zum aktuellen Wochentag beim Öffnen', () => {
   });
 });
 
-describe('Schalter zum Abschalten aller Filter', () => {
-  it('übergeht die gesetzten Filter, solange der Schalter aktiv ist', async () => {
-    const { result } = renderHook(() => useAnsichtEinstellungen());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
+describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten aller Filter entfallen', () => {
+  it('verwirft gespeicherte Altwerte beider Schalter beim Laden', async () => {
+    await AsyncStorage.setItem(
+      'scheduleViewSettings',
+      JSON.stringify({ zeitachse: true, sprungZuHeute: true, gruppenfremdeAusblenden: true, alleAnzeigen: true }),
+    );
 
-    act(() => result.current.toggleGruppenfremdeAusblenden());
-    await waitFor(() => expect(result.current.einstellungen.gruppenfremdeAusblenden).toBe(true));
-    expect(result.current.filter).toEqual({
-      gruppenfremdeAusblenden: true,
-      gueltigkeitszeitraumPruefen: true,
-    });
-
-    act(() => result.current.toggleAlleAnzeigen());
-    await waitFor(() => expect(result.current.einstellungen.alleAnzeigen).toBe(true));
-    expect(result.current.filter).toEqual({
-      gruppenfremdeAusblenden: false,
-      gueltigkeitszeitraumPruefen: false,
-    });
-  });
-
-  it('lässt die zuvor gesetzten Filtereinstellungen nach dem Zurücknehmen unverändert weiterwirken', async () => {
-    const { result } = renderHook(() => useAnsichtEinstellungen());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-
-    act(() => result.current.toggleGruppenfremdeAusblenden());
-    await waitFor(() => expect(result.current.einstellungen.gruppenfremdeAusblenden).toBe(true));
-
-    act(() => result.current.toggleAlleAnzeigen());
-    await waitFor(() => expect(result.current.einstellungen.alleAnzeigen).toBe(true));
-    // Der gespeicherte Wert bleibt unangetastet, er wird nur übergangen.
-    expect(result.current.einstellungen.gruppenfremdeAusblenden).toBe(true);
-    expect(await readAnsichtEinstellungen()).toMatchObject({ gruppenfremdeAusblenden: true });
-
-    act(() => result.current.toggleAlleAnzeigen());
-    await waitFor(() => expect(result.current.einstellungen.alleAnzeigen).toBe(false));
-    expect(result.current.filter).toEqual({
-      gruppenfremdeAusblenden: true,
-      gueltigkeitszeitraumPruefen: true,
-    });
+    const gelesen = await readAnsichtEinstellungen();
+    expect(gelesen).toEqual({ zeitachse: true, sprungZuHeute: true });
+    expect(gelesen).not.toHaveProperty('gruppenfremdeAusblenden');
+    expect(gelesen).not.toHaveProperty('alleAnzeigen');
   });
 });
 

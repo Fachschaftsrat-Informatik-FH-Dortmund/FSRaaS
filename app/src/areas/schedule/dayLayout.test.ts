@@ -1,5 +1,5 @@
 import { layoutTag } from './dayLayout';
-import type { CustomPlanEntry, DaySlot } from './typen';
+import type { BelegtSlot, CustomPlanEntry, DaySlot } from './typen';
 
 function termin(id: string, timeBeginMin: number, timeEndMin: number): CustomPlanEntry {
   return {
@@ -21,28 +21,37 @@ function termin(id: string, timeBeginMin: number, timeEndMin: number): CustomPla
   };
 }
 
-function terminSlots(slots: DaySlot[]) {
-  return slots.filter((s): s is Extract<DaySlot, { art: 'termin' }> => s.art === 'termin');
+function belegteAbschnitte(slots: DaySlot[]) {
+  return slots.filter((s): s is Extract<DaySlot, { art: 'belegt' }> => s.art === 'belegt');
 }
 
 function lueckenSlots(slots: DaySlot[]) {
   return slots.filter((s): s is Extract<DaySlot, { art: 'luecke' }> => s.art === 'luecke');
 }
 
-describe('SCHED-F-520 Lücken ohne Termin mit Dauer', () => {
+function terminSlotsVon(belegtSlots: BelegtSlot[]) {
+  return belegtSlots.filter((s): s is Extract<BelegtSlot, { art: 'termin' }> => s.art === 'termin');
+}
+
+function alleTerminSlots(slots: DaySlot[]) {
+  return belegteAbschnitte(slots).flatMap((a) => terminSlotsVon(a.slots));
+}
+
+describe('Lücken ohne Termin mit Dauer', () => {
   it('gibt bei keinem Termin genau eine Lücke über den gesamten Tag aus', () => {
     const ergebnis = layoutTag([], 8 * 60, 18 * 60);
-    expect(ergebnis).toEqual([{ art: 'luecke', vonMin: 8 * 60, bisMin: 18 * 60 }]);
+    expect(lueckenSlots(ergebnis)).toHaveLength(1);
+    expect(lueckenSlots(ergebnis)[0]).toMatchObject({ vonMin: 8 * 60, bisMin: 18 * 60 });
   });
 
   it('setzt eine Lücke vor, zwischen und nach den Terminen an', () => {
     const a = termin('a', 9 * 60, 10 * 60);
     const b = termin('b', 12 * 60, 13 * 60);
     const ergebnis = layoutTag([a, b], 8 * 60, 18 * 60);
-    expect(lueckenSlots(ergebnis)).toEqual([
-      { art: 'luecke', vonMin: 8 * 60, bisMin: 9 * 60 },
-      { art: 'luecke', vonMin: 10 * 60, bisMin: 12 * 60 },
-      { art: 'luecke', vonMin: 13 * 60, bisMin: 18 * 60 },
+    expect(lueckenSlots(ergebnis).map((l) => ({ vonMin: l.vonMin, bisMin: l.bisMin }))).toEqual([
+      { vonMin: 8 * 60, bisMin: 9 * 60 },
+      { vonMin: 10 * 60, bisMin: 12 * 60 },
+      { vonMin: 13 * 60, bisMin: 18 * 60 },
     ]);
   });
 
@@ -60,11 +69,58 @@ describe('SCHED-F-520 Lücken ohne Termin mit Dauer', () => {
   });
 });
 
-describe('SCHED-F-540 Überschneidende Termine liegen nebeneinander', () => {
-  it('weist zwei überschneidenden Terminen unterschiedliche Spalten zu', () => {
+describe('Proportionale Zeitachse', () => {
+  it('Freistunde zwischen zwei Terminen', () => {
+    const a = termin('a', 9 * 60, 10 * 60);
+    const b = termin('b', 10 * 60 + 45, 11 * 60 + 45);
+    const [luecke] = lueckenSlots(layoutTag([a, b], 9 * 60, 11 * 60 + 45));
+    expect(luecke).toMatchObject({ vonMin: 10 * 60, bisMin: 10 * 60 + 45, hoeheMin: 45, gestaucht: false, kurz: false });
+  });
+
+  it('Kurze Lücke', () => {
+    const a = termin('a', 9 * 60, 10 * 60);
+    const b = termin('b', 10 * 60 + 10, 11 * 60);
+    const [luecke] = lueckenSlots(layoutTag([a, b], 9 * 60, 11 * 60));
+    expect(luecke).toMatchObject({ vonMin: 10 * 60, bisMin: 10 * 60 + 10, hoeheMin: 10, gestaucht: false, kurz: true });
+  });
+
+  it('Lange Lücke', () => {
+    const a = termin('a', 9 * 60, 10 * 60);
+    const b = termin('b', 13 * 60 + 30, 14 * 60 + 30);
+    const [luecke] = lueckenSlots(layoutTag([a, b], 9 * 60, 14 * 60 + 30));
+    expect(luecke).toMatchObject({
+      vonMin: 10 * 60,
+      bisMin: 13 * 60 + 30,
+      hoeheMin: 60,
+      echteDauerMin: 3 * 60 + 30,
+      gestaucht: true,
+      kurz: false,
+    });
+  });
+});
+
+describe('Stundenlinien auf der Zeitachse', () => {
+  it('nennt die vollen Stunden innerhalb eines maßstabsgetreuen Abschnitts', () => {
+    const a = termin('a', 9 * 60, 9 * 60 + 40);
+    const b = termin('b', 10 * 60 + 20, 11 * 60);
+    const ergebnis = layoutTag([a, b], 9 * 60, 11 * 60);
+    const luecke = lueckenSlots(ergebnis)[0]!;
+    expect(luecke.stundenlinien).toEqual([10 * 60]);
+  });
+
+  it('nennt in einer gestauchten Lücke keine Stundenlinien', () => {
+    const a = termin('a', 9 * 60, 10 * 60);
+    const b = termin('b', 13 * 60 + 30, 14 * 60 + 30);
+    const [luecke] = lueckenSlots(layoutTag([a, b], 9 * 60, 14 * 60 + 30));
+    expect(luecke!.stundenlinien).toEqual([]);
+  });
+});
+
+describe('Nebeneinanderdarstellung überschneidender Termine', () => {
+  it('Überschneidende Termine', () => {
     const a = termin('a', 9 * 60, 10 * 60);
     const b = termin('b', 9 * 60 + 30, 10 * 60 + 30);
-    const ergebnis = terminSlots(layoutTag([a, b], 8 * 60, 18 * 60));
+    const ergebnis = terminSlotsVon(terminSlotsVonTag([a, b]));
     expect(ergebnis).toHaveLength(2);
     const spaltenA = ergebnis.find((s) => s.entry.id === 'a')!;
     const spaltenB = ergebnis.find((s) => s.entry.id === 'b')!;
@@ -73,33 +129,62 @@ describe('SCHED-F-540 Überschneidende Termine liegen nebeneinander', () => {
     expect(spaltenB.spalten).toBe(2);
   });
 
-  it('gibt überschneidungsfreien Terminen jeweils genau eine Spalte', () => {
-    const a = termin('a', 9 * 60, 10 * 60);
-    const b = termin('b', 11 * 60, 12 * 60);
-    const ergebnis = terminSlots(layoutTag([a, b], 8 * 60, 18 * 60));
-    expect(ergebnis.every((s) => s.spalten === 1 && s.spalte === 0)).toBe(true);
+  it('Drei überschneidende Termine', () => {
+    const a = termin('a', 9 * 60, 11 * 60);
+    const b = termin('b', 9 * 60, 11 * 60);
+    const c = termin('c', 9 * 60, 11 * 60);
+    const ergebnis = terminSlotsVon(terminSlotsVonTag([a, b, c]));
+    const spalten = new Set(ergebnis.map((s) => s.spalte));
+    expect(spalten.size).toBe(3);
+    expect(ergebnis.every((s) => s.spalten === 3)).toBe(true);
   });
 
+  function terminSlotsVonTag(termine: CustomPlanEntry[]): BelegtSlot[] {
+    return belegteAbschnitte(layoutTag(termine, 8 * 60, 18 * 60)).flatMap((a) => a.slots);
+  }
+});
+
+describe('Stapelung bei mehr als drei überschneidenden Terminen', () => {
+  it('Vier überschneidende Termine', () => {
+    const a = termin('a', 9 * 60, 11 * 60);
+    const b = termin('b', 9 * 60, 11 * 60);
+    const c = termin('c', 9 * 60, 11 * 60);
+    const d = termin('d', 9 * 60, 11 * 60);
+    const abschnitt = belegteAbschnitte(layoutTag([a, b, c, d], 8 * 60, 18 * 60))[0]!;
+
+    const sichtbar = terminSlotsVon(abschnitt.slots);
+    const stapel = abschnitt.slots.filter((s) => s.art === 'stapel');
+    expect(sichtbar).toHaveLength(3);
+    expect(stapel).toHaveLength(1);
+    expect(stapel[0]).toMatchObject({ entries: [d], spalte: 3, spalten: 4 });
+  });
+
+  it('lässt die einzeln sichtbaren Termine unangetastet, wenn genau drei überschneiden', () => {
+    const a = termin('a', 9 * 60, 11 * 60);
+    const b = termin('b', 9 * 60, 11 * 60);
+    const c = termin('c', 9 * 60, 11 * 60);
+    const abschnitt = belegteAbschnitte(layoutTag([a, b, c], 8 * 60, 18 * 60))[0]!;
+    expect(abschnitt.slots.some((s) => s.art === 'stapel')).toBe(false);
+  });
+});
+
+describe('SCHED-F-540 Spalten werden wiederverwendet', () => {
   it('lässt einen Termin wiederverwenden, sobald seine Spalte wieder frei ist', () => {
-    // a und b überlappen, c beginnt erst nach dem Ende von a → c darf As Spalte übernehmen.
     const a = termin('a', 9 * 60, 10 * 60);
     const b = termin('b', 9 * 60 + 30, 11 * 60);
     const c = termin('c', 10 * 60, 10 * 60 + 30);
-    const ergebnis = terminSlots(layoutTag([a, b, c], 8 * 60, 18 * 60));
+    const ergebnis = alleTerminSlots(layoutTag([a, b, c], 8 * 60, 18 * 60));
     const spaltenA = ergebnis.find((s) => s.entry.id === 'a')!.spalte;
     const spaltenC = ergebnis.find((s) => s.entry.id === 'c')!.spalte;
     expect(spaltenA).toBe(spaltenC);
     expect(ergebnis.every((s) => s.spalten === 2)).toBe(true);
   });
 
-  it('benötigt für drei gleichzeitig laufende Termine drei Spalten', () => {
-    const a = termin('a', 9 * 60, 11 * 60);
-    const b = termin('b', 9 * 60, 11 * 60);
-    const c = termin('c', 9 * 60, 11 * 60);
-    const ergebnis = terminSlots(layoutTag([a, b, c], 8 * 60, 18 * 60));
-    const spalten = new Set(ergebnis.map((s) => s.spalte));
-    expect(spalten.size).toBe(3);
-    expect(ergebnis.every((s) => s.spalten === 3)).toBe(true);
+  it('gibt überschneidungsfreien Terminen jeweils genau eine Spalte', () => {
+    const a = termin('a', 9 * 60, 10 * 60);
+    const b = termin('b', 11 * 60, 12 * 60);
+    const ergebnis = alleTerminSlots(layoutTag([a, b], 8 * 60, 18 * 60));
+    expect(ergebnis.every((s) => s.spalten === 1 && s.spalte === 0)).toBe(true);
   });
 
   it('gibt eine spätere, unabhängige Gruppe unabhängig von einer früheren Dreiergruppe mit nur einer Spalte aus', () => {
@@ -107,7 +192,7 @@ describe('SCHED-F-540 Überschneidende Termine liegen nebeneinander', () => {
     const b = termin('b', 9 * 60, 11 * 60);
     const c = termin('c', 9 * 60, 11 * 60);
     const d = termin('d', 14 * 60, 15 * 60);
-    const ergebnis = terminSlots(layoutTag([a, b, c, d], 8 * 60, 18 * 60));
+    const ergebnis = alleTerminSlots(layoutTag([a, b, c, d], 8 * 60, 18 * 60));
     const slotD = ergebnis.find((s) => s.entry.id === 'd')!;
     expect(slotD.spalten).toBe(1);
     expect(slotD.spalte).toBe(0);
@@ -116,7 +201,7 @@ describe('SCHED-F-540 Überschneidende Termine liegen nebeneinander', () => {
   it('gibt Termine in chronologischer Reihenfolge zurück', () => {
     const a = termin('a', 12 * 60, 13 * 60);
     const b = termin('b', 9 * 60, 10 * 60);
-    const ergebnis = terminSlots(layoutTag([a, b], 8 * 60, 18 * 60));
+    const ergebnis = alleTerminSlots(layoutTag([a, b], 8 * 60, 18 * 60));
     expect(ergebnis.map((s) => s.entry.id)).toEqual(['b', 'a']);
   });
 });
