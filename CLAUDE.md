@@ -1,6 +1,6 @@
 # FB4-App — Arbeitsanweisung
 
-App des Fachschaftsrats Informatik (FB4) der FH Dortmund. Löst zwei Alt-Apps ab: eine Flutter/iOS-App und eine Android-App, beide unter `alte apps/`. **Die Android-App (`alte apps/android-fb4/`, Version 1.4.11) ist der zu übertreffende Stand** — sie ist die funktionsreichere der beiden.
+App des Fachschaftsrats Informatik (FB4) der FH Dortmund. Löst zwei Alt-Apps ab: eine Flutter/iOS-App und eine Android-App. **Die Android-App (Version 1.4.11) ist der zu übertreffende Stand** — sie ist die funktionsreichere der beiden. Ihr Quellcode liegt seit ADR 0020 nicht mehr im Repo, sondern nur lokal unter `FSRaaS-lokale-daten/alte apps/` (enthielt Live-Zugangsdaten zum Admin-Bereich von app.fsrfb4.de) — bei Bedarf beim FSR-Vorstand erfragen.
 
 ## Das Wichtigste zuerst
 
@@ -34,7 +34,7 @@ specs/          Entscheidungen (ADRs) und Produkt-/Prozessdokumente — weiterhi
 app/            React Native (Expo), iOS, Android und PC-Verwaltungsoberfläche (Web-Export, ADR 0018)
 backend/        ASP.NET Core, PostgreSQL, Entity Framework Core
 tools/          Prüfskripte für den Spec-Bestand, Codeerzeugung aus dem Vertrag
-alte apps/      Quellcode beider Alt-Apps — Lesequelle, nie Vorlage zum Kopieren
+alte apps/      NICHT im Repo (ADR 0020) — Quellcode beider Alt-Apps, nur lokal unter FSRaaS-lokale-daten/
 resources/      Reale Beispieldateien (Prüfungspläne)
 ```
 
