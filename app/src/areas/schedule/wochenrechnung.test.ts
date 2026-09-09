@@ -1,5 +1,6 @@
 import {
   datumFuerWochentag,
+  endeDesNaechstenVorkommens,
   imGueltigkeitszeitraum,
   verschiebeDatum,
   verschiebeWoche,
@@ -14,6 +15,14 @@ import {
 function mittagUnix(datum: string): number {
   const [y, m, d] = datum.split('-').map(Number);
   return Math.floor(new Date(y!, m! - 1, d!, 12, 0, 0).getTime() / 1000);
+}
+
+function unixZeit(datum: string, minutenSeitMitternacht: number): number {
+  const [y, m, d] = datum.split('-').map(Number);
+  return Math.floor(
+    new Date(y!, m! - 1, d!, Math.floor(minutenSeitMitternacht / 60), minutenSeitMitternacht % 60, 0).getTime() /
+      1000,
+  );
 }
 
 describe('SCHED-F-480 Wochenanfang und Datum je Wochentag', () => {
@@ -123,5 +132,21 @@ describe('SCHED-F-160 Wochenendtag ohne Termine springt vorwärts, nicht zum vor
 
   it('bleibt beim aktuellen Tag, wenn die gesamte Woche keine Termine hat', () => {
     expect(zielWochentagBeimOeffnen('Sat', () => false)).toBe('Sat');
+  });
+});
+
+describe('Selbsttätiges Ende einer einmaligen Deaktivierung: Zeitpunkt der Reichweite „nur dieses Vorkommen"', () => {
+  it('legt den Zeitpunkt auf das Ende des Termins am betreffenden Wochentag dieser Woche, wenn er noch bevorsteht', () => {
+    const jetzt = mittagUnix('2026-09-02'); // Mittwoch, 12:00
+    // Freitag (2026-09-04) derselben Woche, Ende um 23:00 — liegt noch vor uns.
+    const erwartet = unixZeit('2026-09-04', 23 * 60);
+    expect(endeDesNaechstenVorkommens(jetzt, 'Fri', 23 * 60)).toBe(erwartet);
+  });
+
+  it('springt eine Woche weiter, wenn der Zeitpunkt in dieser Woche bereits verstrichen ist', () => {
+    const jetzt = mittagUnix('2026-09-02'); // Mittwoch, 12:00
+    // Derselbe Mittwoch endet bereits um 10:00 — das liegt vor jetzt.
+    const erwartet = unixZeit('2026-09-09', 10 * 60);
+    expect(endeDesNaechstenVorkommens(jetzt, 'Wed', 10 * 60)).toBe(erwartet);
   });
 });

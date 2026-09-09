@@ -1,4 +1,5 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { ThemeProvider } from '@/theme';
 import { __resetPlanungAktionForTest } from '../planungAktion';
@@ -82,7 +83,7 @@ function offiziellerEintrag(over: Record<string, unknown>) {
   return {
     id: 'bestehend-1',
     kind: 'offiziell',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: 'Mon',
     timeBeginMin: 480,
@@ -132,6 +133,14 @@ function renderScreen() {
     </ThemeProvider>,
   );
 }
+
+describe('Wege und Übergänge: kein doppelter Zugang zur Modulauswahl', () => {
+  it('bietet keinen Verweis „Zur Modulauswahl" mehr — die Modulauswahl bleibt über den Zurück-Weg der Kopfzeile erreichbar', () => {
+    renderScreen();
+    expect(screen.queryByLabelText('Zur Modulauswahl')).toBeNull();
+    expect(screen.queryByText('Zur Modulauswahl')).toBeNull();
+  });
+});
 
 describe('Planungsmodus mit Wochentagsgliederung', () => {
   it('zeigt die Termine der gewählten Module nach Wochentagen gegliedert, je Wochentag aufsteigend nach Beginnzeit', () => {
@@ -186,6 +195,16 @@ describe('Leiste der ausstehenden Veranstaltungen', () => {
     expect(screen.getByLabelText('Dienstag').props.accessibilityState.selected).toBe(true);
   });
 
+  it('hebt das Sprungziel kurzzeitig hervor und kehrt danach von selbst in den Normalzustand zurück', async () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Mathematik für Informatik 3 Ü'));
+
+    const zeile = () => StyleSheet.flatten(screen.getByTestId(/^zeile-INF999\|Ü\|Tue\|600\|690/).props.style);
+    expect(zeile().borderWidth).toBe(3);
+
+    await waitFor(() => expect(zeile().borderWidth).not.toBe(3), { timeout: 3000 });
+  });
+
   it('meldet, dass nichts mehr aussteht, sobald jede Veranstaltungsart mindestens einen Termin trägt', () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Dienstag'));
@@ -217,6 +236,9 @@ describe('Ausdrückliches Sichern der Planung', () => {
     // Die vorbelegte Vorlesung (Montag) UND die frisch gewählte Übung (Dienstag)
     // wirken gemeinsam in einem Schreibvorgang.
     expect(hinzuzufuegen).toHaveLength(2);
+    // Requirement „Ausdrückliches Sichern der Planung": nach dem Sichern
+    // wechselt das System in die Wochenansicht.
+    expect(mockRouter.replace).toHaveBeenCalledWith('/');
   });
 
   it('weist ohne jede Änderung keine ungesicherten Änderungen aus', () => {
@@ -230,7 +252,6 @@ describe('Ausdrückliches Sichern der Planung', () => {
         timeBeginMin: 720,
         timeEndMin: 810,
         studentSet: 'C5-E',
-        status: 'vorgemerkt',
       }),
     ];
     renderScreen();
@@ -302,10 +323,95 @@ describe('Kennzeichnung des Planungsstands je Veranstaltung', () => {
 });
 
 describe('Zweckbestimmung eigener Termine', () => {
-  it('bietet den Bedienweg zum Anlegen eigener Termine im Planungsmodus an', () => {
+  it('bietet den Bedienweg zum Anlegen eigener Termine im Planungsmodus über die Leiste der Ausstehenden an', () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Eigenen Termin anlegen'));
-    expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/termin', params: { wochentag: 'Mon' } });
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/termin',
+      params: { wochentag: 'Mon', planung: '1' },
+    });
+  });
+
+  it('bietet genau einen Bedienweg zum Anlegen — keinen zweiten Knopf unter der Terminliste', () => {
+    renderScreen();
+    expect(screen.getAllByLabelText('Eigenen Termin anlegen')).toHaveLength(1);
+  });
+});
+
+describe('Verwerfen der Auswahl im Planungsmodus', () => {
+  it('setzt den Zwischenstand nach Bestätigung auf den gesicherten Plan zurück', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+    expect(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+    fireEvent.press(screen.getByText('Verwerfen'));
+
+    expect(screen.getByLabelText('Planung sichern')).toBeTruthy();
+    expect(mockMehrereUebernehmen).not.toHaveBeenCalled();
+  });
+
+  it('bricht das Verwerfen ab und behält alle Entscheidungen', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+    fireEvent.press(screen.getByText('Abbrechen'));
+
+    expect(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeTruthy();
+    expect(
+      screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/).props.accessibilityState.checked,
+    ).toBe(true);
+  });
+
+  it('lässt den gesicherten Plan beim Verwerfen unberührt', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+    fireEvent.press(screen.getByText('Verwerfen'));
+
+    expect(mockMehrereUebernehmen).not.toHaveBeenCalled();
+  });
+});
+
+describe('Kennzeichnung gewählter Termine im Planungsmodus', () => {
+  it('zeigt einen gewählten Termin mit dem Auswahlsymbol', () => {
+    renderScreen();
+    const gewaehlt = screen.getByLabelText(/08:00–09:30/);
+    expect(gewaehlt.props.accessibilityState.checked).toBe(true);
+  });
+
+  it('zeigt einen nicht gewählten Termin ohne das Auswahlsymbol', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    const nichtGewaehlt = screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/);
+    expect(nichtGewaehlt.props.accessibilityState.checked).toBe(false);
+  });
+});
+
+describe('Lehrende Person in der Terminzeile des Planungsmodus', () => {
+  it('zeigt die lehrende Person eines Termins in der Terminzeile', () => {
+    renderScreen();
+    expect(screen.getByText(/Prof\. Beispiel/)).toBeTruthy();
+  });
+
+  it('lässt die Angabe ohne Platzhalter aus, wenn keine lehrende Person geführt wird', () => {
+    mockTermineQuery = {
+      ...mockTermineQuery,
+      perEndpunkt: [
+        {
+          sname: 'INPBPI',
+          name: 'Bachelor Informatik',
+          termine: [{ ...MATHE3_V, lecturerName: '' }, MATHE3_UE_FREMD, MATHE3_UE_EIGEN],
+        },
+      ],
+    };
+    renderScreen();
+    expect(screen.queryByText('undefined')).toBeNull();
   });
 });
 
@@ -325,10 +431,41 @@ describe('Hinweis bei fehlender konfliktfreier Option', () => {
     ];
     renderScreen();
 
-    expect(screen.getByText('Kein konfliktfreier Termin verfügbar')).toBeTruthy();
+    // Symbol mit erhaltenem accessibilityLabel statt Fließtext (design.md, Entscheidung 9).
+    expect(screen.getByLabelText(/Kein konfliktfreier Termin verfügbar/)).toBeTruthy();
     // Die Termine bleiben trotzdem sichtbar und wählbar.
     fireEvent.press(screen.getByLabelText('Dienstag'));
     expect(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/)).toBeTruthy();
+  });
+});
+
+describe('Unterscheidung abgeleiteter Angaben von Quelldaten', () => {
+  it('führt die Schlüsse der App (noch nicht eingeplant, eigene Gruppe) in einer abgesetzten Zeile mit vorangestelltem Symbol', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    expect(screen.getByText(/^ⓘ .*Eigene Gruppe/)).toBeTruthy();
+  });
+});
+
+describe('Wochentagsleiste über die volle Bildschirmbreite', () => {
+  it('stellt fünf Wochentage gleich breit dar, ohne waagerechtes Blättern', () => {
+    renderScreen();
+    for (const tag of ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']) {
+      const eintrag = screen.getByLabelText(tag);
+      expect(StyleSheet.flatten(eintrag.props.style).flex).toBe(1);
+    }
+  });
+});
+
+describe('Deaktivierter Termin im Planungsmodus', () => {
+  it('führt einen deaktivierten Termin als hinzugefügt und zeigt den deaktivierten Zustand nicht an', () => {
+    mockEntries = [offiziellerEintrag({ deaktiviertBis: 'dauerhaft' })];
+    renderScreen();
+
+    const zeile = screen.getByLabelText(/08:00–09:30/);
+    expect(zeile.props.accessibilityState.checked).toBe(true);
+    expect(screen.queryByText(/Deaktiviert/)).toBeNull();
   });
 });
 

@@ -2,12 +2,12 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import { logError } from '@/errors/AppError';
 import { readJson, writeJson } from '@/storage/kv';
-import type { PlanEntry, PlanEntryStatus, Weekday } from './typen';
+import type { PlanEntry, Weekday } from './typen';
 
 // DATA-F-010: der persönliche Stundenplan (`PlanEntry[]`) wird ausschließlich
-// lokal gespeichert. Anlegen, Ändern, Löschen, Status fest/vorgemerkt wechseln
-// (SCHED-F-570) und Farbe setzen (SCHED-F-247). Reaktiver Modul-Speicher wie
-// `canteen/selection.ts`.
+// lokal gespeichert. Anlegen, Ändern, Löschen, Deaktivieren (Requirement
+// „Deaktivieren eines Termins") und Farbe setzen (SCHED-F-247). Reaktiver
+// Modul-Speicher wie `canteen/selection.ts`.
 //
 // DATA-F-020 (ausdrücklich verworfenes Altverhalten der Flutter-App, siehe
 // `openspec/specs/data-and-storage/spec.md`): Ein inkonsistenter gespeicherter
@@ -20,7 +20,26 @@ import type { PlanEntry, PlanEntryStatus, Weekday } from './typen';
 const KEY = 'scheduleEntries';
 
 const WEEKDAYS: readonly Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const STATUSES: readonly PlanEntryStatus[] = ['fest', 'vorgemerkt'];
+
+/**
+ * Requirement „Überführung des Terminstatus in den Deaktiviert-Zustand"
+ * (`openspec/specs/data-and-storage/spec.md`, design.md Entscheidung 2): ein
+ * gespeicherter Eintrag alter Gestalt trägt `status: 'fest' | 'vorgemerkt'`
+ * statt `deaktiviertBis`. Überführt vor der Schemaprüfung, damit ein solcher
+ * Eintrag nicht wegen des fehlenden neuen Felds verworfen wird. Die Überführung
+ * wird protokolliert, zählt aber nicht als verworfener Eintrag.
+ */
+function ueberfuehreAlteGestalt(e: Record<string, unknown>): Record<string, unknown> {
+  if ('deaktiviertBis' in e) return e;
+  const { status, ...rest } = e;
+  if (status !== undefined) {
+    logError(
+      'planStore.load.statusUeberfuehrt',
+      new Error(`Status "${String(status)}" in deaktiviertBis überführt`),
+    );
+  }
+  return { ...rest, deaktiviertBis: status === 'vorgemerkt' ? 'dauerhaft' : null };
+}
 
 /**
  * Prüft das Feld `akzeptierteKonflikte` (`typen.ts`): eine Liste von
@@ -32,12 +51,15 @@ function istKennungsliste(x: unknown): x is string[] {
   return Array.isArray(x) && x.every((k) => typeof k === 'string');
 }
 
+function istGueltigeDeaktiviertBis(x: unknown): boolean {
+  return x === null || x === 'dauerhaft' || typeof x === 'number';
+}
+
 function istGueltigeBasis(e: Record<string, unknown>): boolean {
   return (
     typeof e.id === 'string' &&
     e.id !== '' &&
-    typeof e.status === 'string' &&
-    STATUSES.includes(e.status as PlanEntryStatus) &&
+    istGueltigeDeaktiviertBis(e.deaktiviertBis) &&
     typeof e.color === 'string' &&
     typeof e.weekday === 'string' &&
     WEEKDAYS.includes(e.weekday as Weekday) &&
@@ -90,7 +112,11 @@ function bereinige(roh: unknown): Bereinigt {
 
   const entries: PlanEntry[] = [];
   let verworfen = 0;
-  for (const eintrag of roh) {
+  for (const roheintrag of roh) {
+    const eintrag =
+      typeof roheintrag === 'object' && roheintrag !== null
+        ? ueberfuehreAlteGestalt(roheintrag as Record<string, unknown>)
+        : roheintrag;
     if (istGueltigerEintrag(eintrag)) {
       entries.push(eintrag);
     } else {
@@ -192,11 +218,16 @@ export function useScheduleEntries() {
     );
   }, []);
 
-  /** SCHED-F-570: Status zwischen „fest" und „vorgemerkt" wechseln. */
-  const statusUmschalten = useCallback((id: string) => {
-    schreiben(
-      snapshot.map((e) => (e.id === id ? { ...e, status: e.status === 'fest' ? 'vorgemerkt' : 'fest' } : e)),
-    );
+  /**
+   * Requirement „Deaktivieren eines Termins": setzt oder nimmt die Deaktivierung
+   * eines Termins zurück. `null` aktiviert ihn wieder, `'dauerhaft'` deaktiviert
+   * ihn bis zur Rücknahme, eine Zahl (Unix-Sekunden) deaktiviert ihn bis zu
+   * diesem Zeitpunkt (Reichweite „nur dieses Vorkommen",
+   * `wochenrechnung.endeDesNaechstenVorkommens`). Verlustfrei: alle übrigen
+   * Angaben des Eintrags bleiben unverändert.
+   */
+  const deaktivierungSetzen = useCallback((id: string, deaktiviertBis: null | 'dauerhaft' | number) => {
+    schreiben(snapshot.map((e) => (e.id === id ? ({ ...e, deaktiviertBis } as PlanEntry) : e)));
   }, []);
 
   /** SCHED-F-247: Farbe eines einzelnen Termins abweichend von der Vorbelegung setzen. */
@@ -258,7 +289,7 @@ export function useScheduleEntries() {
     hinzufuegen,
     aktualisieren,
     entfernen,
-    statusUmschalten,
+    deaktivierungSetzen,
     farbeSetzen,
     konfliktAnnehmen,
     mehrereUebernehmen,

@@ -1,5 +1,5 @@
-// Requirements „Konflikthinweis bei festen Terminen", „Kein Konflikthinweis bei
-// vorgemerkten Terminen" und „Bewusste Übernahme trotz Konflikt": ermittelt zu
+// Requirements „Konflikthinweis bei überschneidenden Terminen", „Wirkung eines
+// deaktivierten Termins" und „Bewusste Übernahme trotz Konflikt": ermittelt zu
 // den Terminen **eines** Tages die kollidierenden Paare und trennt die bewusst
 // angenommenen von den offenen. Reine Funktion ohne React, wie alle übrigen
 // Module des Bereichs — damit sie ohne Renderer prüfbar bleibt.
@@ -10,7 +10,7 @@
 // nachdem der angenommene Gegenpart gelöscht und ein anderer Termin an dieselbe
 // Stelle getreten ist — gilt als nicht angenommen und erzeugt einen Hinweis.
 
-import { ueberschneidenSich } from './time';
+import { istAktiv, ueberschneidenSich } from './time';
 import type { PlanEntry, Weekday } from './typen';
 
 export interface Konfliktpaar {
@@ -36,21 +36,22 @@ function istAngenommen(a: PlanEntry, b: PlanEntry): boolean {
 
 /**
  * Ermittelt die Konflikte unter den Terminen eines Tages (bereits nach Wochentag
- * und Sichtbarkeit gefiltert). Geprüft werden ausschließlich Termine mit Status
- * „fest": Ein vorgemerkter Termin erzeugt keinen Hinweis, weder gegen einen
- * anderen vorgemerkten noch gegen einen festen.
+ * und Sichtbarkeit gefiltert). Geprüft werden ausschließlich aktive Termine
+ * (`istAktiv`, `time.ts`): Ein deaktivierter Termin erzeugt keinen Hinweis,
+ * weder gegen einen anderen deaktivierten noch gegen einen aktiven
+ * (Requirement „Wirkung eines deaktivierten Termins").
  */
-export function ermittleKonflikte(tagesTermine: readonly PlanEntry[]): Konflikte {
-  const feste = tagesTermine.filter((t) => t.status === 'fest');
+export function ermittleKonflikte(tagesTermine: readonly PlanEntry[], jetztSek: number): Konflikte {
+  const aktive = tagesTermine.filter((t) => istAktiv(t, jetztSek));
   const offen: Konfliktpaar[] = [];
   const angenommen: Konfliktpaar[] = [];
   const hinweisIds = new Set<string>();
   const angenommenIds = new Set<string>();
 
-  for (let i = 0; i < feste.length; i++) {
-    for (let j = i + 1; j < feste.length; j++) {
-      const a = feste[i]!;
-      const b = feste[j]!;
+  for (let i = 0; i < aktive.length; i++) {
+    for (let j = i + 1; j < aktive.length; j++) {
+      const a = aktive[i]!;
+      const b = aktive[j]!;
       if (!ueberschneidenSich(a.timeBeginMin, a.timeEndMin, b.timeBeginMin, b.timeEndMin)) continue;
       if (istAngenommen(a, b)) {
         angenommen.push({ a, b });
@@ -68,35 +69,30 @@ export function ermittleKonflikte(tagesTermine: readonly PlanEntry[]): Konflikte
 }
 
 /**
- * Requirements „Konfliktprüfung paralleler Termine" und „Konfliktprüfung
- * gegenüber angepinnten Terminen" (design.md, Entscheidung 3): Kollidiert
- * *dieser eine* Kandidat mit dem Zwischenstand — dem gesicherten Plan samt
- * allen in der laufenden Sitzung getroffenen, noch ungesicherten
- * Entscheidungen? Angepinnte Termine (eigenes, noch unumgesetztes
- * Requirement) gehen, sobald es sie gibt, in denselben `zwischenstand` ein,
- * ohne dass sich diese Prüfung ändert. Ein Kandidat, zu dem noch keine
- * Entscheidung getroffen wurde, trägt per Konstruktion keinen Eintrag im
- * Zwischenstand und wird deshalb nicht mitgerechnet — die Vollkombinatorik
- * über mehrere gleichzeitig unentschiedene Kandidaten bleibt ausgeschlossen.
+ * Requirement „Konfliktprüfung paralleler Termine" (design.md, Entscheidung 3
+ * und 5): Kollidiert *dieser eine* Kandidat mit dem Zwischenstand — dem
+ * gesicherten Plan samt allen in der laufenden Sitzung getroffenen, noch
+ * ungesicherten Entscheidungen? Ein Kandidat, zu dem noch keine Entscheidung
+ * getroffen wurde, trägt per Konstruktion keinen Eintrag im Zwischenstand und
+ * wird deshalb nicht mitgerechnet — die Vollkombinatorik über mehrere
+ * gleichzeitig unentschiedene Kandidaten bleibt ausgeschlossen.
  *
- * Requirement „Kein Konflikthinweis bei vorgemerkten Terminen": Diese
- * Funktion prüft — anders als `ermittleKonflikte` für die Wochenansicht —
- * auch gegen vorgemerkte Termine des Zwischenstands, aber als eigene,
- * zurückgenommene Stufe zwischen „konfliktfrei" und „Konflikt": Im
- * Planungsmodus wird gerade entschieden, ob aus dem Vorgemerkten etwas Festes
- * wird, und das ist der Gegenstand der Arbeit, keine Störung.
+ * Deaktivierte Termine des gesicherten Plans zählen dabei nicht als
+ * Bezugsgröße (Requirement „Konfliktprüfung paralleler Termine", Szenario
+ * „Kollision mit einem deaktivierten Termin"); in der Sitzung neu gewählte
+ * Termine sind stets aktiv. Nur zwei Stufen: konfliktfrei oder kollidierend —
+ * die dritte Stufe für vorgemerkte Termine entfällt mit dem Status selbst.
  */
-export type KandidatKonfliktstufe = 'konfliktfrei' | 'konflikt' | 'vorgemerkterKonflikt';
+export type KandidatKonfliktstufe = 'konfliktfrei' | 'konflikt';
 
 export function pruefeKandidatGegenZwischenstand(
   kandidat: { weekday: Weekday; timeBeginMin: number; timeEndMin: number },
   zwischenstand: readonly PlanEntry[],
+  jetztSek: number,
 ): KandidatKonfliktstufe {
-  const amTag = zwischenstand.filter((e) => e.weekday === kandidat.weekday);
+  const amTag = zwischenstand.filter((e) => e.weekday === kandidat.weekday && istAktiv(e, jetztSek));
   const ueberschneidet = (e: PlanEntry) =>
     ueberschneidenSich(kandidat.timeBeginMin, kandidat.timeEndMin, e.timeBeginMin, e.timeEndMin);
 
-  if (amTag.some((e) => e.status === 'fest' && ueberschneidet(e))) return 'konflikt';
-  if (amTag.some((e) => e.status === 'vorgemerkt' && ueberschneidet(e))) return 'vorgemerkterKonflikt';
-  return 'konfliktfrei';
+  return amTag.some(ueberschneidet) ? 'konflikt' : 'konfliktfrei';
 }

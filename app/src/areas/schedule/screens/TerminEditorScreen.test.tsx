@@ -18,7 +18,7 @@ jest.mock('expo-router', () => ({
 function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry {
   return {
     kind: 'eigen',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#43A047',
     weekday: 'Wed',
     timeBeginMin: 840,
@@ -157,6 +157,21 @@ describe('Wiederkehrend oder einmalig bei eigenen Terminen', () => {
     const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
     const erwartet = Math.floor(new Date(2026, 10, 24, 12, 0, 0).getTime() / 1000);
     expect(eintrag).toMatchObject({ wiederkehrend: false, gueltigVon: erwartet, gueltigBis: erwartet });
+  });
+
+  it('bietet aus dem Planungsmodus weder Wochentag- noch Wiederholungswahl an und legt stets wöchentlich auf dem sichtbaren Tag an', async () => {
+    await seed([], { wochentag: 'Thu', planung: '1' });
+    await zeige();
+
+    expect(screen.queryByTestId('wochentag-picker')).toBeNull();
+    expect(screen.queryByLabelText('Wöchentlich wiederkehrend')).toBeNull();
+
+    fuelle({ Titel: 'Eigener Termin' });
+    fireEvent.press(screen.getByLabelText('Termin anlegen'));
+
+    await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
+    const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
+    expect(eintrag).toMatchObject({ weekday: 'Thu', wiederkehrend: true });
   });
 });
 

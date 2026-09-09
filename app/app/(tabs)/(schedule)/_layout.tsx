@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { EinrichtungHeaderZugang } from '@/areas/schedule/ui/EinrichtungHeaderZugang';
+import { ModulauswahlVerwerfenZugang } from '@/areas/schedule/ui/ModulauswahlVerwerfenZugang';
 import { PlanungSpeichernZugang } from '@/areas/schedule/ui/PlanungSpeichernZugang';
 import { useTheme } from '@/theme';
 import { useReducedMotion } from '@/ui/reducedMotion';
@@ -28,9 +30,15 @@ export default function ScheduleLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('nav.schedule') }} />
+      <Stack.Screen
+        name="index"
+        options={{ title: t('nav.schedule'), headerRight: () => <EinrichtungHeaderZugang /> }}
+      />
       <Stack.Screen name="einrichtung" options={{ title: t('schedule.einrichtungTitel') }} />
-      <Stack.Screen name="kurse" options={{ title: t('schedule.kurseTitel') }} />
+      <Stack.Screen
+        name="kurse"
+        options={{ title: t('schedule.kurseTitel'), headerRight: () => <ModulauswahlVerwerfenZugang /> }}
+      />
       <Stack.Screen
         name="planung"
         options={{ title: t('schedule.planungTitel'), headerRight: () => <PlanungSpeichernZugang /> }}

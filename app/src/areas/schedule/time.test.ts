@@ -1,4 +1,4 @@
-import { minutenZuZeit, padZeit, sortiereNachBeginnzeit, ueberschneidenSich, zeitZuMinuten } from './time';
+import { istAktiv, minutenZuZeit, padZeit, sortiereNachBeginnzeit, ueberschneidenSich, zeitZuMinuten } from './time';
 
 describe('QA-F-040 FBWS-Zeitfelder auf HHmm mit führenden Nullen auffüllen', () => {
   it('füllt eine Zahl ohne führende Null auf vier Stellen auf', () => {
@@ -73,5 +73,23 @@ describe('SCHED-F-252 Termine eines Wochentags nach Beginnzeit sortieren', () =>
       { timeBeginMin: 600, name: 'b' },
     ];
     expect(sortiereNachBeginnzeit(termine).map((t) => t.name)).toEqual(['a', 'b']);
+  });
+});
+
+describe('Wirkung eines deaktivierten Termins: Auswertung von deaktiviertBis', () => {
+  it('gilt als aktiv, wenn deaktiviertBis null ist', () => {
+    expect(istAktiv({ deaktiviertBis: null }, 1_000)).toBe(true);
+  });
+
+  it('gilt als deaktiviert, wenn deaktiviertBis dauerhaft ist, unabhängig von der Zeit', () => {
+    expect(istAktiv({ deaktiviertBis: 'dauerhaft' }, 1_000)).toBe(false);
+    expect(istAktiv({ deaktiviertBis: 'dauerhaft' }, Number.MAX_SAFE_INTEGER)).toBe(false);
+  });
+
+  it('gilt bei einem Zeitpunkt als deaktiviert, bis dieser erreicht ist, danach als aktiv', () => {
+    expect(istAktiv({ deaktiviertBis: 2_000 }, 1_000)).toBe(false);
+    expect(istAktiv({ deaktiviertBis: 2_000 }, 1_999 )).toBe(false);
+    expect(istAktiv({ deaktiviertBis: 2_000 }, 2_000)).toBe(true);
+    expect(istAktiv({ deaktiviertBis: 2_000 }, 2_001)).toBe(true);
   });
 });
