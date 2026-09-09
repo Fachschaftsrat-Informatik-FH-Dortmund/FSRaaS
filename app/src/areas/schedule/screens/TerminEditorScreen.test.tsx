@@ -3,6 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
+import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
+import { __resetAnsichtEinstellungenForTest } from '../ansichtEinstellungen';
 import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import type { CustomPlanEntry, PlanEntry } from '../typen';
 import { TerminEditorScreen } from './TerminEditorScreen';
@@ -39,6 +41,7 @@ async function seed(entries: PlanEntry[], params: Record<string, string> = {}) {
   await AsyncStorage.clear();
   await writeJson('scheduleEntries', entries);
   __resetScheduleEntriesForTest();
+  __resetAnsichtEinstellungenForTest();
   mockParams = params;
 }
 
@@ -93,6 +96,26 @@ describe('Anlegen eigener Termine', () => {
       timeEndMin: 930,
     });
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  // Requirement „Farbwahl je Termin": Farbautomatik abschaltbar.
+  it('legt einen Termin mit neutraler Platzhalterfarbe an, solange die Farbautomatik abgeschaltet ist', async () => {
+    await AsyncStorage.clear();
+    await writeJson('scheduleEntries', []);
+    await writeJson('scheduleViewSettings', { zeitachse: true, sprungZuHeute: true, farbautomatik: false });
+    __resetScheduleEntriesForTest();
+    __resetAnsichtEinstellungenForTest();
+    mockParams = {};
+    await zeige();
+
+    fuelle({ Titel: 'Lerngruppe' });
+    waehleZeit('Beginn', 'beginn-picker', 14, 0);
+    waehleZeit('Ende', 'ende-picker', 15, 30);
+    fireEvent.press(screen.getByLabelText('Termin anlegen'));
+
+    await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
+    const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
+    expect(eintrag.color).toBe(SCHEDULE_NEUTRAL);
   });
 
   it('schreibt nichts und benennt den Fehler, wenn Pflichtangaben fehlen', async () => {

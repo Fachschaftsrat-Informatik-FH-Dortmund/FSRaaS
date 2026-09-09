@@ -5,10 +5,12 @@ import { useNavigation, usePreventRemove, type NavigationAction } from '@react-n
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
+import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/reducedMotion';
 import { useStudiengaenge, useTermineFuerEndpunkte } from '../api';
+import { useAnsichtEinstellungen } from '../ansichtEinstellungen';
 import { useEinrichtung } from '../einrichtung';
 import { farbeFuerVeranstaltung } from '../farbe';
 import { gruppenzugehoerig } from '../groupMatch';
@@ -52,12 +54,18 @@ function neueId(): string {
   return `plan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function baueSessionEintrag(slot: OfficialTermin): OfficialPlanEntry {
+/**
+ * Requirement „Farbwahl je Termin": bei abgeschalteter Farbautomatik erhält
+ * ein neu angelegter Termin eine neutrale Platzhalterfarbe statt der
+ * automatisch berechneten — bereits gesetzte Farben bleiben davon unberührt,
+ * da diese Funktion nur beim Anlegen greift (`ansichtEinstellungen.ts`).
+ */
+function baueSessionEintrag(slot: OfficialTermin, farbautomatik: boolean): OfficialPlanEntry {
   return {
     kind: 'offiziell',
     id: neueId(),
     deaktiviertBis: null,
-    color: farbeFuerVeranstaltung(slot.courseId || slot.name),
+    color: farbautomatik ? farbeFuerVeranstaltung(slot.courseId || slot.name) : SCHEDULE_NEUTRAL,
     weekday: slot.weekday,
     timeBeginMin: slot.timeBeginMin,
     timeEndMin: slot.timeEndMin,
@@ -92,6 +100,7 @@ export function PlanungScreen() {
   const { einrichtung, loaded: einrichtungGeladen } = useEinrichtung();
   const { entries, loaded: planGeladen, mehrereUebernehmen } = useScheduleEntries();
   const { studiengaenge } = useStudiengaenge();
+  const { einstellungen: ansichtEinstellungen } = useAnsichtEinstellungen();
 
   const gewaehlteEndpunkte = useMemo(
     () =>
@@ -148,8 +157,10 @@ export function PlanungScreen() {
     const vorbelegbar = vorbelegteSlots(relevanteModule).filter(
       (slot) => !gespeicherterPlanRelevant.some((e) => terminEntsprichtEintrag(slot, e)),
     );
-    if (vorbelegbar.length > 0) setSessionEntscheidungen(vorbelegbar.map((slot) => baueSessionEintrag(slot)));
-  }, [allesGeladen, relevanteModule, gespeicherterPlanRelevant]);
+    if (vorbelegbar.length > 0) {
+      setSessionEntscheidungen(vorbelegbar.map((slot) => baueSessionEintrag(slot, ansichtEinstellungen.farbautomatik)));
+    }
+  }, [allesGeladen, relevanteModule, gespeicherterPlanRelevant, ansichtEinstellungen.farbautomatik]);
 
   const gespeichertSichtbar = useMemo(
     () => gespeicherterPlanRelevant.filter((e) => !entfernteIds.has(e.id)),
@@ -239,7 +250,7 @@ export function PlanungScreen() {
       return;
     }
 
-    const neu = baueSessionEintrag(slot);
+    const neu = baueSessionEintrag(slot, ansichtEinstellungen.farbautomatik);
 
     // Requirement „Bewusste Übernahme trotz Konflikt": eine Wahl trotz
     // erkannter Kollision bleibt möglich (kein Ausblenden, kein Verhindern,

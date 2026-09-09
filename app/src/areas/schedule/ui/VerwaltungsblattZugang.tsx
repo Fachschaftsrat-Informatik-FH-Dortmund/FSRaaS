@@ -42,7 +42,8 @@ type Loeschaktion = 'leeren' | 'zuruecksetzen' | null;
 function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSchliessen: () => void }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { einstellungen, loaded, toggleZeitachse, toggleSprungZuHeute } = useAnsichtEinstellungen();
+  const { einstellungen, loaded, toggleZeitachse, toggleSprungZuHeute, toggleFarbautomatik } =
+    useAnsichtEinstellungen();
   const { clear: planLeeren } = useScheduleEntries();
   const { clear: einrichtungZuruecksetzen } = useEinrichtung();
   const [aktion, setAktion] = useState<Loeschaktion>(null);
@@ -74,6 +75,13 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
               label={t('schedule.verwaltungSprungZuHeute')}
               wert={loaded ? einstellungen.sprungZuHeute : true}
               onChange={toggleSprungZuHeute}
+            />
+            {/* Requirement „Farbwahl je Termin": Farbautomatik abschaltbar, ohne
+                bereits gesetzte Farben zu verlieren (`ansichtEinstellungen.ts`). */}
+            <SchalterZeile
+              label={t('schedule.verwaltungFarbautomatik')}
+              wert={loaded ? einstellungen.farbautomatik : true}
+              onChange={toggleFarbautomatik}
             />
 
             <AppButton variant="secondary" label={t('schedule.planLeeren')} onPress={() => setAktion('leeren')} />

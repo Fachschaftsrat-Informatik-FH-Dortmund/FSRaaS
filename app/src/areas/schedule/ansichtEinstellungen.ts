@@ -22,11 +22,20 @@ export interface AnsichtEinstellungen {
   zeitachse: boolean;
   /** SCHED-F-150: beim Öffnen automatisch zum aktuellen Wochentag springen. */
   sprungZuHeute: boolean;
+  /**
+   * Requirement „Farbwahl je Termin": `true` (Vorgabe) — neu angelegte
+   * Termine erhalten die automatisch vergebene Farbe (`farbe.ts`). `false`
+   * schaltet nur die Vergabe für künftig angelegte Termine ab; bereits
+   * gesetzte Farben — automatisch oder von Hand gewählt — bleiben davon
+   * unberührt, es geht dadurch nie eine eigene Farbwahl verloren.
+   */
+  farbautomatik: boolean;
 }
 
 const STANDARD: AnsichtEinstellungen = {
   zeitachse: true,
   sprungZuHeute: true,
+  farbautomatik: true,
 };
 
 let snapshot: AnsichtEinstellungen = STANDARD;
@@ -51,6 +60,7 @@ function bereinige(v: unknown): AnsichtEinstellungen {
   return {
     zeitachse: alsBoolean(roh.zeitachse, STANDARD.zeitachse),
     sprungZuHeute: alsBoolean(roh.sprungZuHeute, STANDARD.sprungZuHeute),
+    farbautomatik: alsBoolean(roh.farbautomatik, STANDARD.farbautomatik),
   };
 }
 
@@ -102,12 +112,18 @@ export function useAnsichtEinstellungen() {
     () => schreiben({ ...snapshot, sprungZuHeute: !snapshot.sprungZuHeute }),
     [],
   );
+  /** Requirement „Farbwahl je Termin": Farbautomatik im Ansichts-Blatt abschaltbar. */
+  const toggleFarbautomatik = useCallback(
+    () => schreiben({ ...snapshot, farbautomatik: !snapshot.farbautomatik }),
+    [],
+  );
 
   return {
     einstellungen,
     loaded,
     toggleZeitachse,
     toggleSprungZuHeute,
+    toggleFarbautomatik,
   };
 }
 
