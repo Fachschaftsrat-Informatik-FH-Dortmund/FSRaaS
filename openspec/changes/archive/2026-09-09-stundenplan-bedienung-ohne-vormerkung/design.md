@@ -33,25 +33,17 @@ deaktiviertBis: null | 'dauerhaft' | number;
 
 Ein reines `deaktiviert: boolean` neben einem `deaktiviertBis: number | null` ließe vier Kombinationen zu, von denen zwei bedeutungslos sind. Ein einziges Feld mit drei Ausprägungen kennt keinen widersprüchlichen Zustand.
 
-`status` entfällt aus `PlanEntryBase`, `PlanEntryStatus` aus `typen.ts`. `STATUSES` und die Statusprüfung in `istGueltigeBasis` entfallen; an ihre Stelle tritt die Überführung (Entscheidung 2).
+`status` entfällt aus `PlanEntryBase`, `PlanEntryStatus` aus `typen.ts`. `STATUSES` und die Statusprüfung in `istGueltigeBasis` entfallen ersatzlos — `deaktiviertBis` ist ein reguläres Pflichtfeld des Schemas, geprüft wie jedes andere (Entscheidung 2).
 
 **Verworfen:** `status: 'aktiv' | 'deaktiviert'` weiterzuführen und nur umzubenennen. Das hätte die einmalige Reichweite nicht getragen und den Eindruck erhalten, es handle sich um dieselbe Sache unter neuem Namen — sie ist es nicht: „vorgemerkt" war eine Aussage über die Entscheidungslage, „deaktiviert" ist eine über die Wahrnehmung.
 
-### 2. Die Überführung sitzt in `bereinige()`, nicht in einer Migrationsstufe
+### 2. Keine Überführung — `bereinige()` prüft `deaktiviertBis` wie jedes andere Feld
 
-`planStore.bereinige()` liest den gespeicherten Bestand und verwirft ungültige Einträge, wobei es die Zahl der Verworfenen für den Hinweis nach `data-and-storage` mitzählt. Ein Eintrag mit `status: 'vorgemerkt'` und ohne `deaktiviertBis` ist genau dort zu erkennen — und ohne diesen Griff würde er verworfen, weil ihm das neue Feld fehlt.
+**Zurückgenommen im Prüfprotokoll vom 2026-09-09.** Ursprünglich vorgesehen war eine Überführung in `planStore.bereinige()`: ein gespeicherter Eintrag mit `status: 'vorgemerkt'` würde zu `deaktiviertBis: 'dauerhaft'`, einer mit `status: 'fest'` zu `deaktiviertBis: null`, protokolliert und **nicht** als verworfen gezählt.
 
-```
-  gelesener Eintrag           ->  geführt als
-  status 'vorgemerkt'         ->  deaktiviertBis = 'dauerhaft'
-  status 'fest'               ->  deaktiviertBis = null
-  weder status noch Feld      ->  deaktiviertBis = null
-  deaktiviertBis vorhanden    ->  unverändert
-```
+Entscheidung bei der Geräteprüfung: Kein im Einsatz befindliches Gerät hält noch einen Bestand alter Gestalt — der Status „fest"/„vorgemerkt" existierte nur kurz, zwischen den Changes `stundenplan-planungsmodus-feinauswahl` (2026-09-08) und diesem. Eine Überführung für einen Fall, der nicht eintritt, ist Aufwand ohne Ertrag und ungeprüfter Code. Ein Eintrag, der dennoch `status` statt `deaktiviertBis` trägt, durchläuft denselben Weg wie jeder andere schema-fremde Eintrag: `istGueltigeBasis` verlangt `deaktiviertBis` als Pflichtfeld, ein Eintrag ohne dieses Feld fällt durch und wird nach DATA-F-020 einzeln verworfen und protokolliert — der übrige Bestand bleibt erhalten.
 
-Die Überführung wird protokolliert und zählt **nicht** als verworfener Eintrag — der Hinweis „Einträge unlesbar" soll für eine geglückte Überführung nicht erscheinen.
-
-**Verworfen:** ein Versionsfeld am Bestand mit einer Migrationskette. Der Bestand ist ein einzelner Schlüssel im gerätelokalen Speicher, und dies ist die erste Formänderung; eine Kette ohne zweites Glied ist Aufwand ohne Ertrag. Sollte eine zweite folgen, ist der Griff in `bereinige()` genau die Stelle, an der ein Versionsfeld einzuziehen wäre.
+**Verworfen (weiterhin):** ein Versionsfeld am Bestand mit einer Migrationskette — mit dem Entfall der Überführung erst recht ohne Anlass.
 
 ### 3. Eine Funktion `istAktiv(eintrag, jetzt)` als einzige Auswertung
 
@@ -123,6 +115,8 @@ Das „+" steht als erster Eintrag links **außerhalb** des scrollenden Inhalts,
 
 **Verworfen:** eine `FlatList` mit `scrollToIndex`. Die Liste ist auf einen Wochentag begrenzt und zählt selten mehr als fünfzehn Zeilen; der Umbau brächte nichts als eine zweite Listenmechanik im selben Bildschirm.
 
+**Nachtrag (Prüfprotokoll 2026-09-09):** Trägt eine Veranstaltungsart mehrere Slots, sprang das Sprungziel zunächst auf `stand.slots[0]` — den ersten Slot in Eingabereihenfolge, unabhängig von der Gruppenkennung. Am Gerät erwartet: der Sprung zielt auf den ersten Slot der **eigenen** Gruppe (`gruppenzugehoerig`, `groupMatch.ts`), fällt auf den ersten Slot der Liste zurück, wenn keiner passt. Umgesetzt in `AusstehendLeiste` (`PlanungScreen.tsx`).
+
 ### 11. Abgeleitete Angaben werden abgesetzt geführt
 
 Die Umsetzung des neuen `ux-and-theming`-Requirements im Planungsmodus:
@@ -151,7 +145,7 @@ Wie genau das Symbol aussieht, ist Gestaltung und im Prüfprotokoll zu belegen; 
 
 **Der Change `stundenplan-wochenansicht-nutzerfuehrung` berührt dieselben Requirements** → In `proposal.md` ist tabellarisch festgehalten, welche drei das sind und dass dieser Change an allen dreien maßgeblich ist. Wird jener Change vor diesem archiviert, entstehen widersprüchliche Deltas; die Reihenfolge ist deshalb festgelegt und in `tasks.md` als Abschlussschritt genannt.
 
-**Die Migration läuft still** → Ein Gerät mit vorgemerkten Terminen zeigt diese nach der Aktualisierung als ausgegraut, ohne dass die Nutzerin gefragt wurde. Das ist gewollt (der Zustand entspricht dem, was „vorgemerkt" bedeutete) und verlustfrei umkehrbar, aber überraschend. Gemindert dadurch, dass die Überführung protokolliert wird und der Zustand über denselben Bedienweg sofort zurückzunehmen ist. Eine Rückfrage beim ersten Start wäre für einen umkehrbaren Zustandswechsel unverhältnismäßig.
+**Die Migration läuft still** → **Gegenstandslos seit dem Prüfprotokoll vom 2026-09-09** (Entscheidung 2): Es gibt keine Migration mehr, da kein Gerät noch einen Bestand alter Gestalt hält.
 
 **„Vollständig stumm" trifft Teile, die es noch nicht gibt** → Kalender- und Datei-Export sowie terminbezogene Benachrichtigungen sind nicht umgesetzt. Das Requirement gilt trotzdem; sein Nachweis für diese Teile fällt an, wenn sie entstehen. `tasks.md` führt für sie keinen Umsetzungsschritt, sondern nur die Auswertung über `istAktiv`, die dann bereitsteht.
 
@@ -161,7 +155,7 @@ Wie genau das Symbol aussieht, ist Gestaltung und im Prüfprotokoll zu belegen; 
 
 ## Migration Plan
 
-Keine serverseitige Migration — der Plan liegt gerätelokal. Die Überführung geschieht beim ersten Laden nach der Aktualisierung (Entscheidung 2) und ist einmalig; ein zurückgesetzter Stand wäre nicht mehr rückwärtslesbar, was hinnehmbar ist, weil die App nicht auf eine ältere Fassung zurückgesetzt werden kann.
+Keine. Weder serverseitig (der Plan liegt gerätelokal) noch gerätelokal — die anfangs vorgesehene Überführung entfällt (Entscheidung 2, Prüfprotokoll 2026-09-09), da kein Gerät mehr einen Bestand alter Gestalt hält.
 
 ## Open Questions
 

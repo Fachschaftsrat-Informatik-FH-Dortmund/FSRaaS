@@ -195,14 +195,36 @@ describe('Leiste der ausstehenden Veranstaltungen', () => {
     expect(screen.getByLabelText('Dienstag').props.accessibilityState.selected).toBe(true);
   });
 
+  // Requirement „Leiste der ausstehenden Veranstaltungen": Sprungziel ist der
+  // erste Slot der eigenen Gruppe, sonst der erste Slot der Liste
+  // (design.md, Entscheidung 10) — Prüfprotokoll 2026-09-09. MATHE3_UE_EIGEN
+  // (`C5-E`, passt zu Gruppenkennung `C8`) steht in `termine` NACH
+  // MATHE3_UE_FREMD — die reine Eingabereihenfolge träfe den falschen Slot.
+  it('springt zum ersten Slot der eigenen Gruppe, nicht zum ersten Slot der Liste', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Mathematik für Informatik 3 Ü'));
+
+    const zeile = () => StyleSheet.flatten(screen.getByTestId(/^zeile-INF999\|Ü\|Tue\|720\|810/).props.style);
+    expect(zeile().borderWidth).toBe(3);
+  });
+
   it('hebt das Sprungziel kurzzeitig hervor und kehrt danach von selbst in den Normalzustand zurück', async () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Mathematik für Informatik 3 Ü'));
+
+    const zeile = () => StyleSheet.flatten(screen.getByTestId(/^zeile-INF999\|Ü\|Tue\|720\|810/).props.style);
+    expect(zeile().borderWidth).toBe(3);
+
+    await waitFor(() => expect(zeile().borderWidth).not.toBe(3), { timeout: 3000 });
+  });
+
+  it('springt zum ersten Slot der Liste, wenn keiner der eigenen Gruppe zuzuordnen ist', () => {
+    mockEinrichtung = { endpunkte: ['INPBPI'], gruppenkennung: 'Z9' };
     renderScreen();
     fireEvent.press(screen.getByLabelText('Mathematik für Informatik 3 Ü'));
 
     const zeile = () => StyleSheet.flatten(screen.getByTestId(/^zeile-INF999\|Ü\|Tue\|600\|690/).props.style);
     expect(zeile().borderWidth).toBe(3);
-
-    await waitFor(() => expect(zeile().borderWidth).not.toBe(3), { timeout: 3000 });
   });
 
   it('meldet, dass nichts mehr aussteht, sobald jede Veranstaltungsart mindestens einen Termin trägt', () => {

@@ -22,26 +22,6 @@ const KEY = 'scheduleEntries';
 const WEEKDAYS: readonly Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
- * Requirement „Überführung des Terminstatus in den Deaktiviert-Zustand"
- * (`openspec/specs/data-and-storage/spec.md`, design.md Entscheidung 2): ein
- * gespeicherter Eintrag alter Gestalt trägt `status: 'fest' | 'vorgemerkt'`
- * statt `deaktiviertBis`. Überführt vor der Schemaprüfung, damit ein solcher
- * Eintrag nicht wegen des fehlenden neuen Felds verworfen wird. Die Überführung
- * wird protokolliert, zählt aber nicht als verworfener Eintrag.
- */
-function ueberfuehreAlteGestalt(e: Record<string, unknown>): Record<string, unknown> {
-  if ('deaktiviertBis' in e) return e;
-  const { status, ...rest } = e;
-  if (status !== undefined) {
-    logError(
-      'planStore.load.statusUeberfuehrt',
-      new Error(`Status "${String(status)}" in deaktiviertBis überführt`),
-    );
-  }
-  return { ...rest, deaktiviertBis: status === 'vorgemerkt' ? 'dauerhaft' : null };
-}
-
-/**
  * Prüft das Feld `akzeptierteKonflikte` (`typen.ts`): eine Liste von
  * Gegenpart-Kennungen. Ein Eintrag, dessen Feld nicht lesbar ist, fällt damit
  * durch `istGueltigerEintrag` und wird von `bereinige` einzeln übersprungen —
@@ -113,12 +93,8 @@ function bereinige(roh: unknown): Bereinigt {
   const entries: PlanEntry[] = [];
   let verworfen = 0;
   for (const roheintrag of roh) {
-    const eintrag =
-      typeof roheintrag === 'object' && roheintrag !== null
-        ? ueberfuehreAlteGestalt(roheintrag as Record<string, unknown>)
-        : roheintrag;
-    if (istGueltigerEintrag(eintrag)) {
-      entries.push(eintrag);
+    if (istGueltigerEintrag(roheintrag)) {
+      entries.push(roheintrag);
     } else {
       verworfen++;
       logError('planStore.load.ungueltigerEintrag', new Error('Eintrag entspricht nicht dem PlanEntry-Schema'));

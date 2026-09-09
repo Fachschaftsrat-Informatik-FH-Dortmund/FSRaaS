@@ -16,7 +16,7 @@ Issue #62 sammelt siebzehn Beobachtungen aus dem Betrieb des Planungsmodus auf d
 
 ### Die Vormerkung entfällt, das Deaktivieren tritt an ihre Stelle
 
-**BREAKING** für den gerätelokalen Bestand: `status: 'fest' | 'vorgemerkt'` entfällt an jedem Planeintrag, neu tritt `deaktiviert: boolean` hinzu (Vorgabe: aktiv). Ein gespeicherter Eintrag mit `status: 'vorgemerkt'` wird beim Laden zu einem deaktivierten Eintrag, einer mit `status: 'fest'` zu einem aktiven; nichts geht verloren.
+**BREAKING** für den gerätelokalen Bestand: `status: 'fest' | 'vorgemerkt'` entfällt an jedem Planeintrag, neu tritt `deaktiviertBis: null | 'dauerhaft' | number` hinzu (Vorgabe: `null`, aktiv). Eine Überführung gespeicherter Einträge alter Gestalt war zunächst vorgesehen; laut Prüfprotokoll vom 2026-09-09 hält kein Gerät mehr einen solchen Bestand, die Überführung entfällt ersatzlos. Ein Eintrag, der dennoch `status` statt `deaktiviertBis` trägt, wird wie jeder andere schema-fremde Eintrag einzeln verworfen und protokolliert (DATA-F-020), nicht überführt.
 
 Ein deaktivierter Termin bleibt in der Wochenansicht ausgegraut sichtbar und ist **vollständig stumm**: kein Konflikthinweis, nicht in „laufender und nächster Termin", nicht in Benachrichtigungen, nicht im Kalender- und Datei-Export. Umschaltbar im Termindetail. Der Planungsmodus kennt nur noch „hinzugefügt" und „nicht hinzugefügt" und zeigt den deaktivierten Zustand nicht an — dort geht es um die Zusammenstellung, nicht um die Wahrnehmung.
 
@@ -59,14 +59,13 @@ Keine.
 
 ### Modified Capabilities
 
-- `schedule`: Vormerkung entfällt (drei Requirements REMOVED, drei MODIFIED); Deaktivieren eines Termins; Verwerfen der Auswahl in Planungsmodus und Modulauswahl; lehrende Person, Gruppenhervorhebung und Auswahlkennzeichnung im Planungsmodus; Wochentagsleisten über die volle Breite ohne Belegungsvorschau; feste Höhe und „+" in der Leiste der Ausstehenden; Sprungverhalten; eigener Termin aus dem Planungsmodus stets wöchentlich; Wechsel in die Wochenansicht nach dem Sichern; Stift-Symbol als Zugang zur Einrichtung; Zusammenfassen deckungsgleicher Rohtermine
+- `schedule`: Vormerkung entfällt (drei Requirements REMOVED, drei MODIFIED); Deaktivieren eines Termins; Verwerfen der Auswahl in Planungsmodus und Modulauswahl; lehrende Person, Gruppenhervorhebung und Auswahlkennzeichnung im Planungsmodus; Wochentagsleisten über die volle Breite ohne Belegungsvorschau; feste Höhe und „+" in der Leiste der Ausstehenden; Sprungverhalten (Sprungziel: erster Slot der eigenen Gruppe); eigener Termin aus dem Planungsmodus stets wöchentlich; Wechsel in die Wochenansicht nach dem Sichern; Stift-Symbol als Zugang zur Einrichtung; Zusammenfassen deckungsgleicher Rohtermine
 - `ux-and-theming`: abgeleitete Angaben von Quelldaten unterscheidbar darstellen
-- `data-and-storage`: Überführung gespeicherter Einträge mit `status` in `deaktiviert` ohne Datenverlust
 
 ## Impact
 
-- `app/src/areas/schedule/typen.ts` — `status` entfällt, `deaktiviert` kommt hinzu
-- `app/src/areas/schedule/planStore.ts` — Überführung beim Laden; `deaktiviert` umschalten
+- `app/src/areas/schedule/typen.ts` — `status` entfällt, `deaktiviertBis` kommt hinzu
+- `app/src/areas/schedule/planStore.ts` — `deaktiviertBis` umschalten (`deaktivierungSetzen`)
 - `app/src/areas/schedule/planungsstand.ts` — `bestimmeStatus` entfällt; `terminSchluessel` wird eindeutig; Zusammenfassen deckungsgleicher Rohtermine
 - `app/src/areas/schedule/konflikt.ts` — die Stufe `vorgemerkterKonflikt` entfällt
 - `app/src/areas/schedule/wochenansicht.ts`, `jetzt.ts` und der Export — deaktivierte Einträge bleiben außen vor
