@@ -1,6 +1,6 @@
 import { sichtbareWochentage } from './wochentage';
 
-describe('SCHED-F-460 Wochentagsleiste zeigt Mo-Fr immer, Wochenende nur bei Terminen', () => {
+describe('Wochentagsleiste mit bedarfsweisem Samstag', () => {
   it('zeigt Montag bis Freitag, wenn keinerlei Wochenendtermine vorliegen', () => {
     expect(sichtbareWochentage(() => false)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   });

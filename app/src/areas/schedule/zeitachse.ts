@@ -1,11 +1,10 @@
 // Die Spanne der proportionalen Zeitachse (Requirement „Proportionale
 // Zeitachse"). `dayLayout.layoutTag` verlangt eine Spanne, die Anforderung nennt
-// keine — sie wird deshalb eine Ebene darüber aus der **angezeigten Woche**
-// ermittelt: frühester Beginn und spätestes Ende aller Termine der Woche, auf
-// die volle Stunde nach außen gerundet (design.md, Entscheidung 1). Alle Tage
-// der Woche bekommen dieselbe Spanne, damit gleich hohe Kacheln für gleiche
-// Dauern stehen und der Vergleich zwischen den Tagen trägt. Reine Funktion,
-// ohne React.
+// keine — sie wird deshalb eine Ebene darüber aus den Terminen des **angezeigten
+// Tages** ermittelt: frühester Beginn und spätestes Ende dieses Tages, ohne
+// Randlücken. Anders als in der Vorgängerfassung wird nicht mehr über die ganze
+// Woche gemittelt: Ein einzelner Abendtermin an einem anderen Wochentag darf
+// diesen Tag nicht mehr dehnen. Reine Funktion, ohne React.
 
 const MINUTEN_JE_STUNDE = 60;
 
@@ -15,7 +14,7 @@ export interface Zeitspanne {
 }
 
 /**
- * Rückfall für eine Woche ohne Termine: Ohne Termin gibt es nichts, wozu die
+ * Rückfall für einen Tag ohne Termine: Ohne Termin gibt es nichts, wozu die
  * Achse proportional sein könnte — der Tag zeigt dann seinen Leerzustand. Die
  * Spanne bleibt trotzdem gültig, damit die Darstellung keine leere oder
  * negative Achse rechnen muss.
@@ -23,24 +22,22 @@ export interface Zeitspanne {
 export const STANDARD_SPANNE: Zeitspanne = { vonMin: 8 * MINUTEN_JE_STUNDE, bisMin: 18 * MINUTEN_JE_STUNDE };
 
 /**
- * Ermittelt die Spanne der Zeitachse aus den Terminen einer Woche. Der frühere
- * Rand wird auf die volle Stunde abgerundet, der spätere aufgerundet, damit die
- * Achse an Stundenmarken beginnt und endet.
+ * Ermittelt die Spanne der Zeitachse aus den Terminen des angezeigten Tages.
+ * Die Achse beginnt beim ersten und endet beim letzten Termin — ohne Rundung
+ * und ohne Rücksicht auf andere Wochentage (Requirement „Proportionale
+ * Zeitachse", Szenario „Kein Leerraum an den Tagesrändern").
  */
-export function spanneDerWoche(
-  wochenTermine: readonly { timeBeginMin: number; timeEndMin: number }[],
+export function spanneDesTages(
+  tagesTermine: readonly { timeBeginMin: number; timeEndMin: number }[],
 ): Zeitspanne {
-  if (wochenTermine.length === 0) return STANDARD_SPANNE;
+  if (tagesTermine.length === 0) return STANDARD_SPANNE;
 
-  let fruehester = wochenTermine[0]!.timeBeginMin;
-  let spaetestes = wochenTermine[0]!.timeEndMin;
-  for (const termin of wochenTermine) {
-    if (termin.timeBeginMin < fruehester) fruehester = termin.timeBeginMin;
-    if (termin.timeEndMin > spaetestes) spaetestes = termin.timeEndMin;
+  let von = tagesTermine[0]!.timeBeginMin;
+  let bis = tagesTermine[0]!.timeEndMin;
+  for (const termin of tagesTermine) {
+    if (termin.timeBeginMin < von) von = termin.timeBeginMin;
+    if (termin.timeEndMin > bis) bis = termin.timeEndMin;
   }
 
-  return {
-    vonMin: Math.floor(fruehester / MINUTEN_JE_STUNDE) * MINUTEN_JE_STUNDE,
-    bisMin: Math.ceil(spaetestes / MINUTEN_JE_STUNDE) * MINUTEN_JE_STUNDE,
-  };
+  return { vonMin: von, bisMin: bis };
 }

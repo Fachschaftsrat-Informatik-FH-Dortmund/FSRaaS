@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { PanResponder, ScrollView, StyleSheet, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -18,18 +18,20 @@ import {
 import { layoutTag } from '../dayLayout';
 import { useEinrichtung } from '../einrichtung';
 import { textfarbeFuerHintergrund } from '../farbe';
+import { wischRichtung } from '../../canteen/gesten';
 import { ermittleJetztStatus } from '../jetzt';
 import { ermittleKonflikte, type Konflikte } from '../konflikt';
 import { useScheduleEntries } from '../planStore';
 import { useSemesterstand } from '../semesterstand';
 import { erkenneSemesterwechsel } from '../semesterwechsel';
 import { istAktiv } from '../time';
-import type { DaySlot, PlanEntry, Weekday } from '../typen';
-import { spanneDerWoche } from '../zeitachse';
+import type { BelegtSlot, DaySlot, PlanEntry, Weekday } from '../typen';
+import { spanneDesTages } from '../zeitachse';
 import { isoDatumVon, leerGrund, termineDerWoche, termineDesTages } from '../wochenansicht';
 import { sichtbareWochentage } from '../wochentage';
 import {
   datumFuerWochentag,
+  verschiebeDatum,
   verschiebeWoche,
   wocheAusserhalbVorlesungszeit,
   wochenanfang,
@@ -58,6 +60,8 @@ import { WochentagsLeiste } from '../ui/WochentagsLeiste';
  */
 const DP_JE_MINUTE = 1.5;
 const MINUTEN_JE_STUNDE = 60;
+/** Requirement „Stapelung…", Szenario „Stapel aufklappen": Mindesthöhe je Kachel im aufgeklappten Stapel. */
+const KACHEL_AUFGEKLAPPT_HOEHE = 60;
 
 function formatZeit(minutenSeitMitternacht: number): string {
   const stunden = Math.floor(minutenSeitMitternacht / MINUTEN_JE_STUNDE);
@@ -89,14 +93,7 @@ export function ScheduleScreen() {
 
   const { einrichtung, loaded: einrichtungGeladen } = useEinrichtung();
   const { entries, loaded: planGeladen } = useScheduleEntries();
-  const {
-    einstellungen,
-    loaded: einstellungenGeladen,
-    filter,
-    toggleZeitachse,
-    toggleGruppenfremdeAusblenden,
-    toggleAlleAnzeigen,
-  } = useAnsichtEinstellungen();
+  const { einstellungen, loaded: einstellungenGeladen } = useAnsichtEinstellungen();
   const { zuletztBetrachtet, loaded: standGeladen, merkeStand } = useAnsichtsstand();
   const vorlesungszeit = useVorlesungszeit();
 
@@ -115,9 +112,7 @@ export function ScheduleScreen() {
   useEffect(() => {
     if (!allesGeladen || stand !== null) return;
     const zielTag = einstellungen.sprungZuHeute
-      ? zielWochentagBeimOeffnen(heutigerWochentag, (tag) =>
-          termineDesTages(entries, laufendeWoche, tag, filter).length > 0,
-        )
+      ? zielWochentagBeimOeffnen(heutigerWochentag, (tag) => termineDesTages(entries, laufendeWoche, tag).length > 0)
       : heutigerWochentag;
     setStand(
       anfangsAnsicht(einstellungen.sprungZuHeute, zuletztBetrachtet, {
@@ -125,16 +120,7 @@ export function ScheduleScreen() {
         wochentag: zielTag,
       }),
     );
-  }, [
-    allesGeladen,
-    stand,
-    einstellungen.sprungZuHeute,
-    zuletztBetrachtet,
-    heutigerWochentag,
-    laufendeWoche,
-    entries,
-    filter,
-  ]);
+  }, [allesGeladen, stand, einstellungen.sprungZuHeute, zuletztBetrachtet, heutigerWochentag, laufendeWoche, entries]);
 
   function wechsleStand(next: Ansichtsstand) {
     setStand(next);
@@ -142,8 +128,8 @@ export function ScheduleScreen() {
   }
 
   const wocheTermine = useMemo(
-    () => (stand ? termineDerWoche(entries, stand.wochenanfang, filter, ALLE_WOCHENTAGE) : []),
-    [entries, stand, filter],
+    () => (stand ? termineDerWoche(entries, stand.wochenanfang, ALLE_WOCHENTAGE) : []),
+    [entries, stand],
   );
 
   // Requirement „Wochentagsleiste mit bedarfsweisem Samstag": Samstag und
@@ -154,11 +140,33 @@ export function ScheduleScreen() {
   );
 
   const tagesTermine = useMemo(
-    () => (stand ? termineDesTages(entries, stand.wochenanfang, stand.wochentag, filter) : []),
-    [entries, stand, filter],
+    () => (stand ? termineDesTages(entries, stand.wochenanfang, stand.wochentag) : []),
+    [entries, stand],
   );
   const konflikte = useMemo(() => ermittleKonflikte(tagesTermine, jetztSek), [tagesTermine, jetztSek]);
-  const spanne = useMemo(() => spanneDerWoche(wocheTermine), [wocheTermine]);
+  const spanne = useMemo(() => spanneDesTages(tagesTermine), [tagesTermine]);
+
+  // Requirement „Tageswechsel durch Wischen": waagerechtes Wischen zusätzlich
+  // zur Wochentagsleiste, die als sichtbarer Weg bestehen bleibt (UX-N-Regel
+  // „keine Aktion allein über eine Geste"). Muster und Baustein (`gesten.ts`)
+  // aus dem Mensaplan.
+  const swipe = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 24 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5,
+        onPanResponderRelease: (_e, g) => {
+          if (!stand) return;
+          const richtung = wischRichtung(g.dx);
+          if (richtung === 0) return;
+          const naechstesDatum = verschiebeDatum(datumFuerWochentag(stand.wochenanfang, stand.wochentag), richtung);
+          wechsleStand({
+            wochenanfang: wochenanfang(naechstesDatum),
+            wochentag: wochentagVonDatum(naechstesDatum),
+          });
+        },
+      }),
+    [stand],
+  );
 
   // Der lokale Plan als `QueryLike`, damit Laden und Leerzustand über dieselbe
   // Grundstruktur laufen wie jede datenabhängige Ansicht (ARCH-N-020).
@@ -176,7 +184,7 @@ export function ScheduleScreen() {
   const keineEinrichtung = einrichtung.endpunkte.length === 0;
 
   return (
-    <Screen scroll tight hideScrollbar>
+    <Screen tight>
       <SemesterwechselHinweis />
 
       <AsyncStates<PlanEntry[]>
@@ -200,18 +208,16 @@ export function ScheduleScreen() {
               <JetztAnzeige
                 termine={
                   stand.wochenanfang === laufendeWoche
-                    ? termineDesTages(entries, laufendeWoche, heutigerWochentag, filter)
+                    ? termineDesTages(entries, laufendeWoche, heutigerWochentag)
                     : []
                 }
                 jetztMin={jetzt.getHours() * MINUTEN_JE_STUNDE + jetzt.getMinutes()}
                 jetztSek={jetztSek}
               />
 
-              <Wochenkopf
-                stand={stand}
-                laufendeWoche={laufendeWoche}
-                onWechsel={wechsleStand}
-              />
+              {/* Requirement „Feststehender Kopfbereich der Wochenansicht": Wochenangabe
+                  und Wochentagsleiste stehen außerhalb des scrollenden Tagesbereichs. */}
+              <Wochenkopf stand={stand} laufendeWoche={laufendeWoche} onWechsel={wechsleStand} />
 
               <Wochentagsleiste
                 stand={stand}
@@ -220,52 +226,48 @@ export function ScheduleScreen() {
                 onWaehle={(wochentag) => wechsleStand({ ...stand, wochentag })}
               />
 
-              {wocheAusserhalbVorlesungszeit(
-                stand.wochenanfang,
-                vorlesungszeit.data?.von ?? null,
-                vorlesungszeit.data?.bis ?? null,
-              ) ? (
-                <MessageView
-                  symbol="◷"
-                  title={t('schedule.vorlesungsfreiTitel')}
-                  body={t('schedule.vorlesungsfreiHinweis')}
-                  style={styles.hinweisFlaeche}
-                />
-              ) : tagesTermine.length === 0 ? (
-                <LeererTag
-                  grund={leerGrund(entries, stand.wochenanfang, stand.wochentag, filter)}
-                  onFilterAbschalten={toggleAlleAnzeigen}
-                />
-              ) : einstellungen.zeitachse ? (
-                <Zeitachse
-                  slots={layoutTag(tagesTermine, spanne.vonMin, spanne.bisMin)}
-                  spanne={spanne}
-                  konflikte={konflikte}
-                  jetztSek={jetztSek}
-                  jetztMin={
-                    stand.wochenanfang === laufendeWoche && stand.wochentag === heutigerWochentag
-                      ? jetzt.getHours() * MINUTEN_JE_STUNDE + jetzt.getMinutes()
-                      : null
-                  }
-                  onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
-                />
-              ) : (
-                <KompakteListe
-                  termine={tagesTermine}
-                  konflikte={konflikte}
-                  jetztSek={jetztSek}
-                  onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
-                />
-              )}
-
-              <Filterleiste
-                zeitachse={einstellungen.zeitachse}
-                gruppenfremdeAusblenden={einstellungen.gruppenfremdeAusblenden}
-                alleAnzeigen={einstellungen.alleAnzeigen}
-                onZeitachse={toggleZeitachse}
-                onGruppenfremde={toggleGruppenfremdeAusblenden}
-                onAlleAnzeigen={toggleAlleAnzeigen}
-              />
+              <ScrollView
+                testID="tagBereich"
+                style={styles.tagBereich}
+                contentContainerStyle={styles.tagBereichInhalt}
+                showsVerticalScrollIndicator={false}
+                {...swipe.panHandlers}
+              >
+                {wocheAusserhalbVorlesungszeit(
+                  stand.wochenanfang,
+                  vorlesungszeit.data?.von ?? null,
+                  vorlesungszeit.data?.bis ?? null,
+                ) ? (
+                  <MessageView
+                    symbol="◷"
+                    title={t('schedule.vorlesungsfreiTitel')}
+                    body={t('schedule.vorlesungsfreiHinweis')}
+                    style={styles.hinweisFlaeche}
+                  />
+                ) : tagesTermine.length === 0 ? (
+                  <LeererTag grund={leerGrund(entries, stand.wochenanfang, stand.wochentag)} />
+                ) : einstellungen.zeitachse ? (
+                  <Zeitachse
+                    slots={layoutTag(tagesTermine, spanne.vonMin, spanne.bisMin)}
+                    spanne={spanne}
+                    konflikte={konflikte}
+                    jetztSek={jetztSek}
+                    jetztMin={
+                      stand.wochenanfang === laufendeWoche && stand.wochentag === heutigerWochentag
+                        ? jetzt.getHours() * MINUTEN_JE_STUNDE + jetzt.getMinutes()
+                        : null
+                    }
+                    onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
+                  />
+                ) : (
+                  <KompakteListe
+                    termine={tagesTermine}
+                    konflikte={konflikte}
+                    jetztSek={jetztSek}
+                    onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
+                  />
+                )}
+              </ScrollView>
             </View>
           )
         }
@@ -290,6 +292,10 @@ function useJetzt(): Date {
  * Requirement „Hinweis bei Semesterwechsel": Die aktuell über INT-001
  * gelieferte Endpunktliste wird gegen den zuletzt gesehenen Stand gehalten.
  * Ohne gewählte Endpunkte gibt es nichts abzugleichen.
+ *
+ * Requirement „Kein selbsttätiges Entfernen des Stundenplans": dieser Hinweis
+ * bietet das Leeren oder Zurücksetzen ausschließlich über das Verwaltungsblatt
+ * an (`VerwaltungsblattZugang`) — er entfernt nie selbst etwas aus dem Plan.
  */
 function SemesterwechselHinweis() {
   const { t } = useTranslation();
@@ -324,7 +330,7 @@ function SemesterwechselHinweis() {
   );
 }
 
-/** Requirement „Anzeige des laufenden und nächsten Termins" — eigene Anzeige über dem Plan. */
+/** Requirement „Anzeige des laufenden und nächsten Termins" — nebeneinander über dem Plan. */
 function JetztAnzeige({
   termine,
   jetztMin,
@@ -342,26 +348,30 @@ function JetztAnzeige({
   return (
     <View style={[styles.jetzt, { borderColor: colors.border }]} accessibilityLiveRegion="polite">
       {status.laufend ? (
-        <Text style={{ color: colors.text, fontWeight: '600' }}>
-          {t('schedule.jetztLaufend', {
-            titel: titelVon(status.laufend),
-            minuten: status.laufendVerbleibendMin,
-          })}
-        </Text>
+        <View style={styles.jetztSpalte}>
+          <Text style={{ color: colors.text, fontWeight: '600' }}>
+            {t('schedule.jetztLaufend', {
+              titel: titelVon(status.laufend),
+              minuten: dauerText(status.laufendVerbleibendMin ?? 0, t),
+            })}
+          </Text>
+        </View>
       ) : null}
       {status.naechster ? (
-        <Text style={{ color: colors.textMuted }}>
-          {t('schedule.jetztNaechster', {
-            titel: titelVon(status.naechster),
-            minuten: status.naechsterInMin,
-          })}
-        </Text>
+        <View style={styles.jetztSpalte}>
+          <Text style={{ color: colors.textMuted }}>
+            {t('schedule.jetztNaechster', {
+              titel: titelVon(status.naechster),
+              minuten: dauerText(status.naechsterInMin ?? 0, t),
+            })}
+          </Text>
+        </View>
       ) : null}
     </View>
   );
 }
 
-/** Requirement „Blättern über Wochengrenzen" samt sichtbarem Rückweg zur laufenden Woche. */
+/** Requirement „Rückkehr zur laufenden Woche über die Wochenangabe": die Wochenangabe selbst ist der Bedienweg. */
 function Wochenkopf({
   stand,
   laufendeWoche,
@@ -373,6 +383,7 @@ function Wochenkopf({
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const laufend = stand.wochenanfang === laufendeWoche;
   const bereich = t('schedule.wochenBereich', {
     von: formatTagesdatum(stand.wochenanfang),
     bis: formatTagesdatum(datumFuerWochentag(stand.wochenanfang, 'Sun')),
@@ -389,7 +400,17 @@ function Wochenkopf({
         <Text style={{ color: colors.accent, fontSize: 18 }}>‹</Text>
       </Pressable>
 
-      <Text style={[styles.wochenText, { color: colors.text }]}>{bereich}</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={laufend ? bereich : t('schedule.wocheAktuell')}
+        onPress={laufend ? undefined : () => onWechsel({ ...stand, wochenanfang: laufendeWoche })}
+        style={styles.wochenText}
+      >
+        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>{bereich}</Text>
+        {!laufend ? (
+          <Text style={{ color: colors.accent, fontSize: 12, textAlign: 'center' }}>{t('schedule.wocheAktuell')}</Text>
+        ) : null}
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"
@@ -399,23 +420,15 @@ function Wochenkopf({
       >
         <Text style={{ color: colors.accent, fontSize: 18 }}>›</Text>
       </Pressable>
-
-      {stand.wochenanfang !== laufendeWoche ? (
-        <AppButton
-          variant="secondary"
-          label={t('schedule.wocheAktuell')}
-          onPress={() => onWechsel({ ...stand, wochenanfang: laufendeWoche })}
-        />
-      ) : null}
     </View>
   );
 }
 
 /**
- * Requirements „Wochentagsleiste mit bedarfsweisem Samstag" und „Wochentagsleiste
- * über die volle Bildschirmbreite": Wochentag und Kalenderdatum je Eintrag, ohne
- * Terminanzahl (Requirement, Belegungsvorschau je Tag entfallen), über die
- * gemeinsame Komponente `WochentagsLeiste` (design.md, Entscheidung 8).
+ * Requirement „Wochentagsleiste mit bedarfsweisem Samstag": Wochentag und
+ * Kalenderdatum je Eintrag, ohne Terminanzahl (Requirement, REMOVED
+ * „Belegungsvorschau je Tag"), über die gemeinsame Komponente
+ * `WochentagsLeiste` (design.md, Entscheidung 8).
  */
 function Wochentagsleiste({
   stand,
@@ -457,46 +470,26 @@ function Wochentagsleiste({
   );
 }
 
-/** Requirement „Leerer Tag bei wirksamem Filter": nennt den Filter, der den Tag geleert hat. */
-function LeererTag({
-  grund,
-  onFilterAbschalten,
-}: {
-  grund: ReturnType<typeof leerGrund>;
-  onFilterAbschalten: () => void;
-}) {
+/** Requirement „Kennzeichnung eines leeren Wochentags". */
+function LeererTag({ grund }: { grund: ReturnType<typeof leerGrund> }) {
   const { t } = useTranslation();
-  const text =
-    grund === 'gruppenfilter'
-      ? t('schedule.tagLeerGruppenfilter')
-      : grund === 'gueltigkeitszeitraum'
-        ? t('schedule.tagLeerZeitraum')
-        : t('schedule.tagLeerOhneTermine');
+  const text = grund === 'gueltigkeitszeitraum' ? t('schedule.tagLeerZeitraum') : t('schedule.tagLeerOhneTermine');
 
-  return (
-    <MessageView
-      symbol="—"
-      title={t('schedule.tagLeerTitel')}
-      body={text}
-      style={styles.hinweisFlaeche}
-      action={
-        grund === 'ohneTermine' ? undefined : (
-          <AppButton
-            variant="secondary"
-            label={t('schedule.filterAlleAnzeigenAktion')}
-            onPress={onFilterAbschalten}
-          />
-        )
-      }
-    />
-  );
+  return <MessageView symbol="—" title={t('schedule.tagLeerTitel')} body={text} style={styles.hinweisFlaeche} />;
+}
+
+function schluesselFuerStapel(abschnitt: Extract<DaySlot, { art: 'belegt' }>, slot: Extract<BelegtSlot, { art: 'stapel' }>): string {
+  return `${abschnitt.vonMin}-${abschnitt.bisMin}-${slot.spalte}`;
 }
 
 /**
  * Requirements „Proportionale Zeitachse", „Nebeneinanderdarstellung
- * überschneidender Termine" und „Hervorhebung des laufenden Termins und der
- * aktuellen Uhrzeit". Die Slots kommen unverändert aus `dayLayout.layoutTag`;
- * hier wird allein auf Pixel umgerechnet.
+ * überschneidender Termine", „Stapelung bei mehr als drei überschneidenden
+ * Terminen", „Stundenlinien auf der Zeitachse" und „Hervorhebung des
+ * laufenden Termins und der aktuellen Uhrzeit". Die Slots kommen unverändert
+ * aus `dayLayout.layoutTag`; hier wird allein auf Pixel umgerechnet
+ * (design.md, Entscheidung 1) — je Abschnitt eine eigene Höhe, keine lineare
+ * Formel mehr.
  */
 function Zeitachse({
   slots,
@@ -515,72 +508,202 @@ function Zeitachse({
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const hoehe = (spanne.bisMin - spanne.vonMin) * DP_JE_MINUTE;
-  const uhrzeitSichtbar = jetztMin !== null && jetztMin >= spanne.vonMin && jetztMin <= spanne.bisMin;
+  const [aufgeklappterStapel, setAufgeklappterStapel] = useState<string | null>(null);
+
+  // Requirement „Hervorhebung des laufenden Termins und der aktuellen Uhrzeit",
+  // Szenario „Uhrzeit vor dem ersten Termin": die Kennzeichnung wird an den
+  // Rand geheftet, statt zu verschwinden.
+  const jetztGeklemmt =
+    jetztMin === null ? null : Math.min(Math.max(jetztMin, spanne.vonMin), spanne.bisMin);
+
+  let cursor = 0;
+  const abschnitte = slots.map((slot, index) => {
+    let hoehe = slot.hoeheMin * DP_JE_MINUTE;
+    if (slot.art === 'belegt') {
+      const stapel = slot.slots.find((s): s is Extract<BelegtSlot, { art: 'stapel' }> => s.art === 'stapel');
+      if (stapel && aufgeklappterStapel === schluesselFuerStapel(slot, stapel)) {
+        const normalHoehe = (stapel.bisMin - stapel.vonMin) * DP_JE_MINUTE;
+        const aufgeklapptHoehe = stapel.entries.length * KACHEL_AUFGEKLAPPT_HOEHE;
+        hoehe += Math.max(0, aufgeklapptHoehe - normalHoehe);
+      }
+    }
+    const top = cursor;
+    cursor += hoehe;
+    return { slot, top, hoehe, key: index };
+  });
+  const gesamthoehe = cursor;
 
   return (
-    <View style={[styles.achse, { height: hoehe }]}>
-      {slots.map((slot, index) =>
+    <View style={[styles.achse, { height: gesamthoehe }]}>
+      {abschnitte.map(({ slot, top, hoehe, key }) =>
         slot.art === 'luecke' ? (
-          <View
-            key={`luecke-${index}`}
-            accessibilityRole="text"
-            accessibilityLabel={t('schedule.lueckeLabel', {
-              dauer: dauerText(slot.bisMin - slot.vonMin, t),
-              von: formatZeit(slot.vonMin),
-              bis: formatZeit(slot.bisMin),
-            })}
-            style={[
-              styles.luecke,
-              {
-                top: (slot.vonMin - spanne.vonMin) * DP_JE_MINUTE,
-                height: (slot.bisMin - slot.vonMin) * DP_JE_MINUTE,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              {t('schedule.luecke', { dauer: dauerText(slot.bisMin - slot.vonMin, t) })}
-            </Text>
+          <View key={`luecke-${key}`} style={[styles.abschnitt, { top, height: hoehe }]}>
+            {slot.stundenlinien.map((marke) => (
+              <View
+                key={marke}
+                style={[
+                  styles.stundenlinie,
+                  { top: (marke - slot.vonMin) * DP_JE_MINUTE, backgroundColor: colors.border },
+                ]}
+              />
+            ))}
+            {slot.kurz ? null : (
+              <View
+                accessibilityRole="text"
+                accessibilityLabel={t('schedule.lueckeLabel', {
+                  dauer: dauerText(slot.echteDauerMin, t),
+                  von: formatZeit(slot.vonMin),
+                  bis: formatZeit(slot.bisMin),
+                })}
+                style={[styles.luecke, { borderColor: colors.border }]}
+              >
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                  {slot.gestaucht
+                    ? `⌇ ${t('schedule.luecke', { dauer: dauerText(slot.echteDauerMin, t) })}`
+                    : t('schedule.luecke', { dauer: dauerText(slot.echteDauerMin, t) })}
+                </Text>
+              </View>
+            )}
           </View>
         ) : (
-          <View
-            key={slot.entry.id}
-            style={[
-              styles.terminPlatz,
-              {
-                top: (slot.entry.timeBeginMin - spanne.vonMin) * DP_JE_MINUTE,
-                height: (slot.entry.timeEndMin - slot.entry.timeBeginMin) * DP_JE_MINUTE,
-                left: `${(slot.spalte / slot.spalten) * 100}%`,
-                width: `${(1 / slot.spalten) * 100}%`,
-              },
-            ]}
-          >
-            <TerminKachel
-              entry={slot.entry}
-              konflikte={konflikte}
-              jetztSek={jetztSek}
-              laeuft={
-                jetztMin !== null &&
-                slot.entry.timeBeginMin <= jetztMin &&
-                jetztMin < slot.entry.timeEndMin
-              }
-              onOeffne={onOeffne}
-            />
+          <View key={`belegt-${key}`} style={[styles.abschnitt, { top, height: hoehe }]}>
+            {slot.stundenlinien.map((marke) => (
+              <View
+                key={marke}
+                style={[
+                  styles.stundenlinie,
+                  { top: (marke - slot.vonMin) * DP_JE_MINUTE, backgroundColor: colors.border },
+                ]}
+              />
+            ))}
+            {slot.slots.map((einzelslot) =>
+              einzelslot.art === 'termin' ? (
+                <View
+                  key={einzelslot.entry.id}
+                  style={[
+                    styles.terminPlatz,
+                    {
+                      top: (einzelslot.entry.timeBeginMin - slot.vonMin) * DP_JE_MINUTE,
+                      height: (einzelslot.entry.timeEndMin - einzelslot.entry.timeBeginMin) * DP_JE_MINUTE,
+                      left: `${(einzelslot.spalte / einzelslot.spalten) * 100}%`,
+                      width: `${(1 / einzelslot.spalten) * 100}%`,
+                    },
+                  ]}
+                >
+                  <TerminKachel
+                    entry={einzelslot.entry}
+                    konflikte={konflikte}
+                    jetztSek={jetztSek}
+                    laeuft={
+                      jetztMin !== null &&
+                      einzelslot.entry.timeBeginMin <= jetztMin &&
+                      jetztMin < einzelslot.entry.timeEndMin
+                    }
+                    onOeffne={onOeffne}
+                  />
+                </View>
+              ) : (
+                <StapelKachel
+                  key={schluesselFuerStapel(slot, einzelslot)}
+                  abschnitt={slot}
+                  stapel={einzelslot}
+                  aufgeklappt={aufgeklappterStapel === schluesselFuerStapel(slot, einzelslot)}
+                  onUmschalten={() =>
+                    setAufgeklappterStapel((bisher) =>
+                      bisher === schluesselFuerStapel(slot, einzelslot) ? null : schluesselFuerStapel(slot, einzelslot),
+                    )
+                  }
+                  konflikte={konflikte}
+                  jetztSek={jetztSek}
+                  onOeffne={onOeffne}
+                />
+              ),
+            )}
           </View>
         ),
       )}
 
-      {uhrzeitSichtbar ? (
+      {jetztGeklemmt !== null ? (
         <View
           accessibilityRole="text"
-          accessibilityLabel={t('schedule.aktuelleUhrzeit', { zeit: formatZeit(jetztMin!) })}
-          style={[
-            styles.uhrzeitMarke,
-            { top: (jetztMin! - spanne.vonMin) * DP_JE_MINUTE, backgroundColor: colors.danger },
-          ]}
+          accessibilityLabel={t('schedule.aktuelleUhrzeit', { zeit: formatZeit(jetztMin ?? jetztGeklemmt) })}
+          style={[styles.uhrzeitMarke, { top: mapJetztAufAchse(jetztGeklemmt, abschnitte), backgroundColor: colors.danger }]}
         />
       ) : null}
+    </View>
+  );
+}
+
+/** Bildet eine (bereits an die Tagesspanne geklemmte) Uhrzeit auf die kumulierte Pixelposition der Abschnitte ab. */
+function mapJetztAufAchse(
+  minute: number,
+  abschnitte: readonly { slot: DaySlot; top: number; hoehe: number }[],
+): number {
+  for (const { slot, top } of abschnitte) {
+    if (minute >= slot.vonMin && minute <= slot.bisMin) {
+      if (slot.art === 'luecke' && slot.gestaucht) return top; // in einer gestauchten Lücke nicht maßstabsgetreu abbildbar
+      return top + (minute - slot.vonMin) * DP_JE_MINUTE;
+    }
+  }
+  const letzter = abschnitte[abschnitte.length - 1];
+  return letzter ? letzter.top + letzter.hoehe : 0;
+}
+
+/** Requirement „Stapelung bei mehr als drei überschneidenden Terminen", Szenario „Stapel aufklappen". */
+function StapelKachel({
+  abschnitt,
+  stapel,
+  aufgeklappt,
+  onUmschalten,
+  konflikte,
+  jetztSek,
+  onOeffne,
+}: {
+  abschnitt: Extract<DaySlot, { art: 'belegt' }>;
+  stapel: Extract<BelegtSlot, { art: 'stapel' }>;
+  aufgeklappt: boolean;
+  onUmschalten: () => void;
+  konflikte: Konflikte;
+  jetztSek: number;
+  onOeffne: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const top = (stapel.vonMin - abschnitt.vonMin) * DP_JE_MINUTE;
+  const left = `${(stapel.spalte / stapel.spalten) * 100}%` as const;
+  const width = `${(1 / stapel.spalten) * 100}%` as const;
+
+  if (aufgeklappt) {
+    return (
+      <View
+        style={[styles.terminPlatz, { top, left, width, height: stapel.entries.length * KACHEL_AUFGEKLAPPT_HOEHE }]}
+      >
+        {stapel.entries.map((entry) => (
+          <View key={entry.id} style={{ height: KACHEL_AUFGEKLAPPT_HOEHE }}>
+            <TerminKachel entry={entry} konflikte={konflikte} jetztSek={jetztSek} laeuft={false} onOeffne={onOeffne} />
+          </View>
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.terminPlatz,
+        { top, left, width, height: (stapel.bisMin - stapel.vonMin) * DP_JE_MINUTE },
+      ]}
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('schedule.stapelLabel', { count: stapel.entries.length })}
+        onPress={onUmschalten}
+        style={[styles.kachel, styles.stapelKachel, { borderColor: colors.border }]}
+      >
+        <Text style={{ color: colors.text, fontWeight: '700' }}>
+          {t('schedule.stapelUmfang', { count: stapel.entries.length })}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -684,80 +807,27 @@ export function TerminKachel({
   );
 }
 
-/** Die Schalter der Wochenansicht, einschließlich „alle Filter abschalten". */
-function Filterleiste({
-  zeitachse,
-  gruppenfremdeAusblenden,
-  alleAnzeigen,
-  onZeitachse,
-  onGruppenfremde,
-  onAlleAnzeigen,
-}: {
-  zeitachse: boolean;
-  gruppenfremdeAusblenden: boolean;
-  alleAnzeigen: boolean;
-  onZeitachse: () => void;
-  onGruppenfremde: () => void;
-  onAlleAnzeigen: () => void;
-}) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-
-  return (
-    <View style={[styles.filter, { borderColor: colors.border }]}>
-      <SchalterZeile
-        label={t('schedule.filterAlleAnzeigen')}
-        wert={alleAnzeigen}
-        onChange={onAlleAnzeigen}
-        hinweis={alleAnzeigen ? t('schedule.filterAlleAnzeigenAktiv') : undefined}
-      />
-      <SchalterZeile
-        label={t('schedule.filterGruppenfremdeAusblenden')}
-        wert={gruppenfremdeAusblenden}
-        onChange={onGruppenfremde}
-      />
-      <SchalterZeile label={t('schedule.filterZeitachse')} wert={zeitachse} onChange={onZeitachse} />
-    </View>
-  );
-}
-
-function SchalterZeile({
-  label,
-  wert,
-  onChange,
-  hinweis,
-}: {
-  label: string;
-  wert: boolean;
-  onChange: () => void;
-  hinweis?: string;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.schalterZeile}>
-      <View style={styles.schalterText}>
-        <Text style={{ color: colors.text }}>{label}</Text>
-        {hinweis ? <Text style={{ color: colors.textMuted, fontSize: 12 }}>{hinweis}</Text> : null}
-      </View>
-      <Switch accessibilityLabel={label} value={wert} onValueChange={onChange} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  inhalt: { gap: 12 },
+  inhalt: { flex: 1, gap: 12 },
+  tagBereich: { flex: 1 },
+  tagBereichInhalt: { flexGrow: 1 },
   banner: { padding: 12, borderRadius: 8, gap: 8 },
   bannerAktionen: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  jetzt: { borderWidth: 1, borderRadius: 8, padding: 10, gap: 2 },
+  jetzt: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, padding: 10, gap: 12 },
+  jetztSpalte: { flex: 1 },
   wochenkopf: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   blaettern: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  wochenText: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '600' },
+  wochenText: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hinweisFlaeche: { flexGrow: 0, paddingVertical: 32 },
   achse: { position: 'relative', marginTop: 4 },
+  abschnitt: { position: 'absolute', left: 0, right: 0 },
+  stundenlinie: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth },
   luecke: {
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
     borderWidth: StyleSheet.hairlineWidth,
     borderStyle: 'dashed',
     borderRadius: 6,
@@ -765,6 +835,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   terminPlatz: { position: 'absolute', paddingRight: 4 },
+  stapelKachel: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed' },
   uhrzeitMarke: { position: 'absolute', left: 0, right: 0, height: 2, borderRadius: 1 },
   liste: { gap: 8 },
   kachel: { flex: 1, minHeight: 44, borderRadius: 8, padding: 8, gap: 2, justifyContent: 'flex-start' },
@@ -775,7 +846,4 @@ const styles = StyleSheet.create({
   kachelZeit: { fontSize: 12, fontWeight: '600' },
   kachelTitel: { fontSize: 14, fontWeight: '700' },
   kachelZeile: { fontSize: 12 },
-  filter: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12 },
-  schalterZeile: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 12 },
-  schalterText: { flex: 1 },
 });
