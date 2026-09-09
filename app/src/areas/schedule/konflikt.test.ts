@@ -1,10 +1,12 @@
 import { ermittleKonflikte, pruefeKandidatGegenZwischenstand } from './konflikt';
 import type { PlanEntry } from './typen';
 
+const JETZT_SEK = 0;
+
 function termin(überschreibung: Partial<PlanEntry> & { id: string }): PlanEntry {
   return {
     kind: 'eigen',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: 'Mon',
     timeBeginMin: 480,
@@ -21,12 +23,12 @@ function termin(überschreibung: Partial<PlanEntry> & { id: string }): PlanEntry
   } as PlanEntry;
 }
 
-describe('Konflikthinweis bei festen Terminen', () => {
-  it('zwei feste Termine überschneiden sich: beide tragen einen Konflikthinweis', () => {
+describe('Konflikthinweis bei überschneidenden Terminen', () => {
+  it('zwei aktive Termine überschneiden sich: beide tragen einen Konflikthinweis', () => {
     const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 });
     const b = termin({ id: 'b', timeBeginMin: 540, timeEndMin: 630 });
 
-    const konflikte = ermittleKonflikte([a, b]);
+    const konflikte = ermittleKonflikte([a, b], JETZT_SEK);
 
     expect(konflikte.offen).toHaveLength(1);
     expect(konflikte.angenommen).toHaveLength(0);
@@ -37,14 +39,14 @@ describe('Konflikthinweis bei festen Terminen', () => {
     const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 });
     const b = termin({ id: 'b', timeBeginMin: 570, timeEndMin: 660 });
 
-    expect(ermittleKonflikte([a, b]).offen).toHaveLength(0);
+    expect(ermittleKonflikte([a, b], JETZT_SEK).offen).toHaveLength(0);
   });
 
   it('ein beidseitig angenommenes Paar zeigt allein die Kennzeichnung, keinen Hinweis', () => {
     const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570, akzeptierteKonflikte: ['b'] });
     const b = termin({ id: 'b', timeBeginMin: 540, timeEndMin: 630, akzeptierteKonflikte: ['a'] });
 
-    const konflikte = ermittleKonflikte([a, b]);
+    const konflikte = ermittleKonflikte([a, b], JETZT_SEK);
 
     expect(konflikte.offen).toHaveLength(0);
     expect(konflikte.angenommen).toHaveLength(1);
@@ -56,7 +58,7 @@ describe('Konflikthinweis bei festen Terminen', () => {
     const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570, akzeptierteKonflikte: ['b'] });
     const b = termin({ id: 'b', timeBeginMin: 540, timeEndMin: 630 });
 
-    const konflikte = ermittleKonflikte([a, b]);
+    const konflikte = ermittleKonflikte([a, b], JETZT_SEK);
 
     expect(konflikte.offen).toHaveLength(1);
     expect(konflikte.angenommen).toHaveLength(0);
@@ -69,7 +71,7 @@ describe('Konflikthinweis bei festen Terminen', () => {
     const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570, akzeptierteKonflikte: ['b'] });
     const c = termin({ id: 'c', timeBeginMin: 480, timeEndMin: 570 });
 
-    const konflikte = ermittleKonflikte([a, c]);
+    const konflikte = ermittleKonflikte([a, c], JETZT_SEK);
 
     expect(konflikte.offen).toHaveLength(1);
     expect([...konflikte.hinweisIds].sort()).toEqual(['a', 'c']);
@@ -80,7 +82,7 @@ describe('Konflikthinweis bei festen Terminen', () => {
     const b = termin({ id: 'b', timeBeginMin: 480, timeEndMin: 540, akzeptierteKonflikte: ['a'] });
     const c = termin({ id: 'c', timeBeginMin: 540, timeEndMin: 600 });
 
-    const konflikte = ermittleKonflikte([a, b, c]);
+    const konflikte = ermittleKonflikte([a, b, c], JETZT_SEK);
 
     expect(konflikte.angenommen).toHaveLength(1);
     expect(konflikte.offen).toHaveLength(1);
@@ -91,59 +93,58 @@ describe('Konflikthinweis bei festen Terminen', () => {
     expect(konflikte.hinweisIds.has('a')).toBe(true);
     expect(konflikte.hinweisIds.has('b')).toBe(false);
   });
+
+  it('einer der Termine ist deaktiviert: keine Kollision', () => {
+    const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 });
+    const b = termin({ id: 'b', deaktiviertBis: 'dauerhaft', timeBeginMin: 540, timeEndMin: 630 });
+
+    const konflikte = ermittleKonflikte([a, b], JETZT_SEK);
+
+    expect(konflikte.offen).toHaveLength(0);
+    expect(konflikte.hinweisIds.size).toBe(0);
+  });
 });
 
-describe('Kein Konflikthinweis bei vorgemerkten Terminen', () => {
-  it('zwei vorgemerkte Termine erzeugen keinen Hinweis', () => {
-    const a = termin({ id: 'a', status: 'vorgemerkt', timeBeginMin: 480, timeEndMin: 570 });
-    const b = termin({ id: 'b', status: 'vorgemerkt', timeBeginMin: 540, timeEndMin: 630 });
+describe('Wirkung eines deaktivierten Termins', () => {
+  it('zwei deaktivierte Termine erzeugen keinen Hinweis', () => {
+    const a = termin({ id: 'a', deaktiviertBis: 'dauerhaft', timeBeginMin: 480, timeEndMin: 570 });
+    const b = termin({ id: 'b', deaktiviertBis: 'dauerhaft', timeBeginMin: 540, timeEndMin: 630 });
 
-    const konflikte = ermittleKonflikte([a, b]);
-
-    expect(konflikte.offen).toHaveLength(0);
-    expect(konflikte.hinweisIds.size).toBe(0);
-  });
-
-  it('ein vorgemerkter Termin erzeugt auch gegen einen festen keinen Hinweis', () => {
-    const fest = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 });
-    const vorgemerkt = termin({ id: 'b', status: 'vorgemerkt', timeBeginMin: 540, timeEndMin: 630 });
-
-    const konflikte = ermittleKonflikte([fest, vorgemerkt]);
+    const konflikte = ermittleKonflikte([a, b], JETZT_SEK);
 
     expect(konflikte.offen).toHaveLength(0);
     expect(konflikte.hinweisIds.size).toBe(0);
   });
 
-  it('im Planungsmodus macht eine vorgemerkte Überschneidung sich zurückgenommen bemerkbar', () => {
-    const zwischenstand = [termin({ id: 'a', status: 'vorgemerkt', timeBeginMin: 480, timeEndMin: 570 })];
+  it('ein einmalig deaktivierter Termin gilt nach Ablauf seines Zeitpunkts wieder als aktiv und erzeugt einen Hinweis', () => {
+    const a = termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 });
+    const b = termin({ id: 'b', deaktiviertBis: 100, timeBeginMin: 540, timeEndMin: 630 });
 
-    const stufe = pruefeKandidatGegenZwischenstand(
-      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
-      zwischenstand,
-    );
-
-    expect(stufe).toBe('vorgemerkterKonflikt');
+    expect(ermittleKonflikte([a, b], 50).hinweisIds.size).toBe(0);
+    expect(ermittleKonflikte([a, b], 200).hinweisIds.size).toBe(2);
   });
 });
 
 describe('Konfliktprüfung paralleler Termine', () => {
-  it('ein Kandidat, der mit einem festen Termin des Zwischenstands überschneidet, gilt als Konflikt', () => {
-    const zwischenstand = [termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 })];
+  it('ein Kandidat, der mit einem aktiven Termin des Zwischenstands überschneidet, gilt als Konflikt', () => {
+    const zwischenstand = [termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 })];
 
     const stufe = pruefeKandidatGegenZwischenstand(
       { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
       zwischenstand,
+      JETZT_SEK,
     );
 
     expect(stufe).toBe('konflikt');
   });
 
   it('ohne Überschneidung gilt der Kandidat als konfliktfrei', () => {
-    const zwischenstand = [termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 })];
+    const zwischenstand = [termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 })];
 
     const stufe = pruefeKandidatGegenZwischenstand(
       { weekday: 'Mon', timeBeginMin: 570, timeEndMin: 660 },
       zwischenstand,
+      JETZT_SEK,
     );
 
     expect(stufe).toBe('konfliktfrei');
@@ -153,14 +154,27 @@ describe('Konfliktprüfung paralleler Termine', () => {
     // Die Nutzerin hat Termin A bereits ausgewählt (noch ungesichert, aber
     // Teil des Zwischenstands) und wählt nun Termin B, der damit kollidiert —
     // ohne dass zwischendurch gesichert wurde.
-    const zwischenstandNachA = [termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 })];
+    const zwischenstandNachA = [termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 })];
 
     const stufeFuerB = pruefeKandidatGegenZwischenstand(
       { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
       zwischenstandNachA,
+      JETZT_SEK,
     );
 
     expect(stufeFuerB).toBe('konflikt');
+  });
+
+  it('Kollision mit einem deaktivierten Termin des gesicherten Plans gilt als konfliktfrei', () => {
+    const zwischenstand = [termin({ id: 'a', deaktiviertBis: 'dauerhaft', timeBeginMin: 480, timeEndMin: 570 })];
+
+    const stufe = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
+      zwischenstand,
+      JETZT_SEK,
+    );
+
+    expect(stufe).toBe('konfliktfrei');
   });
 });
 
@@ -170,8 +184,16 @@ describe('Konfliktprüfung gegenüber angepinnten Terminen', () => {
     // Zwischenstand ist leer, beide bleiben konfliktfrei.
     const zwischenstand: PlanEntry[] = [];
 
-    const stufeA = pruefeKandidatGegenZwischenstand({ weekday: 'Mon', timeBeginMin: 480, timeEndMin: 570 }, zwischenstand);
-    const stufeB = pruefeKandidatGegenZwischenstand({ weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 }, zwischenstand);
+    const stufeA = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 480, timeEndMin: 570 },
+      zwischenstand,
+      JETZT_SEK,
+    );
+    const stufeB = pruefeKandidatGegenZwischenstand(
+      { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
+      zwischenstand,
+      JETZT_SEK,
+    );
 
     expect(stufeA).toBe('konfliktfrei');
     expect(stufeB).toBe('konfliktfrei');
@@ -179,12 +201,13 @@ describe('Konfliktprüfung gegenüber angepinnten Terminen', () => {
 
   it('eine in der laufenden Sitzung getroffene, noch ungesicherte Entscheidung zählt für nachfolgende Kandidaten', () => {
     const zwischenstandMitUngesicherterEntscheidung = [
-      termin({ id: 'a', status: 'fest', timeBeginMin: 480, timeEndMin: 570 }),
+      termin({ id: 'a', timeBeginMin: 480, timeEndMin: 570 }),
     ];
 
     const stufe = pruefeKandidatGegenZwischenstand(
       { weekday: 'Mon', timeBeginMin: 540, timeEndMin: 630 },
       zwischenstandMitUngesicherterEntscheidung,
+      JETZT_SEK,
     );
 
     expect(stufe).toBe('konflikt');

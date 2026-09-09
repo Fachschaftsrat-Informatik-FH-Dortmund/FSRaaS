@@ -9,7 +9,7 @@ function eigenerTermin(überschreibung: Partial<CustomPlanEntry> = {}): CustomPl
   return {
     kind: 'eigen',
     id: 'e1',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: 'Mon',
     timeBeginMin: 480,
@@ -60,19 +60,85 @@ describe('DATA-F-010 der Stundenplan wird ausschließlich lokal persistiert', ()
   });
 });
 
-describe('SCHED-F-570 Status fest/vorgemerkt wechseln', () => {
-  it('wechselt den Status eines Eintrags zwischen fest und vorgemerkt', async () => {
+describe('Deaktivieren eines Termins', () => {
+  it('deaktiviert einen Termin dauerhaft, bis die Deaktivierung zurückgenommen wird', async () => {
     const { result } = renderHook(() => useScheduleEntries());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
-    act(() => result.current.hinzufuegen(eigenerTermin({ status: 'fest' })));
-    await waitFor(() => expect(result.current.entries[0]!.status).toBe('fest'));
+    act(() => result.current.hinzufuegen(eigenerTermin()));
+    await waitFor(() => expect(result.current.entries[0]!.deaktiviertBis).toBeNull());
 
-    act(() => result.current.statusUmschalten('e1'));
-    await waitFor(() => expect(result.current.entries[0]!.status).toBe('vorgemerkt'));
+    act(() => result.current.deaktivierungSetzen('e1', 'dauerhaft'));
+    await waitFor(() => expect(result.current.entries[0]!.deaktiviertBis).toBe('dauerhaft'));
+  });
 
-    act(() => result.current.statusUmschalten('e1'));
-    await waitFor(() => expect(result.current.entries[0]!.status).toBe('fest'));
+  it('deaktiviert einen Termin nur für das nächste Vorkommen (Unix-Sekunden-Zeitpunkt)', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin()));
+    await waitFor(() => expect(result.current.entries).toHaveLength(1));
+
+    act(() => result.current.deaktivierungSetzen('e1', 1_760_000_000));
+    await waitFor(() => expect(result.current.entries[0]!.deaktiviertBis).toBe(1_760_000_000));
+  });
+
+  it('nimmt eine Deaktivierung verlustfrei zurück', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.hinzufuegen(eigenerTermin({ deaktiviertBis: 'dauerhaft', title: 'Lerngruppe' })));
+    await waitFor(() => expect(result.current.entries[0]!.deaktiviertBis).toBe('dauerhaft'));
+
+    act(() => result.current.deaktivierungSetzen('e1', null));
+    await waitFor(() => expect(result.current.entries[0]!.deaktiviertBis).toBeNull());
+    expect((result.current.entries[0] as CustomPlanEntry).title).toBe('Lerngruppe');
+  });
+});
+
+describe('Überführung des Terminstatus in den Deaktiviert-Zustand', () => {
+  it('überführt einen gespeicherten Eintrag mit Status „vorgemerkt" zu dauerhaft deaktiviert', async () => {
+    const alteGestalt = { ...eigenerTermin(), deaktiviertBis: undefined, status: 'vorgemerkt' };
+    delete (alteGestalt as Record<string, unknown>).deaktiviertBis;
+    await writeJson('scheduleEntries', [alteGestalt]);
+    __resetScheduleEntriesForTest();
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]!.deaktiviertBis).toBe('dauerhaft');
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(0);
+    errorSpy.mockRestore();
+  });
+
+  it('überführt einen gespeicherten Eintrag mit Status „fest" zu aktiv', async () => {
+    const alteGestalt = { ...eigenerTermin(), status: 'fest' };
+    delete (alteGestalt as Record<string, unknown>).deaktiviertBis;
+    await writeJson('scheduleEntries', [alteGestalt]);
+    __resetScheduleEntriesForTest();
+
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]!.deaktiviertBis).toBeNull();
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(0);
+  });
+
+  it('führt einen Eintrag ohne Status und ohne deaktiviertBis als aktiv', async () => {
+    const ohneZustand = { ...eigenerTermin() };
+    delete (ohneZustand as Record<string, unknown>).deaktiviertBis;
+    await writeJson('scheduleEntries', [ohneZustand]);
+    __resetScheduleEntriesForTest();
+
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]!.deaktiviertBis).toBeNull();
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(0);
   });
 });
 

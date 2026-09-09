@@ -56,6 +56,30 @@ function unixSekundenMittag(datum: string): number {
   return Math.floor(new Date(y!, m! - 1, d!, 12, 0, 0).getTime() / 1000);
 }
 
+/** Unix-Sekunden eines ISO-Datums zu einer Uhrzeit in Minuten seit Mitternacht. */
+function unixSekundenZuZeit(datum: string, minutenSeitMitternacht: number): number {
+  const [y, m, d] = datum.split('-').map(Number);
+  return Math.floor(
+    new Date(y!, m! - 1, d!, Math.floor(minutenSeitMitternacht / 60), minutenSeitMitternacht % 60, 0).getTime() /
+      1000,
+  );
+}
+
+/**
+ * Requirement „Deaktivieren eines Termins", Reichweite „nur dieses Vorkommen"
+ * (design.md, Entscheidung 4, übernommen aus `TimetableDayFragment.java:150-163`):
+ * Endzeit des Termins, gelegt auf den betreffenden Wochentag der Woche von
+ * `jetztSek`. Liegt dieser Zeitpunkt bereits in der Vergangenheit, wird er eine
+ * Woche weiter gelegt — wer „diese Woche nicht" sagt, meint den bevorstehenden
+ * Wochentag, nicht den vergangenen.
+ */
+export function endeDesNaechstenVorkommens(jetztSek: number, wochentag: Weekday, timeEndMin: number): number {
+  const heute = isoDatum(new Date(jetztSek * 1000));
+  const datumInDieserWoche = datumFuerWochentag(wochenanfang(heute), wochentag);
+  const ende = unixSekundenZuZeit(datumInDieserWoche, timeEndMin);
+  return ende > jetztSek ? ende : unixSekundenZuZeit(verschiebeDatum(datumInDieserWoche, 7), timeEndMin);
+}
+
 /**
  * SCHED-F-500: liegt `datum` innerhalb des Gültigkeitszeitraums eines Termins
  * (`gueltigVon`/`gueltigBis`, Unix-Sekunden aus INT-002 `dateBegin`/`dateEnd`)?

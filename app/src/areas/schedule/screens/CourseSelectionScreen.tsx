@@ -12,6 +12,7 @@ import { useStudiengaenge, useTermineFuerEndpunkte } from '../api';
 import { useEinrichtung } from '../einrichtung';
 import { baueModulliste, type Modul, type ModulAbschnitt } from '../kursbaum';
 import { filtereModulAbschnitte } from '../kurssuche';
+import { registriereModulauswahlAktion } from '../modulauswahlAktion';
 import { useScheduleEntries } from '../planStore';
 import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
 
@@ -72,7 +73,46 @@ export function CourseSelectionScreen() {
   const [suchtext, setSuchtext] = useState('');
   const [auswahl, setAuswahl] = useState<string[]>([]);
   const [bestaetigungFuer, setBestaetigungFuer] = useState<string | null>(null);
+  const [verwerfenBestaetigen, setVerwerfenBestaetigen] = useState(false);
+  const [verwerfenEntscheidungOffen, setVerwerfenEntscheidungOffen] = useState(false);
   const seedRef = useRef(false);
+
+  const alleModule = useMemo(() => abschnitte.flatMap((a) => a.module), [abschnitte]);
+
+  // Requirement „Verwerfen der Modulauswahl": Kopfzeilen-Bedienweg
+  // (`_layout.tsx`, außerhalb dieses Komponentenbaums), dasselbe Register-Muster
+  // wie der Planungsmodus (`planungAktion.ts`).
+  useEffect(() => {
+    registriereModulauswahlAktion({
+      verwerfen: () => {
+        // Ein noch offener Einzelmodul-Bedienweg (Abwahl mit Planeinträgen)
+        // würde sonst gleichzeitig mit der globalen Rückfrage stehen bleiben.
+        setBestaetigungFuer(null);
+        setVerwerfenBestaetigen(true);
+      },
+    });
+    return () => registriereModulauswahlAktion(null);
+  }, []);
+
+  function verwerfenBestaetigt() {
+    setVerwerfenBestaetigen(false);
+    const betroffen = alleModule.some((m) => auswahl.includes(m.key) && planEintraegeFuerModul(entries, m).length > 0);
+    if (betroffen) {
+      setVerwerfenEntscheidungOffen(true);
+    } else {
+      setAuswahl([]);
+    }
+  }
+
+  function verwerfenEntscheidungGetroffen(terminEntfernen: boolean) {
+    if (terminEntfernen) {
+      for (const modul of alleModule.filter((m) => auswahl.includes(m.key))) {
+        for (const eintrag of planEintraegeFuerModul(entries, modul)) entfernen(eintrag.id);
+      }
+    }
+    setAuswahl([]);
+    setVerwerfenEntscheidungOffen(false);
+  }
 
   // Ein Modul, zu dem bereits Planeinträge stehen (aus einem früheren Stand
   // oder vom Planungsmodus), erscheint ohne Zutun angekreuzt — einmalig,
@@ -190,6 +230,34 @@ export function CourseSelectionScreen() {
           />
         )}
       </AsyncStates>
+
+      {verwerfenBestaetigen ? (
+        <View style={[styles.bestaetigung, styles.bestaetigungSchwebend, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <Text style={{ color: colors.text }}>{t('schedule.modulauswahlVerwerfenFrage')}</Text>
+          <View style={styles.bestaetigungAktionen}>
+            <AppButton
+              variant="destructive"
+              label={t('schedule.modulauswahlVerwerfenBestaetigen')}
+              onPress={verwerfenBestaetigt}
+            />
+            <AppButton variant="secondary" label={t('common.cancel')} onPress={() => setVerwerfenBestaetigen(false)} />
+          </View>
+        </View>
+      ) : null}
+
+      {verwerfenEntscheidungOffen ? (
+        <View style={[styles.bestaetigung, styles.bestaetigungSchwebend, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <Text style={{ color: colors.text }}>{t('schedule.modulAbwahlFrage')}</Text>
+          <View style={styles.bestaetigungAktionen}>
+            <AppButton label={t('schedule.modulAbwahlBehalten')} onPress={() => verwerfenEntscheidungGetroffen(false)} />
+            <AppButton
+              variant="destructive"
+              label={t('schedule.modulAbwahlEntfernen')}
+              onPress={() => verwerfenEntscheidungGetroffen(true)}
+            />
+          </View>
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -262,6 +330,7 @@ const styles = StyleSheet.create({
   },
   zeileText: { flex: 1 },
   bestaetigung: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10, marginVertical: 6 },
+  bestaetigungSchwebend: { position: 'absolute', left: 12, right: 12, bottom: 12 },
   bestaetigungAktionen: { flexDirection: 'row', gap: 10 },
   weiterZurPlanung: { marginTop: 12 },
 });
