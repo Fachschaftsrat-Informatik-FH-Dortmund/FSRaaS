@@ -42,7 +42,11 @@ export class AppError extends Error {
 
   static from(error: unknown): AppError {
     if (error instanceof AppError) return error;
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    // Statt `instanceof DOMException`: Hermes (React Native) kennt diesen globalen
+    // Namen nicht, sodass der reine Bezeichnerzugriff dort mit ReferenceError
+    // abbräche. DOMException erbt außerdem nicht überall von Error (auch nicht
+    // in dieser Testumgebung) — daher rein über `name` erkennen, ohne instanceof.
+    if (typeof error === 'object' && error !== null && (error as { name?: unknown }).name === 'AbortError') {
       return new AppError({ kind: 'timeout', message: 'error.timeout', retryable: true, cause: error });
     }
     if (error instanceof TypeError) {
