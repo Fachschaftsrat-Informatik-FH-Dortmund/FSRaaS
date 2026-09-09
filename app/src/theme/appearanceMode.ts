@@ -31,7 +31,10 @@ export async function writeAppearanceMode(mode: AppearanceMode): Promise<void> {
  * unabhängig vom Systemzustand (UX-F-030); nur `system` folgt der
  * Systemeinstellung (UX-F-020).
  */
-export function resolveScheme(mode: AppearanceMode, system: ColorSchemeName): Scheme {
+export function resolveScheme(
+  mode: AppearanceMode,
+  system: ColorSchemeName | null | undefined,
+): Scheme {
   if (mode === 'light' || mode === 'dark') return mode;
   return system === 'dark' ? 'dark' : 'light';
 }

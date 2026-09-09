@@ -6,7 +6,6 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,12 +17,14 @@
       "bundleIdentifier": "de.fsrfb4.app",
       "deploymentTarget": "15.1",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "processing"]
+        "UIBackgroundModes": [
+          "fetch",
+          "processing"
+        ]
       }
     },
     "android": {
       "package": "de.fsrfb4.app",
-      "minSdkVersion": 29,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.RECEIVE_BOOT_COMPLETED"
@@ -36,8 +37,23 @@
       "expo-router",
       "expo-quick-actions",
       "expo-secure-store",
-      ["expo-font", { "fonts": ["./assets/fonts/ionicons.ttf"] }],
-      "./plugins/withNotifeeMaven"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/ionicons.ttf"
+          ]
+        }
+      ],
+      "./plugins/withNotifeeMaven",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29
+          }
+        }
+      ]
     ],
     "extra": {
       "comment": "Vertrieb, Ziel-API-Stufen und F-Droid-Recipe: Roadmap Schritt 10, NFR Abschnitt 9. expo-updates und EAS bewusst nicht konfiguriert (ADR 0009).",
