@@ -18,11 +18,11 @@ Das System muss den Wechsel zum vorigen und nächsten Wochentag zusätzlich zur 
 
 ### Requirement: Ansichts- und Verwaltungsblatt in der Kopfzeile
 
-Das System muss die Einstellungen der Wochenansicht, den Zugang zur Einrichtung und die Aktionen zum Leeren und Zurücksetzen des Stundenplans über ein einziges Element der Kopfzeile erreichbar machen. Herkunft: NEU, entschieden 2026-09-08. Die bisherige Umsetzung führte die Schalter als Kasten **unter** dem Plan, hinter der gesamten Tagesachse; die Einstellung „beim Öffnen zu heute springen" war überhaupt nicht bedienbar, obwohl im Modell vorhanden.
+Das System muss die Einstellungen der Wochenansicht sowie die Aktionen zum Leeren und Zurücksetzen des Stundenplans über ein einziges Element der Kopfzeile erreichbar machen. Der Zugang zur Einrichtung ist nicht Teil dieses Blatts — er steht als eigenes Kopfzeilen-Symbol daneben (Requirement „Dauerhafter Zugang zur Einrichtung"). Herkunft: NEU, entschieden 2026-09-08, Abgrenzung zum Einrichtungs-Zugang bei der Bereinigung mit `stundenplan-bedienung-ohne-vormerkung` am 2026-09-09 bestätigt. Die bisherige Umsetzung führte die Schalter als Kasten **unter** dem Plan, hinter der gesamten Tagesachse; die Einstellung „beim Öffnen zu heute springen" war überhaupt nicht bedienbar, obwohl im Modell vorhanden.
 
 #### Scenario: Einstellungen erreichen
 - **WHEN** die Nutzerin die Einstellungen der Wochenansicht aufruft
-- **THEN** öffnet das System ein Blatt mit den Ansichtsschaltern, dem Zugang zur Einrichtung und den Aktionen zum Leeren und Zurücksetzen
+- **THEN** öffnet das System ein Blatt mit den Ansichtsschaltern und den Aktionen zum Leeren und Zurücksetzen, ohne den Zugang zur Einrichtung
 
 #### Scenario: Sprung zu heute umschalten
 - **WHEN** die Nutzerin die Einstellung „beim Öffnen zum aktuellen Wochentag springen" ändert
@@ -209,18 +209,6 @@ Das System muss der Nutzerin das Ändern der Farbe über einen sichtbaren Bedien
 - **WHEN** die Nutzerin den Wert „keine Farbe" wählt
 - **THEN** gilt für die betreffende Veranstaltung wieder die automatisch vergebene Farbe
 
-### Requirement: Wochentagsleiste mit bedarfsweisem Samstag
-
-Das System muss über dem Plan eine Leiste aller darzustellenden Wochentage anzeigen und einen Wochentag jenseits von Montag bis Freitag genau dann aufnehmen, wenn an ihm mindestens ein Termin liegt. Jeder Eintrag der Leiste trägt den Wochentag und das zugehörige Kalenderdatum. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Umfang des Eintrags auf Wochentag und Datum beschränkt 2026-09-08; vormals SCHED-F-460. Die zusätzlich geführte Terminanzahl je Tag entfällt mit dem REMOVED-Delta zur Belegungsvorschau.
-
-#### Scenario: Samstag mit Termin
-- **WHEN** an einem Samstag mindestens ein Termin liegt
-- **THEN** nimmt das System den Samstag in die Wochentagsleiste auf
-
-#### Scenario: Samstag ohne Termin
-- **WHEN** an einem Samstag kein Termin liegt
-- **THEN** lässt das System den Samstag in der Wochentagsleiste aus
-
 ## REMOVED Requirements
 
 ### Requirement: Leerer Tag bei wirksamem Filter
@@ -241,8 +229,4 @@ Das System muss über dem Plan eine Leiste aller darzustellenden Wochentage anze
 
 **Migration**: Ersatzlos. Der Gültigkeitszeitraum wird künftig immer angewandt; ein Termin außerhalb seines Zeitraums erscheint nicht mehr, der Leerzustand nennt diesen Grund weiterhin (Requirement „Leerer Tag bei wirksamem Filter"). Ein gerätelokal gespeicherter Wert `alleAnzeigen` wird beim Laden verworfen.
 
-### Requirement: Belegungsvorschau je Tag
-
-**Reason**: Entschieden 2026-09-08 auf ausdrücklichen Wunsch: Die Terminanzahl je Tag soll in der Wochentagsleiste nicht mehr erscheinen. Der Eintrag trägt damit nur noch Wochentag und Kalenderdatum und wird niedriger, was dem nun feststehenden Kopfbereich zugutekommt.
-
-**Migration**: Ersatzlos. Diese Anforderung ging auf eine Rücksprache mit einer studierenden Person am 2026-09-04 zurück; die Rücknahme geschieht in Kenntnis dessen. Ob und an welchem Tag Termine liegen, bleibt über die Wochentagsleiste selbst erkennbar, da Samstag und Sonntag weiterhin nur mit Termin erscheinen.
+<!-- „Belegungsvorschau je Tag" (REMOVED) und „Wochentagsleiste mit bedarfsweisem Samstag" (MODIFIED) sind mit diesem Change nicht mehr verändert — beide sind bereits vollständig über `stundenplan-bedienung-ohne-vormerkung` archiviert (2026-09-09), dessen MODIFIED-Fassung zusätzlich die volle Bildschirmbreite trägt. Bereinigt bei der Archivierung jenes Changes, siehe dessen `proposal.md`, Abschnitt „Verhältnis zum Change stundenplan-wochenansicht-nutzerfuehrung". -->

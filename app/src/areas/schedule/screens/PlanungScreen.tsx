@@ -378,6 +378,7 @@ export function PlanungScreen() {
         ausstehend={ausstehend}
         zwischenstand={zwischenstand}
         jetztSek={jetztSek}
+        gruppenkennung={einrichtung.gruppenkennung}
         onSpringeZu={springeZu}
         onAnlegen={() =>
           router.push({ pathname: '/termin', params: { wochentag: aktiverWochentag, planung: '1' } })
@@ -540,12 +541,14 @@ function AusstehendLeiste({
   ausstehend,
   zwischenstand,
   jetztSek,
+  gruppenkennung,
   onSpringeZu,
   onAnlegen,
 }: {
   ausstehend: readonly VeranstaltungsartStand[];
   zwischenstand: readonly PlanEntry[];
   jetztSek: number;
+  gruppenkennung: string | null;
   onSpringeZu: (slot: OfficialTermin) => void;
   onAnlegen: () => void;
 }) {
@@ -577,7 +580,11 @@ function AusstehendLeiste({
           contentContainerStyle={styles.leisteInhalt}
         >
           {ausstehend.map((stand) => {
-            const ersterSlot = stand.slots[0]!;
+            // Requirement „Leiste der ausstehenden Veranstaltungen": Sprungziel
+            // ist der erste Slot der eigenen Gruppe, sonst der erste Slot der
+            // Liste (design.md, Entscheidung 10) — Prüfprotokoll 2026-09-09.
+            const zielSlot =
+              stand.slots.find((slot) => gruppenzugehoerig(gruppenkennung, slot.studentSet)) ?? stand.slots[0]!;
             // Requirement „Hinweis bei fehlender konfliktfreier Option": keine
             // der Optionen dieser Veranstaltungsart wäre gerade konfliktfrei
             // wählbar. Das Symbol trägt die Bedeutung zusätzlich als Text im
@@ -596,7 +603,7 @@ function AusstehendLeiste({
                 key={`${stand.modulKey}|${stand.art}`}
                 accessibilityRole="button"
                 accessibilityLabel={label}
-                onPress={() => onSpringeZu(ersterSlot)}
+                onPress={() => onSpringeZu(zielSlot)}
                 style={[styles.ausstehendChip, { borderColor: colors.border }]}
               >
                 <Text style={{ color: colors.text, fontSize: 13 }}>{`${stand.modulName} ${stand.art}`}</Text>

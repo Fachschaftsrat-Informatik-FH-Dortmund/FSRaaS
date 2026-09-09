@@ -1,11 +1,29 @@
+import { StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { EinrichtungHeaderZugang } from '@/areas/schedule/ui/EinrichtungHeaderZugang';
 import { ModulauswahlVerwerfenZugang } from '@/areas/schedule/ui/ModulauswahlVerwerfenZugang';
 import { PlanungSpeichernZugang } from '@/areas/schedule/ui/PlanungSpeichernZugang';
 import { VerwaltungsblattZugang } from '@/areas/schedule/ui/VerwaltungsblattZugang';
 import { useTheme } from '@/theme';
 import { useReducedMotion } from '@/ui/reducedMotion';
+
+// Requirements „Dauerhafter Zugang zur Einrichtung" und „Ansichts- und
+// Verwaltungsblatt in der Kopfzeile": zwei getrennte Kopfzeilen-Symbole der
+// Wochenansicht, nebeneinander wie bei `PlanungSpeichernZugang`.
+function WochenansichtKopfzeile() {
+  return (
+    <View style={styles.kopfzeilenGruppe}>
+      <EinrichtungHeaderZugang />
+      <VerwaltungsblattZugang />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  kopfzeilenGruppe: { flexDirection: 'row' },
+});
 
 // Verschachtelter Stack des Stundenplans (SHELL-F-050: Routendateien sind reine
 // Re-Exporte aus app/src/areas/schedule). Der Ordnername trägt Klammern
@@ -32,7 +50,7 @@ export default function ScheduleLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ title: t('nav.schedule'), headerRight: () => <VerwaltungsblattZugang /> }}
+        options={{ title: t('nav.schedule'), headerRight: () => <WochenansichtKopfzeile /> }}
       />
       <Stack.Screen name="einrichtung" options={{ title: t('schedule.einrichtungTitel') }} />
       <Stack.Screen
