@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useMutation, useQueries, useQuery } from '@tanstack/react-query';
 
 import { gcTime, staleTime } from '@/cache/ttl';
@@ -85,10 +86,23 @@ export function useTermineFuerEndpunkte(endpunkte: readonly { sname: string; nam
   });
 
   const alleGeladen = queries.every((q) => q.data !== undefined);
+  // `queries` (aus `useQueries`) ist bei unveränderten Ergebnissen zwischen
+  // Renderns referenzstabil je Eintrag, `.map`/`.flatMap` direkt im Rückgabewert
+  // wäre es nicht — ohne dieses `useMemo` bekäme `kursbaum.baueModulliste` bei
+  // jedem Render (z. B. während andere Endpunkte noch laden) ein neues Array
+  // und würde die bereits bekannten deckungsgleichen Rohtermine erneut loggen.
+  const perEndpunktDaten = queries.map((q) => q.data);
+  const termine = useMemo(() => perEndpunktDaten.flatMap((d) => d ?? []), perEndpunktDaten);
+  const perEndpunkt = useMemo(
+    () => endpunkte.map((e, i) => ({ sname: e.sname, name: e.name, termine: perEndpunktDaten[i] ?? [] })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- endpunkte ist per Aufrufer memoisiert, perEndpunktDaten hat je Endpunkt einen Eintrag
+    [endpunkte, ...perEndpunktDaten],
+  );
+
   return {
-    termine: queries.flatMap((q) => q.data ?? []),
+    termine,
     /** Je Endpunkt seine eigenen Termine — Grundlage von `kursbaum.baueModulliste` (Abschnitt je Fachsemester/Endpunkt). */
-    perEndpunkt: endpunkte.map((e, i) => ({ sname: e.sname, name: e.name, termine: queries[i]?.data ?? [] })),
+    perEndpunkt,
     alleGeladen,
     isPending: queries.some((q) => q.isPending),
     isError: queries.some((q) => q.isError),
