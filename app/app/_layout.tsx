@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
+import { ThemeProvider as NavThemeProvider } from 'expo-router/react-navigation';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 

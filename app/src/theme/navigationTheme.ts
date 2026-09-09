@@ -7,7 +7,7 @@
 // Diese Funktion leitet aus dem wirksamen Schema (also auch aus einer manuellen
 // Übersteuerung, UX-F-030) ein passendes Navigations-Theme ab (UX-F-020).
 
-import { DarkTheme, DefaultTheme, type Theme } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, type Theme } from 'expo-router/react-navigation';
 
 import type { Scheme, ThemeColors } from './tokens';
 
