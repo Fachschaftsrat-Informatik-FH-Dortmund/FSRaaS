@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useNavigation, usePreventRemove, type NavigationAction } from '@react-navigation/native';
+import { useNavigation, usePreventRemove, type NavigationAction } from 'expo-router/react-navigation';
 import { useTranslation } from 'react-i18next';
 import DateTimePicker from '@react-native-community/datetimepicker';
 

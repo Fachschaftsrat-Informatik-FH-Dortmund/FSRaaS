@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useNavigation, usePreventRemove, type NavigationAction } from '@react-navigation/native';
+import { useNavigation, usePreventRemove, type NavigationAction } from 'expo-router/react-navigation';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';

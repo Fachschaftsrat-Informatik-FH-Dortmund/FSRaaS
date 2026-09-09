@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
 
 const mockDispatch = jest.fn();
 let letztePreventRemove: { verhindern: boolean; callback: (e: { data: { action: unknown } }) => void } | null = null;
-jest.mock('@react-navigation/native', () => ({
+jest.mock('expo-router/react-navigation', () => ({
   useNavigation: () => ({ dispatch: mockDispatch }),
   usePreventRemove: (verhindern: boolean, callback: (e: { data: { action: unknown } }) => void) => {
     letztePreventRemove = { verhindern, callback };
