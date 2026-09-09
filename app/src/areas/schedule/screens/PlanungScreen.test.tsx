@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native';
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
+import { anzeigeFarbe } from '../farbe';
 import { __resetAnsichtEinstellungenForTest } from '../ansichtEinstellungen';
 import { __resetPlanungAktionForTest } from '../planungAktion';
 import { PlanungSpeichernZugang } from '../ui/PlanungSpeichernZugang';
@@ -289,11 +290,13 @@ describe('Ausdrückliches Sichern der Planung', () => {
   });
 });
 
-// Requirement „Farbwahl je Termin": Farbautomatik abschaltbar — ein im
-// Planungsmodus neu gewählter Termin erhält dann eine neutrale
-// Platzhalterfarbe statt der automatisch berechneten.
+// Requirement „Farbwahl je Termin": Farbautomatik abschaltbar. Ein im
+// Planungsmodus gewählter Termin speichert seit dem Prüfprotokoll vom
+// 2026-09-09 (Abschnitt 3) immer die automatisch vergebene Farbe; die neutrale
+// Fläche entsteht erst in der Darstellung, damit das Abschalten umkehrbar
+// bleibt und auch einen bestehenden Plan erfasst.
 describe('Farbautomatik im Planungsmodus', () => {
-  it('vergibt eine neutrale Platzhalterfarbe, solange die Farbautomatik abgeschaltet ist', async () => {
+  it('speichert auch bei abgeschalteter Farbautomatik die automatische Farbe, damit das Wiedereinschalten wirkt', async () => {
     await writeJson('scheduleViewSettings', { zeitachse: true, sprungZuHeute: true, farbautomatik: false });
     __resetAnsichtEinstellungenForTest();
     renderScreen();
@@ -310,7 +313,10 @@ describe('Farbautomatik im Planungsmodus', () => {
     await waitFor(() => expect(mockMehrereUebernehmen).toHaveBeenCalledTimes(1));
     const [hinzuzufuegen] = mockMehrereUebernehmen.mock.calls[0]!;
     const ue = hinzuzufuegen.find((e: { courseType: string }) => e.courseType === 'Ü');
-    expect(ue.color).toBe(SCHEDULE_NEUTRAL);
+    expect(ue.color).not.toBe(SCHEDULE_NEUTRAL);
+    expect(ue.farbeVonNutzer).not.toBe(true);
+    expect(anzeigeFarbe(ue, false)).toBe(SCHEDULE_NEUTRAL);
+    expect(anzeigeFarbe(ue, true)).toBe(ue.color);
   });
 });
 

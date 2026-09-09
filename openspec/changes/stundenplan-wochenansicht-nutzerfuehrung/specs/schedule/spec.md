@@ -40,34 +40,6 @@ Das System muss einen Schalter bereitstellen, der zusätzlich zu den Terminen de
 - **WHEN** die Nutzerin einen eingeblendeten Termin auswählt
 - **THEN** bietet das System an, ihn anstelle des eigenen Termins oder zusätzlich zu ihm in den Plan zu übernehmen
 
-### Requirement: Stapelung bei mehr als drei überschneidenden Terminen
-
-Wenn sich an einem Wochentag mehr als drei Termine zeitlich überschneiden, muss das System höchstens drei nebeneinander darstellen und die übrigen zu einem Stapel zusammenfassen, dessen Umfang ausgewiesen wird. Termine des persönlichen Plans müssen die sichtbaren Plätze vor eingeblendeten Alternativen belegen. Ein Bedienweg am Stapel muss alle darin enthaltenen Termine einzeln erkenn- und auswählbar machen. Herkunft: NEU, entschieden 2026-09-08. Die bisherige Spaltenzuordnung kannte keine Obergrenze; bei fünf Überschneidungen belegt eine Kachel ein Fünftel der Breite, auf der kein Titel mehr lesbar ist. Drei Spalten lassen auf einem 360 dp breiten Schirm rund 113 dp je Kachel.
-
-#### Scenario: Vier überschneidende Termine
-- **WHEN** sich an einem Wochentag vier Termine zeitlich überschneiden
-- **THEN** stellt das System drei nebeneinander dar und weist den vierten als Stapel mit seinem Umfang aus
-
-#### Scenario: Eigene Termine zuerst
-- **WHEN** eingeblendete Alternativen mit Terminen des persönlichen Plans überschneiden
-- **THEN** belegen die Termine des Plans die sichtbaren Plätze, und die Alternativen wandern in den Stapel
-
-#### Scenario: Stapel aufklappen
-- **WHEN** die Nutzerin den Stapel aufruft
-- **THEN** erweitert das System die betreffende Stelle der Tagesansicht, sodass alle enthaltenen Termine untereinander einzeln erkenn- und auswählbar erscheinen, ohne andere Termine zu verdecken
-
-### Requirement: Stundenlinien auf der Zeitachse
-
-Das System muss auf der Zeitachse waagerechte Linien im Stundentakt zeichnen. Eine Beschriftung dieser Linien ist nicht erforderlich. In gestauchten Lücken dürfen keine Stundenlinien gezeichnet werden, da die Achse dort nicht maßstabsgetreu ist. Herkunft: NEU, entschieden 2026-09-08. Die Achse trug bislang weder Linien noch Uhrzeiten; die Tageslage war allein aus den Kachelbeschriftungen ablesbar.
-
-#### Scenario: Stundenlinien im maßstabsgetreuen Bereich
-- **WHEN** ein Abschnitt der Tagesachse maßstabsgetreu dargestellt ist
-- **THEN** zeichnet das System dort waagerechte Linien im Stundentakt
-
-#### Scenario: Keine Stundenlinien in gestauchter Lücke
-- **WHEN** eine Lücke gestaucht dargestellt wird
-- **THEN** zeichnet das System dort keine Stundenlinien, sondern das Bruchzeichen der Lücke
-
 ### Requirement: Kennzeichnung eines leeren Wochentags
 
 Falls an einem Wochentag kein Termin dargestellt wird, muss das System diesen Tag als leer kennzeichnen. Liegt der Grund darin, dass alle Termine des Tages außerhalb ihres Gültigkeitszeitraums liegen, muss das System diesen Grund nennen; liegt am Tag ohnehin kein Termin, darf es keinen Grund behaupten. Herkunft: NEU, entschieden 2026-09-08. Ersetzt das Requirement „Leerer Tag bei wirksamem Filter" (vormals SCHED-F-100), dessen Filterbezug mit dem Wegfall der beiden wählbaren Filter gegenstandslos geworden ist. Der Zweck bleibt derselbe: Ein leerer Tag darf nicht wie ein Fehler aussehen, und ein Termin darf nicht ohne Erklärung verschwinden.
@@ -136,10 +108,10 @@ Das System muss die Termine eines Tages auf einer zur Uhrzeit proportionalen Ach
 
 - Die Achse beginnt mit dem ersten und endet mit dem letzten Termin des angezeigten Tages; Leerraum vor dem ersten und nach dem letzten Termin entfällt.
 - Eine Lücke von weniger als fünfzehn Minuten wird ohne Block und ohne Beschriftung als bloßer Zwischenraum dargestellt.
-- Eine Lücke von mehr als einer Stunde wird auf die Höhe einer Stunde gestaucht; sie trägt dabei ein Bruchzeichen und ihre tatsächliche Dauer.
-- Eine vorübergehende Erweiterung der Achse zum Aufklappen eines Stapels ist zulässig.
+- Eine Lücke von mehr als einer Stunde wird auf die Höhe einer Stunde gestaucht; sie trägt dabei ihre tatsächliche Dauer.
+- Eine Lücke wird nicht umrandet; ihre Beschriftung allein weist sie aus.
 
-Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Zuschnitt und Stauchung ergänzt 2026-09-08; vormals SCHED-F-520. Die vorige Umsetzung spannte die Achse über die **ganze Woche** auf, sodass ein einzelner Abendtermin jeden anderen Tag dehnte und eine Freistunde von dreieinhalb Stunden als über 300 dp hoher Block erschien. Der damalige Einwand gegen eine Spanne je Tag — gleich hohe Kacheln stünden dann für unterschiedliche Dauern — trifft nicht zu, da die Höhe je Minute eine Konstante ist und von der Spanne nicht abhängt.
+Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Zuschnitt und Stauchung ergänzt 2026-09-08, Rahmen und Bruchzeichen zurückgenommen 2026-09-09; vormals SCHED-F-520. Die vorige Umsetzung spannte die Achse über die **ganze Woche** auf, sodass ein einzelner Abendtermin jeden anderen Tag dehnte und eine Freistunde von dreieinhalb Stunden als über 300 dp hoher Block erschien. Der damalige Einwand gegen eine Spanne je Tag — gleich hohe Kacheln stünden dann für unterschiedliche Dauern — trifft nicht zu, da die Höhe je Minute eine Konstante ist und von der Spanne nicht abhängt.
 
 #### Scenario: Freistunde zwischen zwei Terminen
 - **WHEN** zwischen zwei Terminen eines Tages eine Lücke von 45 Minuten liegt
@@ -151,7 +123,7 @@ Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Zuschnitt und Stauch
 
 #### Scenario: Lange Lücke
 - **WHEN** zwischen zwei Terminen eines Tages eine Lücke von drei Stunden dreißig liegt
-- **THEN** staucht das System sie auf Stundenhöhe und weist sie mit einem Bruchzeichen und ihrer tatsächlichen Dauer aus
+- **THEN** staucht das System sie auf Stundenhöhe und weist sie mit ihrer tatsächlichen Dauer aus
 
 #### Scenario: Kein Leerraum an den Tagesrändern
 - **WHEN** der erste Termin eines Tages um 10:00 Uhr beginnt, während an einem anderen Tag der Woche bereits um 8:00 Uhr ein Termin liegt
@@ -159,7 +131,7 @@ Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Zuschnitt und Stauch
 
 ### Requirement: Nebeneinanderdarstellung überschneidender Termine
 
-Wenn sich Termine desselben Tages zeitlich überschneiden, muss das System bis zu drei von ihnen nebeneinander darstellen, sodass jeder Termin einzeln erkenn- und auswählbar bleibt. Überschreitet die Zahl der Überschneidungen drei, gilt das Requirement „Stapelung bei mehr als drei überschneidenden Terminen"; die einzelne Erkenn- und Auswählbarkeit wird dort über das Aufklappen des Stapels hergestellt. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Obergrenze ergänzt 2026-09-08; vormals SCHED-F-540. Ohne Obergrenze zerfällt die Breite einer Kachel mit jeder weiteren Überschneidung, bis keine Beschriftung mehr lesbar ist.
+Wenn sich Termine desselben Tages zeitlich überschneiden, muss das System sie nebeneinander darstellen, sodass jeder Termin einzeln erkenn- und auswählbar bleibt. Eine Obergrenze für die Zahl der Spalten gibt es nicht; kein überschneidender Termin darf verborgen werden. Herkunft: Recherche: Rücksprache Studierender, 2026-09-04, Obergrenze ergänzt 2026-09-08 und am Gerät zurückgenommen 2026-09-09; vormals SCHED-F-540. Die zwischenzeitliche Kappung auf drei Spalten mit aufklappbarem Stapel erwies sich im Prüfprotokoll vom 2026-09-09 als schlecht bedienbar. Mehr als drei überschneidende Termine sind ein von der Nutzerin selbst herbeigeführter Randfall; für den Überblick steht die nicht maßstabsgetreue Ansicht bereit, die ohne Spaltenbreite auskommt.
 
 #### Scenario: Überschneidende Termine
 - **WHEN** sich zwei Termine desselben Tages zeitlich überschneiden
@@ -168,6 +140,10 @@ Wenn sich Termine desselben Tages zeitlich überschneiden, muss das System bis z
 #### Scenario: Drei überschneidende Termine
 - **WHEN** sich drei Termine desselben Tages zeitlich überschneiden
 - **THEN** stellt das System alle drei nebeneinander dar
+
+#### Scenario: Mehr als drei überschneidende Termine
+- **WHEN** sich an einem Wochentag vier Termine zeitlich überschneiden
+- **THEN** stellt das System alle vier nebeneinander dar, jeden einzeln erkenn- und auswählbar, und verbirgt keinen davon
 
 ### Requirement: Hervorhebung des laufenden Termins und der aktuellen Uhrzeit
 
@@ -195,7 +171,7 @@ Das System muss den gerade laufenden und den nächsten anstehenden Termin gemein
 
 ### Requirement: Farbwahl je Termin
 
-Das System muss der Nutzerin das Ändern der Farbe über einen sichtbaren Bedienweg ermöglichen, abweichend von der nach der Anforderung zur automatischen Farbzuweisung vergebenen Vorbelegung. Wird eine Farbe geändert, muss das System vor dem Verlassen der Ansicht erfragen, ob die Änderung für alle Veranstaltungen desselben Moduls oder nur für den geöffneten Termin gelten soll. Die Rückkehr zur automatischen Vergabe muss über einen Wert „keine Farbe" der Farbauswahl möglich sein. Die automatische Farbzuweisung als solche muss abschaltbar sein, ohne dass eigene Farbwahlen dadurch verlorengehen. Herkunft: Alt: lib/areas/schedule/widgets/schedule_list.dart:59-136, Geltungsbereich und Rückweg ergänzt 2026-09-08; vormals SCHED-F-247. Die automatische Vergabe erfolgt je Veranstaltung, das Ändern wirkte bislang auf einen einzelnen Termin — wer die Farbe seiner Vorlesung änderte, behielt die zugehörige Übung in der alten Farbe, ohne dass ein Rückweg sichtbar gewesen wäre.
+Das System muss der Nutzerin das Ändern der Farbe über einen sichtbaren Bedienweg ermöglichen, abweichend von der nach der Anforderung zur automatischen Farbzuweisung vergebenen Vorbelegung. Wird eine Farbe geändert, muss das System vor dem Verlassen der Ansicht erfragen, ob die Änderung für alle Veranstaltungen desselben Moduls oder nur für den geöffneten Termin gelten soll. Die Rückkehr zur automatischen Vergabe muss über einen Wert „keine Farbe" der Farbauswahl möglich sein. Die automatische Farbzuweisung als solche muss abschaltbar sein, ohne dass eigene Farbwahlen dadurch verlorengehen; das Abschalten muss auch auf einen bereits bestehenden Plan wirken und umkehrbar sein. Dazu muss das System je Termin festhalten, ob seine Farbe von der Nutzerin gewählt oder automatisch vergeben wurde. Bei abgeschalteter Automatik erscheint ein automatisch eingefärbter Termin in einer neutralen Fläche, ein von der Nutzerin eingefärbter behält seine Farbe. Herkunft: Alt: lib/areas/schedule/widgets/schedule_list.dart:59-136, Geltungsbereich und Rückweg ergänzt 2026-09-08, Herkunft der Farbe ergänzt 2026-09-09; vormals SCHED-F-247. Die automatische Vergabe erfolgt je Veranstaltung, das Ändern wirkte bislang auf einen einzelnen Termin — wer die Farbe seiner Vorlesung änderte, behielt die zugehörige Übung in der alten Farbe, ohne dass ein Rückweg sichtbar gewesen wäre. Das Abschalten der Automatik wirkte zunächst nur auf neu angelegte Termine, weil die Farbe beim Anlegen fest in den Eintrag geschrieben wurde; ein bestehender Plan blieb unverändert bunt (Prüfprotokoll 2026-09-09, Abschnitt 3).
 
 #### Scenario: Farbe ändern
 - **WHEN** die Nutzerin für einen Termin eine andere Farbe wählt
@@ -208,6 +184,14 @@ Das System muss der Nutzerin das Ändern der Farbe über einen sichtbaren Bedien
 #### Scenario: Zurück zur Automatik
 - **WHEN** die Nutzerin den Wert „keine Farbe" wählt
 - **THEN** gilt für die betreffende Veranstaltung wieder die automatisch vergebene Farbe
+
+#### Scenario: Automatik bei bestehendem Plan abschalten
+- **WHEN** die Nutzerin die Farbautomatik abschaltet, während ihr Plan bereits Termine enthält
+- **THEN** erscheinen die automatisch eingefärbten Termine in einer neutralen Fläche, während ein von der Nutzerin eingefärbter Termin seine Farbe behält
+
+#### Scenario: Automatik wieder einschalten
+- **WHEN** die Nutzerin die Farbautomatik nach dem Abschalten wieder einschaltet
+- **THEN** erscheinen die zuvor automatisch vergebenen Farben erneut
 
 ## REMOVED Requirements
 

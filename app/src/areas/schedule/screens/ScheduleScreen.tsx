@@ -19,7 +19,7 @@ import {
 } from '../ansichtEinstellungen';
 import { layoutTag } from '../dayLayout';
 import { useEinrichtung } from '../einrichtung';
-import { textfarbeFuerHintergrund } from '../farbe';
+import { anzeigeFarbe, textfarbeFuerHintergrund } from '../farbe';
 import { wischRichtung } from '../../canteen/gesten';
 import { ermittleJetztStatus } from '../jetzt';
 import { ermittleKonflikte, type Konflikte } from '../konflikt';
@@ -28,7 +28,7 @@ import { useScheduleEntries } from '../planStore';
 import { useSemesterstand } from '../semesterstand';
 import { erkenneSemesterwechsel } from '../semesterwechsel';
 import { istAktiv, sortiereNachBeginnzeit } from '../time';
-import type { BelegtSlot, DaySlot, PlanEntry, Weekday } from '../typen';
+import type { DaySlot, PlanEntry, Weekday } from '../typen';
 import { spanneDesTages } from '../zeitachse';
 import { isoDatumVon, leerGrund, termineDerWoche, termineDesTages } from '../wochenansicht';
 import { sichtbareWochentage } from '../wochentage';
@@ -63,8 +63,6 @@ import { WochentagsLeiste } from '../ui/WochentagsLeiste';
  */
 const DP_JE_MINUTE = 1.5;
 const MINUTEN_JE_STUNDE = 60;
-/** Requirement „Stapelung…", Szenario „Stapel aufklappen": Mindesthöhe je Kachel im aufgeklappten Stapel. */
-const KACHEL_AUFGEKLAPPT_HOEHE = 60;
 
 function formatZeit(minutenSeitMitternacht: number): string {
   const stunden = Math.floor(minutenSeitMitternacht / MINUTEN_JE_STUNDE);
@@ -664,15 +662,10 @@ function AlternativeUebernehmenBlatt({
   );
 }
 
-function schluesselFuerStapel(abschnitt: Extract<DaySlot, { art: 'belegt' }>, slot: Extract<BelegtSlot, { art: 'stapel' }>): string {
-  return `${abschnitt.vonMin}-${abschnitt.bisMin}-${slot.spalte}`;
-}
-
 /**
  * Requirements „Proportionale Zeitachse", „Nebeneinanderdarstellung
- * überschneidender Termine", „Stapelung bei mehr als drei überschneidenden
- * Terminen", „Stundenlinien auf der Zeitachse" und „Hervorhebung des
- * laufenden Termins und der aktuellen Uhrzeit". Die Slots kommen unverändert
+ * überschneidender Termine" und „Hervorhebung des laufenden Termins und der
+ * aktuellen Uhrzeit". Die Slots kommen unverändert
  * aus `dayLayout.layoutTag`; hier wird allein auf Pixel umgerechnet
  * (design.md, Entscheidung 1) — je Abschnitt eine eigene Höhe, keine lineare
  * Formel mehr.
@@ -694,7 +687,6 @@ function Zeitachse({
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const [aufgeklappterStapel, setAufgeklappterStapel] = useState<string | null>(null);
 
   // Requirement „Hervorhebung des laufenden Termins und der aktuellen Uhrzeit",
   // Szenario „Uhrzeit vor dem ersten Termin": die Kennzeichnung wird an den
@@ -704,15 +696,7 @@ function Zeitachse({
 
   let cursor = 0;
   const abschnitte = slots.map((slot, index) => {
-    let hoehe = slot.hoeheMin * DP_JE_MINUTE;
-    if (slot.art === 'belegt') {
-      const stapel = slot.slots.find((s): s is Extract<BelegtSlot, { art: 'stapel' }> => s.art === 'stapel');
-      if (stapel && aufgeklappterStapel === schluesselFuerStapel(slot, stapel)) {
-        const normalHoehe = (stapel.bisMin - stapel.vonMin) * DP_JE_MINUTE;
-        const aufgeklapptHoehe = stapel.entries.length * KACHEL_AUFGEKLAPPT_HOEHE;
-        hoehe += Math.max(0, aufgeklapptHoehe - normalHoehe);
-      }
-    }
+    const hoehe = slot.hoeheMin * DP_JE_MINUTE;
     const top = cursor;
     cursor += hoehe;
     return { slot, top, hoehe, key: index };
@@ -724,15 +708,6 @@ function Zeitachse({
       {abschnitte.map(({ slot, top, hoehe, key }) =>
         slot.art === 'luecke' ? (
           <View key={`luecke-${key}`} style={[styles.abschnitt, { top, height: hoehe }]}>
-            {slot.stundenlinien.map((marke) => (
-              <View
-                key={marke}
-                style={[
-                  styles.stundenlinie,
-                  { top: (marke - slot.vonMin) * DP_JE_MINUTE, backgroundColor: colors.border },
-                ]}
-              />
-            ))}
             {slot.kurz ? null : (
               <View
                 accessibilityRole="text"
@@ -741,70 +716,42 @@ function Zeitachse({
                   von: formatZeit(slot.vonMin),
                   bis: formatZeit(slot.bisMin),
                 })}
-                style={[styles.luecke, { borderColor: colors.border }]}
+                style={styles.luecke}
               >
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {slot.gestaucht
-                    ? `⌇ ${t('schedule.luecke', { dauer: dauerText(slot.echteDauerMin, t) })}`
-                    : t('schedule.luecke', { dauer: dauerText(slot.echteDauerMin, t) })}
+                  {t('schedule.luecke', { dauer: dauerText(slot.echteDauerMin, t) })}
                 </Text>
               </View>
             )}
           </View>
         ) : (
           <View key={`belegt-${key}`} style={[styles.abschnitt, { top, height: hoehe }]}>
-            {slot.stundenlinien.map((marke) => (
+            {slot.slots.map((einzelslot) => (
               <View
-                key={marke}
+                key={einzelslot.entry.id}
                 style={[
-                  styles.stundenlinie,
-                  { top: (marke - slot.vonMin) * DP_JE_MINUTE, backgroundColor: colors.border },
+                  styles.terminPlatz,
+                  {
+                    top: (einzelslot.entry.timeBeginMin - slot.vonMin) * DP_JE_MINUTE,
+                    height: (einzelslot.entry.timeEndMin - einzelslot.entry.timeBeginMin) * DP_JE_MINUTE,
+                    left: `${(einzelslot.spalte / einzelslot.spalten) * 100}%`,
+                    width: `${(1 / einzelslot.spalten) * 100}%`,
+                  },
                 ]}
-              />
-            ))}
-            {slot.slots.map((einzelslot) =>
-              einzelslot.art === 'termin' ? (
-                <View
-                  key={einzelslot.entry.id}
-                  style={[
-                    styles.terminPlatz,
-                    {
-                      top: (einzelslot.entry.timeBeginMin - slot.vonMin) * DP_JE_MINUTE,
-                      height: (einzelslot.entry.timeEndMin - einzelslot.entry.timeBeginMin) * DP_JE_MINUTE,
-                      left: `${(einzelslot.spalte / einzelslot.spalten) * 100}%`,
-                      width: `${(1 / einzelslot.spalten) * 100}%`,
-                    },
-                  ]}
-                >
-                  <TerminKachel
-                    entry={einzelslot.entry}
-                    konflikte={konflikte}
-                    jetztSek={jetztSek}
-                    laeuft={
-                      jetztMin !== null &&
-                      einzelslot.entry.timeBeginMin <= jetztMin &&
-                      jetztMin < einzelslot.entry.timeEndMin
-                    }
-                    onOeffne={onOeffne}
-                  />
-                </View>
-              ) : (
-                <StapelKachel
-                  key={schluesselFuerStapel(slot, einzelslot)}
-                  abschnitt={slot}
-                  stapel={einzelslot}
-                  aufgeklappt={aufgeklappterStapel === schluesselFuerStapel(slot, einzelslot)}
-                  onUmschalten={() =>
-                    setAufgeklappterStapel((bisher) =>
-                      bisher === schluesselFuerStapel(slot, einzelslot) ? null : schluesselFuerStapel(slot, einzelslot),
-                    )
-                  }
+              >
+                <TerminKachel
+                  entry={einzelslot.entry}
                   konflikte={konflikte}
                   jetztSek={jetztSek}
+                  laeuft={
+                    jetztMin !== null &&
+                    einzelslot.entry.timeBeginMin <= jetztMin &&
+                    jetztMin < einzelslot.entry.timeEndMin
+                  }
                   onOeffne={onOeffne}
                 />
-              ),
-            )}
+              </View>
+            ))}
           </View>
         ),
       )}
@@ -833,65 +780,6 @@ function mapJetztAufAchse(
   }
   const letzter = abschnitte[abschnitte.length - 1];
   return letzter ? letzter.top + letzter.hoehe : 0;
-}
-
-/** Requirement „Stapelung bei mehr als drei überschneidenden Terminen", Szenario „Stapel aufklappen". */
-function StapelKachel({
-  abschnitt,
-  stapel,
-  aufgeklappt,
-  onUmschalten,
-  konflikte,
-  jetztSek,
-  onOeffne,
-}: {
-  abschnitt: Extract<DaySlot, { art: 'belegt' }>;
-  stapel: Extract<BelegtSlot, { art: 'stapel' }>;
-  aufgeklappt: boolean;
-  onUmschalten: () => void;
-  konflikte: Konflikte;
-  jetztSek: number;
-  onOeffne: (id: string) => void;
-}) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-  const top = (stapel.vonMin - abschnitt.vonMin) * DP_JE_MINUTE;
-  const left = `${(stapel.spalte / stapel.spalten) * 100}%` as const;
-  const width = `${(1 / stapel.spalten) * 100}%` as const;
-
-  if (aufgeklappt) {
-    return (
-      <View
-        style={[styles.terminPlatz, { top, left, width, height: stapel.entries.length * KACHEL_AUFGEKLAPPT_HOEHE }]}
-      >
-        {stapel.entries.map((entry) => (
-          <View key={entry.id} style={{ height: KACHEL_AUFGEKLAPPT_HOEHE }}>
-            <TerminKachel entry={entry} konflikte={konflikte} jetztSek={jetztSek} laeuft={false} onOeffne={onOeffne} />
-          </View>
-        ))}
-      </View>
-    );
-  }
-
-  return (
-    <View
-      style={[
-        styles.terminPlatz,
-        { top, left, width, height: (stapel.bisMin - stapel.vonMin) * DP_JE_MINUTE },
-      ]}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('schedule.stapelLabel', { count: stapel.entries.length })}
-        onPress={onUmschalten}
-        style={[styles.kachel, styles.stapelKachel, { borderColor: colors.border }]}
-      >
-        <Text style={{ color: colors.text, fontWeight: '700' }}>
-          {t('schedule.stapelUmfang', { count: stapel.entries.length })}
-        </Text>
-      </Pressable>
-    </View>
-  );
 }
 
 /** Requirement „Abschalten der proportionalen Zeitachse": kompakte Liste ohne Lückendarstellung. */
@@ -946,7 +834,12 @@ export function TerminKachel({
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const textfarbe = textfarbeFuerHintergrund(entry.color);
+  // Requirement „Farbwahl je Termin": bei abgeschalteter Farbautomatik zeigt
+  // ein automatisch eingefärbter Termin die neutrale Fläche, eine eigene
+  // Farbwahl bleibt sichtbar (`anzeigeFarbe`, `farbe.ts`).
+  const { einstellungen } = useAnsichtEinstellungen();
+  const farbe = anzeigeFarbe(entry, einstellungen.farbautomatik);
+  const textfarbe = textfarbeFuerHintergrund(farbe);
   const deaktiviert = !istAktiv(entry, jetztSek);
 
   const kennzeichen: string[] = [];
@@ -968,7 +861,7 @@ export function TerminKachel({
       onPress={() => onOeffne(entry.id)}
       style={[
         styles.kachel,
-        { backgroundColor: entry.color },
+        { backgroundColor: farbe },
         entry.istPruefung && [styles.kachelPruefung, { borderLeftColor: textfarbe }],
         laeuft && { borderColor: colors.text, borderWidth: 3 },
         deaktiviert && styles.kachelDeaktiviert,
@@ -1015,21 +908,16 @@ const styles = StyleSheet.create({
   hinweisFlaeche: { flexGrow: 0, paddingVertical: 32 },
   achse: { position: 'relative', marginTop: 4 },
   abschnitt: { position: 'absolute', left: 0, right: 0 },
-  stundenlinie: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth },
   luecke: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     bottom: 0,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderStyle: 'dashed',
-    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   terminPlatz: { position: 'absolute', paddingRight: 4 },
-  stapelKachel: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed' },
   uhrzeitMarke: { position: 'absolute', left: 0, right: 0, height: 2, borderRadius: 1 },
   liste: { gap: 8 },
   kachel: { flex: 1, minHeight: 44, borderRadius: 8, padding: 8, gap: 2, justifyContent: 'flex-start' },

@@ -20,11 +20,11 @@ Die Wochenansicht ist der meistgenutzte Bildschirm der App. Sechs Befunde aus de
 
 **Der Kopfbereich wird festgenagelt**, und der Tag lässt sich zusätzlich waagerecht wischen. Der Mensaplan wischt bereits über `gesten.ts`; der Baustein liegt vor.
 
-**Die Zeitachse wird auf den Tag zugeschnitten und gestaucht.** Sie beginnt beim ersten und endet beim letzten Termin des Tages — keine Randlücken. Lücken unter fünfzehn Minuten bekommen weder Block noch Beschriftung, nur Luft. Lücken über einer Stunde werden auf Stundenhöhe gestaucht und tragen ein Bruchzeichen samt echter Dauer, wie eine unterbrochene Achse im Diagramm. Dazu Stundenlinien ohne Beschriftung.
+**Die Zeitachse wird auf den Tag zugeschnitten und gestaucht.** Sie beginnt beim ersten und endet beim letzten Termin des Tages — keine Randlücken. Lücken unter fünfzehn Minuten bekommen weder Block noch Beschriftung, nur Luft. Lücken über einer Stunde werden auf Stundenhöhe gestaucht und tragen ihre echte Dauer. (Bruchzeichen, Rahmen und Stundenlinien waren zunächst vorgesehen und sind im Prüfprotokoll vom 2026-09-09 ersatzlos zurückgenommen worden.)
 
-**Überschneidungen werden ab dem vierten Termin gestapelt.** Höchstens drei Kacheln nebeneinander; die eigenen belegen die sichtbaren Spalten zuerst. Ein Tipp dehnt die Zeile, sodass die gestapelten Termine untereinander erscheinen — nichts wird verdeckt.
+**Überschneidende Termine stehen nebeneinander, ohne Obergrenze.** Eine Kappung auf drei Spalten mit aufklappbarem Stapel war zunächst vorgesehen und erwies sich am Gerät als schlecht bedienbar; sie ist im Prüfprotokoll vom 2026-09-09 zurückgenommen. Wer sich viele überschneidende Veranstaltungen wählt, bekommt schmale Kacheln und weicht für den Überblick auf die nicht maßstabsgetreue Ansicht aus.
 
-**Alle Veranstaltungen der gewählten Module lassen sich einblenden.** Ein Schalter zeigt zusätzlich die Parallel-Slots der eigenen Module — sechs Module bedeuten 64 statt 13 Kacheln in der Woche, weshalb es die Stapelung braucht. Ein Tipp auf eine eingeblendete Alternative öffnet ein Blatt mit „stattdessen wählen" und „zusätzlich aufnehmen". Damit werden die bislang unumgesetzten Anforderungen „Einsicht in Termine anderer Gruppen" und „Übernahme des Termins einer anderen Gruppe" in der Wochenansicht wirksam.
+**Alle Veranstaltungen der gewählten Module lassen sich einblenden.** Ein Schalter zeigt zusätzlich die Parallel-Slots der eigenen Module — sechs Module bedeuten 64 statt 13 Kacheln in der Woche. Ein Tipp auf eine eingeblendete Alternative öffnet ein Blatt mit „stattdessen wählen" und „zusätzlich aufnehmen". Damit werden die bislang unumgesetzten Anforderungen „Einsicht in Termine anderer Gruppen" und „Übernahme des Termins einer anderen Gruppe" in der Wochenansicht wirksam.
 
 **Ein Kopfzeilen-Element öffnet ein Blatt** mit den Ansichtsschaltern (Zeitachse oder kompakte Liste, Sprung zu heute, alle Gruppen einblenden, Farbautomatik) und den beiden Löschaktionen. Der Schalterkasten unter dem Plan entfällt. Der Zugang zur Einrichtung ist **nicht** Teil dieses Blatts, sondern ein eigenes, dauerhaft sichtbares Kopfzeilen-Symbol daneben — Requirement „Dauerhafter Zugang zur Einrichtung" des Changes `stundenplan-bedienung-ohne-vormerkung`, der an dieser Stelle maßgeblich ist.
 
@@ -48,17 +48,18 @@ Keine.
 
 ### Modified Capabilities
 
-- `schedule`: Zeitachse je Tag mit Stauchung und Bruchzeichen; Stapelung ab vier Überschneidungen; festgenagelter Kopfbereich und Wischen; Ansichts- und Verwaltungsblatt in der Kopfzeile (ohne Einrichtung-Zugang, der eigenständig bleibt); Einblenden aller Veranstaltungen gewählter Module; Farbwahl je Veranstaltung; Jetzt-Anzeige und Jetzt-Strich; Rückkehr zur laufenden Woche; zwei Filter entfallen
-- `data-and-storage`: gezielte Nutzeraktionen zum Leeren und Zurücksetzen des Stundenplans, mit Rückfrage zu eigenen Terminen und ohne jedes automatische Löschen
+- `schedule`: Zeitachse je Tag mit Stauchung; Nebeneinanderdarstellung ohne Obergrenze; festgenagelter Kopfbereich und Wischen; Ansichts- und Verwaltungsblatt in der Kopfzeile (ohne Einrichtung-Zugang, der eigenständig bleibt); Einblenden aller Veranstaltungen gewählter Module; Farbwahl je Veranstaltung; Jetzt-Anzeige und Jetzt-Strich; Rückkehr zur laufenden Woche; zwei Filter entfallen
+- `data-and-storage`: gezielte Nutzeraktionen zum Leeren und Zurücksetzen des Stundenplans, mit Rückfrage zu eigenen Terminen und ohne jedes automatische Löschen; Herkunft der Terminfarbe je Eintrag
 
 ## Impact
 
 - `app/src/areas/schedule/zeitachse.ts` — Spanne je Tag statt je Woche
-- `app/src/areas/schedule/dayLayout.ts` — Spaltenkappung und Stapel-Slots; Lückenschwellen und Stauchung
+- `app/src/areas/schedule/dayLayout.ts` — Spaltenzuordnung ohne Obergrenze; Lückenschwellen und Stauchung
 - `app/src/areas/schedule/ansichtEinstellungen.ts` — `gruppenfremdeAusblenden` und `alleAnzeigen` entfallen, Farbautomatik und Alternativen-Schalter kommen hinzu
 - `app/src/areas/schedule/wochenansicht.ts` — Filterauswertung und `leerGrund` vereinfachen sich
 - `app/src/areas/schedule/wochentage.ts` — `belegungsvorschauJeTag` entfällt
-- `app/src/areas/schedule/screens/ScheduleScreen.tsx` — Kopfbereich, Achse, Stapel, Blatt, Jetzt-Anzeige
+- `app/src/areas/schedule/screens/ScheduleScreen.tsx` — Kopfbereich, Achse, Blatt, Jetzt-Anzeige
+- `app/src/areas/schedule/farbe.ts` — `anzeigeFarbe` entscheidet anhand der gespeicherten Farbherkunft
 - `app/src/areas/schedule/screens/TerminDetailScreen.tsx` — Farbgeltung
 - `app/src/areas/schedule/planStore.ts` / `einrichtung.ts` — die vorhandenen, bislang toten `clear()` an Bedienwege anbinden
 - `app/src/areas/canteen/gesten.ts` — Wiederverwendung für das Tageswischen
