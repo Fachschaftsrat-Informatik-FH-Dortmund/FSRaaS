@@ -65,10 +65,19 @@ interface PlanEntryBase {
    * nur zur Darstellung erzeugt (`alternativen.ts`). Fehlt das Feld (jeder
    * gespeicherte Eintrag), gilt der Termin als eigener Planeintrag.
    * `ordneSpaltenZu` (`dayLayout.ts`) nutzt es für die Reihenfolge „Eigene
-   * Termine zuerst" (Requirement „Stapelung bei mehr als drei
-   * überschneidenden Terminen").
+   * Termine zuerst" (Requirement „Nebeneinanderdarstellung überschneidender
+   * Termine").
    */
   istAlternative?: boolean;
+  /**
+   * Requirement „Farbwahl je Termin": Herkunft der in `color` stehenden Farbe.
+   * `true` heißt, die Nutzerin hat sie selbst gewählt; fehlt das Feld oder ist
+   * es `false`, stammt sie aus der automatischen Vergabe (`farbe.ts`). Nur so
+   * lässt sich die Automatik abschalten, ohne eigene Farbwahlen zu verlieren:
+   * `color` trägt in beiden Fällen eine echte Farbe, die Darstellung
+   * entscheidet anhand dieses Feldes (`anzeigeFarbe`, `farbe.ts`).
+   */
+  farbeVonNutzer?: boolean;
 }
 
 export interface OfficialPlanEntry extends PlanEntryBase {
@@ -102,34 +111,14 @@ export interface TerminSlot {
 }
 
 /**
- * Requirement „Stapelung bei mehr als drei überschneidenden Terminen": die
- * Termine, die über die drei sichtbaren Spalten hinausgehen, gemeinsam in
- * einer Spalte.
- */
-export interface StapelSlot {
-  art: 'stapel';
-  entries: PlanEntry[];
-  spalte: number;
-  spalten: number;
-  vonMin: number;
-  bisMin: number;
-}
-
-export type BelegtSlot = TerminSlot | StapelSlot;
-
-/**
- * Ergebnis von `dayLayout.ts` (Requirements „Proportionale Zeitachse",
- * „Nebeneinanderdarstellung überschneidender Termine", „Stapelung bei mehr
- * als drei überschneidenden Terminen"): eine Folge von Abschnitten mit je
- * eigener Höhe (`hoeheMin`), keine lineare Formel mehr (design.md,
- * Entscheidung 1). Die Umrechnung auf Pixel bleibt Sache der
- * Darstellungsschicht. `stundenlinien` nennt die absoluten Minutenmarken
- * voller Stunden, die innerhalb des Abschnitts maßstabsgetreu liegen — bei
- * einer gestauchten Lücke immer leer (Requirement „Stundenlinien auf der
- * Zeitachse").
+ * Ergebnis von `dayLayout.ts` (Requirements „Proportionale Zeitachse" und
+ * „Nebeneinanderdarstellung überschneidender Termine"): eine Folge von
+ * Abschnitten mit je eigener Höhe (`hoeheMin`), keine lineare Formel mehr
+ * (design.md, Entscheidung 1). Die Umrechnung auf Pixel bleibt Sache der
+ * Darstellungsschicht.
  */
 export type DaySlot =
-  | { art: 'belegt'; vonMin: number; bisMin: number; hoeheMin: number; slots: BelegtSlot[]; stundenlinien: number[] }
+  | { art: 'belegt'; vonMin: number; bisMin: number; hoeheMin: number; slots: TerminSlot[] }
   | {
       art: 'luecke';
       vonMin: number;
@@ -138,5 +127,4 @@ export type DaySlot =
       echteDauerMin: number;
       gestaucht: boolean;
       kurz: boolean;
-      stundenlinien: number[];
     };

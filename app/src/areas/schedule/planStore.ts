@@ -219,9 +219,26 @@ export function useScheduleEntries() {
     schreiben(snapshot.map((e) => (e.id === id ? ({ ...e, deaktiviertBis } as PlanEntry) : e)));
   }, []);
 
-  /** SCHED-F-247: Farbe eines einzelnen Termins abweichend von der Vorbelegung setzen. */
+  /**
+   * SCHED-F-247: Farbe eines einzelnen Termins abweichend von der Vorbelegung
+   * setzen. `farbeVonNutzer` hält fest, dass die Farbe von der Nutzerin stammt
+   * — sie bleibt damit auch bei abgeschalteter Farbautomatik sichtbar
+   * (Requirement „Farbwahl je Termin", `anzeigeFarbe` in `farbe.ts`).
+   */
   const farbeSetzen = useCallback((id: string, color: string) => {
-    schreiben(snapshot.map((e) => (e.id === id ? { ...e, color } : e)));
+    schreiben(snapshot.map((e) => (e.id === id ? { ...e, color, farbeVonNutzer: true } : e)));
+  }, []);
+
+  /**
+   * Requirement „Farbwahl je Termin", Szenario „Zurück zur Automatik": setzt
+   * die automatisch vergebene Farbe wieder ein und vermerkt sie als nicht von
+   * der Nutzerin gewählt. Ist die Automatik abgeschaltet, erscheint der Termin
+   * danach in der neutralen Fläche.
+   */
+  const farbeAufAutomatikSetzen = useCallback((id: string, automatischeFarbe: string) => {
+    schreiben(
+      snapshot.map((e) => (e.id === id ? { ...e, color: automatischeFarbe, farbeVonNutzer: false } : e)),
+    );
   }, []);
 
   /**
@@ -237,7 +254,7 @@ export function useScheduleEntries() {
       snapshot.map((e) => {
         if (e.kind !== 'offiziell') return e;
         const eBasis = e.courseId.trim() !== '' ? e.courseId : e.name;
-        return eBasis === basis ? { ...e, color } : e;
+        return eBasis === basis ? { ...e, color, farbeVonNutzer: true } : e;
       }),
     );
   }, []);
@@ -306,6 +323,7 @@ export function useScheduleEntries() {
     entfernen,
     deaktivierungSetzen,
     farbeSetzen,
+    farbeAufAutomatikSetzen,
     farbeFuerModulSetzen,
     konfliktAnnehmen,
     mehrereUebernehmen,

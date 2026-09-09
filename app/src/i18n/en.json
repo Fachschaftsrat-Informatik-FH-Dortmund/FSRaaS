@@ -281,8 +281,6 @@
     "alternativeAnstelle": "Instead of your own entry",
     "alternativeZusaetzlich": "In addition to your own entry",
     "verwaltungSchliessen": "Close",
-    "stapelUmfang": "+{{count}}",
-    "stapelLabel": "{{count}} more entries, tap to expand",
     "planLeeren": "Clear schedule",
     "planLeerenFrage": "All official entries will be removed from your schedule. Your setup — chosen endpoints and group code — stays as it is.",
     "planLeerenEigeneMitentfernen": "Also remove custom entries",

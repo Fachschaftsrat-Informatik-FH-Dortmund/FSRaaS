@@ -9,8 +9,9 @@ import { useTheme } from '@/theme';
 import { SCHEDULE_PALETTE } from '@/theme/tokens';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
-import { farbeFuerVeranstaltung, textfarbeFuerHintergrund } from '../farbe';
+import { anzeigeFarbe, farbeFuerVeranstaltung, textfarbeFuerHintergrund } from '../farbe';
 import { ermittleKonflikte } from '../konflikt';
+import { useAnsichtEinstellungen } from '../ansichtEinstellungen';
 import { useScheduleEntries, wiederkehrendAusZeitraum } from '../planStore';
 import { istAktiv } from '../time';
 import type { PlanEntry } from '../typen';
@@ -71,11 +72,13 @@ export function TerminDetailScreen() {
     loaded,
     deaktivierungSetzen,
     farbeSetzen,
+    farbeAufAutomatikSetzen,
     farbeFuerModulSetzen,
     entfernen,
     konfliktAnnehmen,
     aktualisieren,
   } = useScheduleEntries();
+  const { einstellungen: ansichtEinstellungen } = useAnsichtEinstellungen();
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
   const jetztSek = Math.floor(Date.now() / 1000);
 
@@ -139,6 +142,8 @@ export function TerminDetailScreen() {
   // automatisch vergebene Farbe lässt sich jederzeit neu berechnen — sie wird
   // nirgends als eigener Zustand geführt (`farbe.ts` ist deterministisch).
   const automatischeFarbe = farbeFuerVeranstaltung(automatikSchluessel(entry));
+  // Der Kopfbereich zeigt dieselbe Farbe wie die Kachel in der Wochenansicht.
+  const kopffarbe = anzeigeFarbe(entry, ansichtEinstellungen.farbautomatik);
 
   const zeitraum = `${t(`schedule.weekday.${entry.weekday}`)} ${formatZeit(entry.timeBeginMin)}–${formatZeit(
     entry.timeEndMin,
@@ -146,11 +151,11 @@ export function TerminDetailScreen() {
 
   return (
     <Screen scroll tight hideScrollbar>
-      <View style={[styles.kopf, { backgroundColor: entry.color }]}>
-        <Text style={[styles.titel, { color: textfarbeFuerHintergrund(entry.color) }]}>
+      <View style={[styles.kopf, { backgroundColor: kopffarbe }]}>
+        <Text style={[styles.titel, { color: textfarbeFuerHintergrund(kopffarbe) }]}>
           {titelVon(entry)}
         </Text>
-        <Text style={{ color: textfarbeFuerHintergrund(entry.color) }}>{zeitraum}</Text>
+        <Text style={{ color: textfarbeFuerHintergrund(kopffarbe) }}>{zeitraum}</Text>
       </View>
 
       <View style={styles.angaben}>
@@ -198,7 +203,7 @@ export function TerminDetailScreen() {
         <Text style={[styles.abschnitt, { color: colors.text }]}>{t('schedule.detailFarbe')}</Text>
         <View style={styles.farben}>
           {SCHEDULE_PALETTE.map((farbe) => {
-            const gewaehlt = farbe === entry.color;
+            const gewaehlt = entry.farbeVonNutzer === true && farbe === entry.color;
             return (
               <Pressable
                 key={farbe}
@@ -220,10 +225,10 @@ export function TerminDetailScreen() {
           {/* Requirement „Farbwahl je Termin", Szenario „Zurück zur Automatik". */}
           <Pressable
             accessibilityRole="radio"
-            accessibilityState={{ selected: entry.color === automatischeFarbe }}
+            accessibilityState={{ selected: entry.farbeVonNutzer !== true }}
             accessibilityLabel={t('schedule.farbeKeine')}
             onPress={() => {
-              farbeSetzen(entry.id, automatischeFarbe);
+              farbeAufAutomatikSetzen(entry.id, automatischeFarbe);
               setFarbeGeaendert(true);
             }}
             style={[styles.farbe, styles.farbeKeine, { borderColor: colors.border }]}
