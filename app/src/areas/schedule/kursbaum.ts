@@ -15,6 +15,9 @@
 // Vorbild `canteen/consolidate.ts` (Gruppierung mit stabiler
 // Eingabereihenfolge über eine `Map`).
 
+import { logError } from '@/errors/AppError';
+
+import { terminSchluessel } from './planungsstand';
 import type { OfficialTermin } from './typen';
 
 /** Alle Termine eines gewählten Endpunkts, mit dessen Klarnamen für den Abschnitts-Rückfall. */
@@ -96,6 +99,11 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
     grade: string;
     name: string;
     termine: OfficialTermin[];
+    /** Requirement „Zusammenfassen deckungsgleicher Rohtermine" (design.md, Entscheidung 6):
+     * bereits aufgenommene Schlüssel dieses Moduls, um einen Rohtermin, der in Veranstaltung,
+     * Veranstaltungsart, Wochentag, Zeitraum, Raum und Gruppenmenge übereinstimmt, nicht doppelt
+     * zu übernehmen. */
+    schluesselGesehen: Set<string>;
     erstesEndpunkt: { sname: string; name: string };
   }
 
@@ -113,10 +121,26 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
           grade: normalisiertesFachsemester(termin),
           name: termin.name,
           termine: [],
+          schluesselGesehen: new Set(),
           erstesEndpunkt: { sname: endpunkt.sname, name: endpunkt.name },
         };
         module.set(schluessel, m);
       }
+      // `terminSchluessel` lässt `name` bewusst außen vor (Grundlage von
+      // `terminEntsprichtEintrag`) — für die Anzeigename-Zusammenführung
+      // (design.md, Entscheidung 6 dieses Moduls) müssen mehrere Termine
+      // *unterschiedlichen* Namens an gleicher Stelle erhalten bleiben. Das
+      // Requirement „Zusammenfassen deckungsgleicher Rohtermine" nennt
+      // „Veranstaltung" als eigenes Merkmal, deshalb zählt der Name hier mit.
+      const terminKennung = `${terminSchluessel(termin)}|${termin.name}`;
+      if (m.schluesselGesehen.has(terminKennung)) {
+        logError(
+          'kursbaum.baueModulliste.deckungsgleich',
+          new Error(`deckungsgleicher Rohtermin zusammengefasst: ${terminKennung}`),
+        );
+        continue;
+      }
+      m.schluesselGesehen.add(terminKennung);
       m.termine.push(termin);
     }
   }

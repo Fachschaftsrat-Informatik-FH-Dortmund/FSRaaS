@@ -1,7 +1,9 @@
 import { pruefeKandidatGegenZwischenstand } from './konflikt';
-import { bestimmeStatus, ermittlePlanungsstand, terminEntsprichtEintrag, vorbelegteSlots } from './planungsstand';
+import { ermittlePlanungsstand, terminEntsprichtEintrag, vorbelegteSlots } from './planungsstand';
 import type { Modul } from './kursbaum';
-import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from './typen';
+import type { OfficialPlanEntry, OfficialTermin } from './typen';
+
+const JETZT_SEK = 0;
 
 function rohtermin(überschreibung: Partial<OfficialTermin> & { courseType: OfficialTermin['courseType'] }): OfficialTermin {
   return {
@@ -23,11 +25,11 @@ function modul(name: string, termine: OfficialTermin[]): Modul {
   return { key: `INF123|${name}`, courseId: 'INF123', name, termine };
 }
 
-function planeintragFuer(t: OfficialTermin, status: PlanEntry['status'] = 'fest'): OfficialPlanEntry {
+function planeintragFuer(t: OfficialTermin): OfficialPlanEntry {
   return {
     kind: 'offiziell',
     id: `plan-${t.courseType}-${t.timeBeginMin}`,
-    status,
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: t.weekday,
     timeBeginMin: t.timeBeginMin,
@@ -167,38 +169,12 @@ describe('Kennzeichnung des Planungsstands je Veranstaltung', () => {
   it('die Wahl eines mit einem bereits gewählten Termin überschneidenden Slots wird als kollidierend gekennzeichnet', () => {
     const gewaehlt = rohtermin({ courseType: 'V', timeBeginMin: 480, timeEndMin: 570 });
     const kandidat = rohtermin({ courseType: 'Ü', timeBeginMin: 540, timeEndMin: 630 });
-    const zwischenstand = [planeintragFuer(gewaehlt, 'fest')];
+    const zwischenstand = [planeintragFuer(gewaehlt)];
 
     expect(terminEntsprichtEintrag(gewaehlt, zwischenstand[0]!)).toBe(true);
-    const stufe = pruefeKandidatGegenZwischenstand(kandidat, zwischenstand);
+    const stufe = pruefeKandidatGegenZwischenstand(kandidat, zwischenstand, JETZT_SEK);
 
     expect(stufe).toBe('konflikt');
-  });
-});
-
-describe('Status „fest" oder „vorgemerkt"', () => {
-  it('genau ein neu gewählter Termin ohne bestehenden Planeintrag gilt als „fest"', () => {
-    const slot = rohtermin({ courseType: 'V' });
-
-    expect(bestimmeStatus(0, [slot], slot)).toBe('fest');
-  });
-
-  it('von zwei neu gewählten Terminen derselben Veranstaltungsart bestimmt die Nutzerin, welcher „fest" ist', () => {
-    const a = rohtermin({ courseType: 'ÜPP', studentSet: 'A-B', timeBeginMin: 480, timeEndMin: 570 });
-    const b = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E', timeBeginMin: 600, timeEndMin: 690 });
-
-    expect(bestimmeStatus(0, [a, b], a)).toBe('fest'); // ohne Angabe: der erste in Eingabereihenfolge
-    expect(bestimmeStatus(0, [a, b], b)).toBe('vorgemerkt');
-
-    const bSchluessel = 'INF123|ÜPP|Mon|600|690|R1|C5-E';
-    expect(bestimmeStatus(0, [a, b], a, bSchluessel)).toBe('vorgemerkt');
-    expect(bestimmeStatus(0, [a, b], b, bSchluessel)).toBe('fest');
-  });
-
-  it('bereits gespeicherte Planeinträge behalten ihren Status: ein neu hinzugewählter Slot derselben Art wird „vorgemerkt"', () => {
-    const neuerSlot = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E' });
-
-    expect(bestimmeStatus(1, [neuerSlot], neuerSlot)).toBe('vorgemerkt');
   });
 });
 
@@ -224,5 +200,17 @@ describe('Mehrere Gruppen-Slots übernehmen', () => {
 
     expect(einSlot!.gewaehlteSlots).toHaveLength(1);
     expect(zweiSlots!.gewaehlteSlots).toHaveLength(2);
+  });
+
+  it('verlangt keine Bestimmung eines Vorrangs zwischen zwei gewählten Slots derselben Art', () => {
+    const a = rohtermin({ courseType: 'ÜPP', studentSet: 'A-B', timeBeginMin: 480, timeEndMin: 570 });
+    const b = rohtermin({ courseType: 'ÜPP', studentSet: 'C5-E', timeBeginMin: 600, timeEndMin: 690 });
+    const m = modul('Algorithmen und Datenstrukturen', [a, b]);
+    const zwischenstand = [planeintragFuer(a), planeintragFuer(b)];
+
+    // ermittlePlanungsstand kennt keinen Vorrang zwischen gewaehlteSlots — beide
+    // stehen gleichrangig in der Liste, kein Feld unterscheidet sie.
+    const [stand] = ermittlePlanungsstand([m], zwischenstand);
+    expect(stand!.gewaehlteSlots).toEqual(expect.arrayContaining([a, b]));
   });
 });

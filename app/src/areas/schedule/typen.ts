@@ -12,9 +12,6 @@ export type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
  * unbekannte Werte, protokolliert sie aber. */
 export type CourseType = 'V' | 'Ü' | 'ÜPP' | 'P' | 'SV' | 'T' | 'PR' | 'S';
 
-/** SCHED-F-570: „fest" wird auf Konflikte geprüft, „vorgemerkt" nicht (SCHED-F-590). */
-export type PlanEntryStatus = 'fest' | 'vorgemerkt';
-
 /** Ein aus INT-002 abgerufener, normalisierter Rohtermin (SCHED-F-030), noch ohne
  * die persönlichen Ergänzungen (Status, Farbe, Gruppenzugehörigkeit) aus Abschnitt 5. */
 export interface OfficialTermin {
@@ -38,7 +35,10 @@ export interface OfficialTermin {
 
 interface PlanEntryBase {
   id: string;
-  status: PlanEntryStatus;
+  /** null = aktiv; 'dauerhaft' = bis zur Rücknahme; Zahl = Unix-Sekunden, bis wann
+   * (Requirement „Deaktivieren eines Termins", design.md Entscheidung 1). Ausgewertet
+   * über `istAktiv` (`time.ts`), nicht an dieser Stelle. */
+  deaktiviertBis: null | 'dauerhaft' | number;
   color: string;
   weekday: Weekday;
   timeBeginMin: number;

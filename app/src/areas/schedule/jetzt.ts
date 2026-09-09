@@ -2,8 +2,11 @@
 // aus dem Plan eines einzelnen Tages und der aktuellen Uhrzeit. Die Uhrzeit wird als
 // Parameter hereingereicht (nicht `Date.now()` im Modul), damit das Ergebnis
 // deterministisch und testbar bleibt. Reine Funktion, ohne React.
+//
+// Requirement „Wirkung eines deaktivierten Termins": ein deaktivierter Termin
+// gilt hier weder als laufend noch als nächster (`istAktiv`, `time.ts`).
 
-import { sortiereNachBeginnzeit } from './time';
+import { istAktiv, sortiereNachBeginnzeit } from './time';
 import type { PlanEntry } from './typen';
 
 export interface JetztStatus {
@@ -20,10 +23,16 @@ export interface JetztStatus {
 /**
  * Ermittelt aus den Terminen **eines** Tages (bereits nach Wochentag gefiltert) und
  * der aktuellen Uhrzeit in Minuten seit Mitternacht (`jetztMin`) den laufenden und
- * den nächsten Termin (SCHED-F-550) sowie die jeweils verbleibende Zeit.
+ * den nächsten Termin (SCHED-F-550) sowie die jeweils verbleibende Zeit. `jetztSek`
+ * (Unix-Sekunden desselben Zeitpunkts) entscheidet über `istAktiv`: ein deaktivierter
+ * Termin kommt weder als laufender noch als nächster in Betracht.
  */
-export function ermittleJetztStatus(tagesTermine: readonly PlanEntry[], jetztMin: number): JetztStatus {
-  const sortiert = sortiereNachBeginnzeit(tagesTermine);
+export function ermittleJetztStatus(
+  tagesTermine: readonly PlanEntry[],
+  jetztMin: number,
+  jetztSek: number,
+): JetztStatus {
+  const sortiert = sortiereNachBeginnzeit(tagesTermine.filter((t) => istAktiv(t, jetztSek)));
   const laufend = sortiert.find((t) => t.timeBeginMin <= jetztMin && jetztMin < t.timeEndMin) ?? null;
   const naechster = sortiert.find((t) => t.timeBeginMin > jetztMin) ?? null;
 

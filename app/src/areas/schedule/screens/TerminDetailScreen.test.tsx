@@ -20,7 +20,7 @@ jest.mock('expo-router', () => ({
 function offiziell(over: Partial<OfficialPlanEntry> & { id: string }): OfficialPlanEntry {
   return {
     kind: 'offiziell',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: 'Wed',
     timeBeginMin: 480,
@@ -44,7 +44,7 @@ function offiziell(over: Partial<OfficialPlanEntry> & { id: string }): OfficialP
 function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry {
   return {
     kind: 'eigen',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#43A047',
     weekday: 'Wed',
     timeBeginMin: 840,
@@ -128,16 +128,40 @@ describe('Farbwahl je Termin', () => {
   });
 });
 
-describe('Status „fest" oder „vorgemerkt"', () => {
-  it('wechselt den Status über den sichtbaren Bedienweg', async () => {
-    await seed([eigen({ id: 'lern', status: 'fest' })], 'lern');
+describe('Deaktivieren eines Termins', () => {
+  it('deaktiviert einen Termin dauerhaft über den sichtbaren Bedienweg', async () => {
+    await seed([eigen({ id: 'lern' })], 'lern');
     await zeige();
 
-    fireEvent.press(screen.getByLabelText('Vorgemerkt'));
+    fireEvent.press(screen.getByText('Dauerhaft deaktivieren'));
 
     await waitFor(async () => {
       const gespeichert = await readScheduleEntries();
-      expect(gespeichert[0]!.status).toBe('vorgemerkt');
+      expect(gespeichert[0]!.deaktiviertBis).toBe('dauerhaft');
+    });
+  });
+
+  it('deaktiviert einen Termin nur für das nächste Vorkommen', async () => {
+    await seed([eigen({ id: 'lern' })], 'lern');
+    await zeige();
+
+    fireEvent.press(screen.getByText('Nur dieses Vorkommen deaktivieren'));
+
+    await waitFor(async () => {
+      const gespeichert = await readScheduleEntries();
+      expect(typeof gespeichert[0]!.deaktiviertBis).toBe('number');
+    });
+  });
+
+  it('nimmt eine Deaktivierung verlustfrei zurück', async () => {
+    await seed([eigen({ id: 'lern', deaktiviertBis: 'dauerhaft' })], 'lern');
+    await zeige();
+
+    fireEvent.press(screen.getByText('Deaktivierung zurücknehmen'));
+
+    await waitFor(async () => {
+      const gespeichert = await readScheduleEntries();
+      expect(gespeichert[0]!.deaktiviertBis).toBeNull();
     });
   });
 });

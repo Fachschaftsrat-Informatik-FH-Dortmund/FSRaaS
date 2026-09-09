@@ -71,13 +71,18 @@ function neueId(): string {
 export function TerminEditorScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams<{ id?: string; wochentag?: string }>();
+  const params = useLocalSearchParams<{ id?: string; wochentag?: string; planung?: string }>();
   const { entries, loaded } = useScheduleEntries();
 
   const bestand = entries.find((e): e is CustomPlanEntry => e.id === params.id && e.kind === 'eigen');
   const vorgabeWochentag = WOCHENTAGE.includes(params.wochentag as Weekday)
     ? (params.wochentag as Weekday)
     : 'Mon';
+  // Requirement „Wiederkehrend oder einmalig bei eigenen Terminen", Szenario
+  // „Eintrag aus dem Planungsmodus": stets wöchentlich, auf dem sichtbaren
+  // Wochentag — weder Wochentag noch Wiederholung sind dort wählbar
+  // (design.md, Entscheidung 12).
+  const ausPlanungsmodus = params.planung === '1';
 
   // Das Formular wird erst gebaut, wenn der gespeicherte Bestand vorliegt —
   // sonst stünden seine Felder mit den Anfangswerten eines leeren Eintrags da
@@ -103,7 +108,7 @@ export function TerminEditorScreen() {
     );
   }
 
-  return <Formular bestand={bestand} vorgabeWochentag={vorgabeWochentag} />;
+  return <Formular bestand={bestand} vorgabeWochentag={vorgabeWochentag} ausPlanungsmodus={ausPlanungsmodus} />;
 }
 
 type OffenerPicker = 'beginn' | 'ende' | 'datum' | null;
@@ -111,9 +116,11 @@ type OffenerPicker = 'beginn' | 'ende' | 'datum' | null;
 function Formular({
   bestand,
   vorgabeWochentag,
+  ausPlanungsmodus,
 }: {
   bestand: CustomPlanEntry | undefined;
   vorgabeWochentag: Weekday;
+  ausPlanungsmodus: boolean;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -126,7 +133,7 @@ function Formular({
   const [ende, setEnde] = useState(zeitZuDate(bestand?.timeEndMin ?? 570));
   const [raum, setRaum] = useState(bestand?.roomId ?? '');
   const [lehrperson, setLehrperson] = useState(bestand?.lecturerName ?? '');
-  const [wiederkehrend, setWiederkehrend] = useState(bestand?.wiederkehrend ?? true);
+  const [wiederkehrend, setWiederkehrend] = useState(ausPlanungsmodus ? true : (bestand?.wiederkehrend ?? true));
   const [datum, setDatum] = useState(
     bestand && !bestand.wiederkehrend && bestand.gueltigVon !== null ? unixZuDate(bestand.gueltigVon) : new Date(),
   );
@@ -154,7 +161,7 @@ function Formular({
     }
 
     const felder = {
-      status: bestand?.status ?? ('fest' as const),
+      deaktiviertBis: bestand?.deaktiviertBis ?? null,
       color: bestand?.color ?? farbeFuerVeranstaltung(titel.trim()),
       weekday: wochentag,
       timeBeginMin: beginnMin,
@@ -184,19 +191,21 @@ function Formular({
     <Screen scroll tight hideScrollbar>
       <Feld label={t('schedule.terminTitelLabel')} wert={titel} onChange={setTitel} />
 
-      <View style={styles.feld}>
-        <Text style={{ color: colors.textMuted, fontSize: 13 }}>{t('schedule.terminWochentagLabel')}</Text>
-        <Picker
-          testID="wochentag-picker"
-          accessibilityLabel={t('schedule.terminWochentagLabel')}
-          selectedValue={wochentag}
-          onValueChange={(value) => setWochentag(value as Weekday)}
-        >
-          {WOCHENTAGE.map((tag) => (
-            <Picker.Item key={tag} label={t(`schedule.weekdayLang.${tag}`)} value={tag} />
-          ))}
-        </Picker>
-      </View>
+      {ausPlanungsmodus ? null : (
+        <View style={styles.feld}>
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>{t('schedule.terminWochentagLabel')}</Text>
+          <Picker
+            testID="wochentag-picker"
+            accessibilityLabel={t('schedule.terminWochentagLabel')}
+            selectedValue={wochentag}
+            onValueChange={(value) => setWochentag(value as Weekday)}
+          >
+            {WOCHENTAGE.map((tag) => (
+              <Picker.Item key={tag} label={t(`schedule.weekdayLang.${tag}`)} value={tag} />
+            ))}
+          </Picker>
+        </View>
+      )}
 
       <AuswahlFeld
         label={t('schedule.terminBeginnLabel')}
@@ -237,11 +246,13 @@ function Formular({
       <Feld label={t('schedule.terminRaumLabel')} wert={raum} onChange={setRaum} />
       <Feld label={t('schedule.terminLehrpersonLabel')} wert={lehrperson} onChange={setLehrperson} />
 
-      <SchalterZeile
-        label={t('schedule.terminWiederkehrendLabel')}
-        wert={wiederkehrend}
-        onChange={setWiederkehrend}
-      />
+      {ausPlanungsmodus ? null : (
+        <SchalterZeile
+          label={t('schedule.terminWiederkehrendLabel')}
+          wert={wiederkehrend}
+          onChange={setWiederkehrend}
+        />
+      )}
       {!wiederkehrend ? (
         <>
           <AuswahlFeld

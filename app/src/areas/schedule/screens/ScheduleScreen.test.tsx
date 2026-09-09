@@ -49,7 +49,7 @@ afterAll(() => jest.useRealTimers());
 function offiziell(over: Partial<OfficialPlanEntry> & { id: string }): OfficialPlanEntry {
   return {
     kind: 'offiziell',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#1E88E5',
     weekday: 'Wed',
     timeBeginMin: 480,
@@ -73,7 +73,7 @@ function offiziell(over: Partial<OfficialPlanEntry> & { id: string }): OfficialP
 function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry {
   return {
     kind: 'eigen',
-    status: 'fest',
+    deaktiviertBis: null,
     color: '#43A047',
     weekday: 'Wed',
     timeBeginMin: 840,
@@ -171,18 +171,6 @@ describe('Wochentagsleiste mit bedarfsweisem Samstag', () => {
     await zeige();
 
     expect(screen.queryByLabelText(/^Sa /)).toBeNull();
-  });
-});
-
-describe('Belegungsvorschau je Tag', () => {
-  it('nennt je Tag die Anzahl der dort liegenden Termine', async () => {
-    await seed([ANALYSIS, DATENBANKEN, PROGRAMMIEREN]);
-    await zeige();
-
-    // Mittwoch trägt zwei Termine, Montag einen, Dienstag keinen.
-    expect(screen.getByLabelText(/^Mi .* · 2 Termine$/)).toBeTruthy();
-    expect(screen.getByLabelText(/^Mo .* · 1 Termin$/)).toBeTruthy();
-    expect(screen.getByLabelText(/^Di .* · 0 Termine$/)).toBeTruthy();
   });
 });
 
@@ -383,16 +371,16 @@ describe('Schalter zum Ausblenden gruppenfremder Termine', () => {
   });
 });
 
-describe('Unterscheidung vorgemerkter Termine', () => {
-  it('kennzeichnet einen vorgemerkten Termin durch Text, nicht allein durch Farbe', async () => {
-    await seed([offiziell({ id: 'vorgemerkt', name: 'Wahlpflicht', status: 'vorgemerkt' })]);
+describe('Wirkung eines deaktivierten Termins', () => {
+  it('kennzeichnet einen deaktivierten Termin durch Text, nicht allein durch Farbe', async () => {
+    await seed([offiziell({ id: 'deaktiviert', name: 'Wahlpflicht', deaktiviertBis: 'dauerhaft' })]);
     await zeige();
 
-    expect(screen.getByLabelText(/Wahlpflicht.*Vorgemerkt/)).toBeTruthy();
+    expect(screen.getByLabelText(/Wahlpflicht.*Deaktiviert/)).toBeTruthy();
   });
 });
 
-describe('Konflikthinweis bei festen Terminen', () => {
+describe('Konflikthinweis bei überschneidenden Terminen', () => {
   it('hält Konflikthinweis und angenommenen Konflikt am Termin auseinander', async () => {
     await seed([
       offiziell({ id: 'a', name: 'Analysis', timeBeginMin: 480, timeEndMin: 600, akzeptierteKonflikte: ['b'] }),
@@ -408,15 +396,15 @@ describe('Konflikthinweis bei festen Terminen', () => {
     expect(screen.getByLabelText(/Praktikum.*Konflikt/)).toBeTruthy();
   });
 
-  it('erzeugt für vorgemerkte Termine keinen Konflikthinweis', async () => {
+  it('erzeugt für einen deaktivierten Termin keinen Konflikthinweis', async () => {
     await seed([
       offiziell({ id: 'a', name: 'Analysis', timeBeginMin: 480, timeEndMin: 600 }),
-      offiziell({ id: 'b', name: 'Datenbanken', status: 'vorgemerkt', timeBeginMin: 480, timeEndMin: 540 }),
+      offiziell({ id: 'b', name: 'Datenbanken', deaktiviertBis: 'dauerhaft', timeBeginMin: 480, timeEndMin: 540 }),
     ]);
     await zeige();
 
     expect(screen.queryByLabelText(/Analysis.*Konflikt/)).toBeNull();
-    expect(screen.queryByLabelText(/Datenbanken.*Konflikt/)).toBeNull();
+    expect(screen.queryByLabelText(/Datenbanken.*· Konflikt/)).toBeNull();
   });
 });
 
@@ -481,18 +469,6 @@ describe('Hinweis bei Semesterwechsel', () => {
     await zeige();
 
     expect(screen.queryByText(/Das Lehrangebot hat sich geändert/)).toBeNull();
-  });
-});
-
-describe('Dauerhafter Zugang zur Einrichtung', () => {
-  it('bietet bei gefülltem Plan ein jederzeit sichtbares Kopfzeilen-Element zur Einrichtung an', async () => {
-    await seed([ANALYSIS]);
-    await zeige();
-
-    const link = screen.getByLabelText('Einrichtung bearbeiten');
-    expect(link).toBeTruthy();
-    fireEvent.press(link);
-    expect(mockPush).toHaveBeenCalledWith('/einrichtung');
   });
 });
 

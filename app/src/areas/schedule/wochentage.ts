@@ -1,5 +1,10 @@
-// SCHED-F-460/470: welche Wochentage die Leiste über dem Stundenplan zeigt, und die
-// Belegungsvorschau je gezeigtem Tag. Reine Funktionen, ohne React.
+// SCHED-F-460: welche Wochentage die Leiste über dem Stundenplan zeigt. Reine
+// Funktion, ohne React.
+//
+// Die Belegungsvorschau je Tag (vormals `belegungsvorschauJeTag`) entfällt mit
+// dem Requirement „Belegungsvorschau je Tag" (REMOVED, entschieden 2026-09-08):
+// Ein Eintrag der Wochentagsleiste trägt seither nur noch Wochentag und
+// Kalenderdatum (Requirement „Wochentagsleiste mit bedarfsweisem Samstag").
 
 import type { Weekday } from './typen';
 
@@ -12,24 +17,4 @@ const OPTIONALE_TAGE: readonly Weekday[] = ['Sat', 'Sun'];
  */
 export function sichtbareWochentage(hatTermin: (wochentag: Weekday) => boolean): Weekday[] {
   return [...PFLICHTTAGE, ...OPTIONALE_TAGE.filter(hatTermin)];
-}
-
-export interface Belegungsvorschau {
-  wochentag: Weekday;
-  anzahl: number;
-}
-
-/**
- * SCHED-F-470: Anzahl der Termine je Wochentag, für die Vorschau in der Leiste.
- * `wochentage` legt Reihenfolge und Umfang fest (z. B. das Ergebnis von
- * `sichtbareWochentage`).
- */
-export function belegungsvorschauJeTag(
-  termine: readonly { weekday: Weekday }[],
-  wochentage: readonly Weekday[],
-): Belegungsvorschau[] {
-  return wochentage.map((wochentag) => ({
-    wochentag,
-    anzahl: termine.filter((t) => t.weekday === wochentag).length,
-  }));
 }

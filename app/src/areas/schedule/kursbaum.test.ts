@@ -188,3 +188,36 @@ describe('Anzeigename paralleler Termingruppen ohne bedeutungslose Endzahl', () 
     expect(abschnitte[0]!.module[0]!.name).toBe('Mathematik 1');
   });
 });
+
+describe('Zusammenfassen deckungsgleicher Rohtermine', () => {
+  it('fasst zwei in allen sechs Merkmalen übereinstimmende Rohtermine zu einem zusammen und protokolliert es', () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [
+        termin({ courseId: '44232', courseType: 'Ü', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 765, roomId: 'C.E.32', studentSet: 'A-P' }),
+        termin({ courseId: '44232', courseType: 'Ü', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 765, roomId: 'C.E.32', studentSet: 'A-P' }),
+      ],
+    };
+    const abschnitte = baueModulliste([endpunkt]);
+
+    expect(abschnitte.flatMap((a) => a.module).flatMap((m) => m.termine)).toHaveLength(1);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it('lässt zwei Termine mit abweichendem Raum getrennt (courseId 411031, zwei Räume unter einem Modul)', () => {
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [
+        termin({ courseId: '411031', courseType: 'Ü', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 765, roomId: 'C.E.32', studentSet: 'A-P' }),
+        termin({ courseId: '411031', courseType: 'Ü', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 765, roomId: 'C.E.33', studentSet: 'A-P' }),
+      ],
+    };
+    const abschnitte = baueModulliste([endpunkt]);
+
+    expect(abschnitte.flatMap((a) => a.module).flatMap((m) => m.termine)).toHaveLength(2);
+  });
+});
