@@ -38,10 +38,10 @@ export function initI18n(language?: keyof typeof resources) {
     fallbackLng: fallbackLanguage,
     interpolation: { escapeValue: false },
     returnNull: false,
-    // Hermes (React Native) hat kein vollständiges Intl.PluralRules. Die Kataloge
-    // nutzen ausschließlich {{count}} ohne Plural-Suffixe, daher ist das ältere
-    // v3-Pluralformat ausreichend und vermeidet die Laufzeit-Fehlermeldung.
-    compatibilityJSON: 'v3',
+    // i18next 26 hat das ältere v3-Pluralformat entfernt (nur noch 'v4', das
+    // ungekürzte Intl.PluralRules voraussetzt). Hermes bringt das inzwischen
+    // vollständig mit; die Kataloge nutzen ohnehin nur {{count}} ohne
+    // Plural-Suffixe, sodass hier kein Verhaltensunterschied entsteht.
   });
 }
 
