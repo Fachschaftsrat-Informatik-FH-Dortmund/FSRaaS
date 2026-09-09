@@ -80,7 +80,7 @@ Der Schalter „alle Veranstaltungen der gewählten Module einblenden" verlangt 
 
 **64 statt 13 Kacheln bei eingeblendeten Alternativen** → Genau dafür ist die Stapelung da. Ohne sie wäre der Schalter unbenutzbar; die Reihenfolge der Aufgaben in `tasks.md` trägt dem Rechnung.
 
-**Der Wegfall der Belegungsvorschau nimmt eine erfragte Anforderung zurück** → Sie ging auf eine Rücksprache mit einer studierenden Person zurück. Die Rücknahme ist als REMOVED-Delta mit Begründung festgehalten, damit ein Nachfolger sie nicht für ein Versehen hält und wieder einbaut.
+**Der Wegfall der Belegungsvorschau nimmt eine erfragte Anforderung zurück** → Sie ging auf eine Rücksprache mit einer studierenden Person zurück. Die Rücknahme ist als REMOVED-Delta mit Begründung festgehalten, damit ein Nachfolger sie nicht für ein Versehen hält und wieder einbaut — seit der Bereinigung mit `stundenplan-bedienung-ohne-vormerkung` (2026-09-09) im dortigen, bereits archivierten Delta statt in diesem.
 
 **Der Alternativen-Schalter macht die Wochenansicht netzabhängig** → Nur für die Alternativen. Der persönliche Plan bleibt rein gerätelokal, wie die Capability `data-and-storage` es verlangt; ohne Netz zeigt die Ansicht ihn unverändert vollständig.
 

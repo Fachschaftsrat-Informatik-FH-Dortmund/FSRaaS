@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,10 +10,12 @@ import { useEinrichtung } from '../einrichtung';
 import { useScheduleEntries } from '../planStore';
 
 // Requirement „Ansichts- und Verwaltungsblatt in der Kopfzeile": ein einziges
-// Kopfzeilen-Element bündelt die Ansichtsschalter, den Zugang zur Einrichtung
-// und die beiden Löschaktionen. Ersetzt den vormaligen, direkt navigierenden
-// Stift (`EinrichtungHeaderZugang`) und den Schalterkasten unter dem Plan
-// (Requirement, entfällt: Schalterkasten unter dem Plan).
+// Kopfzeilen-Element bündelt die Ansichtsschalter und die beiden
+// Löschaktionen. Ersetzt den Schalterkasten unter dem Plan (Requirement,
+// entfällt: Schalterkasten unter dem Plan). Der Zugang zur Einrichtung ist
+// bewusst nicht Teil dieses Blatts — er ist ein eigener, dauerhaft
+// sichtbarer Bedienweg (`EinrichtungHeaderZugang`, Requirement „Dauerhafter
+// Zugang zur Einrichtung"), der als eigenes Kopfzeilen-Symbol daneben steht.
 export function VerwaltungsblattZugang() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -41,7 +42,6 @@ type Loeschaktion = 'leeren' | 'zuruecksetzen' | null;
 function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSchliessen: () => void }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const router = useRouter();
   const { einstellungen, loaded, toggleZeitachse, toggleSprungZuHeute } = useAnsichtEinstellungen();
   const { clear: planLeeren } = useScheduleEntries();
   const { clear: einrichtungZuruecksetzen } = useEinrichtung();
@@ -76,14 +76,6 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
               onChange={toggleSprungZuHeute}
             />
 
-            <AppButton
-              variant="secondary"
-              label={t('schedule.einrichtungBearbeiten')}
-              onPress={() => {
-                schliessenUndZuruecksetzen();
-                router.push('/einrichtung');
-              }}
-            />
             <AppButton variant="secondary" label={t('schedule.planLeeren')} onPress={() => setAktion('leeren')} />
             <AppButton
               variant="secondary"

@@ -96,9 +96,16 @@ describe('Deaktivieren eines Termins', () => {
   });
 });
 
-describe('Überführung des Terminstatus in den Deaktiviert-Zustand', () => {
-  it('überführt einen gespeicherten Eintrag mit Status „vorgemerkt" zu dauerhaft deaktiviert', async () => {
-    const alteGestalt = { ...eigenerTermin(), deaktiviertBis: undefined, status: 'vorgemerkt' };
+// design.md, Entscheidung 2 (verworfen im Prüfprotokoll 2026-09-09): eine
+// Überführung von `status: 'fest' | 'vorgemerkt'` zu `deaktiviertBis` war
+// vorgesehen, um Geräte mit einem Bestand alter Gestalt verlustfrei
+// mitzunehmen. Entschieden: kein Gerät hält noch diesen Stand — die
+// Überführung entfällt ersatzlos. Ein Eintrag alter Gestalt durchläuft damit
+// denselben Weg wie jeder andere schema-fremde Eintrag (DATA-F-020): einzeln
+// verworfen, protokolliert, der übrige Bestand bleibt erhalten.
+describe('Entfall der Terminstatus-Überführung', () => {
+  it('verwirft einen gespeicherten Eintrag alter Gestalt (status statt deaktiviertBis), statt ihn zu überführen', async () => {
+    const alteGestalt = { ...eigenerTermin(), status: 'vorgemerkt' };
     delete (alteGestalt as Record<string, unknown>).deaktiviertBis;
     await writeJson('scheduleEntries', [alteGestalt]);
     __resetScheduleEntriesForTest();
@@ -107,38 +114,9 @@ describe('Überführung des Terminstatus in den Deaktiviert-Zustand', () => {
     const { result } = renderHook(() => useScheduleEntries());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
-    expect(result.current.entries).toHaveLength(1);
-    expect(result.current.entries[0]!.deaktiviertBis).toBe('dauerhaft');
-    expect(result.current.verworfeneEintraegeAnzahl).toBe(0);
+    expect(result.current.entries).toHaveLength(0);
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(1);
     errorSpy.mockRestore();
-  });
-
-  it('überführt einen gespeicherten Eintrag mit Status „fest" zu aktiv', async () => {
-    const alteGestalt = { ...eigenerTermin(), status: 'fest' };
-    delete (alteGestalt as Record<string, unknown>).deaktiviertBis;
-    await writeJson('scheduleEntries', [alteGestalt]);
-    __resetScheduleEntriesForTest();
-
-    const { result } = renderHook(() => useScheduleEntries());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-
-    expect(result.current.entries).toHaveLength(1);
-    expect(result.current.entries[0]!.deaktiviertBis).toBeNull();
-    expect(result.current.verworfeneEintraegeAnzahl).toBe(0);
-  });
-
-  it('führt einen Eintrag ohne Status und ohne deaktiviertBis als aktiv', async () => {
-    const ohneZustand = { ...eigenerTermin() };
-    delete (ohneZustand as Record<string, unknown>).deaktiviertBis;
-    await writeJson('scheduleEntries', [ohneZustand]);
-    __resetScheduleEntriesForTest();
-
-    const { result } = renderHook(() => useScheduleEntries());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-
-    expect(result.current.entries).toHaveLength(1);
-    expect(result.current.entries[0]!.deaktiviertBis).toBeNull();
-    expect(result.current.verworfeneEintraegeAnzahl).toBe(0);
   });
 });
 

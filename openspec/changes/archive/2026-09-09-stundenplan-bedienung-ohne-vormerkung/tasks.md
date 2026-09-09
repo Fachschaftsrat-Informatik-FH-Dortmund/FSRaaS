@@ -4,7 +4,7 @@
 
 - [x] 1.1 `deaktiviertBis: null | 'dauerhaft' | number` in `PlanEntryBase` aufnehmen, `status` und `PlanEntryStatus` aus `typen.ts` entfernen (`design.md`, Entscheidung 1); der TypeScript-Lauf weist jede verbliebene Verwendung aus
 - [x] 1.2 `istAktiv(eintrag, jetztSek)` in `time.ts` anlegen (`design.md`, Entscheidung 3); Test `describe('Wirkung eines deaktivierten Termins', …)` deckt die drei Ausprägungen des Feldes ab
-- [x] 1.3 Überführung in `planStore.bereinige()`: `'vorgemerkt'` → `'dauerhaft'`, `'fest'` → `null`, fehlendes Feld → `null`; Vorfall protokollieren, nicht als verworfen zählen. Tests `describe('Überführung des Terminstatus in den Deaktiviert-Zustand', …)` für alle drei Szenarien, mit einem gespeicherten Stand alter Gestalt
+- [x] 1.3 Zunächst wie vorgesehen umgesetzt: Überführung in `planStore.bereinige()`. Im Prüfprotokoll vom 2026-09-09 zurückgenommen (`design.md` Entscheidung 2) — kein Gerät hält noch den alten Stand. Entfernt aus Code (`ueberfuehreAlteGestalt`), Tests und dem Spec-Delta `data-and-storage`; ein Eintrag alter Gestalt (`status` statt `deaktiviertBis`) durchläuft seither denselben Weg wie jeder andere schema-fremde Eintrag (DATA-F-020). Test `describe('Entfall der Terminstatus-Überführung', …)` belegt das
 - [x] 1.4 `statusUmschalten` durch `deaktivierungSetzen(id, deaktiviertBis)` ersetzen; Test `describe('Deaktivieren eines Termins', …)` für alle drei Szenarien, einschließlich der verlustfreien Rücknahme
 - [x] 1.5 Zeitpunkt für „nur dieses Vorkommen" nach der Alt-App-Regel berechnen — Endzeit am betreffenden Wochentag, bei bereits verstrichenem Zeitpunkt eine Woche weiter (`design.md`, Entscheidung 4); Test `describe('Selbsttätiges Ende einer einmaligen Deaktivierung', …)` belegt das selbsttätige Wiederaufleben ohne Nutzeraktion
 
@@ -64,10 +64,10 @@
 
 ## 9. Abschluss
 
-- [ ] 9.1 Prüfprotokoll auf dem Gerät anlegen (Datum, Gerät, Beobachtungen): Höhe und Lesbarkeit beider Wochentagsleisten bei fünf und bei sieben Tagen, ruhige Leistenhöhe beim Tagwechsel, Bedienbarkeit des Sprungs mit Hervorhebung
-- [ ] 9.2 Die zwei Gestaltungsfragen aus `design.md` am Gerät entscheiden und im Prüfprotokoll festhalten: Ausgrauen eines deaktivierten Termins ohne Verletzung des Mindestkontrasts; Symbol und Form der abgesetzten Zeile für abgeleitete Angaben, auch in der Wochenansicht
-- [ ] 9.3 Prüfprotokoll um den Fall eines Geräts mit vorgemerkten Terminen ergänzen: nach der Aktualisierung erscheinen sie ausgegraut, die Rücknahme wirkt sofort
+- [x] 9.1 Prüfprotokoll auf dem Gerät angelegt (2026-09-09): Höhe und Lesbarkeit beider Wochentagsleisten bei fünf und bei sieben Tagen, ruhige Leistenhöhe beim Tagwechsel, Bedienbarkeit des Sprungs mit Hervorhebung — bestanden. Dabei Korrektur am Sprungziel gefunden und behoben: Ziel ist der erste Slot der eigenen Gruppe, nicht der erste Slot der Liste (`design.md` Entscheidung 10, `specs/pruefprotokolle/2026-09-09-stundenplan-bedienung-ohne-vormerkung.md`)
+- [x] 9.2 Die zwei Gestaltungsfragen aus `design.md` am Gerät entschieden (2026-09-09): Ausgrauen eines deaktivierten Termins ohne Verletzung des Mindestkontrasts — bestanden; Symbol und Form der abgesetzten Zeile für abgeleitete Angaben, in Planungsmodus und Wochenansicht — bestanden. Die inhaltliche Neugestaltung dieser Zeile (Gruppenkennungen statt „eigene Gruppe") ist ein eigener, neuer Bedarf und **nicht** Teil dieses Changes — dafür ein neues Issue (siehe unten)
+- [x] 9.3 Entscheidung 2026-09-09: Kein Gerät hält noch den alten Stand (`status: 'fest' | 'vorgemerkt'`). Die vorgesehene Migration entfällt ersatzlos statt geprüft zu werden — siehe Task 1.3 und `design.md` Entscheidung 2
 - [x] 9.4 `node tools/spec-check/src/cli.js` läuft ohne Befund
 - [x] 9.5 `openspec validate stundenplan-bedienung-ohne-vormerkung --strict` meldet keinen Fehler
 - [x] 9.6 Vollständige Testsuite der App grün
-- [ ] 9.7 Diesen Change **vor** `stundenplan-wochenansicht-nutzerfuehrung` archivieren und jenen anschließend per `/opsx:update` um die drei in `proposal.md` tabellierten Punkte bereinigen — sonst entstehen widersprüchliche Deltas zu denselben Requirements
+- [x] 9.7 Archiviert 2026-09-09; `stundenplan-wochenansicht-nutzerfuehrung` anschließend per `/opsx:update` um die drei in `proposal.md` tabellierten Punkte bereinigt. Dabei zusätzlich einen echten Code-Konflikt gefunden und behoben: Eine zwischenzeitliche Umsetzung von Task 5.1 jenes Changes hatte den Einrichtungs-Zugang wieder ins Verwaltungsblatt gebündelt und `EinrichtungHeaderZugang.tsx` gelöscht — der Spec widersprechend. Entscheidung: Spec gilt, Komponente wiederhergestellt, beide Kopfzeilen-Symbole stehen jetzt nebeneinander

@@ -89,9 +89,12 @@ describe('Ansichts- und Verwaltungsblatt in der Kopfzeile', () => {
 
     expect(screen.getByLabelText('Proportionale Zeitachse')).toBeTruthy();
     expect(screen.getByLabelText('Beim Öffnen zum aktuellen Wochentag springen')).toBeTruthy();
-    expect(screen.getByText('Einrichtung bearbeiten')).toBeTruthy();
     expect(screen.getByText('Stundenplan leeren')).toBeTruthy();
     expect(screen.getByText('Stundenplan zurücksetzen')).toBeTruthy();
+    // Requirement „Dauerhafter Zugang zur Einrichtung": eigener, vom
+    // Verwaltungsblatt getrennter Bedienweg (`EinrichtungHeaderZugang`) —
+    // dieses Blatt führt ihn bewusst nicht.
+    expect(screen.queryByText('Einrichtung bearbeiten')).toBeNull();
   });
 
   it('Sprung zu heute umschalten', async () => {
