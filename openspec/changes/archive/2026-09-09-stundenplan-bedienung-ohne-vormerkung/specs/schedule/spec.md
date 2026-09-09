@@ -278,7 +278,7 @@ Das System muss beim Anlegen eines eigenen Eintrags die Wahl ermöglichen, ob er
 
 **Reason**: Entschieden 2026-09-08 (Issue #62). Der Status ist am Gerät als zu viel Bedienoberfläche für zu wenig Ertrag beurteilt worden: eine Zuordnungsregel im Planungsmodus, ein „als fest festlegen"-Bedienweg je Zeile, eine dritte Konfliktstufe und eine eigene Kennzeichnung in der Wochenansicht, um einen einzigen Fall abzudecken — einen Termin im Plan behalten, ohne ihn wahrzunehmen. Diesen Fall deckt das Deaktivieren ab, das die Alt-App unter `action_toggle_cancel` seit jeher führt und das ohne Zuordnungsregel auskommt.
 
-**Migration**: Ersetzt durch die Requirements „Deaktivieren eines Termins" und „Wirkung eines deaktivierten Termins". Gespeicherte Einträge mit `status: 'vorgemerkt'` gelten künftig als dauerhaft deaktiviert, solche mit `status: 'fest'` als aktiv; die Überführung ist in der Capability `data-and-storage` festgehalten. Der Planungsmodus kennt nur noch „hinzugefügt" und „nicht hinzugefügt".
+**Migration**: Ersetzt durch die Requirements „Deaktivieren eines Termins" und „Wirkung eines deaktivierten Termins". Eine Überführung gespeicherter Einträge mit `status: 'vorgemerkt'`/`'fest'` war zunächst vorgesehen; laut Prüfprotokoll vom 2026-09-09 hält kein Gerät mehr einen solchen Bestand, sie entfällt ersatzlos (`design.md`, Entscheidung 2). Ein Eintrag alter Gestalt wird wie jeder andere schema-fremde Eintrag verworfen (DATA-F-020). Der Planungsmodus kennt nur noch „hinzugefügt" und „nicht hinzugefügt".
 
 ### Requirement: Unterscheidung vorgemerkter Termine
 

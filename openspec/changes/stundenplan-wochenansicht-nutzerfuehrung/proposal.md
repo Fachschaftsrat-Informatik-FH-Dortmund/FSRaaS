@@ -26,13 +26,11 @@ Die Wochenansicht ist der meistgenutzte Bildschirm der App. Sechs Befunde aus de
 
 **Alle Veranstaltungen der gewählten Module lassen sich einblenden.** Ein Schalter zeigt zusätzlich die Parallel-Slots der eigenen Module — sechs Module bedeuten 64 statt 13 Kacheln in der Woche, weshalb es die Stapelung braucht. Ein Tipp auf eine eingeblendete Alternative öffnet ein Blatt mit „stattdessen wählen" und „zusätzlich aufnehmen". Damit werden die bislang unumgesetzten Anforderungen „Einsicht in Termine anderer Gruppen" und „Übernahme des Termins einer anderen Gruppe" in der Wochenansicht wirksam.
 
-**Ein Kopfzeilen-Element öffnet ein Blatt** mit den Ansichtsschaltern (Zeitachse oder kompakte Liste, Sprung zu heute, alle Gruppen einblenden, Farbautomatik), dem Zugang zur Einrichtung und den beiden Löschaktionen. Der Schalterkasten unter dem Plan entfällt.
+**Ein Kopfzeilen-Element öffnet ein Blatt** mit den Ansichtsschaltern (Zeitachse oder kompakte Liste, Sprung zu heute, alle Gruppen einblenden, Farbautomatik) und den beiden Löschaktionen. Der Schalterkasten unter dem Plan entfällt. Der Zugang zur Einrichtung ist **nicht** Teil dieses Blatts, sondern ein eigenes, dauerhaft sichtbares Kopfzeilen-Symbol daneben — Requirement „Dauerhafter Zugang zur Einrichtung" des Changes `stundenplan-bedienung-ohne-vormerkung`, der an dieser Stelle maßgeblich ist.
 
 **Zwei Löschaktionen, immer auf eigene Initiative.** „Plan leeren" entfernt die Termine und lässt die Einrichtung stehen; „Stundenplan zurücksetzen" nimmt auch Endpunkte und Gruppenkennung mit. Die Bestätigung fragt zusätzlich, ob die selbst angelegten Termine mitgelöscht werden — vorbelegt auf Nein, weil sie Handarbeit sind und im FBWS nicht stehen. **Ein automatisches Löschen ist ausgeschlossen**, auch beim Semesterwechsel.
 
 **Zwei Filter entfallen ersatzlos:** der Schalter zum Ausblenden gruppenfremder Termine und der Schalter zum Abschalten aller Filter. Der Gültigkeitszeitraum wird künftig immer angewandt.
-
-**Die Terminanzahl je Tag entfällt.** Die Chips tragen nur noch Wochentag und Datum.
 
 **Der Rückweg zur laufenden Woche folgt dem Mensaplan:** die Wochenangabe selbst ist der Bedienweg, mit einem kleinen Zusatzlabel, das nur erscheint, wenn man nicht in der laufenden Woche steht.
 
@@ -40,7 +38,7 @@ Die Wochenansicht ist der meistgenutzte Bildschirm der App. Sechs Befunde aus de
 
 **Der Gültigkeitszeitraum wird je Eintrag änderbar.** Beginn und Ende einzeln, jeweils auch offen, für offizielle wie für eigene Einträge. Die Felder `gueltigVon` und `gueltigBis` bestehen an jedem Eintrag und werden von der Wochenansicht bereits ausgewertet — es fehlte allein der Bedienweg. Das ist zugleich das Auffangnetz für die Ableitung des Zeitraums aus dem Endpunktnamen: Bricht deren Namensmuster weg, erscheint eine Blockwoche als durchgehende wöchentliche Veranstaltung, und die Nutzerin korrigiert das von Hand, statt einem Fehler des Fremdsystems ausgeliefert zu sein.
 
-**Die Farbwahl wirkt auf das Modul.** Beim Verlassen des Termindetails nach einer Farbänderung fragt das System, ob sie für alle Veranstaltungen des Moduls oder nur für die geöffnete gelten soll. Ein Palettenwert „keine Farbe" führt zur Automatik zurück; die Automatik selbst ist im Ansichts-Blatt abschaltbar. Der Statusumschalter „fest/vorgemerkt" bekommt eine Erklärung, was „vorgemerkt" bewirkt.
+**Die Farbwahl wirkt auf das Modul.** Beim Verlassen des Termindetails nach einer Farbänderung fragt das System, ob sie für alle Veranstaltungen des Moduls oder nur für die geöffnete gelten soll. Ein Palettenwert „keine Farbe" führt zur Automatik zurück; die Automatik selbst ist im Ansichts-Blatt abschaltbar.
 
 ## Capabilities
 
@@ -50,7 +48,7 @@ Keine.
 
 ### Modified Capabilities
 
-- `schedule`: Zeitachse je Tag mit Stauchung und Bruchzeichen; Stapelung ab vier Überschneidungen; festgenagelter Kopfbereich und Wischen; Ansichts- und Verwaltungsblatt in der Kopfzeile; Einblenden aller Veranstaltungen gewählter Module; Farbwahl je Veranstaltung; Jetzt-Anzeige und Jetzt-Strich; Rückkehr zur laufenden Woche; zwei Filter und die Belegungsvorschau entfallen
+- `schedule`: Zeitachse je Tag mit Stauchung und Bruchzeichen; Stapelung ab vier Überschneidungen; festgenagelter Kopfbereich und Wischen; Ansichts- und Verwaltungsblatt in der Kopfzeile (ohne Einrichtung-Zugang, der eigenständig bleibt); Einblenden aller Veranstaltungen gewählter Module; Farbwahl je Veranstaltung; Jetzt-Anzeige und Jetzt-Strich; Rückkehr zur laufenden Woche; zwei Filter entfallen
 - `data-and-storage`: gezielte Nutzeraktionen zum Leeren und Zurücksetzen des Stundenplans, mit Rückfrage zu eigenen Terminen und ohne jedes automatische Löschen
 
 ## Impact
@@ -61,13 +59,23 @@ Keine.
 - `app/src/areas/schedule/wochenansicht.ts` — Filterauswertung und `leerGrund` vereinfachen sich
 - `app/src/areas/schedule/wochentage.ts` — `belegungsvorschauJeTag` entfällt
 - `app/src/areas/schedule/screens/ScheduleScreen.tsx` — Kopfbereich, Achse, Stapel, Blatt, Jetzt-Anzeige
-- `app/src/areas/schedule/screens/TerminDetailScreen.tsx` — Farbgeltung, Statuserklärung
+- `app/src/areas/schedule/screens/TerminDetailScreen.tsx` — Farbgeltung
 - `app/src/areas/schedule/planStore.ts` / `einrichtung.ts` — die vorhandenen, bislang toten `clear()` an Bedienwege anbinden
 - `app/src/areas/canteen/gesten.ts` — Wiederverwendung für das Tageswischen
 
 ## Roadmap-Zuordnung
 
-Roadmap-Schritt 5 (Stundenplan), Etappe „Plan". Bewusst **nicht** enthalten: der Kalender- und Datei-Export, der Prüfungsplan und der Raumplan-Abgleich; sie stehen unverändert in der Capability. Setzt die beiden vorangehenden Changes voraus — der Alternativen-Schalter braucht die gewählten Module, das Ansichts-Blatt den Zugang zur Einrichtung.
+Roadmap-Schritt 5 (Stundenplan), Etappe „Plan". Bewusst **nicht** enthalten: der Kalender- und Datei-Export, der Prüfungsplan und der Raumplan-Abgleich; sie stehen unverändert in der Capability. Setzt die beiden vorangehenden Changes voraus — der Alternativen-Schalter braucht die gewählten Module.
+
+## Verhältnis zum Change `stundenplan-bedienung-ohne-vormerkung`
+
+Jener Change wurde am 2026-09-09 vor diesem archiviert und ist an drei Punkten maßgeblich, die ursprünglich auch hier vorgesehen waren — bei der Archivierung bereinigt (siehe dessen `proposal.md`, Abschnitt „Verhältnis zum Change stundenplan-wochenansicht-nutzerfuehrung"):
+
+- **Wochentagsleiste ohne Terminanzahl**: vollständig dort umgesetzt (zusätzlich mit voller Bildschirmbreite); die entsprechenden MODIFIED-/REMOVED-Deltas sind aus diesem Change entfernt.
+- **Zugang zur Einrichtung**: ein eigenes Kopfzeilen-Symbol (`EinrichtungHeaderZugang`), **nicht** Teil des hiesigen Ansichts- und Verwaltungsblatts.
+- **Statusumschalter „fest/vorgemerkt"**: entfällt ersatzlos mit dem Status selbst; Task 8.4 dieses Changes ist damit gegenstandslos.
+
+Der Status „fest" oder „vorgemerkt" existiert seither nicht mehr in der Capability `schedule`.
 
 ## Offene Entscheidungen
 
