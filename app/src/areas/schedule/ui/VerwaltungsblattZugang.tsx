@@ -42,8 +42,14 @@ type Loeschaktion = 'leeren' | 'zuruecksetzen' | null;
 function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSchliessen: () => void }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const { einstellungen, loaded, toggleZeitachse, toggleSprungZuHeute, toggleFarbautomatik } =
-    useAnsichtEinstellungen();
+  const {
+    einstellungen,
+    loaded,
+    toggleZeitachse,
+    toggleSprungZuHeute,
+    toggleFarbautomatik,
+    toggleAlternativenEinblenden,
+  } = useAnsichtEinstellungen();
   const { clear: planLeeren } = useScheduleEntries();
   const { clear: einrichtungZuruecksetzen } = useEinrichtung();
   const [aktion, setAktion] = useState<Loeschaktion>(null);
@@ -82,6 +88,12 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
               label={t('schedule.verwaltungFarbautomatik')}
               wert={loaded ? einstellungen.farbautomatik : true}
               onChange={toggleFarbautomatik}
+            />
+            {/* Requirement „Einblenden aller Veranstaltungen gewählter Module". */}
+            <SchalterZeile
+              label={t('schedule.verwaltungAlternativen')}
+              wert={loaded ? einstellungen.alternativenEinblenden : false}
+              onChange={toggleAlternativenEinblenden}
             />
 
             <AppButton variant="secondary" label={t('schedule.planLeeren')} onPress={() => setAktion('leeren')} />

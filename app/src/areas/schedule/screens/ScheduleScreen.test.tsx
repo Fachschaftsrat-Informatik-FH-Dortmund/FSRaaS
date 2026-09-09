@@ -5,9 +5,9 @@ import { removeKey, writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import { __resetAnsichtEinstellungenForTest, __resetAnsichtsstandForTest } from '../ansichtEinstellungen';
 import { __resetEinrichtungForTest } from '../einrichtung';
-import { __resetScheduleEntriesForTest } from '../planStore';
+import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import { __resetSemesterstandForTest } from '../semesterstand';
-import type { CustomPlanEntry, OfficialPlanEntry, PlanEntry } from '../typen';
+import type { CustomPlanEntry, OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
 import { ScheduleScreen } from './ScheduleScreen';
 
 // Der Bildschirm liest den persönlichen Plan, die Einrichtung und die
@@ -17,10 +17,24 @@ import { ScheduleScreen } from './ScheduleScreen';
 
 let mockVorlesungszeit: { data: { von: number | null; bis: number | null } | undefined };
 let mockStudiengaenge: { sname: string; name: string; grades: string[] }[];
+let mockAuswahlbestand: {
+  termine: unknown[];
+  perEndpunkt: { sname: string; name: string; termine: unknown[] }[];
+  alleGeladen: boolean;
+  isPending: boolean;
+  isError: boolean;
+  isFetching: boolean;
+  refetch: () => void;
+};
 
+// Requirement „Einblenden aller Veranstaltungen gewählter Module": der
+// Auswahlbestand kommt über denselben Hook wie Planungsmodus und
+// Kursauswahl (`useTermineFuerEndpunkte`) — hier als „bereits geladen, aber
+// leer" vorbelegt, damit bestehende Tests ohne Alternativen unberührt bleiben.
 jest.mock('../api', () => ({
   useVorlesungszeit: () => mockVorlesungszeit,
   useStudiengaenge: () => ({ studiengaenge: mockStudiengaenge }),
+  useTermineFuerEndpunkte: () => mockAuswahlbestand,
 }));
 
 const mockPush = jest.fn();
@@ -90,6 +104,22 @@ function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry
   };
 }
 
+function terminRoh(over: Partial<OfficialTermin> & { courseId: string }): OfficialTermin {
+  return {
+    name: 'Mathematik für Informatik 3',
+    courseType: 'V',
+    lecturerName: 'Prof. Beispiel',
+    studentSet: '*',
+    roomId: 'A.1.01',
+    weekday: 'Wed',
+    timeBeginMin: 480,
+    timeEndMin: 570,
+    gueltigVon: null,
+    gueltigBis: null,
+    ...over,
+  };
+}
+
 const ANALYSIS = offiziell({ id: 'analysis', timeBeginMin: 480, timeEndMin: 570 });
 const DATENBANKEN = offiziell({
   id: 'db',
@@ -141,6 +171,15 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockVorlesungszeit = { data: { von: null, bis: null } };
   mockStudiengaenge = [];
+  mockAuswahlbestand = {
+    termine: [],
+    perEndpunkt: [],
+    alleGeladen: true,
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  };
 });
 
 afterEach(cleanup);
@@ -633,6 +672,111 @@ describe('Kennzeichnung eines leeren Wochentags', () => {
     await zeige();
 
     expect(screen.queryByLabelText('Eigenen Termin anlegen')).toBeNull();
+  });
+});
+
+describe('Einblenden aller Veranstaltungen gewählter Module', () => {
+  const V = offiziell({ id: 'v', courseId: 'INF999', name: 'Mathematik für Informatik 3', courseType: 'V' });
+  const V_ROH = terminRoh({ courseId: 'INF999' });
+  const UE_ROH = terminRoh({
+    courseId: 'INF999',
+    courseType: 'Ü',
+    studentSet: 'A-B',
+    timeBeginMin: 600,
+    timeEndMin: 690,
+  });
+
+  async function seedMitAlternativen(entries: PlanEntry[]) {
+    await seed(entries, { alternativenEinblenden: true });
+    mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
+    mockAuswahlbestand = {
+      termine: [V_ROH, UE_ROH],
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [V_ROH, UE_ROH] }],
+      alleGeladen: true,
+      isPending: false,
+      isError: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    };
+  }
+
+  it('Alternativen einblenden: zeigt weitere Termine des gewählten Moduls, abgesetzt von den eigenen', async () => {
+    await seedMitAlternativen([V]);
+    await zeige();
+
+    const alternative = screen.getByLabelText(/10:00–11:30 · Mathematik für Informatik 3.*Alternative/);
+    expect(alternative).toBeTruthy();
+  });
+
+  it('lässt den Schalter ohne Auswahlbestand wirkungslos und sagt es, der eigene Plan bleibt vollständig', async () => {
+    await seed([V], { alternativenEinblenden: true });
+    mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
+    mockAuswahlbestand = {
+      termine: [],
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [] }],
+      alleGeladen: false,
+      isPending: true,
+      isError: false,
+      isFetching: true,
+      refetch: jest.fn(),
+    };
+
+    // Eigene Fassung von `zeige()`: Der Auswahlbestand hängt hier bewusst im
+    // Ladezustand fest ("Wird geladen …" bleibt dauerhaft sichtbar), die
+    // gemeinsame Hilfsfunktion wartete darauf, dass genau dieser Text
+    // verschwindet.
+    render(
+      <ThemeProvider>
+        <ScheduleScreen />
+      </ThemeProvider>,
+    );
+    await waitFor(() => expect(screen.getByLabelText(/08:00–09:30 · Mathematik für Informatik 3/)).toBeTruthy());
+
+    // Der Schalter wirkt sich nicht aus, solange der Auswahlbestand nicht
+    // vorliegt — und sagt das (statt einen Fehler zu verschlucken).
+    expect(screen.getByText('Wird geladen …')).toBeTruthy();
+    // Der eigene Plan bleibt trotzdem vollständig sichtbar.
+    expect(screen.getByLabelText(/08:00–09:30 · Mathematik für Informatik 3/)).toBeTruthy();
+  });
+
+  it('Alternative übernehmen: bietet „anstelle des eigenen Termins" und „zusätzlich zum eigenen Termin" an', async () => {
+    await seedMitAlternativen([V]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 · Mathematik für Informatik 3.*Alternative/));
+
+    expect(
+      screen.getByText('„Mathematik für Informatik 3“ übernehmen — anstelle des eigenen Termins oder zusätzlich?'),
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText('Zusätzlich zum eigenen Termin'));
+
+    await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(2));
+  });
+
+  it('Alternative übernehmen anstelle des eigenen Termins: ersetzt die bisherige Wahl derselben Veranstaltungsart', async () => {
+    const UE = offiziell({
+      id: 'ue',
+      courseId: 'INF999',
+      name: 'Mathematik für Informatik 3',
+      courseType: 'Ü',
+      studentSet: 'C5-E',
+      timeBeginMin: 720,
+      timeEndMin: 810,
+    });
+    await seedMitAlternativen([V, UE]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 · Mathematik für Informatik 3.*Alternative/));
+    fireEvent.press(screen.getByText('Anstelle des eigenen Termins'));
+
+    await waitFor(async () => {
+      const gespeichert = await readScheduleEntries();
+      const uebungen = gespeichert.filter(
+        (e): e is OfficialPlanEntry => e.kind === 'offiziell' && e.courseType === 'Ü',
+      );
+      expect(uebungen).toHaveLength(1);
+      expect(uebungen[0]!.studentSet).toBe('A-B');
+    });
   });
 });
 

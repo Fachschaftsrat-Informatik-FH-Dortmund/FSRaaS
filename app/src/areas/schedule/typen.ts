@@ -58,6 +58,17 @@ interface PlanEntryBase {
   istPruefung: boolean;
   gueltigVon: number | null;
   gueltigBis: number | null;
+  /**
+   * Requirement „Einblenden aller Veranstaltungen gewählter Module": `true`
+   * markiert einen eingeblendeten Termin des Auswahlbestands — kein
+   * Bestandteil des persönlichen Plans, nie über `planStore.ts` persistiert,
+   * nur zur Darstellung erzeugt (`alternativen.ts`). Fehlt das Feld (jeder
+   * gespeicherte Eintrag), gilt der Termin als eigener Planeintrag.
+   * `ordneSpaltenZu` (`dayLayout.ts`) nutzt es für die Reihenfolge „Eigene
+   * Termine zuerst" (Requirement „Stapelung bei mehr als drei
+   * überschneidenden Terminen").
+   */
+  istAlternative?: boolean;
 }
 
 export interface OfficialPlanEntry extends PlanEntryBase {

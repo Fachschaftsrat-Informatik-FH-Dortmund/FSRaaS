@@ -105,8 +105,18 @@ function ordneSpaltenZu(gruppe: readonly PlanEntry[]): BelegtSlot[] {
     return ergebnis.map((slot) => ({ ...slot, spalten }));
   }
 
-  const sichtbar = gruppe.slice(0, MAX_SICHTBARE_SPALTEN);
-  const gestapelt = gruppe.slice(MAX_SICHTBARE_SPALTEN);
+  // Requirement „Stapelung bei mehr als drei überschneidenden Terminen",
+  // Szenario „Eigene Termine zuerst": innerhalb der Überschneidungsgruppe
+  // belegen Termine des persönlichen Plans die sichtbaren Plätze vor
+  // eingeblendeten Alternativen (`istAlternative`, `typen.ts`). `filter`
+  // erhält dabei die chronologische Reihenfolge innerhalb jeder Herkunft
+  // (stabile Sortierung von `gruppe`).
+  const eigene = gruppe.filter((e) => !e.istAlternative);
+  const alternativen = gruppe.filter((e) => e.istAlternative);
+  const geordnet = [...eigene, ...alternativen];
+
+  const sichtbar = geordnet.slice(0, MAX_SICHTBARE_SPALTEN);
+  const gestapelt = geordnet.slice(MAX_SICHTBARE_SPALTEN);
   const spalten = MAX_SICHTBARE_SPALTEN + 1;
 
   const ergebnis: BelegtSlot[] = sichtbar.map((entry, spalte) => ({
