@@ -30,12 +30,19 @@ export interface AnsichtEinstellungen {
    * unberührt, es geht dadurch nie eine eigene Farbwahl verloren.
    */
   farbautomatik: boolean;
+  /**
+   * Requirement „Einblenden aller Veranstaltungen gewählter Module": `false`
+   * (Vorgabe) — zusätzlich zu den eigenen Terminen auch die weiteren
+   * Termine der gewählten Module anzeigen (`alternativen.ts`).
+   */
+  alternativenEinblenden: boolean;
 }
 
 const STANDARD: AnsichtEinstellungen = {
   zeitachse: true,
   sprungZuHeute: true,
   farbautomatik: true,
+  alternativenEinblenden: false,
 };
 
 let snapshot: AnsichtEinstellungen = STANDARD;
@@ -61,6 +68,7 @@ function bereinige(v: unknown): AnsichtEinstellungen {
     zeitachse: alsBoolean(roh.zeitachse, STANDARD.zeitachse),
     sprungZuHeute: alsBoolean(roh.sprungZuHeute, STANDARD.sprungZuHeute),
     farbautomatik: alsBoolean(roh.farbautomatik, STANDARD.farbautomatik),
+    alternativenEinblenden: alsBoolean(roh.alternativenEinblenden, STANDARD.alternativenEinblenden),
   };
 }
 
@@ -117,6 +125,11 @@ export function useAnsichtEinstellungen() {
     () => schreiben({ ...snapshot, farbautomatik: !snapshot.farbautomatik }),
     [],
   );
+  /** Requirement „Einblenden aller Veranstaltungen gewählter Module". */
+  const toggleAlternativenEinblenden = useCallback(
+    () => schreiben({ ...snapshot, alternativenEinblenden: !snapshot.alternativenEinblenden }),
+    [],
+  );
 
   return {
     einstellungen,
@@ -124,6 +137,7 @@ export function useAnsichtEinstellungen() {
     toggleZeitachse,
     toggleSprungZuHeute,
     toggleFarbautomatik,
+    toggleAlternativenEinblenden,
   };
 }
 

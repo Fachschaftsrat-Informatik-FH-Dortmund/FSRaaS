@@ -19,6 +19,7 @@ import { baueModulliste, type Modul } from '../kursbaum';
 import { registriereePlanungAktion } from '../planungAktion';
 import {
   ermittlePlanungsstand,
+  planEintraegeFuerModul,
   terminEntsprichtEintrag,
   terminSchluessel,
   vorbelegteSlots,
@@ -27,7 +28,6 @@ import {
 import { useScheduleEntries } from '../planStore';
 import type { OfficialPlanEntry, OfficialTermin, PlanEntry, Weekday } from '../typen';
 import { WochentagsLeiste } from '../ui/WochentagsLeiste';
-import { planEintraegeFuerModul } from './CourseSelectionScreen';
 
 // Requirements „Planungsmodus mit Wochentagsgliederung" bis „Zweckbestimmung
 // eigener Termine" (design.md): der Bildschirm, der die Kandidaten der

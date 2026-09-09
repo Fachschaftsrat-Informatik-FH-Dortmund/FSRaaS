@@ -15,7 +15,7 @@
 // Ausstehenden prüfen einheitlich `stand !== 'gewaehlt'`.
 
 import type { Modul } from './kursbaum';
-import type { CourseType, OfficialTermin, PlanEntry } from './typen';
+import type { CourseType, OfficialPlanEntry, OfficialTermin, PlanEntry } from './typen';
 
 export type VeranstaltungsartStandArt = 'offen' | 'eindeutig' | 'gewaehlt';
 
@@ -38,6 +38,19 @@ export interface VeranstaltungsartStand {
  */
 export function terminSchluessel(t: OfficialTermin): string {
   return [t.courseId, t.courseType, t.weekday, t.timeBeginMin, t.timeEndMin, t.roomId, t.studentSet].join('|');
+}
+
+/**
+ * Alle Planeinträge, die zu einem Modul gehören (`kursbaum.ts`-Gruppierungsschlüssel
+ * `courseId`, ersatzweise `name`). Verwendet von der Modulauswahl (Abwahl mit
+ * vorhandenen Planeinträgen), dem Planungsmodus (erneuter Aufruf) und den
+ * eingeblendeten Alternativen (`alternativen.ts`).
+ */
+export function planEintraegeFuerModul(entries: readonly PlanEntry[], modul: Modul): OfficialPlanEntry[] {
+  return entries.filter(
+    (e): e is OfficialPlanEntry =>
+      e.kind === 'offiziell' && (modul.courseId !== '' ? e.courseId === modul.courseId : e.name === modul.name),
+  );
 }
 
 /** Trägt ein Planeintrag (gesichert oder im Zwischenstand) genau diesen Rohtermin? */

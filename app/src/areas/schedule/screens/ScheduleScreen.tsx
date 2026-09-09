@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { PanResponder, ScrollView, StyleSheet, Pressable, Text, View } from 'react-native';
+import { Modal, PanResponder, ScrollView, StyleSheet, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
 import { useTheme } from '@/theme';
+import { useOnlineStatus } from '@/state/useOnlineStatus';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
-import { useStudiengaenge, useVorlesungszeit } from '../api';
+import { alternativenDesTages, gewaehlteModule } from '../alternativen';
+import { useStudiengaenge, useTermineFuerEndpunkte, useVorlesungszeit } from '../api';
 import {
   anfangsAnsicht,
   useAnsichtEinstellungen,
@@ -21,10 +23,11 @@ import { textfarbeFuerHintergrund } from '../farbe';
 import { wischRichtung } from '../../canteen/gesten';
 import { ermittleJetztStatus } from '../jetzt';
 import { ermittleKonflikte, type Konflikte } from '../konflikt';
+import { baueModulliste } from '../kursbaum';
 import { useScheduleEntries } from '../planStore';
 import { useSemesterstand } from '../semesterstand';
 import { erkenneSemesterwechsel } from '../semesterwechsel';
-import { istAktiv } from '../time';
+import { istAktiv, sortiereNachBeginnzeit } from '../time';
 import type { BelegtSlot, DaySlot, PlanEntry, Weekday } from '../typen';
 import { spanneDesTages } from '../zeitachse';
 import { isoDatumVon, leerGrund, termineDerWoche, termineDesTages } from '../wochenansicht';
@@ -79,6 +82,11 @@ function titelVon(entry: PlanEntry): string {
   return entry.kind === 'offiziell' ? entry.name : entry.title;
 }
 
+/** Kennung für einen aus einer Alternative übernommenen Planeintrag (design.md/`neueId()`-Muster). */
+function neueAlternativeId(): string {
+  return `plan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function dauerText(minuten: number, t: TFunction): string {
   const stunden = Math.floor(minuten / MINUTEN_JE_STUNDE);
   const rest = minuten % MINUTEN_JE_STUNDE;
@@ -92,10 +100,29 @@ export function ScheduleScreen() {
   const router = useRouter();
 
   const { einrichtung, loaded: einrichtungGeladen } = useEinrichtung();
-  const { entries, loaded: planGeladen } = useScheduleEntries();
+  const { entries, loaded: planGeladen, mehrereUebernehmen } = useScheduleEntries();
   const { einstellungen, loaded: einstellungenGeladen } = useAnsichtEinstellungen();
   const { zuletztBetrachtet, loaded: standGeladen, merkeStand } = useAnsichtsstand();
   const vorlesungszeit = useVorlesungszeit();
+  const { studiengaenge } = useStudiengaenge();
+
+  // Requirement „Einblenden aller Veranstaltungen gewählter Module": der
+  // Auswahlbestand kommt nur ins Spiel, wenn der Schalter aktiv ist — der
+  // persönliche Plan bleibt sonst wie gehabt rein gerätelokal (DATA-F-010).
+  const gewaehlteEndpunkte = useMemo(
+    () =>
+      einstellungen.alternativenEinblenden
+        ? studiengaenge
+            .filter((s) => einrichtung.endpunkte.includes(s.sname))
+            .map((s) => ({ sname: s.sname, name: s.name }))
+        : [],
+    [einstellungen.alternativenEinblenden, studiengaenge, einrichtung.endpunkte],
+  );
+  const auswahlbestand = useTermineFuerEndpunkte(gewaehlteEndpunkte);
+  const alleModule = useMemo(
+    () => baueModulliste(auswahlbestand.perEndpunkt).flatMap((a) => a.module),
+    [auswahlbestand.perEndpunkt],
+  );
 
   const jetzt = useJetzt();
   const jetztSek = Math.floor(jetzt.getTime() / 1000);
@@ -143,8 +170,34 @@ export function ScheduleScreen() {
     () => (stand ? termineDesTages(entries, stand.wochenanfang, stand.wochentag) : []),
     [entries, stand],
   );
+  // Konflikthinweis und Jetzt-Anzeige gelten ausschließlich dem persönlichen
+  // Plan — eine eingeblendete Alternative ist kein angenommener oder offener
+  // Konflikt, sie steht noch gar nicht im Plan.
   const konflikte = useMemo(() => ermittleKonflikte(tagesTermine, jetztSek), [tagesTermine, jetztSek]);
-  const spanne = useMemo(() => spanneDesTages(tagesTermine), [tagesTermine]);
+
+  const alternativenTermine = useMemo(
+    () =>
+      stand && einstellungen.alternativenEinblenden && auswahlbestand.alleGeladen
+        ? alternativenDesTages(alleModule, entries, stand.wochentag, einrichtung.gruppenkennung)
+        : [],
+    [
+      stand,
+      einstellungen.alternativenEinblenden,
+      auswahlbestand.alleGeladen,
+      alleModule,
+      entries,
+      einrichtung.gruppenkennung,
+    ],
+  );
+  // Requirement „Einblenden aller Veranstaltungen gewählter Module": die
+  // Alternativen fließen unverändert in Zeitachse und Stapelung ein
+  // (`dayLayout.ts`, `istAlternative`-Kennzeichen) — keine eigene
+  // Darstellungslogik an dieser Stelle.
+  const tagesTermineAnzeige = useMemo(
+    () => sortiereNachBeginnzeit([...tagesTermine, ...alternativenTermine]),
+    [tagesTermine, alternativenTermine],
+  );
+  const spanne = useMemo(() => spanneDesTages(tagesTermineAnzeige), [tagesTermineAnzeige]);
 
   // Requirement „Tageswechsel durch Wischen": waagerechtes Wischen zusätzlich
   // zur Wochentagsleiste, die als sichtbarer Weg bestehen bleibt (UX-N-Regel
@@ -182,6 +235,38 @@ export function ScheduleScreen() {
   };
 
   const keineEinrichtung = einrichtung.endpunkte.length === 0;
+
+  // Requirement „Einblenden aller Veranstaltungen gewählter Module", Szenario
+  // „Alternative übernehmen": ein Tipp auf eine eingeblendete Alternative
+  // öffnet das Übernahme-Blatt statt des Termindetails.
+  const [alternativeUebernehmen, setAlternativeUebernehmen] = useState<PlanEntry | null>(null);
+  function oeffneTermin(id: string) {
+    const eintrag = tagesTermineAnzeige.find((e) => e.id === id);
+    if (eintrag?.istAlternative) {
+      setAlternativeUebernehmen(eintrag);
+      return;
+    }
+    router.push({ pathname: '/detail', params: { id } });
+  }
+  function alternativeUebernehmenAls(anstelle: boolean) {
+    if (!alternativeUebernehmen) return;
+    const { istAlternative: _istAlternative, id: _id, ...rest } = alternativeUebernehmen;
+    const neu: PlanEntry = { ...rest, id: neueAlternativeId() } as PlanEntry;
+    const zuEntfernen =
+      anstelle && alternativeUebernehmen.kind === 'offiziell'
+        ? entries
+            .filter(
+              (e): e is PlanEntry & { kind: 'offiziell' } =>
+                e.kind === 'offiziell' &&
+                alternativeUebernehmen.kind === 'offiziell' &&
+                e.courseId === alternativeUebernehmen.courseId &&
+                e.courseType === alternativeUebernehmen.courseType,
+            )
+            .map((e) => e.id)
+        : [];
+    mehrereUebernehmen([neu], zuEntfernen);
+    setAlternativeUebernehmen(null);
+  }
 
   return (
     <Screen tight>
@@ -233,6 +318,13 @@ export function ScheduleScreen() {
                 showsVerticalScrollIndicator={false}
                 {...swipe.panHandlers}
               >
+                {einstellungen.alternativenEinblenden ? (
+                  <AlternativenStatus
+                    alleGeladen={auswahlbestand.alleGeladen}
+                    isError={auswahlbestand.isError}
+                    keineGewaehltenModule={gewaehlteModule(alleModule, entries).length === 0}
+                  />
+                ) : null}
                 {wocheAusserhalbVorlesungszeit(
                   stand.wochenanfang,
                   vorlesungszeit.data?.von ?? null,
@@ -244,11 +336,11 @@ export function ScheduleScreen() {
                     body={t('schedule.vorlesungsfreiHinweis')}
                     style={styles.hinweisFlaeche}
                   />
-                ) : tagesTermine.length === 0 ? (
+                ) : tagesTermineAnzeige.length === 0 ? (
                   <LeererTag grund={leerGrund(entries, stand.wochenanfang, stand.wochentag)} />
                 ) : einstellungen.zeitachse ? (
                   <Zeitachse
-                    slots={layoutTag(tagesTermine, spanne.vonMin, spanne.bisMin)}
+                    slots={layoutTag(tagesTermineAnzeige, spanne.vonMin, spanne.bisMin)}
                     spanne={spanne}
                     konflikte={konflikte}
                     jetztSek={jetztSek}
@@ -257,14 +349,14 @@ export function ScheduleScreen() {
                         ? jetzt.getHours() * MINUTEN_JE_STUNDE + jetzt.getMinutes()
                         : null
                     }
-                    onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
+                    onOeffne={oeffneTermin}
                   />
                 ) : (
                   <KompakteListe
-                    termine={tagesTermine}
+                    termine={tagesTermineAnzeige}
                     konflikte={konflikte}
                     jetztSek={jetztSek}
-                    onOeffne={(id) => router.push({ pathname: '/detail', params: { id } })}
+                    onOeffne={oeffneTermin}
                   />
                 )}
               </ScrollView>
@@ -272,6 +364,13 @@ export function ScheduleScreen() {
           )
         }
       </AsyncStates>
+
+      <AlternativeUebernehmenBlatt
+        alternative={alternativeUebernehmen}
+        onSchliessen={() => setAlternativeUebernehmen(null)}
+        onAnstelle={() => alternativeUebernehmenAls(true)}
+        onZusaetzlich={() => alternativeUebernehmenAls(false)}
+      />
     </Screen>
   );
 }
@@ -476,6 +575,93 @@ function LeererTag({ grund }: { grund: ReturnType<typeof leerGrund> }) {
   const text = grund === 'gueltigkeitszeitraum' ? t('schedule.tagLeerZeitraum') : t('schedule.tagLeerOhneTermine');
 
   return <MessageView symbol="—" title={t('schedule.tagLeerTitel')} body={text} style={styles.hinweisFlaeche} />;
+}
+
+/**
+ * Requirement „Einblenden aller Veranstaltungen gewählter Module": die vier
+ * Zustände Laden, Fehler/Offline und Leer, solange der Schalter aktiv ist —
+ * ohne Bestand bleibt er wirkungslos und sagt es, der eigene Plan bleibt
+ * davon unberührt (er wird unabhängig von dieser Anzeige gerendert). Anders
+ * als `AsyncStates` (ARCH-N-020, die einzige Grundstruktur je Bildschirm)
+ * ist dies eine kompakte Zusatzanzeige innerhalb des Tagesbereichs, nach
+ * demselben Muster wie `LeererTag` — `AsyncStates`s datentragende Ansicht
+ * würde mit ihrer `flex:1`-Fläche den übrigen Tagesbereich verdrängen.
+ */
+function AlternativenStatus({
+  alleGeladen,
+  isError,
+  keineGewaehltenModule,
+}: {
+  alleGeladen: boolean;
+  isError: boolean;
+  keineGewaehltenModule: boolean;
+}) {
+  const { t } = useTranslation();
+  const online = useOnlineStatus();
+
+  if (isError) {
+    const offline = !online;
+    return (
+      <MessageView
+        symbol={offline ? '⊘' : '⚠'}
+        title={offline ? t('states.offlineTitle') : t('states.errorTitle')}
+        body={t('schedule.alternativenNichtVerfuegbar')}
+        style={styles.hinweisFlaeche}
+      />
+    );
+  }
+  if (!alleGeladen) {
+    return <MessageView busy title={t('states.loading')} style={styles.hinweisFlaeche} />;
+  }
+  if (keineGewaehltenModule) {
+    return (
+      <MessageView
+        symbol="—"
+        title={t('schedule.alternativenLeerTitel')}
+        body={t('schedule.alternativenLeerHinweis')}
+        style={styles.hinweisFlaeche}
+      />
+    );
+  }
+  return null;
+}
+
+/** Requirement „Einblenden aller Veranstaltungen gewählter Module", Szenario „Alternative übernehmen". */
+function AlternativeUebernehmenBlatt({
+  alternative,
+  onSchliessen,
+  onAnstelle,
+  onZusaetzlich,
+}: {
+  alternative: PlanEntry | null;
+  onSchliessen: () => void;
+  onAnstelle: () => void;
+  onZusaetzlich: () => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
+  return (
+    <Modal visible={alternative !== null} animationType="slide" transparent onRequestClose={onSchliessen}>
+      <Pressable
+        style={styles.hintergrund}
+        onPress={onSchliessen}
+        accessibilityLabel={t('schedule.verwaltungSchliessen')}
+      />
+      <View style={[styles.blatt, { backgroundColor: colors.background, borderColor: colors.border }]}>
+        {alternative ? (
+          <>
+            <Text style={[styles.blattTitel, { color: colors.text }]}>
+              {t('schedule.alternativeUebernehmenFrage', { titel: titelVon(alternative) })}
+            </Text>
+            <AppButton label={t('schedule.alternativeAnstelle')} onPress={onAnstelle} />
+            <AppButton variant="secondary" label={t('schedule.alternativeZusaetzlich')} onPress={onZusaetzlich} />
+            <AppButton variant="secondary" label={t('schedule.abbrechen')} onPress={onSchliessen} />
+          </>
+        ) : null}
+      </View>
+    </Modal>
+  );
 }
 
 function schluesselFuerStapel(abschnitt: Extract<DaySlot, { art: 'belegt' }>, slot: Extract<BelegtSlot, { art: 'stapel' }>): string {
@@ -764,6 +950,7 @@ export function TerminKachel({
   const deaktiviert = !istAktiv(entry, jetztSek);
 
   const kennzeichen: string[] = [];
+  if (entry.istAlternative) kennzeichen.push(t('schedule.kennzeichenAlternative'));
   if (entry.kind === 'eigen') kennzeichen.push(t('schedule.kennzeichenEigen'));
   if (deaktiviert) kennzeichen.push(t('schedule.kennzeichenDeaktiviert'));
   if (!entry.gruppenzugehoerig) kennzeichen.push(t('schedule.kennzeichenGruppenfremd'));
@@ -785,6 +972,10 @@ export function TerminKachel({
         entry.istPruefung && [styles.kachelPruefung, { borderLeftColor: textfarbe }],
         laeuft && { borderColor: colors.text, borderWidth: 3 },
         deaktiviert && styles.kachelDeaktiviert,
+        // Requirement „Einblenden aller Veranstaltungen gewählter Module":
+        // eine Alternative steht abgesetzt von den eigenen Terminen — der
+        // gestrichelte Rahmen kommt zur Textkennzeichnung hinzu, ersetzt sie nie.
+        entry.istAlternative && styles.kachelAlternative,
       ]}
     >
       <Text style={[styles.kachelZeit, { color: textfarbe }]} numberOfLines={1}>
@@ -813,6 +1004,9 @@ const styles = StyleSheet.create({
   tagBereichInhalt: { flexGrow: 1 },
   banner: { padding: 12, borderRadius: 8, gap: 8 },
   bannerAktionen: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  hintergrund: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  blatt: { borderTopWidth: 1, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, gap: 12 },
+  blattTitel: { fontSize: 17, fontWeight: '700' },
   jetzt: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, padding: 10, gap: 12 },
   jetztSpalte: { flex: 1 },
   wochenkopf: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -843,6 +1037,7 @@ const styles = StyleSheet.create({
   // Requirement „Wirkung eines deaktivierten Termins": zurückgenommen dargestellt,
   // die Bedeutung trägt zusätzlich das Textkennzeichen (nie allein die Opazität).
   kachelDeaktiviert: { opacity: 0.55 },
+  kachelAlternative: { borderWidth: 2, borderStyle: 'dashed' },
   kachelZeit: { fontSize: 12, fontWeight: '600' },
   kachelTitel: { fontSize: 14, fontWeight: '700' },
   kachelZeile: { fontSize: 12 },
