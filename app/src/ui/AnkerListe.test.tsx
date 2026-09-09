@@ -58,7 +58,7 @@ describe('MENSA-F-019 Scrollen setzt den hervorgehobenen Chip', () => {
       nativeEvent: { layout: { x: 0, y: 800, width: 300, height: 800 } },
     });
     // In den B-Abschnitt scrollen.
-    fireEvent.scroll(scrollB ?? scrollA, {
+    fireEvent.scroll((scrollB ?? scrollA)!, {
       nativeEvent: { contentOffset: { x: 0, y: 850 }, contentSize: {}, layoutMeasurement: {} },
     });
     expect(screen.getByLabelText('Mensa B').props.accessibilityState.selected).toBe(true);

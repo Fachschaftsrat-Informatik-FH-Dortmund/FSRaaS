@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { ColorValue } from 'react-native';
 
 // Symbol je Tab der Tab-Leiste (UX-F-150): Ionicons, die mitgelieferte
 // Icon-Schrift — keine Netz- oder Fremddienst-Abhängigkeit (NFR-N-170). Im
@@ -19,7 +20,7 @@ export const symbole: Record<string, { aktiv: IoniconName; inaktiv: IoniconName 
 
 export function tabIcon(name: string) {
   const s = symbole[name]!;
-  function TabIcon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
+  function TabIcon({ color, size, focused }: { color: ColorValue; size: number; focused: boolean }) {
     return <Ionicons name={focused ? s.aktiv : s.inaktiv} size={size} color={color} />;
   }
   return TabIcon;
