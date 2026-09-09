@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
+import { anzeigeFarbe, farbeFuerVeranstaltung } from '../farbe';
 import { __resetAnsichtEinstellungenForTest } from '../ansichtEinstellungen';
 import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import type { CustomPlanEntry, PlanEntry } from '../typen';
@@ -98,8 +99,12 @@ describe('Anlegen eigener Termine', () => {
     expect(mockBack).toHaveBeenCalled();
   });
 
-  // Requirement „Farbwahl je Termin": Farbautomatik abschaltbar.
-  it('legt einen Termin mit neutraler Platzhalterfarbe an, solange die Farbautomatik abgeschaltet ist', async () => {
+  // Requirement „Farbwahl je Termin": Farbautomatik abschaltbar. Seit dem
+  // Prüfprotokoll vom 2026-09-09 (Abschnitt 3) wird die automatisch vergebene
+  // Farbe auch bei abgeschalteter Automatik gespeichert — sonst wirkte das
+  // Wiedereinschalten nicht. Die neutrale Fläche entsteht erst in der
+  // Darstellung (`anzeigeFarbe`, `farbe.ts`).
+  it('speichert auch bei abgeschalteter Farbautomatik die automatische Farbe, damit das Wiedereinschalten wirkt', async () => {
     await AsyncStorage.clear();
     await writeJson('scheduleEntries', []);
     await writeJson('scheduleViewSettings', { zeitachse: true, sprungZuHeute: true, farbautomatik: false });
@@ -115,7 +120,9 @@ describe('Anlegen eigener Termine', () => {
 
     await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
     const [eintrag] = (await readScheduleEntries()) as CustomPlanEntry[];
-    expect(eintrag.color).toBe(SCHEDULE_NEUTRAL);
+    expect(eintrag!.color).toBe(farbeFuerVeranstaltung('Lerngruppe'));
+    expect(eintrag!.farbeVonNutzer).not.toBe(true);
+    expect(anzeigeFarbe(eintrag!, false)).toBe(SCHEDULE_NEUTRAL);
   });
 
   it('schreibt nichts und benennt den Fehler, wenn Pflichtangaben fehlen', async () => {

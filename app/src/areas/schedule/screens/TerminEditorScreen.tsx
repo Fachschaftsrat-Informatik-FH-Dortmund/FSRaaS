@@ -166,11 +166,11 @@ function Formular({
     const felder = {
       deaktiviertBis: bestand?.deaktiviertBis ?? null,
       // Requirement „Farbwahl je Termin": ein bestehender Termin behält seine
-      // Farbe; ein neuer erhält bei abgeschalteter Farbautomatik eine
-      // neutrale Platzhalterfarbe statt der automatisch berechneten.
-      color:
-        bestand?.color ??
-        (ansichtEinstellungen.farbautomatik ? farbeFuerVeranstaltung(titel.trim()) : SCHEDULE_NEUTRAL),
+      // Farbe, ein neuer bekommt die automatisch vergebene. Ob sie angezeigt
+      // oder durch die neutrale Fläche ersetzt wird, entscheidet erst die
+      // Darstellung (`anzeigeFarbe`, `farbe.ts`) — so bleibt das Abschalten
+      // der Automatik umkehrbar.
+      color: bestand?.color ?? farbeFuerVeranstaltung(titel.trim()),
       weekday: wochentag,
       timeBeginMin: beginnMin,
       timeEndMin: endeMin,

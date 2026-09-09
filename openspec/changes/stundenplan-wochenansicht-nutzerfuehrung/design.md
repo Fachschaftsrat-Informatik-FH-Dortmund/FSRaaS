@@ -44,6 +44,16 @@ Terminkacheln bleiben streng proportional — eine 90-Minuten-Kachel ist immer 1
 
 ### 2. Die Spaltenkappung sitzt in `ordneSpaltenZu`, nicht in der Darstellung
 
+> **Zurückgenommen am 2026-09-09** (Prüfprotokoll, Abschnitt 1). Die Kappung
+> auf drei Spalten und der Stapel entfallen ersatzlos: Am Gerät war der Stapel
+> schlecht bedienbar, und mehr als drei überschneidende Termine sind ein von
+> der Nutzerin selbst herbeigeführter Randfall, für den die nicht
+> maßstabsgetreue Ansicht bereits einen Weg bietet. `ordneSpaltenZu` vergibt
+> seither ohne Obergrenze eine Spalte je Termin. Mit der Kappung entfällt auch
+> das Szenario „Eigene Termine zuerst": Es entschied, welche drei Termine
+> sichtbar bleiben — ohne Kappung bleibt ohnehin jeder sichtbar. Der Abschnitt
+> bleibt als Begründungsspur stehen.
+
 `ordneSpaltenZu` färbt Intervalle gierig und setzt `spalten` auf die Gruppenbreite. Die Kappung gehört an dieselbe Stelle: Übersteigt eine Überschneidungsgruppe drei, bekommen drei Termine eine Spalte und die übrigen einen Stapel-Slot. Damit bleibt die Darstellungsschicht frei von Fachlogik, wie der Vorgänger-Entwurf es verlangt.
 
 Welche drei sichtbar sind, entscheidet die Herkunft: Termine des Plans zuerst, eingeblendete Alternativen danach. Innerhalb einer Herkunft chronologisch.
@@ -52,11 +62,23 @@ Welche drei sichtbar sind, entscheidet die Herkunft: Termine des Plans zuerst, e
 
 ### 3. Das Aufklappen dehnt die Zeile, statt zu überlagern
 
+> **Zurückgenommen am 2026-09-09** (Prüfprotokoll, Abschnitt 1). Mit dem Stapel
+> entfällt auch sein Aufklappen. Die Achse ist damit wieder ausnahmslos
+> maßstabsgetreu; die entsprechende Erlaubnis im MODIFIED-Delta zur
+> proportionalen Zeitachse ist gestrichen.
+
 Ein Tipp auf den Stapel erweitert den betreffenden Abschnitt der Achse, sodass die enthaltenen Termine untereinander erscheinen. Nichts wird verdeckt, und der Bezug zur Tageslage bleibt. Die Achse ist an dieser Stelle vorübergehend nicht maßstabsgetreu — das MODIFIED-Delta zur proportionalen Zeitachse erlaubt das ausdrücklich, statt es stillschweigend hinzunehmen.
 
 *Alternative: schwebendes Feld an der Kachel.* Weniger Eingriff in die Achse, aber an den Tagesrändern schwierig zu positionieren und mit wenig Platz für die vollen Angaben.
 
 ### 4. Stundenlinien nur im maßstabsgetreuen Bereich
+
+> **Zurückgenommen am 2026-09-09** (Prüfprotokoll, Abschnitt 1). Die
+> Stundenlinien entfallen vollständig — mit ihnen die Frage, wo sie laufen
+> dürfen. Ebenso entfallen das Bruchzeichen der gestauchten Lücke und ihr
+> Rahmen: Die Dauerangabe allein trägt die Aussage, der Rahmen ließ die Lücke
+> wie einen Termin wirken. Die Stauchung selbst (Entscheidung 1) bleibt und hat
+> sich am Gerät bewährt.
 
 Aus Entscheidung 1 folgt zwingend: In einer auf 60 Minuten gestauchten Lücke von 3 h 30 müssten vier Stundenlinien auf den Platz von einer. Sie dort zu zeichnen wäre eine falsche Aussage. Die gestauchte Lücke trägt stattdessen das Bruchzeichen; die Linien laufen davor und danach korrekt weiter — die übliche Darstellung einer unterbrochenen Achse.
 
@@ -126,6 +148,30 @@ Die Sicherheitsnetze aus Change `stundenplan-planungsmodus-feinauswahl` — Kenn
 
 ## Open Questions
 
-- Ob zusätzlich zur Kappung auf drei eine Mindestbreite je Kachel gelten soll, entscheidet sich beim Prüfprotokoll auf dem Gerät. Ändert weder Specs noch Aufgabenschnitt.
-- Die Gestalt eines Termins bei abgeschalteter Farbautomatik — neutrale Fläche oder Umriss — ist eine Gestaltungsfrage. Gefordert ist nur, dass eigene Farbwahlen unberührt bleiben.
-- Ob die zwölf Farbkreise im Termindetail dauerhaft sichtbar bleiben oder hinter einen Bedienschritt wandern. Ebenfalls Gestaltung: Die Geltung der Farbwahl ändert sich mit diesem Change, ihre Darstellung nicht. Beide Fragen gehören ins Prüfprotokoll.
+Alle drei am 2026-09-09 am Gerät entschieden
+(`specs/pruefprotokolle/2026-09-09-stundenplan-wochenansicht-nutzerfuehrung.md`,
+Abschnitt 2):
+
+- **Mindestbreite je Kachel zusätzlich zur Kappung auf drei — gegenstandslos.** Mit dem Entfall der Stapelung entfällt die Kappung, die eine Mindestbreite hätte ergänzen sollen.
+- **Gestalt eines Termins bei abgeschalteter Farbautomatik — neutrale Fläche.** Umgesetzt über `anzeigeFarbe` (`farbe.ts`), das anhand der gespeicherten Herkunft der Farbe entscheidet.
+- **Zwölf Farbkreise im Termindetail — dauerhaft sichtbar.** Kein zusätzlicher Bedienschritt.
+
+### 10. Die Herkunft der Farbe wird gespeichert, nicht die neutrale Farbe
+
+Beim Prüfen der zweiten Frage fiel auf, dass sich die Farbautomatik praktisch
+nicht abschalten ließ: Die Farbe wurde beim Anlegen fest in den Eintrag
+geschrieben, der Schalter wirkte deshalb nur auf danach angelegte Termine, und
+ein bestehender Plan blieb bunt.
+
+Statt weiterhin beim Anlegen zwischen automatischer und neutraler Farbe zu
+wählen, hält der Eintrag jetzt beides auseinander: `color` trägt immer eine
+echte Farbe, `farbeVonNutzer` ihre Herkunft. Welche Farbe erscheint, entscheidet
+erst die Darstellung (`anzeigeFarbe`). Damit wirkt das Abschalten auf den
+gesamten Bestand, ist umkehrbar, und eine eigene Farbwahl überlebt beide
+Richtungen.
+
+*Alternative: beim Umschalten alle Einträge einmal umschreiben.* Ein Schreibvorgang über den ganzen Bestand für eine reine Darstellungsfrage — und die ursprüngliche Farbe wäre verloren, das Wiedereinschalten damit nicht mehr möglich. Verworfen.
+
+Ein fehlendes `farbeVonNutzer` in einem gespeicherten Eintrag bedeutet
+„automatisch" und ist ausdrücklich kein Grund, den Eintrag zu verwerfen
+(DATA-F-020). Eine Migration entfällt damit.

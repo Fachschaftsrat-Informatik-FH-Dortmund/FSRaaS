@@ -1,5 +1,55 @@
-import { SCHEDULE_PALETTE } from '@/theme/tokens';
-import { farbeFuerVeranstaltung, kontrastZuHintergrund, textfarbeFuerHintergrund } from './farbe';
+import { SCHEDULE_NEUTRAL, SCHEDULE_PALETTE } from '@/theme/tokens';
+import { anzeigeFarbe, farbeFuerVeranstaltung, kontrastZuHintergrund, textfarbeFuerHintergrund } from './farbe';
+import type { CustomPlanEntry } from './typen';
+
+function eintrag(color: string, farbeVonNutzer?: boolean): CustomPlanEntry {
+  return {
+    kind: 'eigen',
+    id: 'a',
+    title: 'a',
+    deaktiviertBis: null,
+    color,
+    weekday: 'Mon',
+    timeBeginMin: 540,
+    timeEndMin: 600,
+    gruppenzugehoerig: true,
+    abweichendeGruppe: false,
+    akzeptierteKonflikte: [],
+    istPruefung: false,
+    gueltigVon: null,
+    gueltigBis: null,
+    wiederkehrend: true,
+    ...(farbeVonNutzer === undefined ? {} : { farbeVonNutzer }),
+  };
+}
+
+// Prüfprotokoll 2026-09-09, Abschnitt 3: Der Schalter wirkte bislang nur auf
+// neu angelegte Einträge, weil die Farbe beim Anlegen fest hineingeschrieben
+// wurde. Ein bestehender Plan blieb bunt.
+describe('Farbwahl je Termin: Abschalten der Automatik wirkt auf den bestehenden Plan', () => {
+  it('zeigt einen automatisch eingefärbten Termin bei abgeschalteter Automatik in der neutralen Fläche', () => {
+    const automatisch = farbeFuerVeranstaltung('42012');
+    expect(anzeigeFarbe(eintrag(automatisch), true)).toBe(automatisch);
+    expect(anzeigeFarbe(eintrag(automatisch), false)).toBe(SCHEDULE_NEUTRAL);
+  });
+
+  it('behält eine von der Nutzerin gewählte Farbe, auch wenn die Automatik danach abgeschaltet wird', () => {
+    const eigene = SCHEDULE_PALETTE[2]!;
+    expect(anzeigeFarbe(eintrag(eigene, true), true)).toBe(eigene);
+    expect(anzeigeFarbe(eintrag(eigene, true), false)).toBe(eigene);
+  });
+
+  it('behandelt einen gespeicherten Eintrag ohne Herkunftsvermerk als automatisch eingefärbt', () => {
+    expect(anzeigeFarbe(eintrag('#123456'), false)).toBe(SCHEDULE_NEUTRAL);
+  });
+
+  it('ist umkehrbar: nach dem Wiedereinschalten erscheint die automatische Farbe erneut', () => {
+    const automatisch = farbeFuerVeranstaltung('42012');
+    const e = eintrag(automatisch, false);
+    expect(anzeigeFarbe(e, false)).toBe(SCHEDULE_NEUTRAL);
+    expect(anzeigeFarbe(e, true)).toBe(automatisch);
+  });
+});
 
 describe('SCHED-F-660 deterministische Farbvergabe je Veranstaltung', () => {
   it('liefert für denselben Schlüssel bei jedem Aufruf dieselbe Farbe', () => {

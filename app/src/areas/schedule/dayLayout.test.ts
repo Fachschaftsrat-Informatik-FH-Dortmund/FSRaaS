@@ -1,5 +1,5 @@
 import { layoutTag } from './dayLayout';
-import type { BelegtSlot, CustomPlanEntry, DaySlot } from './typen';
+import type { CustomPlanEntry, DaySlot, TerminSlot } from './typen';
 
 function termin(id: string, timeBeginMin: number, timeEndMin: number): CustomPlanEntry {
   return {
@@ -29,8 +29,8 @@ function lueckenSlots(slots: DaySlot[]) {
   return slots.filter((s): s is Extract<DaySlot, { art: 'luecke' }> => s.art === 'luecke');
 }
 
-function terminSlotsVon(belegtSlots: BelegtSlot[]) {
-  return belegtSlots.filter((s): s is Extract<BelegtSlot, { art: 'termin' }> => s.art === 'termin');
+function terminSlotsVon(belegtSlots: TerminSlot[]) {
+  return belegtSlots;
 }
 
 function alleTerminSlots(slots: DaySlot[]) {
@@ -99,23 +99,6 @@ describe('Proportionale Zeitachse', () => {
   });
 });
 
-describe('Stundenlinien auf der Zeitachse', () => {
-  it('nennt die vollen Stunden innerhalb eines maßstabsgetreuen Abschnitts', () => {
-    const a = termin('a', 9 * 60, 9 * 60 + 40);
-    const b = termin('b', 10 * 60 + 20, 11 * 60);
-    const ergebnis = layoutTag([a, b], 9 * 60, 11 * 60);
-    const luecke = lueckenSlots(ergebnis)[0]!;
-    expect(luecke.stundenlinien).toEqual([10 * 60]);
-  });
-
-  it('nennt in einer gestauchten Lücke keine Stundenlinien', () => {
-    const a = termin('a', 9 * 60, 10 * 60);
-    const b = termin('b', 13 * 60 + 30, 14 * 60 + 30);
-    const [luecke] = lueckenSlots(layoutTag([a, b], 9 * 60, 14 * 60 + 30));
-    expect(luecke!.stundenlinien).toEqual([]);
-  });
-});
-
 describe('Nebeneinanderdarstellung überschneidender Termine', () => {
   it('Überschneidende Termine', () => {
     const a = termin('a', 9 * 60, 10 * 60);
@@ -139,49 +122,26 @@ describe('Nebeneinanderdarstellung überschneidender Termine', () => {
     expect(ergebnis.every((s) => s.spalten === 3)).toBe(true);
   });
 
-  function terminSlotsVonTag(termine: CustomPlanEntry[]): BelegtSlot[] {
-    return belegteAbschnitte(layoutTag(termine, 8 * 60, 18 * 60)).flatMap((a) => a.slots);
-  }
-});
-
-describe('Stapelung bei mehr als drei überschneidenden Terminen', () => {
-  it('Vier überschneidende Termine', () => {
+  it('Mehr als drei überschneidende Termine', () => {
+    // Prüfprotokoll 2026-09-09, Abschnitt 1: Die Stapelung ab dem vierten
+    // Termin ist ersatzlos entfallen. Es gibt keine Obergrenze mehr — alle
+    // überschneidenden Termine stehen nebeneinander, die Kacheln werden
+    // entsprechend schmal.
     const a = termin('a', 9 * 60, 11 * 60);
     const b = termin('b', 9 * 60, 11 * 60);
     const c = termin('c', 9 * 60, 11 * 60);
     const d = termin('d', 9 * 60, 11 * 60);
-    const abschnitt = belegteAbschnitte(layoutTag([a, b, c, d], 8 * 60, 18 * 60))[0]!;
+    const ergebnis = terminSlotsVon(terminSlotsVonTag([a, b, c, d]));
 
-    const sichtbar = terminSlotsVon(abschnitt.slots);
-    const stapel = abschnitt.slots.filter((s) => s.art === 'stapel');
-    expect(sichtbar).toHaveLength(3);
-    expect(stapel).toHaveLength(1);
-    expect(stapel[0]).toMatchObject({ entries: [d], spalte: 3, spalten: 4 });
+    expect(ergebnis).toHaveLength(4);
+    expect(new Set(ergebnis.map((s) => s.spalte)).size).toBe(4);
+    expect(ergebnis.every((s) => s.spalten === 4)).toBe(true);
+    expect(ergebnis.map((s) => s.entry.id)).toEqual(['a', 'b', 'c', 'd']);
   });
 
-  it('lässt die einzeln sichtbaren Termine unangetastet, wenn genau drei überschneiden', () => {
-    const a = termin('a', 9 * 60, 11 * 60);
-    const b = termin('b', 9 * 60, 11 * 60);
-    const c = termin('c', 9 * 60, 11 * 60);
-    const abschnitt = belegteAbschnitte(layoutTag([a, b, c], 8 * 60, 18 * 60))[0]!;
-    expect(abschnitt.slots.some((s) => s.art === 'stapel')).toBe(false);
-  });
-
-  it('Eigene Termine zuerst', () => {
-    // Reihenfolge in der Eingabe bewusst gemischt: zwei Alternativen vor den
-    // eigenen Terminen — trotzdem müssen die beiden eigenen Termine die
-    // sichtbaren Plätze belegen und die Alternativen in den Stapel wandern.
-    const alt1 = { ...termin('alt1', 9 * 60, 11 * 60), istAlternative: true };
-    const alt2 = { ...termin('alt2', 9 * 60, 11 * 60), istAlternative: true };
-    const eigen1 = termin('eigen1', 9 * 60, 11 * 60);
-    const eigen2 = termin('eigen2', 9 * 60, 11 * 60);
-    const abschnitt = belegteAbschnitte(layoutTag([alt1, alt2, eigen1, eigen2], 8 * 60, 18 * 60))[0]!;
-
-    const sichtbar = terminSlotsVon(abschnitt.slots).map((s) => s.entry.id);
-    const stapel = abschnitt.slots.find((s): s is Extract<BelegtSlot, { art: 'stapel' }> => s.art === 'stapel')!;
-    expect(sichtbar).toEqual(['eigen1', 'eigen2', 'alt1']);
-    expect(stapel.entries.map((e) => e.id)).toEqual(['alt2']);
-  });
+  function terminSlotsVonTag(termine: CustomPlanEntry[]): TerminSlot[] {
+    return belegteAbschnitte(layoutTag(termine, 8 * 60, 18 * 60)).flatMap((a) => a.slots);
+  }
 });
 
 describe('SCHED-F-540 Spalten werden wiederverwendet', () => {
