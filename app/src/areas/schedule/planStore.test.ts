@@ -2,7 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { writeJson } from '@/storage/kv';
-import { __resetScheduleEntriesForTest, einmaligerGueltigkeitszeitraum, readScheduleEntries, useScheduleEntries } from './planStore';
+import {
+  __resetScheduleEntriesForTest,
+  einmaligerGueltigkeitszeitraum,
+  readScheduleEntries,
+  useScheduleEntries,
+  wiederkehrendAusZeitraum,
+} from './planStore';
 import type { CustomPlanEntry } from './typen';
 
 function eigenerTermin(überschreibung: Partial<CustomPlanEntry> = {}): CustomPlanEntry {
@@ -248,6 +254,24 @@ describe('SCHED-F-730 eigener Eintrag: wöchentlich wiederkehrend oder einmalig 
     const b = result.current.entries.find((e) => e.id === 'b') as CustomPlanEntry;
     expect(a.wiederkehrend).toBe(true);
     expect(b.wiederkehrend).toBe(false);
+  });
+});
+
+describe('Wiederkehrend aus dem Zeitraum ableiten', () => {
+  it('gilt als einmalig, wenn Beginn und Ende auf denselben Tag fallen', () => {
+    expect(wiederkehrendAusZeitraum(1000, 1000)).toBe(false);
+  });
+
+  it('gilt als wiederkehrend, wenn der Zeitraum mehrere Tage umfasst', () => {
+    expect(wiederkehrendAusZeitraum(1000, 2000)).toBe(true);
+  });
+
+  it('gilt als wiederkehrend ohne Begrenzung, wenn beide Enden offen sind', () => {
+    expect(wiederkehrendAusZeitraum(null, null)).toBe(true);
+  });
+
+  it('gilt als wiederkehrend bei offenem Ende', () => {
+    expect(wiederkehrendAusZeitraum(1000, null)).toBe(true);
   });
 });
 

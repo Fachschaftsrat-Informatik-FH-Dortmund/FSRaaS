@@ -48,12 +48,12 @@
 ## 8. Jetzt-Anzeige und Termindetail
 
 - [ ] 8.1 Jetzt-Anzeige zweispaltig, laufende und nächste Veranstaltung nebeneinander; Zeitangaben über `dauerText()` statt in reinen Minuten; Tests `describe('Anzeige des laufenden und nächsten Termins', …)` für beide Szenarien, darunter „in 200 Minuten" als Stunden und Minuten
-- [ ] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
-- [ ] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
+- [x] 8.2 Farbwahl auf die Veranstaltung wirken lassen, mit Rückfrage nach dem Geltungsbereich beim Verlassen und dem Palettenwert „keine Farbe"; Tests `describe('Farbwahl je Termin', …)` für alle drei Szenarien
+- [x] 8.3 Farbautomatik im Ansichts-Blatt abschaltbar machen, ohne eigene Farbwahlen zu verlieren; Test belegt das Fortbestehen einer eigenen Farbe bei abgeschalteter Automatik
 - [x] 8.4 **Gegenstandslos (bereinigt 2026-09-09):** Der Statusumschalter „fest/vorgemerkt" entfällt ersatzlos mit dem Status selbst — Change `stundenplan-bedienung-ohne-vormerkung`, archiviert 2026-09-09. Keine Erklärung mehr nötig, da es den Umschalter nicht mehr gibt; siehe stattdessen Requirement „Deaktivieren eines Termins" der Capability `schedule`
-- [ ] 8.5 Gültigkeitszeitraum im Termindetail änderbar machen — Beginn und Ende einzeln, jeweils auch offen, über die Datumsauswahl aus dem vorangehenden Change; Tests `describe('Gültigkeitszeitraum je Eintrag änderbar', …)` für alle vier Szenarien
-- [ ] 8.6 `wiederkehrend` aus dem Zeitraum ableiten statt unabhängig führen (`design.md` Entscheidung 8); Test belegt, dass ein eigener Termin mit Zeitraum über einen einzigen Tag als einmalig gilt und einer über mehrere Tage als wiederkehrend
-- [ ] 8.7 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
+- [x] 8.5 Gültigkeitszeitraum im Termindetail änderbar machen — Beginn und Ende einzeln, jeweils auch offen, über die Datumsauswahl aus dem vorangehenden Change; Tests `describe('Gültigkeitszeitraum je Eintrag änderbar', …)` für alle vier Szenarien
+- [x] 8.6 `wiederkehrend` aus dem Zeitraum ableiten statt unabhängig führen (`design.md` Entscheidung 8); Test belegt, dass ein eigener Termin mit Zeitraum über einen einzigen Tag als einmalig gilt und einer über mehrere Tage als wiederkehrend
+- [x] 8.7 Entfernen und Löschen im Termindetail trennen: offizieller Termin ohne zerstörende Gestaltung und ohne Bestätigung, eigener Termin zerstörend mit Bestätigung; Tests `describe('Unterscheidung von Entfernen und Löschen im Termindetail', …)` für alle drei Szenarien, einschließlich der Auffindbarkeit im Planungsmodus nach dem Entfernen
 
 ## 9. Abschluss
 

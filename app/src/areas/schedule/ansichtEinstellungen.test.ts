@@ -43,6 +43,21 @@ describe('SCHED-F-150 Sprung zum aktuellen Wochentag beim Öffnen', () => {
   });
 });
 
+describe('Farbwahl je Termin: Farbautomatik im Ansichts-Blatt abschaltbar', () => {
+  it('beginnt aktiv und lässt sich abschalten und wieder einschalten, persistiert das', async () => {
+    const { result } = renderHook(() => useAnsichtEinstellungen());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.einstellungen.farbautomatik).toBe(true);
+
+    act(() => result.current.toggleFarbautomatik());
+    await waitFor(() => expect(result.current.einstellungen.farbautomatik).toBe(false));
+    expect(await readAnsichtEinstellungen()).toMatchObject({ farbautomatik: false });
+
+    act(() => result.current.toggleFarbautomatik());
+    await waitFor(() => expect(result.current.einstellungen.farbautomatik).toBe(true));
+  });
+});
+
 describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten aller Filter entfallen', () => {
   it('verwirft gespeicherte Altwerte beider Schalter beim Laden', async () => {
     await AsyncStorage.setItem(
@@ -51,7 +66,7 @@ describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten alle
     );
 
     const gelesen = await readAnsichtEinstellungen();
-    expect(gelesen).toEqual({ zeitachse: true, sprungZuHeute: true });
+    expect(gelesen).toEqual({ zeitachse: true, sprungZuHeute: true, farbautomatik: true });
     expect(gelesen).not.toHaveProperty('gruppenfremdeAusblenden');
     expect(gelesen).not.toHaveProperty('alleAnzeigen');
   });
