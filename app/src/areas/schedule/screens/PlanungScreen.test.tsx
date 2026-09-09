@@ -1,7 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
+import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
+import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
+import { __resetAnsichtEinstellungenForTest } from '../ansichtEinstellungen';
 import { __resetPlanungAktionForTest } from '../planungAktion';
 import { PlanungSpeichernZugang } from '../ui/PlanungSpeichernZugang';
 import { PlanungScreen } from './PlanungScreen';
@@ -104,8 +108,10 @@ function offiziellerEintrag(over: Record<string, unknown>) {
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  await AsyncStorage.clear();
+  __resetAnsichtEinstellungenForTest();
   __resetPlanungAktionForTest();
   letztePreventRemove = null;
   mockParams = { module: MODUL_KEY };
@@ -280,6 +286,31 @@ describe('Ausdrückliches Sichern der Planung', () => {
 
     expect(screen.getByLabelText('Planung sichern')).toBeTruthy();
     expect(screen.queryByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeNull();
+  });
+});
+
+// Requirement „Farbwahl je Termin": Farbautomatik abschaltbar — ein im
+// Planungsmodus neu gewählter Termin erhält dann eine neutrale
+// Platzhalterfarbe statt der automatisch berechneten.
+describe('Farbautomatik im Planungsmodus', () => {
+  it('vergibt eine neutrale Platzhalterfarbe, solange die Farbautomatik abgeschaltet ist', async () => {
+    await writeJson('scheduleViewSettings', { zeitachse: true, sprungZuHeute: true, farbautomatik: false });
+    __resetAnsichtEinstellungenForTest();
+    renderScreen();
+    // Die Ansichtseinstellungen laden asynchron (`ansichtEinstellungen.ts`) —
+    // ein Makrotask-Umlauf lässt alle anstehenden Mikrotasks zuvor abarbeiten.
+    await act(async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+
+    await waitFor(() => expect(mockMehrereUebernehmen).toHaveBeenCalledTimes(1));
+    const [hinzuzufuegen] = mockMehrereUebernehmen.mock.calls[0]!;
+    const ue = hinzuzufuegen.find((e: { courseType: string }) => e.courseType === 'Ü');
+    expect(ue.color).toBe(SCHEDULE_NEUTRAL);
   });
 });
 

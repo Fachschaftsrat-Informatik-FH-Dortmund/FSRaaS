@@ -105,6 +105,21 @@ describe('Ansichts- und Verwaltungsblatt in der Kopfzeile', () => {
   });
 });
 
+// Requirement „Farbwahl je Termin": Farbautomatik im Ansichts-Blatt
+// abschaltbar, ohne bereits gesetzte Farben zu verlieren.
+describe('Farbautomatik im Ansichts-Blatt abschaltbar', () => {
+  it('lässt sich abschalten, ohne die Farben bereits bestehender Termine zu verändern', async () => {
+    await oeffnen();
+
+    fireEvent(screen.getByLabelText('Farben automatisch vergeben'), 'valueChange', false);
+    await waitFor(async () => expect((await readAnsichtEinstellungen()).farbautomatik).toBe(false));
+
+    const entries = await readScheduleEntries();
+    expect(entries.find((e) => e.id === 'a')!.color).toBe('#1E88E5');
+    expect(entries.find((e) => e.id === 'e')!.color).toBe('#43A047');
+  });
+});
+
 describe('Nutzeraktion „Stundenplan leeren"', () => {
   it('Plan leeren, Einrichtung behalten', async () => {
     await oeffnen();

@@ -13,8 +13,11 @@ import { useEinrichtung } from '../einrichtung';
 import { baueModulliste, type Modul, type ModulAbschnitt } from '../kursbaum';
 import { filtereModulAbschnitte } from '../kurssuche';
 import { registriereModulauswahlAktion } from '../modulauswahlAktion';
+import { planEintraegeFuerModul } from '../planungsstand';
 import { useScheduleEntries } from '../planStore';
-import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
+import type { OfficialTermin, PlanEntry } from '../typen';
+
+export { planEintraegeFuerModul };
 
 // Modulauswahl (Requirement „Modulauswahl ohne Veranstaltungsart und Gruppen-
 // Slot"): reine Ankreuzliste, die nur beantwortet „welche Module belege ich".
@@ -27,13 +30,6 @@ import type { OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
 // Gruppen-Slot gilt, entscheidet der Planungsmodus (eigener Change). Ein
 // bereits vorhandener Planeintrag zu einem Modul zeigt es dennoch angekreuzt
 // (Requirement „Abwahl eines Moduls mit vorhandenen Planeinträgen").
-
-export function planEintraegeFuerModul(entries: readonly PlanEntry[], modul: Modul): OfficialPlanEntry[] {
-  return entries.filter(
-    (e): e is OfficialPlanEntry =>
-      e.kind === 'offiziell' && (modul.courseId !== '' ? e.courseId === modul.courseId : e.name === modul.name),
-  );
-}
 
 function abschnittSchluessel(kennung: ModulAbschnitt['kennung']): string {
   return kennung.art === 'fachsemester' ? `fachsemester:${kennung.grade}` : `endpunkt:${kennung.name}`;

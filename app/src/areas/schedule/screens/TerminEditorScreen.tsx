@@ -6,8 +6,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 
 import { useTheme } from '@/theme';
+import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
+import { useAnsichtEinstellungen } from '../ansichtEinstellungen';
 import { farbeFuerVeranstaltung } from '../farbe';
 import { einmaligerGueltigkeitszeitraum, useScheduleEntries } from '../planStore';
 import type { CustomPlanEntry, Weekday } from '../typen';
@@ -126,6 +128,7 @@ function Formular({
   const { colors } = useTheme();
   const router = useRouter();
   const { hinzufuegen, aktualisieren } = useScheduleEntries();
+  const { einstellungen: ansichtEinstellungen } = useAnsichtEinstellungen();
 
   const [titel, setTitel] = useState(bestand?.title ?? '');
   const [wochentag, setWochentag] = useState<Weekday>(bestand?.weekday ?? vorgabeWochentag);
@@ -162,7 +165,12 @@ function Formular({
 
     const felder = {
       deaktiviertBis: bestand?.deaktiviertBis ?? null,
-      color: bestand?.color ?? farbeFuerVeranstaltung(titel.trim()),
+      // Requirement „Farbwahl je Termin": ein bestehender Termin behält seine
+      // Farbe; ein neuer erhält bei abgeschalteter Farbautomatik eine
+      // neutrale Platzhalterfarbe statt der automatisch berechneten.
+      color:
+        bestand?.color ??
+        (ansichtEinstellungen.farbautomatik ? farbeFuerVeranstaltung(titel.trim()) : SCHEDULE_NEUTRAL),
       weekday: wochentag,
       timeBeginMin: beginnMin,
       timeEndMin: endeMin,
