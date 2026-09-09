@@ -82,7 +82,50 @@ export interface CustomPlanEntry extends PlanEntryBase {
 
 export type PlanEntry = OfficialPlanEntry | CustomPlanEntry;
 
-/** Ergebnis von `dayLayout.ts` (SCHED-F-520/540): reine Datenstruktur ohne Pixelwerte. */
+/** Ein einzelner Termin innerhalb eines belegten Abschnitts (`dayLayout.ts`). */
+export interface TerminSlot {
+  art: 'termin';
+  entry: PlanEntry;
+  spalte: number;
+  spalten: number;
+}
+
+/**
+ * Requirement „Stapelung bei mehr als drei überschneidenden Terminen": die
+ * Termine, die über die drei sichtbaren Spalten hinausgehen, gemeinsam in
+ * einer Spalte.
+ */
+export interface StapelSlot {
+  art: 'stapel';
+  entries: PlanEntry[];
+  spalte: number;
+  spalten: number;
+  vonMin: number;
+  bisMin: number;
+}
+
+export type BelegtSlot = TerminSlot | StapelSlot;
+
+/**
+ * Ergebnis von `dayLayout.ts` (Requirements „Proportionale Zeitachse",
+ * „Nebeneinanderdarstellung überschneidender Termine", „Stapelung bei mehr
+ * als drei überschneidenden Terminen"): eine Folge von Abschnitten mit je
+ * eigener Höhe (`hoeheMin`), keine lineare Formel mehr (design.md,
+ * Entscheidung 1). Die Umrechnung auf Pixel bleibt Sache der
+ * Darstellungsschicht. `stundenlinien` nennt die absoluten Minutenmarken
+ * voller Stunden, die innerhalb des Abschnitts maßstabsgetreu liegen — bei
+ * einer gestauchten Lücke immer leer (Requirement „Stundenlinien auf der
+ * Zeitachse").
+ */
 export type DaySlot =
-  | { art: 'termin'; entry: PlanEntry; spalte: number; spalten: number }
-  | { art: 'luecke'; vonMin: number; bisMin: number };
+  | { art: 'belegt'; vonMin: number; bisMin: number; hoeheMin: number; slots: BelegtSlot[]; stundenlinien: number[] }
+  | {
+      art: 'luecke';
+      vonMin: number;
+      bisMin: number;
+      hoeheMin: number;
+      echteDauerMin: number;
+      gestaucht: boolean;
+      kurz: boolean;
+      stundenlinien: number[];
+    };

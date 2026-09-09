@@ -5,60 +5,29 @@ import { readJson, writeJson } from '@/storage/kv';
 import type { Weekday } from './typen';
 
 // Ansichtseinstellungen des Stundenplans (`openspec/specs/schedule/spec.md`
-// Abschnitt 5): proportionale Zeitachse oder kompakte Liste (SCHED-F-530),
-// gruppenfremde Termine ausblenden (SCHED-F-145), Sprung zum aktuellen
-// Wochentag beim Öffnen (SCHED-F-150) und der Schalter, der sämtliche Filter
-// der Wochenansicht auf einmal abschaltet. Rein gerätelokal. Reaktiver
-// Modul-Speicher wie `canteen/selection.ts`.
+// Abschnitt 5): proportionale Zeitachse oder kompakte Liste (SCHED-F-530) und
+// Sprung zum aktuellen Wochentag beim Öffnen (SCHED-F-150). Rein
+// gerätelokal. Reaktiver Modul-Speicher wie `canteen/selection.ts`.
+//
+// Requirement, REMOVED „Schalter zum Ausblenden gruppenfremder Termine" und
+// „Schalter zum Abschalten aller Filter" (entschieden 2026-09-08): Beide
+// Schalter entfallen ersatzlos. Der Gültigkeitszeitraum gilt seither
+// unbedingt (`wochenansicht.ts`), es gibt keine wirksamen Filter mehr, über
+// die diese Ansicht Buch führen müsste.
 
 const KEY = 'scheduleViewSettings';
 
 export interface AnsichtEinstellungen {
   /** SCHED-F-520/530: `true` = proportionale Zeitachse (Vorgabe), `false` = kompakte Liste. */
   zeitachse: boolean;
-  /** SCHED-F-145: gruppenfremde Termine ausblenden statt nur zu kennzeichnen (SCHED-F-140). */
-  gruppenfremdeAusblenden: boolean;
   /** SCHED-F-150: beim Öffnen automatisch zum aktuellen Wochentag springen. */
   sprungZuHeute: boolean;
-  /**
-   * Requirement „Schalter zum Abschalten aller Filter": überlagert die übrigen
-   * Filtereinstellungen, statt sie zurückzusetzen (design.md, Entscheidung 3).
-   * Die gespeicherten Werte bleiben unangetastet und wirken nach dem
-   * Zurücknehmen unverändert weiter — als Rücksetzknopf wäre die von der
-   * Anforderung verlangte Rücknahme unmöglich.
-   */
-  alleAnzeigen: boolean;
 }
 
 const STANDARD: AnsichtEinstellungen = {
   zeitachse: true,
-  gruppenfremdeAusblenden: false,
   sprungZuHeute: true,
-  alleAnzeigen: false,
 };
-
-/** Die Filter, die die Wochenansicht tatsächlich auswertet — nach der Überlagerung. */
-export interface WirksameFilter {
-  /** SCHED-F-145: gruppenfremde Termine ausblenden. */
-  gruppenfremdeAusblenden: boolean;
-  /** Requirement „Anzeige nur im Gültigkeitszeitraum": Termine außerhalb ihres Zeitraums verbergen. */
-  gueltigkeitszeitraumPruefen: boolean;
-}
-
-/**
- * Requirement „Schalter zum Abschalten aller Filter": Solange `alleAnzeigen`
- * gesetzt ist, übergeht die Auswertung die gespeicherten Filterwerte; sie
- * werden dabei nicht verändert.
- */
-export function wirksameFilter(einstellungen: AnsichtEinstellungen): WirksameFilter {
-  if (einstellungen.alleAnzeigen) {
-    return { gruppenfremdeAusblenden: false, gueltigkeitszeitraumPruefen: false };
-  }
-  return {
-    gruppenfremdeAusblenden: einstellungen.gruppenfremdeAusblenden,
-    gueltigkeitszeitraumPruefen: true,
-  };
-}
 
 let snapshot: AnsichtEinstellungen = STANDARD;
 let geladen = false;
@@ -69,14 +38,19 @@ function melden() {
   for (const h of hoerer) h();
 }
 
+/**
+ * Requirement, REMOVED „Schalter zum Ausblenden gruppenfremder Termine" und
+ * „Schalter zum Abschalten aller Filter": gespeicherte Altwerte
+ * `gruppenfremdeAusblenden` und `alleAnzeigen` werden beim Laden verworfen,
+ * statt in den zurückgegebenen Stand übernommen zu werden — dieselbe Stelle,
+ * die schon zuvor jeden Wert einzeln gelesen hat.
+ */
 function bereinige(v: unknown): AnsichtEinstellungen {
   const roh = (v ?? {}) as Partial<Record<keyof AnsichtEinstellungen, unknown>>;
   const alsBoolean = (x: unknown, standard: boolean): boolean => (typeof x === 'boolean' ? x : standard);
   return {
     zeitachse: alsBoolean(roh.zeitachse, STANDARD.zeitachse),
-    gruppenfremdeAusblenden: alsBoolean(roh.gruppenfremdeAusblenden, STANDARD.gruppenfremdeAusblenden),
     sprungZuHeute: alsBoolean(roh.sprungZuHeute, STANDARD.sprungZuHeute),
-    alleAnzeigen: alsBoolean(roh.alleAnzeigen, STANDARD.alleAnzeigen),
   };
 }
 
@@ -123,28 +97,17 @@ export function useAnsichtEinstellungen() {
   const loaded = useSyncExternalStore(subscribe, () => geladen);
 
   const toggleZeitachse = useCallback(() => schreiben({ ...snapshot, zeitachse: !snapshot.zeitachse }), []);
-  const toggleGruppenfremdeAusblenden = useCallback(
-    () => schreiben({ ...snapshot, gruppenfremdeAusblenden: !snapshot.gruppenfremdeAusblenden }),
-    [],
-  );
+  /** Requirement „Ansichts- und Verwaltungsblatt in der Kopfzeile", Szenario „Sprung zu heute umschalten". */
   const toggleSprungZuHeute = useCallback(
     () => schreiben({ ...snapshot, sprungZuHeute: !snapshot.sprungZuHeute }),
-    [],
-  );
-  /** Requirement „Schalter zum Abschalten aller Filter": legt allein die Überlagerung um. */
-  const toggleAlleAnzeigen = useCallback(
-    () => schreiben({ ...snapshot, alleAnzeigen: !snapshot.alleAnzeigen }),
     [],
   );
 
   return {
     einstellungen,
     loaded,
-    filter: wirksameFilter(einstellungen),
     toggleZeitachse,
-    toggleGruppenfremdeAusblenden,
     toggleSprungZuHeute,
-    toggleAlleAnzeigen,
   };
 }
 

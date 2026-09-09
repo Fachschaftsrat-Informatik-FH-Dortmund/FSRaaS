@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 
 import { removeKey, writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
@@ -118,9 +118,7 @@ async function seed(entries: PlanEntry[], einstellungen: Record<string, unknown>
   });
   await writeJson('scheduleViewSettings', {
     zeitachse: true,
-    gruppenfremdeAusblenden: false,
     sprungZuHeute: true,
-    alleAnzeigen: false,
     ...einstellungen,
   });
   __resetScheduleEntriesForTest();
@@ -174,6 +172,43 @@ describe('Wochentagsleiste mit bedarfsweisem Samstag', () => {
   });
 });
 
+describe('Feststehender Kopfbereich der Wochenansicht', () => {
+  it('hält Wochenangabe und Wochentagsleiste außerhalb des scrollenden Tagesbereichs', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    // Wochenangabe und Wochentagsleiste stehen außerhalb des scrollenden
+    // Tagesbereichs (`testID="tagBereich"`), statt mit ihm gemeinsam wegzuscrollen.
+    const tagBereich = screen.getByTestId('tagBereich');
+    expect(within(tagBereich).queryByText('07.09.')).toBeNull();
+    expect(screen.getByLabelText('Vorige Woche')).toBeTruthy();
+    expect(screen.getByLabelText(/^Mo /)).toBeTruthy();
+  });
+});
+
+// `PanResponder` ermittelt `dx`/`dy` intern aus einer über `onResponderGrant`
+// und `onResponderMove` mitgeführten Touch-Historie, nicht aus einem beliebig
+// mitgegebenen `gestureState`-Argument — ein einzelner simulierter
+// `onResponderRelease` ist damit kein verlässlicher Weg, das Wischen über
+// `fireEvent` nachzustellen (dieselbe Grenze gilt für den bereits
+// produktiven Wisch im Mensaplan, `gesten.test.ts` prüft dort ebenfalls nur
+// die reine Richtungsfunktion). Geprüft wird deshalb, dass die Wochenansicht
+// den Baustein tatsächlich anbindet: Der Tagesbereich trägt die
+// Touch-Responder-Kette, über die `wischRichtung` erreicht wird, und die
+// Wochentagsleiste bleibt als sichtbarer, zusätzlicher Weg bestehen. Das
+// tatsächliche Wischverhalten am Gerät gehört ins Prüfprotokoll (Aufgabe 9.1).
+describe('Tageswechsel durch Wischen', () => {
+  it('bindet die Wisch-Geste des Mensaplans an den Tagesbereich, neben der weiterhin sichtbaren Wochentagsleiste', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    const tagBereich = screen.getByTestId('tagBereich');
+    expect(typeof tagBereich.props.onResponderRelease).toBe('function');
+    expect(typeof tagBereich.props.onMoveShouldSetResponder).toBe('function');
+    expect(screen.getByLabelText(/^Mo /)).toBeTruthy();
+  });
+});
+
 describe('Kalenderdatum je Wochentag', () => {
   it('weist zu jedem Wochentag das Kalenderdatum der angezeigten Woche aus', async () => {
     await seed([ANALYSIS]);
@@ -186,7 +221,17 @@ describe('Kalenderdatum je Wochentag', () => {
 });
 
 describe('Blättern über Wochengrenzen', () => {
-  it('blättert in die Vorwoche und kehrt über den sichtbaren Weg zur laufenden Woche zurück', async () => {
+  it('blättert auch in die Folgewoche', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('Nächste Woche'));
+    await waitFor(() => expect(screen.getByText('14.09.')).toBeTruthy());
+  });
+});
+
+describe('Rückkehr zur laufenden Woche über die Wochenangabe', () => {
+  it('Andere Woche angezeigt', async () => {
     await seed([ANALYSIS]);
     await zeige();
     expect(screen.getByText('07.09.')).toBeTruthy();
@@ -194,18 +239,23 @@ describe('Blättern über Wochengrenzen', () => {
     fireEvent.press(screen.getByLabelText('Vorige Woche'));
     await waitFor(() => expect(screen.getByText('31.08.')).toBeTruthy());
     expect(screen.queryByText('07.09.')).toBeNull();
+    // Die Wochenangabe selbst ist der Bedienweg zurück, mit Zusatzlabel.
+    expect(screen.getByText('Zur laufenden Woche')).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Zur laufenden Woche'));
     await waitFor(() => expect(screen.getByText('07.09.')).toBeTruthy());
     expect(screen.queryByLabelText('Zur laufenden Woche')).toBeNull();
   });
 
-  it('blättert auch in die Folgewoche', async () => {
+  it('Laufende Woche angezeigt', async () => {
     await seed([ANALYSIS]);
     await zeige();
 
-    fireEvent.press(screen.getByLabelText('Nächste Woche'));
-    await waitFor(() => expect(screen.getByText('14.09.')).toBeTruthy());
+    // Kein Zusatzlabel, und die Blätterpfeile bleiben an ihrem Platz —
+    // kein zusätzliches Element, das die Anordnung verschiebt.
+    expect(screen.queryByText('Zur laufenden Woche')).toBeNull();
+    expect(screen.getByLabelText('Vorige Woche')).toBeTruthy();
+    expect(screen.getByLabelText('Nächste Woche')).toBeTruthy();
   });
 });
 
@@ -270,13 +320,10 @@ describe('Proportionale Zeitachse', () => {
 
 describe('Abschalten der proportionalen Zeitachse', () => {
   it('zeigt die kompakte Liste ohne Lückendarstellung, die Terminfolge bleibt unverändert', async () => {
-    await seed([ANALYSIS, DATENBANKEN]);
+    await seed([ANALYSIS, DATENBANKEN], { zeitachse: false });
     await zeige();
-    expect(screen.getByLabelText('Freie Zeit von 09:30 bis 10:00, 30 Minuten')).toBeTruthy();
 
-    fireEvent(screen.getByLabelText('Proportionale Zeitachse'), 'valueChange', false);
-
-    await waitFor(() => expect(screen.queryByLabelText(/^Freie Zeit/)).toBeNull());
+    expect(screen.queryByLabelText(/^Freie Zeit/)).toBeNull();
     expect(screen.getByText('Analysis')).toBeTruthy();
     expect(screen.getByText('Datenbanken')).toBeTruthy();
   });
@@ -300,6 +347,42 @@ describe('Nebeneinanderdarstellung überschneidender Termine', () => {
   });
 });
 
+describe('Stapelung bei mehr als drei überschneidenden Terminen', () => {
+  it('Vier überschneidende Termine', async () => {
+    await seed([
+      offiziell({ id: 'a', name: 'Analysis', timeBeginMin: 480, timeEndMin: 600 }),
+      offiziell({ id: 'b', name: 'Datenbanken', timeBeginMin: 480, timeEndMin: 600 }),
+      offiziell({ id: 'c', name: 'Praktikum', timeBeginMin: 480, timeEndMin: 600 }),
+      offiziell({ id: 'd', name: 'Softwaretechnik', timeBeginMin: 480, timeEndMin: 600 }),
+    ]);
+    await zeige();
+
+    expect(screen.getByLabelText(/^08:00–10:00 · Analysis/)).toBeTruthy();
+    expect(screen.getByLabelText(/^08:00–10:00 · Datenbanken/)).toBeTruthy();
+    expect(screen.getByLabelText(/^08:00–10:00 · Praktikum/)).toBeTruthy();
+    expect(screen.queryByLabelText(/^08:00–10:00 · Softwaretechnik/)).toBeNull();
+    expect(screen.getByText('+1')).toBeTruthy();
+  });
+
+  it('Stapel aufklappen', async () => {
+    await seed([
+      offiziell({ id: 'a', name: 'Analysis', timeBeginMin: 480, timeEndMin: 600 }),
+      offiziell({ id: 'b', name: 'Datenbanken', timeBeginMin: 480, timeEndMin: 600 }),
+      offiziell({ id: 'c', name: 'Praktikum', timeBeginMin: 480, timeEndMin: 600 }),
+      offiziell({ id: 'd', name: 'Softwaretechnik', timeBeginMin: 480, timeEndMin: 600 }),
+    ]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('1 weitere Termine, zum Aufklappen antippen'));
+
+    // Alle vier Termine sind nun einzeln erreichbar, keiner verdeckt.
+    expect(screen.getByLabelText(/^08:00–10:00 · Analysis/)).toBeTruthy();
+    expect(screen.getByLabelText(/^08:00–10:00 · Datenbanken/)).toBeTruthy();
+    expect(screen.getByLabelText(/^08:00–10:00 · Praktikum/)).toBeTruthy();
+    expect(screen.getByLabelText(/^08:00–10:00 · Softwaretechnik/)).toBeTruthy();
+  });
+});
+
 describe('Sortierung nach Beginnzeit', () => {
   it('stellt die Termine eines Wochentags aufsteigend nach Beginnzeit dar', async () => {
     await seed(
@@ -314,15 +397,26 @@ describe('Sortierung nach Beginnzeit', () => {
 });
 
 describe('Anzeige des laufenden und nächsten Termins', () => {
-  it('nennt laufenden und nächsten Termin mit verbleibender Zeit über dem Plan', async () => {
+  it('nennt laufenden und nächsten Termin mit verbleibender Zeit über dem Plan, nebeneinander', async () => {
     await seed([
       DATENBANKEN, // 10:00–11:30, läuft um 10:30
       offiziell({ id: 'spaeter', name: 'Softwaretechnik', timeBeginMin: 780, timeEndMin: 870 }),
     ]);
     await zeige();
 
-    expect(screen.getByText('Jetzt: Datenbanken — noch 60 min')).toBeTruthy();
-    expect(screen.getByText('Danach: Softwaretechnik — in 150 min')).toBeTruthy();
+    expect(screen.getByText('Jetzt: Datenbanken — noch 1 Stunde')).toBeTruthy();
+    expect(screen.getByText('Danach: Softwaretechnik — in 2 h 30 min')).toBeTruthy();
+  });
+
+  it('weist eine Zeitspanne von mehr als einer Stunde in Stunden und Minuten aus', async () => {
+    // Softwaretechnik beginnt um 14:00 Uhr (840 min), 200 Minuten nach 10:40.
+    const MITTWOCH_10_40 = new Date(2026, 8, 9, 10, 40, 0);
+    jest.setSystemTime(MITTWOCH_10_40);
+    await seed([offiziell({ id: 'spaeter', name: 'Softwaretechnik', timeBeginMin: 840, timeEndMin: 900 })]);
+    await zeige();
+
+    expect(screen.getByText('Danach: Softwaretechnik — in 3 h 20 min')).toBeTruthy();
+    jest.setSystemTime(MITTWOCH);
   });
 });
 
@@ -342,6 +436,15 @@ describe('Hervorhebung des laufenden Termins und der aktuellen Uhrzeit', () => {
     fireEvent.press(screen.getByLabelText(/^Mo /));
     await waitFor(() => expect(screen.queryByLabelText('Jetzt 10:30')).toBeNull());
   });
+
+  it('Uhrzeit vor dem ersten Termin', async () => {
+    // Erster Termin des Tages beginnt erst um 11:00 — jetzt (10:30) läge
+    // außerhalb der zugeschnittenen Tagesspanne und wird an den oberen Rand geheftet.
+    await seed([offiziell({ id: 'spaet', name: 'Softwaretechnik', timeBeginMin: 660, timeEndMin: 720 })]);
+    await zeige();
+
+    expect(screen.getByLabelText('Jetzt 10:30')).toBeTruthy();
+  });
 });
 
 describe('Kennzeichnung gruppenfremder Termine statt Entfernen', () => {
@@ -350,24 +453,6 @@ describe('Kennzeichnung gruppenfremder Termine statt Entfernen', () => {
     await zeige();
 
     expect(screen.getByLabelText(/Praktikum.*Andere Gruppe/)).toBeTruthy();
-  });
-});
-
-describe('Schalter zum Ausblenden gruppenfremder Termine', () => {
-  it('blendet gruppenfremde Termine aus und wieder ein', async () => {
-    await seed([
-      ANALYSIS,
-      offiziell({ id: 'fremd', name: 'Praktikum', gruppenzugehoerig: false, timeBeginMin: 600, timeEndMin: 660 }),
-    ]);
-    await zeige();
-    expect(screen.getByText('Praktikum')).toBeTruthy();
-
-    fireEvent(screen.getByLabelText('Termine anderer Gruppen ausblenden'), 'valueChange', true);
-    await waitFor(() => expect(screen.queryByText('Praktikum')).toBeNull());
-    expect(screen.getByText('Analysis')).toBeTruthy();
-
-    fireEvent(screen.getByLabelText('Termine anderer Gruppen ausblenden'), 'valueChange', false);
-    await waitFor(() => expect(screen.getByText('Praktikum')).toBeTruthy());
   });
 });
 
@@ -472,17 +557,36 @@ describe('Hinweis bei Semesterwechsel', () => {
   });
 });
 
-describe('Leerer Tag bei wirksamem Filter', () => {
-  it('nennt die Gruppenfilterung als Grund, wenn sie den Tag geleert hat', async () => {
-    await seed(
-      [offiziell({ id: 'fremd', name: 'Praktikum', gruppenzugehoerig: false })],
-      { gruppenfremdeAusblenden: true },
-    );
+describe('Kein selbsttätiges Entfernen des Stundenplans', () => {
+  it('Semesterwechsel erkannt: bietet das Anpassen an, entfernt aber keinen Termin', async () => {
+    mockStudiengaenge = [{ sname: 'TUPB', name: 'Tutorien', grades: ['0'] }]; // INPBPI ist verschwunden
+    await seed([ANALYSIS]);
+    await writeJson('scheduleSemesterstand', { endpunkte: ['INPBPI', 'TUPB'] });
+    __resetSemesterstandForTest();
     await zeige();
 
-    expect(screen.getByText('Alle Termine dieses Tages sind durch die Gruppenfilterung ausgeblendet.')).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        screen.getByText('Das Lehrangebot hat sich geändert. Prüfe deine Endpunktauswahl und deine Gruppenkennung.'),
+      ).toBeTruthy(),
+    );
+    fireEvent.press(screen.getByLabelText('Passt so'));
+
+    expect(screen.getByText('Analysis')).toBeTruthy();
   });
 
+  it('Gewählter Endpunkt entfallen: lässt die daraus entstandenen Termine im Plan stehen', async () => {
+    mockStudiengaenge = [{ sname: 'TUPB', name: 'Tutorien', grades: ['0'] }]; // INPBPI ist in der Fremdsystem-Antwort verschwunden
+    await seed([ANALYSIS]); // ANALYSIS ist aus INPBPI entstanden
+    await writeJson('scheduleSemesterstand', { endpunkte: ['INPBPI', 'TUPB'] });
+    __resetSemesterstandForTest();
+    await zeige();
+
+    expect(screen.getByText('Analysis')).toBeTruthy();
+  });
+});
+
+describe('Kennzeichnung eines leeren Wochentags', () => {
   it('nennt den Gültigkeitszeitraum als Grund, wenn er den Tag geleert hat', async () => {
     const abgelaufen = Math.floor(new Date(2026, 7, 31, 12, 0, 0).getTime() / 1000);
     await seed([offiziell({ id: 'alt', name: 'Analysis', gueltigBis: abgelaufen })]);
@@ -532,39 +636,3 @@ describe('Leerer Tag bei wirksamem Filter', () => {
   });
 });
 
-describe('Schalter zum Abschalten aller Filter', () => {
-  it('zeigt alle Termine des Plans und macht den aktiven Zustand erkennbar', async () => {
-    const abgelaufen = Math.floor(new Date(2026, 7, 31, 12, 0, 0).getTime() / 1000);
-    await seed(
-      [
-        offiziell({ id: 'fremd', name: 'Praktikum', gruppenzugehoerig: false }),
-        offiziell({ id: 'alt', name: 'Analysis', timeBeginMin: 600, timeEndMin: 660, gueltigBis: abgelaufen }),
-      ],
-      { gruppenfremdeAusblenden: true },
-    );
-    await zeige();
-    expect(screen.queryByText('Praktikum')).toBeNull();
-    expect(screen.queryByText('Analysis')).toBeNull();
-
-    fireEvent(screen.getByLabelText('Alle Termine anzeigen'), 'valueChange', true);
-
-    await waitFor(() => expect(screen.getByText('Praktikum')).toBeTruthy());
-    expect(screen.getByText('Analysis')).toBeTruthy();
-    expect(screen.getByText('Alle Filter sind abgeschaltet.')).toBeTruthy();
-  });
-
-  it('lässt die zuvor gesetzten Filter nach dem Zurücknehmen unverändert weiterwirken', async () => {
-    await seed(
-      [ANALYSIS, offiziell({ id: 'fremd', name: 'Praktikum', gruppenzugehoerig: false, timeBeginMin: 600, timeEndMin: 660 })],
-      { gruppenfremdeAusblenden: true },
-    );
-    await zeige();
-
-    fireEvent(screen.getByLabelText('Alle Termine anzeigen'), 'valueChange', true);
-    await waitFor(() => expect(screen.getByText('Praktikum')).toBeTruthy());
-
-    fireEvent(screen.getByLabelText('Alle Termine anzeigen'), 'valueChange', false);
-    await waitFor(() => expect(screen.queryByText('Praktikum')).toBeNull());
-    expect(screen.getByText('Analysis')).toBeTruthy();
-  });
-});
