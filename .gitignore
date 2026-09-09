@@ -1,6 +1,12 @@
-# WhatsApp-Mining: generierte/abgeleitete Daten, nie committen
-# (enthalten reale Handynummern/Namen bzw. daraus abgeleitete Wortlaut-Auszuege)
+# WhatsApp-Mining: Rohexporte und generierte/abgeleitete Daten, nie committen
+# (enthalten reale Handynummern/Namen bzw. daraus abgeleitete Wortlaut-Auszuege).
+# Liegen seit ADR 0020 nur noch lokal, siehe dort.
 /analysis/
+/chats/
+
+# Quellcode beider Alt-Apps inkl. Dump von app.fsrfb4.de (enthielt Live-Zugangsdaten
+# zum Admin-Bereich). Liegen seit ADR 0020 nur noch lokal, siehe dort.
+/alte apps/
 
 # Python
 __pycache__/

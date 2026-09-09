@@ -1,9 +1,0 @@
-<resources>
-
-
-    <dimen name="welcomepage_image_width">350dp</dimen>
-    <dimen name="welcomepage_image_height">350dp</dimen>
-
-    <dimen name="welcomepage_padding_bottom">100dp</dimen>
-
-</resources>
