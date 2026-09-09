@@ -51,6 +51,15 @@ describe('Farbwahl je Termin: Abschalten der Automatik wirkt auf den bestehenden
   });
 });
 
+describe('Herkunft der Terminfarbe', () => {
+  it('behält einen gespeicherten Eintrag ohne Herkunftsvermerk und behandelt ihn als automatisch eingefärbt', () => {
+    const ohneVermerk = eintrag('#123456');
+    expect(ohneVermerk.farbeVonNutzer).toBeUndefined();
+    expect(anzeigeFarbe(ohneVermerk, true)).toBe('#123456');
+    expect(anzeigeFarbe(ohneVermerk, false)).toBe(SCHEDULE_NEUTRAL);
+  });
+});
+
 describe('SCHED-F-660 deterministische Farbvergabe je Veranstaltung', () => {
   it('liefert für denselben Schlüssel bei jedem Aufruf dieselbe Farbe', () => {
     expect(farbeFuerVeranstaltung('42012')).toBe(farbeFuerVeranstaltung('42012'));
