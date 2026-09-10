@@ -48,6 +48,12 @@ deploy/fsrfb4aas.env
 app/src/api/generated/
 backend/src/Fb4.Backend/Contract/Generated/
 
+# Lokal erzeugter Android-Upload-Keystore (Android-Testbuild-Direktdownload) —
+# lebt nur im Vaultwarden-Depot des FSR-Vorstands und als GitHub-Secret,
+# nie im Repo (SEC-F-040, openspec/changes/android-testbuild-download)
+*.keystore
+*.jks
+
 # Editoren / OS
 .DS_Store
 .idea/

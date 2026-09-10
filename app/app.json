@@ -25,6 +25,7 @@
     },
     "android": {
       "package": "de.fsrfb4.app",
+      "versionCode": 1,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.RECEIVE_BOOT_COMPLETED"
@@ -46,6 +47,7 @@
         }
       ],
       "./plugins/withNotifeeMaven",
+      "./plugins/withAndroidReleaseSigning",
       [
         "expo-build-properties",
         {

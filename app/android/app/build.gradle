@@ -104,15 +104,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Testbuild-Direktdownload (openspec/changes/android-testbuild-download):
+            // Werte kommen ausschliesslich aus Umgebungsvariablen, die der CI-Workflow
+            // aus GitHub-Secrets setzt. Nie im Repo, nie im Debug-Keystore signieren.
+            def releaseKeystorePath = System.getenv("ANDROID_RELEASE_KEYSTORE_PATH")
+            if (releaseKeystorePath) {
+                storeFile file(releaseKeystorePath)
+            }
+            storePassword System.getenv("ANDROID_RELEASE_STORE_PASSWORD")
+            keyAlias System.getenv("ANDROID_RELEASE_KEY_ALIAS")
+            keyPassword System.getenv("ANDROID_RELEASE_KEY_PASSWORD")
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
@@ -178,5 +188,28 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// Testbuild-Direktdownload: bricht nur ab, wenn tatsaechlich ein Release-Task
+// laeuft (assembleDebug bleibt ohne die vier ANDROID_RELEASE_*-Variablen
+// weiterhin nutzbar) — kein stilles Zurueckfallen auf den Debug-Keystore.
+gradle.taskGraph.whenReady { taskGraph ->
+    def buildsRelease = taskGraph.allTasks.any { it.name.contains("Release") }
+    if (buildsRelease) {
+        def required = [
+            "ANDROID_RELEASE_KEYSTORE_PATH",
+            "ANDROID_RELEASE_STORE_PASSWORD",
+            "ANDROID_RELEASE_KEY_ALIAS",
+            "ANDROID_RELEASE_KEY_PASSWORD",
+        ]
+        def missing = required.findAll { !System.getenv(it) }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                "Release-Signing: fehlende Umgebungsvariable(n) ${missing.join(', ')}. " +
+                "Alle vier ANDROID_RELEASE_*-Variablen muessen gesetzt sein, sonst kein Release-Build " +
+                "(siehe deploy/README.md)."
+            )
+        }
     }
 }
