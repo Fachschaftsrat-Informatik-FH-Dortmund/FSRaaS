@@ -81,29 +81,24 @@ jobs:
       # ab, bevor irgendetwas hochgeladen wird, wenn der neue versionCode nicht
       # strikt groesser ist als der zuletzt veroeffentlichte (Sidecar-Datei).
       # Fehlt die Sidecar-Datei (erster Lauf), gilt die Pruefung als bestanden.
+      # Achtung: appleboy/ssh-action (drone-ssh 1.8.0) fuehrt ein mehrzeiliges
+      # if/then/.../fi mit script_stop:true fehlerhaft aus, wenn es NICHT in
+      # einer for/done-Schleife steht — das Skript bricht direkt nach der
+      # "if"-Zeile ohne jede Fehlermeldung ab (reproduziert 2026-09-10, siehe
+      # PR-Diskussion). Jedes if/fi deshalb bewusst auf einer physischen Zeile.
       - name: Monotonie-Pruefung des versionCode
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          debug: true
           script_stop: true
           script: |
-            echo "SSH-Verbindung ok: whoami=$(whoami) pwd=$(pwd)"
             NEW_VERSION_CODE=${{ steps.version.outputs.version_code }}
             REMOTE_FILE=/var/www/fsrfb4aas-downloads/app-latest.versioncode
-            ls -la /var/www/fsrfb4aas-downloads/ || echo "Verzeichnis-Listing fehlgeschlagen"
-            if [ -f "$REMOTE_FILE" ]; then
-              CURRENT_VERSION_CODE=$(cat "$REMOTE_FILE")
-            else
-              CURRENT_VERSION_CODE=0
-            fi
+            if [ -f "$REMOTE_FILE" ]; then CURRENT_VERSION_CODE=$(cat "$REMOTE_FILE"); else CURRENT_VERSION_CODE=0; fi
             echo "Bisheriger versionCode: $CURRENT_VERSION_CODE, neuer versionCode: $NEW_VERSION_CODE"
-            if [ "$NEW_VERSION_CODE" -le "$CURRENT_VERSION_CODE" ]; then
-              echo "versionCode $NEW_VERSION_CODE ist nicht strikt groesser als der zuletzt veroeffentlichte $CURRENT_VERSION_CODE." >&2
-              exit 1
-            fi
+            if [ "$NEW_VERSION_CODE" -le "$CURRENT_VERSION_CODE" ]; then echo "versionCode $NEW_VERSION_CODE ist nicht strikt groesser als der zuletzt veroeffentlichte $CURRENT_VERSION_CODE." >&2; exit 1; fi
 
       - name: APK fuer die Veroeffentlichung vorbereiten
         run: cp app/android/app/build/outputs/apk/release/app-release.apk app-latest.apk
@@ -126,7 +121,6 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          debug: true
           script_stop: true
           script: |
             NEW_VERSION_CODE=${{ steps.version.outputs.version_code }}
