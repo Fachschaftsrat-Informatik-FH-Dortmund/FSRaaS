@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons, { type IoniconsIconName } from '@react-native-vector-icons/ionicons';
 import type { ColorValue } from 'react-native';
 
 // Symbol je Tab der Tab-Leiste (UX-F-150): Ionicons, die mitgelieferte
@@ -8,7 +8,7 @@ import type { ColorValue } from 'react-native';
 // keine Fachlogik) — und damit direkt testbar, ohne den (in Tests per
 // jest.setup.js als Attrappe geführten) Router zu rendern.
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+type IoniconName = IoniconsIconName;
 
 export const symbole: Record<string, { aktiv: IoniconName; inaktiv: IoniconName }> = {
   '(schedule)': { aktiv: 'calendar', inaktiv: 'calendar-outline' }, // Stundenplan (verschachtelter Stack seit Etappe 2b)
