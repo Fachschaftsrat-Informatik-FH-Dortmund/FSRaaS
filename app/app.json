@@ -3,7 +3,7 @@
     "name": "FSR Informatik",
     "slug": "fb4-app",
     "scheme": "fb4",
-    "version": "0.1.1",
+    "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": [
@@ -25,7 +25,7 @@
     },
     "android": {
       "package": "de.fsrfb4.app",
-      "versionCode": 1,
+      "versionCode": 1.1,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.RECEIVE_BOOT_COMPLETED"
