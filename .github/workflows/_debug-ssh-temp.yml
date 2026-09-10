@@ -21,9 +21,5 @@ jobs:
           script: |
             echo "checkpoint 1: vor if"
             X=/pfad/den/es/nicht/gibt
-            if [ -f "$X" ]; then
-              echo "checkpoint 2: then-zweig"
-            else
-              echo "checkpoint 3: else-zweig"
-            fi
+            if [ -f "$X" ]; then echo "checkpoint 2: then-zweig"; else echo "checkpoint 3: else-zweig"; fi
             echo "checkpoint 4: nach if"
