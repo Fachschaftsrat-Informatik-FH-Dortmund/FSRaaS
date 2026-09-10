@@ -27,6 +27,22 @@ jest.mock('expo-router/react-navigation', () => ({
   },
 }));
 
+// Change `planungsmodus-sichern-absturz`, design.md Entscheidung 1: der
+// Mitschnitt hält fest, womit `PlanungScreen` die Kopfzeilen-Aktion anmeldet.
+// Das echte Modulverhalten bleibt erhalten — `usePlanungAktion` und
+// `__resetPlanungAktionForTest` arbeiten weiter auf demselben Zustand.
+const mockRegistrierungen: (unknown | null)[] = [];
+jest.mock('../planungAktion', () => {
+  const echt = jest.requireActual('../planungAktion');
+  return {
+    ...echt,
+    registriereePlanungAktion: (aktion: unknown | null) => {
+      mockRegistrierungen.push(aktion);
+      return echt.registriereePlanungAktion(aktion);
+    },
+  };
+});
+
 let mockEinrichtung: { endpunkte: string[]; gruppenkennung: string | null };
 let mockEntries: any[];
 const mockMehrereUebernehmen = jest.fn();
@@ -114,6 +130,7 @@ beforeEach(async () => {
   await AsyncStorage.clear();
   __resetAnsichtEinstellungenForTest();
   __resetPlanungAktionForTest();
+  mockRegistrierungen.length = 0;
   letztePreventRemove = null;
   mockParams = { module: MODUL_KEY };
   mockEinrichtung = { endpunkte: ['INPBPI'], gruppenkennung: 'C8' };
@@ -253,7 +270,7 @@ describe('Ausdrückliches Sichern der Planung', () => {
     expect(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeTruthy();
   });
 
-  it('übernimmt beim Sichern sämtliche getroffenen Entscheidungen gemeinsam in den persönlichen Plan', () => {
+  it('übernimmt beim Sichern sämtliche getroffenen Entscheidungen gemeinsam in den persönlichen Plan', async () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Dienstag'));
     fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
@@ -266,8 +283,37 @@ describe('Ausdrückliches Sichern der Planung', () => {
     // wirken gemeinsam in einem Schreibvorgang.
     expect(hinzuzufuegen).toHaveLength(2);
     // Requirement „Ausdrückliches Sichern der Planung": nach dem Sichern
-    // wechselt das System in die Wochenansicht.
-    expect(mockRouter.replace).toHaveBeenCalledWith('/');
+    // wechselt das System in die Wochenansicht — seit Change
+    // `planungsmodus-sichern-absturz` (design.md Entscheidung 2) einen Frame
+    // später, damit die Kopfzeilen-Mutation vor der Fragment-Transaktion
+    // abgeschlossen ist.
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/'));
+  });
+
+  // Change `planungsmodus-sichern-absturz`, design.md Entscheidung 1: auf
+  // Android stürzte die App nach dem Sichern ab, weil dieser Bildschirm die
+  // Kopfzeilen-Aktion erneut anmeldete, während die Navigation aus dem
+  // `(schedule)`-Stack heraus bereits lief.
+  it('meldet die Kopfzeilen-Aktion beim Sichern ab und registriert sie danach nicht erneut', async () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+    expect(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden')).toBeTruthy();
+
+    mockRegistrierungen.length = 0;
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+
+    // Ab hier verändert der Bildschirm die Kopfzeile nur noch ein einziges Mal:
+    // hin zu `null`. Keine weitere Anmeldung einer Aktion.
+    expect(mockRegistrierungen.length).toBeGreaterThan(0);
+    expect(mockRegistrierungen.every((aktion) => aktion === null)).toBe(true);
+    expect(screen.queryByLabelText('Auswahl verwerfen')).toBeNull();
+    expect(screen.queryByLabelText('Planung sichern')).toBeNull();
+
+    // Auch über den Frame-Versatz der Navigation hinaus bleibt es dabei.
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/'));
+    expect(mockRegistrierungen.every((aktion) => aktion === null)).toBe(true);
+    expect(screen.queryByLabelText('Auswahl verwerfen')).toBeNull();
   });
 
   it('weist ohne jede Änderung keine ungesicherten Änderungen aus', () => {

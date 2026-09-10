@@ -201,22 +201,39 @@ export function PlanungScreen() {
   // Zustandslauf abschließen, bevor navigiert wird — sonst fängt die
   // Rückfrage „ungesicherte Änderungen" (unten) die eigene Sicherung ab
   // (design.md, Entscheidung 13).
+  //
+  // Der Navigationsaufruf selbst liegt einen Frame hinter dem Zustandslauf
+  // (Change `planungsmodus-sichern-absturz`, design.md Entscheidung 2): so ist
+  // das Abmelden der Kopfzeilen-Aktion (unten) vollständig committet, bevor
+  // react-native-screens auf Android die Fragment-Transaktion beginnt. Ohne
+  // diesen Versatz treffen beide nativen Mutationen aufeinander
+  // (`IllegalStateException: ScreenStackFragment added into a fragment manager
+  // for a different fragment`).
   useEffect(() => {
     if (!gesichert) return;
-    router.replace('/');
+    requestAnimationFrame(() => router.replace('/'));
   }, [gesichert, router]);
 
   // Requirement „Ausdrückliches Sichern der Planung": Speichern-Symbol in der
   // Kopfzeile (außerhalb dieses Komponentenbaums, `_layout.tsx"). Requirement
   // „Verwerfen der Auswahl im Planungsmodus": zweites Symbol daneben.
+  //
+  // Nach dem Sichern wird die Kopfzeilen-Aktion einmalig abgemeldet und nicht
+  // wieder registriert (Change `planungsmodus-sichern-absturz`, design.md
+  // Entscheidung 1) — auch nicht beim späteren Unmount. Sonst mutiert dieser
+  // Effekt die Kopfzeile erneut, während der Bildschirm bereits verlassen wird.
   useEffect(() => {
+    if (gesichert) {
+      registriereePlanungAktion(null);
+      return undefined;
+    }
     registriereePlanungAktion({
       hatUngesicherteAenderungen,
       sichern,
       verwerfen: () => setVerwerfenBestaetigen(true),
     });
     return () => registriereePlanungAktion(null);
-  }, [hatUngesicherteAenderungen, sichern]);
+  }, [gesichert, hatUngesicherteAenderungen, sichern]);
 
   // Requirement „Rückfrage beim Verlassen mit ungesicherten Änderungen".
   const [pendingAction, setPendingAction] = useState<NavigationAction | null>(null);
