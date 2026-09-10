@@ -3,7 +3,7 @@
     "name": "FSR Informatik",
     "slug": "fb4-app",
     "scheme": "fb4",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": [
