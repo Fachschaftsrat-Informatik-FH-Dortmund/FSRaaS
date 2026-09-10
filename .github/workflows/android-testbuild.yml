@@ -83,18 +83,17 @@ jobs:
       # Fehlt die Sidecar-Datei (erster Lauf), gilt die Pruefung als bestanden.
       - name: Monotonie-Pruefung des versionCode
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          NEW_VERSION_CODE: ${{ steps.version.outputs.version_code }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: NEW_VERSION_CODE
           debug: true
           script_stop: true
           script: |
-            set -e
+            echo "SSH-Verbindung ok: whoami=$(whoami) pwd=$(pwd)"
+            NEW_VERSION_CODE=${{ steps.version.outputs.version_code }}
             REMOTE_FILE=/var/www/fsrfb4aas-downloads/app-latest.versioncode
+            ls -la /var/www/fsrfb4aas-downloads/ || echo "Verzeichnis-Listing fehlgeschlagen"
             if [ -f "$REMOTE_FILE" ]; then
               CURRENT_VERSION_CODE=$(cat "$REMOTE_FILE")
             else
@@ -123,15 +122,13 @@ jobs:
 
       - name: Sidecar-Datei aktualisieren
         uses: appleboy/ssh-action@v1.2.0
-        env:
-          NEW_VERSION_CODE: ${{ steps.version.outputs.version_code }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: NEW_VERSION_CODE
+          debug: true
           script_stop: true
           script: |
-            set -e
+            NEW_VERSION_CODE=${{ steps.version.outputs.version_code }}
             echo -n "$NEW_VERSION_CODE" > /var/www/fsrfb4aas-downloads/app-latest.versioncode
             echo "Veroeffentlicht: versionCode $NEW_VERSION_CODE"
