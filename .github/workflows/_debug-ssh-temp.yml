@@ -19,18 +19,11 @@ jobs:
           debug: true
           script_stop: true
           script: |
-            echo "SSH-Verbindung ok: whoami=$(whoami) pwd=$(pwd)"
-            NEW_VERSION_CODE=1
-            REMOTE_FILE=/var/www/fsrfb4aas-downloads/app-latest.versioncode
-            ls -la /var/www/fsrfb4aas-downloads/ || echo "Verzeichnis-Listing fehlgeschlagen"
-            if [ -f "$REMOTE_FILE" ]; then
-              CURRENT_VERSION_CODE=$(cat "$REMOTE_FILE")
+            echo "checkpoint 1: vor if"
+            X=/pfad/den/es/nicht/gibt
+            if [ -f "$X" ]; then
+              echo "checkpoint 2: then-zweig"
             else
-              CURRENT_VERSION_CODE=0
+              echo "checkpoint 3: else-zweig"
             fi
-            echo "Bisheriger versionCode: $CURRENT_VERSION_CODE, neuer versionCode: $NEW_VERSION_CODE"
-            if [ "$NEW_VERSION_CODE" -le "$CURRENT_VERSION_CODE" ]; then
-              echo "versionCode $NEW_VERSION_CODE ist nicht strikt groesser als der zuletzt veroeffentlichte $CURRENT_VERSION_CODE." >&2
-              exit 1
-            fi
-            echo "Alles gut."
+            echo "checkpoint 4: nach if"
