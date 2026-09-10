@@ -2,8 +2,8 @@ import { render } from '@testing-library/react-native';
 
 import { symbole, tabIcon } from './tabIcons';
 
-// Die @expo/vector-icons-Attrappe aus jest.setup.js gibt den Symbolnamen als
-// Text aus, dadurch per getByText prüfbar.
+// Die @react-native-vector-icons/ionicons-Attrappe aus jest.setup.js gibt den
+// Symbolnamen als Text aus, dadurch per getByText prüfbar.
 
 describe('UX-F-150 Symbole der Tab-Leiste', () => {
   const tabs = ['(schedule)', 'canteen', 'news', 'rooms', 'more'];

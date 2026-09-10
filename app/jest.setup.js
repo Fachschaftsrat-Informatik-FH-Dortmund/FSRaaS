@@ -70,15 +70,14 @@ jest.mock('expo-router', () => {
   };
 });
 
-// @expo/vector-icons lädt beim Rendern die Icon-Schrift über expo-font, dessen
-// nativer Anteil im Jest-Umfeld fehlt. Für Tests genügt ein schlichter Ersatz,
-// der den Symbolnamen als Text ausgibt (so bleiben Icons per getByText prüfbar).
-jest.mock('@expo/vector-icons', () => {
+// @react-native-vector-icons/ionicons lädt beim Rendern die Icon-Schrift über
+// einen nativen Modul-Bridge-Zugriff, der im Jest-Umfeld fehlt. Für Tests
+// genügt ein schlichter Ersatz, der den Symbolnamen als Text ausgibt (so
+// bleiben Icons per getByText prüfbar).
+jest.mock('@react-native-vector-icons/ionicons', () => {
   const React = require('react');
   const { Text } = require('react-native');
   const Icon = ({ name, ...rest }) => React.createElement(Text, rest, name);
-  Icon.font = {};
-  Icon.loadFont = () => Promise.resolve();
   return new Proxy(
     { __esModule: true },
     { get: (target, prop) => (prop in target ? target[prop] : Icon) },

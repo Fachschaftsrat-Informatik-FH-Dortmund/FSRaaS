@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { useTheme } from '@/theme';
 import { useModulauswahlAktion } from '../modulauswahlAktion';
