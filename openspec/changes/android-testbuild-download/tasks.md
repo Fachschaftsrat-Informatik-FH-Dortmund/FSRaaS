@@ -28,5 +28,5 @@
 
 ## 6. Abnahme
 
-- [ ] 6.1 Gesamten Ablauf einmal manuell durchspielen: Workflow auslösen, `https://api.fb4.it/downloads/app-latest.apk` laden, auf einem Testgerät installieren. Datiertes Prüfprotokoll ablegen (Requirements „Bau einer Testversion" und „Abruf durch eine testende Person").
+- [x] 6.1 Gesamten Ablauf einmal manuell durchspielen: Workflow auslösen, `https://api.fb4.it/downloads/app-latest.apk` laden, auf einem Testgerät installieren. Datiertes Prüfprotokoll ablegen (Requirements „Bau einer Testversion" und „Abruf durch eine testende Person"). — `specs/pruefprotokolle/2026-09-10-android-testbuild-direktdownload.md`: Workflow ausgelöst (Run 34456686885, `success`), APK vom Nutzer auf einem Android-Testgerät geladen und installiert — läuft.
 - [x] 6.2 Prüfen, dass ADR 0008 und die NFR-Spec „Store-Veröffentlichung" durch diesen Change unverändert bleiben. Verifizieren: `git diff` zeigt keine Änderung an `specs/decisions/0008-*.md` oder den entsprechenden Store-Veröffentlichungs-Requirements in `openspec/specs/non-functional/spec.md` (Requirement „Kein Ersatz für die offizielle Auslieferung"). — `git diff --stat main -- specs/decisions/0008*.md openspec/specs/non-functional/spec.md` liefert keine Ausgabe, also keine Änderung.
