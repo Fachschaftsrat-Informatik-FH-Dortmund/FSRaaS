@@ -19,9 +19,13 @@
 
 ## 3. Alte Einbettung entfernen
 
-- [ ] 3.1 `expo-font`-Plugin-Eintrag für `assets/fonts/ionicons.ttf` aus `app/app.json` entfernen. Verifikation: `app.json` enthält keinen Verweis mehr auf `assets/fonts/ionicons.ttf`.
-- [ ] 3.2 `app/assets/fonts/ionicons.ttf` und `app/assets/fonts/README.md` löschen. Verifikation: Dateien existieren nicht mehr; `git status` zeigt sie als gelöscht.
-- [ ] 3.3 `npx expo prebuild --clean` ausführen, damit `android/` (und bei vorhandenem iOS-Projekt `ios/`) das Autolinking/Config-Plugin des neuen Pakets übernehmen. Verifikation: Prebuild beendet ohne Fehler; `android/app/src/main/assets/fonts/` enthält keine `ionicons.ttf` mehr aus der alten manuellen Einbettung.
+- [x] 3.1 `expo-font`-Plugin-Eintrag für `assets/fonts/ionicons.ttf` aus `app/app.json` entfernen. Verifikation: `app.json` enthält keinen Verweis mehr auf `assets/fonts/ionicons.ttf`.
+
+  Kein Ersatz-Plugin-Eintrag für `@react-native-vector-icons/ionicons` nötig — der gilt nur für `/static`-Imports (siehe Anmerkung zu Task 1.2), diese Migration nutzt Standard-Imports.
+- [x] 3.2 `app/assets/fonts/ionicons.ttf` und `app/assets/fonts/README.md` löschen. Verifikation: Dateien existieren nicht mehr; `git status` zeigt sie als gelöscht.
+- [x] 3.3 `npx expo prebuild --clean` ausführen, damit `android/` (und bei vorhandenem iOS-Projekt `ios/`) das Autolinking/Config-Plugin des neuen Pakets übernehmen. Verifikation: Prebuild beendet ohne Fehler; `android/app/src/main/assets/fonts/` enthält keine `ionicons.ttf` mehr aus der alten manuellen Einbettung.
+
+  Kein iOS-Projekt vorhanden (ADR 0009: entsteht erst mit dem ersten iOS-Prebuild), daher nur `android/` betroffen. Effektiver Diff nach Abzug reiner Zeilenenden-Normalisierung (LF→CRLF beim Neuschreiben durch den Prebuild, git zeigt das als Warnung, nicht als Inhaltsänderung): `assets/fonts/ionicons.ttf` gelöscht, und in `MainApplication.kt` der vom `expo-font`-Plugin generierte `xml-fonts-init`-Block samt `ReactFontManager`-Import entfernt — beides die erwartete Folge der entfernten Plugin-Konfiguration aus Task 3.1.
 
 ## 4. Gerätegeprüft verifizieren
 
