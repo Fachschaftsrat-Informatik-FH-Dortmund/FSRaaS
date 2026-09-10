@@ -72,10 +72,10 @@ bereits geliefertem Code, kein neuer Schnitt.
 - `app/src/areas/schedule/groupMatch.ts` — der Zweig „keine Kennung gesetzt"
   entfällt
 
-**Abhängigkeit:** Der Kopfzeilen-Bedienweg und das Symbol für das
-Zurücksetzen sind erst am Gerät abnehmbar, wenn der Change
-`vector-icons-native-migration` gelaufen ist — bis dahin erscheint in der App
-kein Symbol.
+**Erfüllte Voraussetzung:** Der Kopfzeilen-Bedienweg und das Symbol für das
+Zurücksetzen setzen voraus, dass die Symbole der App überhaupt erscheinen.
+Der Change `vector-icons-native-migration` ist am 2026-09-10 archiviert; die
+Voraussetzung ist damit erfüllt und beim Gerätetest zu bestätigen.
 
 **Bewusst nicht in diesem Schnitt:** die Punkte des Planungsmodus (Change
 `planungsmodus-anzeige`), das Umbenennen und die Namenskürzung (Change

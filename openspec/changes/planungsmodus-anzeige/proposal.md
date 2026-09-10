@@ -93,14 +93,16 @@ sondern nur noch „Sprung zum aktuellen Wochentag" (zu übernehmen) und
 - Textkataloge: `schedule.konfliktAngenommen`, `schedule.planungGewaehlt`,
   `schedule.planungEigeneGruppe`, `schedule.terminPruefungLabel`
 
-**Abhängigkeit:** Die Kennzeichnung des Planungsstands ist erst am Gerät
-abnehmbar, wenn `vector-icons-native-migration` gelaufen ist.
+**Erfüllte Voraussetzung:** Die Kennzeichnung des Planungsstands setzt
+sichtbare Symbole voraus; `vector-icons-native-migration` ist am 2026-09-10
+archiviert.
 
 **Berührter Punkt außerhalb dieses Changes:** Der Zurück-Pfeil nach dem
-Sichern liegt auf derselben Navigation, die der laufende Change
-`planungsmodus-sichern-absturz` anfasst (`router.replace('/')`). Beide dürfen
-nicht gleichzeitig laufen; dieser Change setzt auf dem Ergebnis jenes
-Changes auf.
+Sichern liegt auf derselben Navigation, die der Change
+`planungsmodus-sichern-absturz` angefasst hat (`router.replace('/')`, dort
+entkoppelt von der Kopfzeilen-Registrierung). Jener Change ist am
+2026-09-10 archiviert; dieser setzt auf seinem Ergebnis auf und darf die
+Entkopplung nicht rückgängig machen.
 
 **Bewusst nicht in diesem Schnitt:** die noch fehlende Optimierungshälfte des
 Planungsmodus — bevorzugtes Zeitfenster, Kriterienrangfolge, Anpinnen,
