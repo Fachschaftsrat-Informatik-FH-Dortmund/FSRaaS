@@ -49,4 +49,4 @@
 ## 5. Spec-Text nachziehen
 
 - [x] 5.1 `openspec/specs/ux-and-theming/spec.md`, Abschnitt „Begründungen": Absatz zur Bibliothekswahl (aktuell `@expo/vector-icons` samt Korrekturhistorie von Commit `a2dda60`) kürzen und durch einen Verweis auf diesen archivierten Change ersetzen (siehe `proposal.md` „Was ändert sich"). Verifikation: Abschnitt nennt `@react-native-vector-icons`, verweist auf den archivierten Change statt die volle Fehlerhistorie auszuformulieren; die Requirement-Tabelle (Tab → Bedeutung → Glyphe) bleibt unverändert.
-- [ ] 5.2 Change archivieren (`openspec archive`). Verifikation: `openspec/changes/archive/` enthält den abgeschlossenen Change; `openspec status` führt ihn nicht mehr als offen.
+- [x] 5.2 Change archivieren (`openspec archive`). Verifikation: `openspec/changes/archive/` enthält den abgeschlossenen Change; `openspec status` führt ihn nicht mehr als offen.
