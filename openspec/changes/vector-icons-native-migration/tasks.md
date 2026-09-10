@@ -1,6 +1,6 @@
 ## 1. Abhängigkeiten umstellen
 
-- [x] 1.1 `@react-native-vector-icons/ionicons` zu `app/package.json` hinzufügen; `@expo/vector-icons` entfernen. Verifikation: `npm ls @react-native-vector-icons/ionicons` zeigt das Paket, `npm ls @expo/vector-icons` meldet „not found".
+- [ ] 1.1 `@react-native-vector-icons/ionicons` zu `app/package.json` hinzufügen; `@expo/vector-icons` entfernen. Verifikation: `npm ls @react-native-vector-icons/ionicons` zeigt das Paket, `npm ls @expo/vector-icons` meldet „not found".
 - [ ] 1.2 `npx @react-native-vector-icons/codemod` im Verzeichnis `app/` ausführen. Verifikation: Codemod-Lauf beendet ohne Fehler; `git diff` zeigt geänderte Importe in den in `proposal.md` gelisteten Dateien.
 
 ## 2. Verbleibende manuelle Anpassungen
