@@ -24,14 +24,14 @@
 - [x] 3.1 `specs/product/roadmap.md`, Schritt 6: Spike als durchgeführt vermerkt, Ergebnis und Folgen für den Raumabgleich festgehalten
 - [x] 3.2 Issue #28 mit dem Ergebnis kommentiert
 
-## 4. Offene Entscheidungen — nicht Gegenstand dieses Changes
+## 4. Entscheidungen (getroffen 2026-09-10, Rücksprache FSR FB4)
 
-- [ ] 4.1 Prüfungsbestand: 70 % Abdeckung hinnehmen und ausweisen, Excel-Import als Ergänzung wieder aufnehmen (INT-013, Formatanalyse ist erhalten), oder Herkunft der fehlenden Prüfungen beim Fachbereich klären
-- [ ] 4.2 Stundenplan-Raumabgleich (`schedule`, vormals SCHED-F-410 bis F-450): Kalendarisch feststehende Ausfälle sind aus dieser Quelle nicht ableitbar, kurzfristige Einzelabsagen (stilles Verschwinden der Instanz) grundsätzlich schon — Zuschnitt der sechs Requirements in Kenntnis dieser Differenzierung entscheiden
+- [x] 4.1 Prüfungsbestand: 70 % Abdeckung hinnehmen und ausweisen, kein Excel-Reaktivierung — Ursache strukturell (Prüfungen teils außerhalb der FB4-eigenen Gebäude, dort nicht im Raumplan gebucht), nicht durch Nachfrage oder zweite Quelle behebbar. Festgehalten in `specs/backend-and-api/spec.md` und `proposal.md`.
+- [x] 4.2 Stundenplan-Raumabgleich (`schedule`, vormals SCHED-F-410 bis F-450): alle sechs Requirements bleiben unverändert. Requirement 440 kennzeichnet jeden Hinweis ohnehin als unbestätigte Ableitung; kalendarisch feststehende Ausfälle bleiben separat behandelt (siehe „Feiertags-Hinweis im Stundenplan", eigene Idee, nicht Teil dieses Changes).
 
 ## 5. Offene Nachprüfungen
 
-- [ ] 5.1 Ursache der fehlenden wirtschaftswissenschaftlichen Prüfungen beim Fachbereich erfragen
-- [ ] 5.2 Abdeckung gegen die vier weiteren Jahrgangsdateien unter `resources/` prüfen (WiSe 2023/24, SoSe 2024, SoSe 2025); der Raumplan reicht nachweislich bis Februar 2024 zurück
+- [x] 5.1 Ursache der fehlenden wirtschaftswissenschaftlichen Prüfungen — beantwortet ohne Fachbereichsanfrage: andere Gebäude, außerhalb des FB4-Raumplans
+- [ ] 5.2 ~~Abdeckung gegen die vier weiteren Jahrgangsdateien unter `resources/` prüfen~~ — bewusst nicht weiterverfolgt (Entscheidung 2026-09-10): Die Ursache ist strukturell bekannt, eine Schwankung über Jahrgänge würde daran nichts ändern
 - [x] 5.3 Einzelfall-Nachweis an einer bekannten Absage, ob der Termin im Bestand stehen bleibt — erledigt am 2026-09-07, sechs Fälle gefunden, alle entfernt statt markiert
-- [ ] 5.4 Einzelfall-Nachweis an einer bekannten Verlegung, ob ein Raumwechsel derselben Sitzung im Bestand ankommt — im geprüften Fenster kein Beleg, aber auch keine Widerlegung
+- [ ] 5.4 Einzelfall-Nachweis an einer bekannten Verlegung, ob ein Raumwechsel derselben Sitzung im Bestand ankommt — dauerhaft unbelegt akzeptiert (Entscheidung 2026-09-10), nicht weiterverfolgt
