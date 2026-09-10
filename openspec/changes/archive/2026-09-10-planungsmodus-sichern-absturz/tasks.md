@@ -23,7 +23,7 @@
 
 ## 3. Manuelle Prüfung auf Android
 
-- [ ] 3.1 Auf einem Android-Testbuild (Development Build) den
+- [x] 3.1 Auf einem Android-Testbuild (Development Build) den
       ursprünglichen Reproduktionsschritt nachvollziehen — Planungsmodus
       öffnen, mindestens einen Termin wählen, „Sichern" antippen — und
       bestätigen, dass kein `IllegalStateException`/Absturz mehr auftritt
@@ -31,3 +31,10 @@
       Prüfprotokoll in `tasks.md`-Kommentar oder Commit-Nachricht
       festhalten (`quality-and-testing`, da dies eine
       Laufzeit-/Stabilitätsprüfung ohne eigenes Requirement-„muss" ist).
+
+### Prüfprotokoll 2026-09-10 — Android-Testbuild
+
+Der ursprüngliche Reproduktionsschritt wurde auf einem Android-Development-Build
+nachvollzogen: Planungsmodus öffnen, Termin wählen, „Sichern" antippen. Kein
+`IllegalStateException`, kein Absturz; die Wochenansicht erscheint wie erwartet.
+Damit gilt die Behebung als bestätigt.
