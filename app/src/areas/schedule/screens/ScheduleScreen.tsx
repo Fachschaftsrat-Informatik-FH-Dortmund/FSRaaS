@@ -19,6 +19,7 @@ import {
 } from '../ansichtEinstellungen';
 import { layoutTag } from '../dayLayout';
 import { useEinrichtung } from '../einrichtung';
+import { feiertagAm, type FeiertagSchluessel } from '../feiertage';
 import { anzeigeFarbe, textfarbeFuerHintergrund } from '../farbe';
 import { wischRichtung } from '../../canteen/gesten';
 import { ermittleJetztStatus } from '../jetzt';
@@ -172,6 +173,15 @@ export function ScheduleScreen() {
   // Plan — eine eingeblendete Alternative ist kein angenommener oder offener
   // Konflikt, sie steht noch gar nicht im Plan.
   const konflikte = useMemo(() => ermittleKonflikte(tagesTermine, jetztSek), [tagesTermine, jetztSek]);
+
+  // Requirement „Hinweis auf gesetzlichen Feiertag": allein aus dem
+  // Kalenderdatum des angezeigten Tages berechnet — ohne Raumplan (INT-009),
+  // ohne dessen Abrufstand und ohne Zuordnung über `courseId`. Der Hinweis
+  // gilt darum für jeden Termin des Tages gleichermaßen.
+  const feiertag = useMemo(
+    () => (stand ? feiertagAm(datumFuerWochentag(stand.wochenanfang, stand.wochentag)) : null),
+    [stand],
+  );
 
   const alternativenTermine = useMemo(
     () =>
@@ -341,6 +351,7 @@ export function ScheduleScreen() {
                     slots={layoutTag(tagesTermineAnzeige, spanne.vonMin, spanne.bisMin)}
                     spanne={spanne}
                     konflikte={konflikte}
+                    feiertag={feiertag}
                     jetztSek={jetztSek}
                     jetztMin={
                       stand.wochenanfang === laufendeWoche && stand.wochentag === heutigerWochentag
@@ -353,6 +364,7 @@ export function ScheduleScreen() {
                   <KompakteListe
                     termine={tagesTermineAnzeige}
                     konflikte={konflikte}
+                    feiertag={feiertag}
                     jetztSek={jetztSek}
                     onOeffne={oeffneTermin}
                   />
@@ -674,6 +686,7 @@ function Zeitachse({
   slots,
   spanne,
   konflikte,
+  feiertag,
   jetztMin,
   jetztSek,
   onOeffne,
@@ -681,6 +694,7 @@ function Zeitachse({
   slots: readonly DaySlot[];
   spanne: { vonMin: number; bisMin: number };
   konflikte: Konflikte;
+  feiertag: FeiertagSchluessel | null;
   jetztMin: number | null;
   jetztSek: number;
   onOeffne: (id: string) => void;
@@ -742,6 +756,7 @@ function Zeitachse({
                 <TerminKachel
                   entry={einzelslot.entry}
                   konflikte={konflikte}
+                  feiertag={feiertag}
                   jetztSek={jetztSek}
                   laeuft={
                     jetztMin !== null &&
@@ -786,11 +801,13 @@ function mapJetztAufAchse(
 function KompakteListe({
   termine,
   konflikte,
+  feiertag,
   jetztSek,
   onOeffne,
 }: {
   termine: readonly PlanEntry[];
   konflikte: Konflikte;
+  feiertag: FeiertagSchluessel | null;
   jetztSek: number;
   onOeffne: (id: string) => void;
 }) {
@@ -801,6 +818,7 @@ function KompakteListe({
           key={entry.id}
           entry={entry}
           konflikte={konflikte}
+          feiertag={feiertag}
           jetztSek={jetztSek}
           laeuft={false}
           onOeffne={onOeffne}
@@ -822,12 +840,16 @@ function KompakteListe({
 export function TerminKachel({
   entry,
   konflikte,
+  feiertag,
   jetztSek,
   laeuft,
   onOeffne,
 }: {
   entry: PlanEntry;
   konflikte: Konflikte;
+  /** Requirement „Hinweis auf gesetzlichen Feiertag": Kennung des Feiertags,
+   * auf den der angezeigte Tag fällt, sonst `null`. */
+  feiertag: FeiertagSchluessel | null;
   jetztSek: number;
   laeuft: boolean;
   onOeffne: (id: string) => void;
@@ -843,6 +865,12 @@ export function TerminKachel({
   const deaktiviert = !istAktiv(entry, jetztSek);
 
   const kennzeichen: string[] = [];
+  // Requirement „Hinweis auf gesetzlichen Feiertag": steht voran, damit er bei
+  // mehreren Kennzeichen nicht als erstes abgeschnitten wird. Wie jedes andere
+  // Kennzeichen trägt er die Bedeutung als Text, nie allein über Farbe (UX-F-070).
+  if (feiertag !== null) {
+    kennzeichen.push(t('schedule.feiertagHinweis', { feiertag: t(`schedule.feiertage.${feiertag}`) }));
+  }
   if (entry.istAlternative) kennzeichen.push(t('schedule.kennzeichenAlternative'));
   if (entry.kind === 'eigen') kennzeichen.push(t('schedule.kennzeichenEigen'));
   if (deaktiviert) kennzeichen.push(t('schedule.kennzeichenDeaktiviert'));

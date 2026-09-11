@@ -767,3 +767,42 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
   });
 });
 
+describe('Hinweis auf gesetzlichen Feiertag', () => {
+  // Donnerstag, 4. Juni 2026 — Fronleichnam, Referenzwert aus dem INT-009-Spike.
+  const FRONLEICHNAM = new Date(2026, 5, 4, 7, 0, 0);
+
+  afterEach(() => jest.setSystemTime(MITTWOCH));
+
+  it('kennzeichnet jeden Termin an einem Feiertag als voraussichtlich entfallend', async () => {
+    jest.setSystemTime(FRONLEICHNAM);
+    await seed([
+      offiziell({ id: 'do', name: 'Rechnernetze', weekday: 'Thu' }),
+      eigen({ id: 'lern', title: 'Lerngruppe', weekday: 'Thu' }),
+    ]);
+    await zeige();
+
+    expect(screen.getByLabelText(/Rechnernetze.*Fronleichnam — entfällt voraussichtlich/)).toBeTruthy();
+    expect(screen.getByLabelText(/Lerngruppe.*Fronleichnam — entfällt voraussichtlich/)).toBeTruthy();
+  });
+
+  // Szenario „Feiertag unabhängig vom Raumplan-Stand": Die App führt keinen
+  // Raumplan-Zwischenspeicher (INT-009) — der Hinweis erscheint trotzdem, auch
+  // für einen Termin ohne `courseId`, der sich keinem Raumplan-Eintrag
+  // zuordnen ließe.
+  it('erscheint ohne Raumplan-Zwischenspeicher und ohne Zuordnung', async () => {
+    jest.setSystemTime(FRONLEICHNAM);
+    await seed([offiziell({ id: 'ohne', name: 'Sonderveranstaltung', weekday: 'Thu', courseId: '' })]);
+    await zeige();
+
+    expect(screen.getByLabelText(/Sonderveranstaltung.*Fronleichnam — entfällt voraussichtlich/)).toBeTruthy();
+  });
+
+  it('Termin an einem gewöhnlichen Tag: kein Feiertags-Hinweis', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    expect(screen.getByText('Analysis')).toBeTruthy();
+    expect(screen.queryByText(/entfällt voraussichtlich/)).toBeNull();
+  });
+});
+
