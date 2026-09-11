@@ -126,13 +126,14 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
         };
         module.set(schluessel, m);
       }
-      // `terminSchluessel` lässt `name` bewusst außen vor (Grundlage von
-      // `terminEntsprichtEintrag`) — für die Anzeigename-Zusammenführung
-      // (design.md, Entscheidung 6 dieses Moduls) müssen mehrere Termine
-      // *unterschiedlichen* Namens an gleicher Stelle erhalten bleiben. Das
-      // Requirement „Zusammenfassen deckungsgleicher Rohtermine" nennt
-      // „Veranstaltung" als eigenes Merkmal, deshalb zählt der Name hier mit.
-      const terminKennung = `${terminSchluessel(termin)}|${termin.name}`;
+      // `terminSchluessel` umfasst genau die Merkmale des Requirements
+      // „Zusammenfassen deckungsgleicher Rohtermine" einschließlich des Namens
+      // — dieselbe Kennung, an der der Planungsmodus die Auswahl festmacht
+      // (Change `planungsmodus-mehrfachauswahl-defekt`, design.md
+      // Entscheidung 1). Termine *unterschiedlichen* Namens an gleicher Stelle
+      // bleiben dadurch getrennt, wie die Anzeigename-Zusammenführung es
+      // braucht.
+      const terminKennung = terminSchluessel(termin);
       if (m.schluesselGesehen.has(terminKennung)) {
         logError(
           'kursbaum.baueModulliste.deckungsgleich',

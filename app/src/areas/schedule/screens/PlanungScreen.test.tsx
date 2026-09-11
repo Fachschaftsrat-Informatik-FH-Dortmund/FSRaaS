@@ -496,6 +496,59 @@ describe('Kennzeichnung gewählter Termine im Planungsmodus', () => {
     const nichtGewaehlt = screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/);
     expect(nichtGewaehlt.props.accessibilityState.checked).toBe(false);
   });
+
+  // Change `planungsmodus-mehrfachauswahl-defekt` (Gerätetest 2026-09-09, Issue
+  // #68): Live-Bestand von INT-002 am 2026-09-11, `INPBPI` — zwei
+  // Parallelgruppen zur selben Zeit, verschieden in Name und Raum.
+  it('wählt beim Antippen genau die angetippte Zeile, nicht eine gleichzeitige Parallelgruppe', () => {
+    const englisch1 = termin({ courseId: '41102', name: 'Technisches Englisch 1', courseType: 'SV', studentSet: 'A-P', lecturerName: 'Feldman', roomId: 'C.E.41', timeBeginMin: 855, timeEndMin: 950 });
+    const englisch10 = { ...englisch1, name: 'Technisches Englisch 10', lecturerName: 'Morovvatdar', roomId: 'C.E.42' };
+    mockParams = { module: '41102|2' };
+    mockTermineQuery = {
+      ...mockTermineQuery,
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [englisch1, englisch10] }],
+    };
+    renderScreen();
+
+    const [zeile1, zeile10] = screen.getAllByLabelText(/14:15–15:50 Technisches Englisch SV/);
+    fireEvent.press(zeile1!);
+
+    expect(screen.getAllByLabelText(/14:15–15:50 Technisches Englisch SV/)[0]!.props.accessibilityState.checked).toBe(true);
+    expect(screen.getAllByLabelText(/14:15–15:50 Technisches Englisch SV/)[1]!.props.accessibilityState.checked).toBe(false);
+    expect(zeile10).toBeTruthy();
+  });
+
+  // design.md, Entscheidung 3: derselbe Termin aus zwei Endpunkten mit
+  // verschiedenem Fachsemester bildet zwei Module, bleibt aber ein Slot.
+  it('führt denselben Termin in zwei gewählten Modulen als je eigene Zeile und übernimmt ihn einmal', () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const fs4 = termin({ courseId: '46813', name: 'Informationssicherheit', grade: '4' });
+    const fs6 = { ...fs4, grade: '6' };
+    mockParams = { module: '46813|4,46813|6' };
+    mockEinrichtung = { endpunkte: ['INPBPI', 'INPBDS'], gruppenkennung: 'C8' };
+    mockStudiengaenge = [
+      { sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['4'], po: '2019' },
+      { sname: 'INPBDS', name: 'Bachelor Informatik Data Science', grades: ['6'], po: '2019' },
+    ];
+    mockTermineQuery = {
+      ...mockTermineQuery,
+      perEndpunkt: [
+        { sname: 'INPBPI', name: 'Bachelor Informatik', termine: [fs4] },
+        { sname: 'INPBDS', name: 'Bachelor Informatik Data Science', termine: [fs6] },
+      ],
+    };
+    renderScreen();
+
+    const zeilen = screen.getAllByLabelText(/08:00–09:30 Informationssicherheit V/);
+    expect(zeilen).toHaveLength(2);
+    expect(zeilen.every((z) => z.props.accessibilityState.checked)).toBe(true);
+    expect(errorSpy.mock.calls.some((aufruf) => String(aufruf[0]).includes('same key'))).toBe(false);
+    errorSpy.mockRestore();
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+    const [hinzuzufuegen] = mockMehrereUebernehmen.mock.calls[0]!;
+    expect(hinzuzufuegen).toHaveLength(1);
+  });
 });
 
 describe('Lehrende Person in der Terminzeile des Planungsmodus', () => {

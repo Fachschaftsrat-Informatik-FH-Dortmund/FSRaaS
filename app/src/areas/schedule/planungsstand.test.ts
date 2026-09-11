@@ -178,6 +178,37 @@ describe('Kennzeichnung des Planungsstands je Veranstaltung', () => {
   });
 });
 
+// Change `planungsmodus-mehrfachauswahl-defekt` (design.md, Context): Termine,
+// die sich nur in Raum oder Name unterscheiden, stellt `kursbaum.ts` als
+// getrennte Zeilen dar — sie müssen auch getrennt gewählt werden. Werte aus der
+// Live-Abfrage von INT-002 am 2026-09-11, Endpunkt `INPBPI`.
+describe('Zusammenfassen deckungsgleicher Rohtermine', () => {
+  it('Termine mit abweichendem Raum: die Wahl des einen gilt nicht für den anderen', () => {
+    const raumA = rohtermin({ courseId: '411031', name: 'Lern- und Arbeitstechniken (siehe ILIAS-Kurs)', courseType: 'SV', studentSet: 'A-P', weekday: 'Wed', timeBeginMin: 960, timeEndMin: 1005, roomId: 'A.2.03' });
+    const raumB = { ...raumA, roomId: 'A.3.03' };
+
+    expect(terminEntsprichtEintrag(raumA, planeintragFuer(raumA))).toBe(true);
+    expect(terminEntsprichtEintrag(raumB, planeintragFuer(raumA))).toBe(false);
+  });
+
+  it('Termine mit abweichendem Namen: die Wahl des einen gilt nicht für den anderen', () => {
+    const ersteHaelfte = rohtermin({ courseId: '46884', name: 'Sicherheits-und Servicemanagement (1. Semesterhälfte)', courseType: 'V', studentSet: 'A-P', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 815, roomId: 'C.3.32' });
+    const zweiteHaelfte = { ...ersteHaelfte, name: 'Sicherheits-und Servicemanagement (2. Semesterhälfte)' };
+
+    expect(terminEntsprichtEintrag(zweiteHaelfte, planeintragFuer(ersteHaelfte))).toBe(false);
+  });
+
+  it('„Technisches Englisch 1" und „10" zur selben Zeit: nur die gewählte Gruppe zählt als gewählt', () => {
+    const englisch1 = rohtermin({ courseId: '41102', name: 'Technisches Englisch 1', courseType: 'SV', studentSet: 'A-P', lecturerName: 'Feldman', weekday: 'Mon', timeBeginMin: 855, timeEndMin: 950, roomId: 'C.E.41' });
+    const englisch10 = { ...englisch1, name: 'Technisches Englisch 10', lecturerName: 'Morovvatdar', roomId: 'C.E.42' };
+    const m: Modul = { key: '41102|2', courseId: '41102', name: 'Technisches Englisch', termine: [englisch1, englisch10] };
+
+    const [stand] = ermittlePlanungsstand([m], [planeintragFuer(englisch1)]);
+
+    expect(stand!.gewaehlteSlots).toEqual([englisch1]);
+  });
+});
+
 describe('Mehrere Gruppen-Slots übernehmen', () => {
   it('zwei Gruppen-Slots derselben Veranstaltung können gemeinsam gewählt werden', () => {
     const a = rohtermin({ courseType: 'ÜPP', studentSet: 'A-B', timeBeginMin: 480, timeEndMin: 570 });

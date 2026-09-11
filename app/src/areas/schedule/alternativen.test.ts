@@ -124,4 +124,32 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
     const entries = [eintrag({ id: 'v', courseId: 'INF999' })];
     expect(alternativenDesTages([ANDERES_MODUL], entries, 'Wed', 'C8')).toEqual([]);
   });
+
+  // Change `planungsmodus-mehrfachauswahl-defekt`, design.md Entscheidung 4:
+  // „Informationssicherheit" steht live in `INPBPI` (Fachsemester 4) und
+  // `INPBDS` (6) mit identischem Termin — zwei Module, ein Termin.
+  it('blendet einen Termin, der in zwei gewählten Modulen steht, nur einmal ein', () => {
+    const v = termin({ courseId: '46813', name: 'Informationssicherheit', weekday: 'Tue' });
+    const ue = termin({ courseId: '46813', name: 'Informationssicherheit', courseType: 'Ü', studentSet: 'A-D', weekday: 'Thu' });
+    const fs4: Modul = { key: '46813|4', courseId: '46813', name: 'Informationssicherheit', termine: [v, ue] };
+    const fs6: Modul = { ...fs4, key: '46813|6' };
+    const entries = [eintrag({ id: 'v', courseId: '46813', name: 'Informationssicherheit', weekday: 'Tue' })];
+
+    expect(alternativenDesTages([fs4, fs6], entries, 'Thu', null)).toHaveLength(1);
+  });
+
+  // Live-Bestand `DDPM`, 2026-09-11: zwei Termine, die sich allein im Namen
+  // unterscheiden — gleicher Kurs, gleiche Zeit, gleicher Raum.
+  it('blendet zwei gleichzeitige Termine verschiedenen Namens getrennt ein', () => {
+    const ersteHaelfte = termin({ courseId: '46884', name: 'Sicherheits-und Servicemanagement (1. Semesterhälfte)', studentSet: 'A-P', roomId: 'C.3.32', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 815 });
+    const zweiteHaelfte = { ...ersteHaelfte, name: 'Sicherheits-und Servicemanagement (2. Semesterhälfte)' };
+    const uebung = { ...ersteHaelfte, courseType: 'Ü' as const, weekday: 'Wed' as const };
+    const m: Modul = { key: '46884|2', courseId: '46884', name: ersteHaelfte.name, termine: [ersteHaelfte, zweiteHaelfte, uebung] };
+    const entries = [eintrag({ id: 'ue', courseId: '46884', name: uebung.name, courseType: 'Ü', studentSet: 'A-P', roomId: 'C.3.32', weekday: 'Wed', timeBeginMin: 720, timeEndMin: 815 })];
+
+    const alternativen = alternativenDesTages([m], entries, 'Tue', null);
+
+    expect(alternativen.map((a) => a.name)).toEqual([ersteHaelfte.name, zweiteHaelfte.name]);
+    expect(new Set(alternativen.map((a) => a.id)).size).toBe(2);
+  });
 });
