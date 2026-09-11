@@ -361,6 +361,28 @@ export function PlanungScreen() {
     );
   }
 
+  // Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus"
+  // (design.md, Entscheidung 6.2): Der reguläre Weg führt über den Schritt zur
+  // Gruppenkennung, ein Tiefeneinsprung kann ihn aber überspringen. Die Prüfung
+  // steht deshalb am Bildschirm selbst und nicht allein am Bedienweg dorthin.
+  if (einrichtung.gruppenkennung === null) {
+    return (
+      <Screen center>
+        <MessageView
+          symbol="—"
+          title={t('schedule.gruppenkennungFehltTitel')}
+          body={t('schedule.gruppenkennungFehlt')}
+          action={
+            <AppButton
+              label={t('schedule.gruppenkennungFestlegen')}
+              onPress={() => router.push({ pathname: '/gruppenkennung', params: { module: routeModulKeys.join(',') } })}
+            />
+          }
+        />
+      </Screen>
+    );
+  }
+
   if (relevanteModule.length === 0) {
     return (
       <Screen center>
@@ -373,6 +395,10 @@ export function PlanungScreen() {
       </Screen>
     );
   }
+
+  // Ab hier steht die Gruppenkennung fest (Wächter oben): als eigene Bindung
+  // festgehalten, damit die Verengung auch in den Rückrufen des JSX gilt.
+  const gruppenkennung: string = einrichtung.gruppenkennung;
 
   const zeilen = relevanteModule.flatMap((modul) => modul.termine.map((termin) => ({ modul, termin })));
   const zeilenDesTages = zeilen
@@ -404,7 +430,7 @@ export function PlanungScreen() {
               termin={termin}
               gewaehlt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e))}
               stand={planungsstand.find((s) => s.modulKey === modul.key && s.art === termin.courseType)}
-              eigeneGruppe={gruppenzugehoerig(einrichtung.gruppenkennung, termin.studentSet)}
+              eigeneGruppe={gruppenzugehoerig(gruppenkennung, termin.studentSet)}
               konfliktstufe={pruefeKandidatGegenZwischenstand(
                 termin,
                 zwischenstand.filter((e) => !terminEntsprichtEintrag(termin, e)),
@@ -422,7 +448,7 @@ export function PlanungScreen() {
         ausstehend={ausstehend}
         zwischenstand={zwischenstand}
         jetztSek={jetztSek}
-        gruppenkennung={einrichtung.gruppenkennung}
+        gruppenkennung={gruppenkennung}
         onSpringeZu={springeZu}
         onAnlegen={() =>
           router.push({ pathname: '/termin', params: { wochentag: aktiverWochentag, planung: '1' } })
@@ -592,7 +618,7 @@ function AusstehendLeiste({
   ausstehend: readonly VeranstaltungsartStand[];
   zwischenstand: readonly PlanEntry[];
   jetztSek: number;
-  gruppenkennung: string | null;
+  gruppenkennung: string;
   onSpringeZu: (modulKey: string, slot: OfficialTermin) => void;
   onAnlegen: () => void;
 }) {

@@ -1,21 +1,14 @@
-import { TextInput } from 'react-native';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
 import { SetupScreen } from './SetupScreen';
+import { __leseWeiterAktionForTest, __resetWeiterAktionForTest } from '../weiterAktion';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 
 let mockEinrichtung: any;
 const mockEndpunktUmschalten = jest.fn();
-const mockSetGruppenkennung = jest.fn();
-const mockVorschlagSetzen = jest.fn();
-const mockVorschlagBestaetigen = jest.fn();
-const mockVorschlagVerwerfen = jest.fn();
-
-let mockMatrikelnummer: string | null;
-const mockSetMatrikelnummer = jest.fn();
 
 jest.mock('../einrichtung', () => ({
   GRUPPENKENNUNG_MUSTER: /^[A-Z][0-9]+$/,
@@ -23,27 +16,13 @@ jest.mock('../einrichtung', () => ({
     einrichtung: mockEinrichtung,
     loaded: true,
     endpunktUmschalten: mockEndpunktUmschalten,
-    setGruppenkennung: mockSetGruppenkennung,
-    gruppenkennungVorschlagSetzen: mockVorschlagSetzen,
-    gruppenkennungVorschlagBestaetigen: mockVorschlagBestaetigen,
-    gruppenkennungVorschlagVerwerfen: mockVorschlagVerwerfen,
-  }),
-  useMatrikelnummer: () => ({
-    matrikelnummer: mockMatrikelnummer,
-    loaded: true,
-    setMatrikelnummer: mockSetMatrikelnummer,
   }),
 }));
 
 let mockStudiengaengeHook: any;
-let mockTermineQuery: any;
-let mockErmittelnHook: any;
-const mockErmittelnMutate = jest.fn();
 
 jest.mock('../api', () => ({
   useStudiengaenge: () => mockStudiengaengeHook,
-  useTermineFuerEndpunkte: () => mockTermineQuery,
-  useGruppenkennungErmitteln: () => ({ mutate: mockErmittelnMutate, ...mockErmittelnHook }),
 }));
 
 function qr(data: unknown, over: Partial<Record<string, unknown>> = {}) {
@@ -71,16 +50,14 @@ const STUDIENGAENGE = [
 
 beforeEach(() => {
   jest.clearAllMocks();
+  __resetWeiterAktionForTest();
   mockEinrichtung = { endpunkte: [], gruppenkennung: null, gruppenkennungVorschlag: null };
-  mockMatrikelnummer = null;
   mockStudiengaengeHook = {
     studiengaenge: STUDIENGAENGE,
     istRueckfall: false,
     query: qr(STUDIENGAENGE),
     rueckfallQuery: qr(undefined, { isPending: false }),
   };
-  mockTermineQuery = { termine: [], alleGeladen: true, isPending: false, isError: false, isFetching: false, refetch: jest.fn() };
-  mockErmittelnHook = { isPending: false, isError: false, isSuccess: false, data: undefined };
 });
 
 afterEach(cleanup);
@@ -91,6 +68,11 @@ const renderScreen = () =>
       <SetupScreen />
     </ThemeProvider>,
   );
+
+// Der Weiter-Bedienweg sitzt in der Kopfzeile (`_layout.tsx`), also außerhalb
+// des Bildschirms. Hier wird geprüft, was der Bildschirm anmeldet; dass das
+// Kopfzeilen-Symbol daran hängt, prüft `WeiterZugang.test.tsx`.
+const weiterAktion = __leseWeiterAktionForTest;
 
 describe('Auswahl der Endpunkte des Lehrangebots', () => {
   it('Erstmalige Einrichtung: bietet die über INT-001 gelieferten Endpunkte gegliedert an, ohne nach einem Fachsemester zu fragen', () => {
@@ -122,61 +104,55 @@ describe('Auswahl der Endpunkte des Lehrangebots', () => {
 });
 
 describe('Freitextsuche in der Endpunktauswahl', () => {
-  it('zeigt nur den passenden Endpunkt, sobald ein Suchtext eingegeben wird', () => {
+  it('Suche nach Kurzname: zeigt nur den passenden Endpunkt, sobald ein Suchtext eingegeben wird', () => {
     renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Suche nach Klar- oder Kurzname'), 'INPBPI');
+    fireEvent.changeText(screen.getByLabelText('Endpunkt suchen'), 'INPBPI');
     expect(screen.getByText('Bachelor Informatik (StgPO 2019), VR Praktische Inf.')).toBeTruthy();
     expect(screen.queryByText('Tutorien')).toBeNull();
   });
+
+  it('Beschriftung bei gefülltem Feld: die Beschriftung bleibt sichtbar, wenn bereits Text eingegeben ist', () => {
+    renderScreen();
+    // Als eigenes Textelement über dem Feld, nicht nur als Platzhalter darin.
+    expect(screen.getByText('Endpunkt suchen')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Endpunkt suchen'), 'INPBPI');
+    expect(screen.getByText('Endpunkt suchen')).toBeTruthy();
+  });
 });
 
-describe('Gruppenkennung ohne Matrikelnummer', () => {
-  beforeEach(() => {
+describe('Eigener Schritt für die Gruppenkennung nach der Modulauswahl', () => {
+  it('Einrichtung ohne Gruppenkennung: die Einrichtung verlangt dort keine Gruppenkennung', () => {
     mockEinrichtung.endpunkte = ['INPBPI'];
-  });
-
-  it('Einrichtung ohne Matrikelnummer: schließt die Einrichtung durch Eingabe der vollständigen Kennung in das Textfeld ab', () => {
     renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Gruppenkennung manuell eingeben'), 'C8');
-    expect(mockSetGruppenkennung).toHaveBeenCalledWith('C8');
-    expect(mockMatrikelnummer).toBeNull();
+    expect(screen.queryByLabelText('Gruppenkennung manuell eingeben')).toBeNull();
+    expect(screen.queryByLabelText('Matrikelnummer')).toBeNull();
+    expect(screen.queryByText(/Gruppenkennung/)).toBeNull();
   });
+});
 
-  it('Voreingestellter Weg: die Matrikelnummer steht an erster Stelle, das manuelle Feld unmittelbar darunter — kein Umschalter', () => {
+describe('Weiterführender Bedienweg in der Kopfzeile', () => {
+  it('Nächster Schritt in der Einrichtung: meldet den Weg mit mindestens einem gewählten Endpunkt freigegeben an', () => {
+    mockEinrichtung.endpunkte = ['INPBPI'];
     renderScreen();
-    const eingabefelder = screen.UNSAFE_getAllByType(TextInput).map((n) => n.props.accessibilityLabel);
-    const posMatrikelnummer = eingabefelder.indexOf('Matrikelnummer');
-    const posManuell = eingabefelder.indexOf('Gruppenkennung manuell eingeben');
-    expect(posMatrikelnummer).toBeGreaterThan(-1);
-    expect(posManuell).toBe(posMatrikelnummer + 1); // unmittelbar darunter, kein Umschalter dazwischen
-    expect(screen.queryByLabelText('Über Matrikelnummer')).toBeNull(); // kein Tab-Umschalter im Baum
-    expect(screen.queryByLabelText('Manuell')).toBeNull();
+    const aktion = weiterAktion();
+    expect(aktion?.freigegeben).toBe(true);
+    aktion?.weiter();
+    expect(mockRouter.push).toHaveBeenCalledWith('/kurse');
   });
 
-  it('Kleinschreibung eingegeben: übernimmt "c8" als "C8", ohne die Eingabe zurückzuweisen', () => {
-    renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Gruppenkennung manuell eingeben'), 'c8');
-    expect(mockSetGruppenkennung).toHaveBeenCalledWith('C8');
-  });
-
-  it('benennt die fehlende Zahl bei einer unvollständigen Eingabe', () => {
-    renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Gruppenkennung manuell eingeben'), 'C');
-    expect(screen.getByText(/Unvollständig/)).toBeTruthy();
-    expect(mockSetGruppenkennung).not.toHaveBeenCalledWith('C');
-  });
-
-  it('lässt sich ohne jede Matrikelnummer und ohne Gruppenkennung fortsetzen, sobald ein Endpunkt gewählt ist', () => {
-    renderScreen();
-    const knopf = screen.getByLabelText('Weiter zur Kursauswahl');
-    expect(knopf.props.accessibilityState?.disabled).toBeFalsy();
-  });
-
-  it('verhindert das Fortsetzen, solange kein Endpunkt gewählt ist', () => {
+  it('bleibt zurückgenommen und führt nicht weiter, solange kein Endpunkt gewählt ist', () => {
     mockEinrichtung.endpunkte = [];
     renderScreen();
-    const knopf = screen.getByLabelText('Weiter zur Kursauswahl');
-    expect(knopf.props.accessibilityState?.disabled).toBe(true);
+    const aktion = weiterAktion();
+    expect(aktion?.freigegeben).toBe(false);
+    aktion?.weiter();
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it('führt den Weg nicht mehr am Seitenende, sondern allein in der Kopfzeile', () => {
+    mockEinrichtung.endpunkte = ['INPBPI'];
+    renderScreen();
+    expect(screen.queryByLabelText('Weiter zur Kursauswahl')).toBeNull();
   });
 });
 
@@ -191,80 +167,5 @@ describe('SCHED-F-254 Rückfallliste mit sichtbarem Altershinweis', () => {
     renderScreen();
     expect(screen.getByText(/Rückfallliste/)).toBeTruthy();
     expect(screen.getByText(/Stand/)).toBeTruthy();
-  });
-});
-
-describe('SCHED-F-690 Ermittlung der Gruppenkennung aus der Matrikelnummer', () => {
-  beforeEach(() => {
-    mockEinrichtung.endpunkte = ['INPBPI'];
-    mockMatrikelnummer = '1234567';
-  });
-
-  it('ruft die Ermittlung auf und legt eine gefundene Kennung als Vorschlag ab', () => {
-    mockErmittelnMutate.mockImplementation((_wert, opts) => opts.onSuccess('O7'));
-    renderScreen();
-    fireEvent.press(screen.getByText('Gruppenkennung ermitteln'));
-    expect(mockErmittelnMutate).toHaveBeenCalledWith('1234567', expect.any(Object));
-    expect(mockVorschlagSetzen).toHaveBeenCalledWith('O7');
-  });
-
-  it('zeigt einen ruhigen Hinweis, wenn keine Kennung hinterlegt ist, statt eines Fehlers', () => {
-    mockErmittelnHook = { isPending: false, isError: false, isSuccess: true, data: null };
-    renderScreen();
-    expect(screen.getByText(/keine Gruppe hinterlegt/)).toBeTruthy();
-  });
-
-  it('bietet bei einem Abruffehler eine Wiederholen-Option an, die manuelle Angabe bleibt möglich', () => {
-    mockErmittelnHook = { isPending: false, isError: true, isSuccess: false, data: undefined };
-    renderScreen();
-    expect(screen.getByText('Die Gruppenkennung konnte nicht ermittelt werden.')).toBeTruthy();
-    expect(screen.getByText('Erneut versuchen')).toBeTruthy();
-    expect(screen.getByLabelText('Gruppenkennung manuell eingeben')).toBeTruthy();
-  });
-});
-
-describe('SCHED-F-700 Ermittelte Gruppenkennung erst nach Bestätigung übernehmen', () => {
-  beforeEach(() => {
-    mockEinrichtung.endpunkte = ['INPBPI'];
-    mockEinrichtung.gruppenkennungVorschlag = 'O7';
-  });
-
-  it('übernimmt den Vorschlag erst nach ausdrücklicher Bestätigung', () => {
-    renderScreen();
-    expect(screen.getByText(/Gefunden: O7/)).toBeTruthy();
-    expect(mockSetGruppenkennung).not.toHaveBeenCalled();
-    fireEvent.press(screen.getByText('Übernehmen'));
-    expect(mockVorschlagBestaetigen).toHaveBeenCalled();
-  });
-
-  it('verwirft eine abgelehnte Kennung, ohne den Modus zu wechseln (es gibt keinen mehr)', () => {
-    renderScreen();
-    fireEvent.press(screen.getByText('Das bin nicht ich'));
-    expect(mockVorschlagVerwerfen).toHaveBeenCalled();
-  });
-});
-
-describe('Rückmeldung während der Eingabe der Gruppenkennung', () => {
-  it('zeigt „0 von N Terminen" als gültiges Ergebnis, kein Fehler', () => {
-    mockEinrichtung.endpunkte = ['INPBPI'];
-    mockEinrichtung.gruppenkennung = 'Z';
-    mockTermineQuery = { termine: [{ studentSet: 'A' }, { studentSet: 'B' }], alleGeladen: true, isPending: false, isError: false, isFetching: false, refetch: jest.fn() };
-    renderScreen();
-    expect(screen.getByText('0 von 2 Terminen betreffen dich')).toBeTruthy();
-  });
-
-  it('zählt die tatsächlich eingeschlossenen Termine', () => {
-    mockEinrichtung.endpunkte = ['INPBPI'];
-    mockEinrichtung.gruppenkennung = 'A';
-    mockTermineQuery = {
-      termine: [{ studentSet: 'A' }, { studentSet: 'B' }, { studentSet: '*' }],
-      alleGeladen: true,
-      isPending: false,
-      isError: false,
-      isFetching: false,
-      refetch: jest.fn(),
-    };
-    renderScreen();
-    expect(screen.getByText('2 von 3 Terminen betreffen dich')).toBeTruthy();
   });
 });
