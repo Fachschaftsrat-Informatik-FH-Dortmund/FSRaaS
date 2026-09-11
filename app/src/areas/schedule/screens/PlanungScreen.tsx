@@ -84,6 +84,17 @@ function baueSessionEintrag(slot: OfficialTermin): OfficialPlanEntry {
   };
 }
 
+/**
+ * Kennung einer Zeile des Planungsmodus: der Rohtermin (`terminSchluessel`)
+ * im Kontext seines Moduls. Derselbe Rohtermin kann in zwei gewählten Modulen
+ * stehen (Change `planungsmodus-mehrfachauswahl-defekt`, design.md
+ * Entscheidungen 2 und 3) — erst der Modulschlüssel macht React-Schlüssel und
+ * Sprungziel eindeutig.
+ */
+function zeilenKennung(modulKey: string, termin: OfficialTermin): string {
+  return `${terminSchluessel(termin)}#${modulKey}`;
+}
+
 function formatZeit(minutenSeitMitternacht: number): string {
   const stunden = Math.floor(minutenSeitMitternacht / 60);
   const minuten = minutenSeitMitternacht % 60;
@@ -154,8 +165,13 @@ export function PlanungScreen() {
   useEffect(() => {
     if (seedRef.current || !allesGeladen || relevanteModule.length === 0) return;
     seedRef.current = true;
+    // Derselbe Rohtermin kann als einziger Slot seiner Art in mehreren Modulen
+    // stehen — er wird nur einmal vorbelegt (Change
+    // `planungsmodus-mehrfachauswahl-defekt`, design.md Entscheidung 3).
     const vorbelegbar = vorbelegteSlots(relevanteModule).filter(
-      (slot) => !gespeicherterPlanRelevant.some((e) => terminEntsprichtEintrag(slot, e)),
+      (slot, index, alle) =>
+        !gespeicherterPlanRelevant.some((e) => terminEntsprichtEintrag(slot, e)) &&
+        alle.findIndex((s) => terminSchluessel(s) === terminSchluessel(slot)) === index,
     );
     if (vorbelegbar.length > 0) {
       setSessionEntscheidungen(vorbelegbar.map((slot) => baueSessionEintrag(slot)));
@@ -310,8 +326,8 @@ export function PlanungScreen() {
   // Requirement „Leiste der ausstehenden Veranstaltungen": Sprung mit
   // kurzzeitiger Hervorhebung und Scrollen ins Sichtfeld (design.md,
   // Entscheidung 10).
-  function springeZu(slot: OfficialTermin) {
-    const ziel = terminSchluessel(slot);
+  function springeZu(modulKey: string, slot: OfficialTermin) {
+    const ziel = zeilenKennung(modulKey, slot);
     setAktiverWochentag(slot.weekday);
     scrollZielRef.current = ziel;
     setHervorgehoben(ziel);
@@ -383,7 +399,7 @@ export function PlanungScreen() {
         ) : (
           zeilenDesTages.map(({ modul, termin }) => (
             <TerminZeile
-              key={terminSchluessel(termin)}
+              key={zeilenKennung(modul.key, termin)}
               modul={modul}
               termin={termin}
               gewaehlt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e))}
@@ -394,8 +410,8 @@ export function PlanungScreen() {
                 zwischenstand.filter((e) => !terminEntsprichtEintrag(termin, e)),
                 jetztSek,
               )}
-              hervorgehoben={hervorgehoben === terminSchluessel(termin)}
-              onLayout={(y) => zeileGelayoutet(terminSchluessel(termin), y)}
+              hervorgehoben={hervorgehoben === zeilenKennung(modul.key, termin)}
+              onLayout={(y) => zeileGelayoutet(zeilenKennung(modul.key, termin), y)}
               onUmschalten={() => terminUmschalten(modul, termin)}
             />
           ))
@@ -526,7 +542,7 @@ function TerminZeile({
 
   return (
     <View
-      testID={`zeile-${terminSchluessel(termin)}`}
+      testID={`zeile-${zeilenKennung(modul.key, termin)}`}
       onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
       style={[
         styles.zeile,
@@ -577,7 +593,7 @@ function AusstehendLeiste({
   zwischenstand: readonly PlanEntry[];
   jetztSek: number;
   gruppenkennung: string | null;
-  onSpringeZu: (slot: OfficialTermin) => void;
+  onSpringeZu: (modulKey: string, slot: OfficialTermin) => void;
   onAnlegen: () => void;
 }) {
   const { t } = useTranslation();
@@ -631,7 +647,7 @@ function AusstehendLeiste({
                 key={`${stand.modulKey}|${stand.art}`}
                 accessibilityRole="button"
                 accessibilityLabel={label}
-                onPress={() => onSpringeZu(zielSlot)}
+                onPress={() => onSpringeZu(stand.modulKey, zielSlot)}
                 style={[styles.ausstehendChip, { borderColor: colors.border }]}
               >
                 <Text style={{ color: colors.text, fontSize: 13 }}>{`${stand.modulName} ${stand.art}`}</Text>

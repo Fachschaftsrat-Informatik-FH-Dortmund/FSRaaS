@@ -38,13 +38,20 @@ export function alternativenDesTages(
   gruppenkennung: string | null,
 ): OfficialPlanEntry[] {
   const ergebnis: OfficialPlanEntry[] = [];
+  // Derselbe Rohtermin kann in mehreren gewählten Modulen stehen (Change
+  // `planungsmodus-mehrfachauswahl-defekt`, design.md Entscheidungen 3 und 4)
+  // — er wird nur einmal eingeblendet.
+  const bereitsEingeblendet = new Set<string>();
   for (const modul of gewaehlteModule(module, entries)) {
     for (const termin of modul.termine) {
       if (termin.weekday !== wochentag) continue;
       if (entries.some((e) => terminEntsprichtEintrag(termin, e))) continue;
+      const id = `alternative-${terminSchluessel(termin)}`;
+      if (bereitsEingeblendet.has(id)) continue;
+      bereitsEingeblendet.add(id);
       ergebnis.push({
         kind: 'offiziell',
-        id: `alternative-${terminSchluessel(termin)}`,
+        id,
         deaktiviertBis: null,
         color: farbeFuerVeranstaltung(termin.courseId || termin.name),
         weekday: termin.weekday,

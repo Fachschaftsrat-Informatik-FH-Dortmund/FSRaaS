@@ -122,3 +122,6 @@ oben genannten Auslöser tatsächlich vorliegt. Die Frage ist an einer
 Live-Abfrage von INT-002 zu entscheiden, nicht am Code — ein Negativtest
 gegen den FBWS beweist nichts, weil der Dienst unbekannte Parameter stumm
 ignoriert.
+
+**Geklärt am 2026-09-11:** Auslöser 1 liegt vor, Auslöser 2 nicht — Befund
+und Zahlen in design.md, Context.

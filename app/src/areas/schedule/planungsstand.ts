@@ -30,14 +30,28 @@ export interface VeranstaltungsartStand {
   stand: VeranstaltungsartStandArt;
 }
 
+/** Die Felder, die einen Rohtermin ausmachen — Rohtermin und Planeintrag tragen sie gleichermaßen. */
+type TerminMerkmale = Pick<
+  OfficialTermin,
+  'courseId' | 'name' | 'courseType' | 'weekday' | 'timeBeginMin' | 'timeEndMin' | 'roomId' | 'studentSet'
+>;
+
 /**
- * Stabile Kennung eines Rohtermins innerhalb einer Veranstaltungsart. INT-002
- * liefert selbst keine Terminkennung (integrations.md); die Kombination aus
- * Kurs, Art, Wochentag, Zeitraum, Raum und Gruppenmenge ist im geprüften
- * Bestand eindeutig.
+ * Identität eines Rohtermins. INT-002 liefert selbst keine Terminkennung
+ * (integrations, INT-002: `id` leer beobachtet); maßgeblich sind die Merkmale
+ * des Requirements „Zusammenfassen deckungsgleicher Rohtermine" —
+ * Veranstaltung (Kurs und Name), Art, Wochentag, Zeitraum, Raum und
+ * Gruppenmenge. Dieselbe Kennung dient `kursbaum.ts` zum Zusammenfassen und
+ * dem Planungsmodus zur Auswahl: Was als eine Zeile erscheint, wird als ein
+ * Slot gewählt (Change `planungsmodus-mehrfachauswahl-defekt`, design.md
+ * Entscheidung 1). Der Name zählt mit, weil Parallelgruppen wie „Technisches
+ * Englisch 1" und „Technisches Englisch 10" Kurs, Zeit und Gruppenmenge teilen
+ * und sich nur in Name und Raum unterscheiden.
  */
-export function terminSchluessel(t: OfficialTermin): string {
-  return [t.courseId, t.courseType, t.weekday, t.timeBeginMin, t.timeEndMin, t.roomId, t.studentSet].join('|');
+export function terminSchluessel(t: TerminMerkmale): string {
+  return [t.courseId, t.courseType, t.weekday, t.timeBeginMin, t.timeEndMin, t.roomId, t.studentSet, t.name].join(
+    '|',
+  );
 }
 
 /**
@@ -55,15 +69,7 @@ export function planEintraegeFuerModul(entries: readonly PlanEntry[], modul: Mod
 
 /** Trägt ein Planeintrag (gesichert oder im Zwischenstand) genau diesen Rohtermin? */
 export function terminEntsprichtEintrag(t: OfficialTermin, e: PlanEntry): boolean {
-  return (
-    e.kind === 'offiziell' &&
-    e.courseId === t.courseId &&
-    e.courseType === t.courseType &&
-    e.weekday === t.weekday &&
-    e.timeBeginMin === t.timeBeginMin &&
-    e.timeEndMin === t.timeEndMin &&
-    e.studentSet === t.studentSet
-  );
+  return e.kind === 'offiziell' && terminSchluessel(e) === terminSchluessel(t);
 }
 
 /** Gruppiert die Termine eines Moduls nach Veranstaltungsart, stabil in Eingabereihenfolge. */
