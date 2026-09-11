@@ -1,6 +1,6 @@
 ## 1. Feiertagsberechnung
 
-- [x] 1.1 NRW-Feiertagsberechnung implementieren (acht feste Daten, fünf über die Gaußsche Osterformel abgeleitet) und mit `describe('Hinweis auf gesetzlichen Feiertag', …)` gegen mehrere Jahre testen, darunter 2026 (Pfingstmontag 25.05., Fronleichnam 04.06. — Referenzwerte aus dem INT-009-Spike)
+- [x] 1.1 NRW-Feiertagsberechnung implementieren (sechs feste Daten, fünf über die Gaußsche Osterformel abgeleitet — elf nach § 2 Feiertagsgesetz NRW, ohne Reformationstag) und mit `describe('Hinweis auf gesetzlichen Feiertag', …)` gegen mehrere Jahre testen, darunter 2026 (Pfingstmontag 25.05., Fronleichnam 04.06. — Referenzwerte aus dem INT-009-Spike)
 - [x] 1.2 Randfälle testen: Jahreswechsel, Osterdatum in unterschiedlichen Jahren (frühester/spätester Ostersonntag im geprüften Zeitraum)
 
 ## 2. Anbindung an den Stundenplan
