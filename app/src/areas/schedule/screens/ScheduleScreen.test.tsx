@@ -612,6 +612,45 @@ describe('Kein selbsttätiges Entfernen des Stundenplans', () => {
   });
 });
 
+describe('Gruppenkennung verpflichtend vor dem Planungsmodus', () => {
+  /** Stand einer früheren Fassung der App: Termine im Plan, aber keine Gruppenkennung. */
+  async function seedOhneKennung(entries: PlanEntry[]) {
+    await seed(entries);
+    await writeJson('scheduleSetup', {
+      endpunkte: ['INPBPI'],
+      gruppenkennung: null,
+      gruppenkennungVorschlag: null,
+    });
+    __resetEinrichtungForTest();
+  }
+
+  it('Bestehender Plan ohne Kennung: führt auf den Schritt zur Gruppenkennung und lässt die Termine unverändert', async () => {
+    await seedOhneKennung([ANALYSIS, PROGRAMMIEREN]);
+    await zeige();
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/gruppenkennung'));
+
+    // Requirement „Kein selbsttätiges Entfernen des Stundenplans": der Plan
+    // bleibt vollständig erhalten.
+    const gespeichert = await readScheduleEntries();
+    expect(gespeichert.map((e) => e.id).sort()).toEqual(['analysis', 'prog']);
+  });
+
+  it('führt nicht weiter, wenn eine Gruppenkennung gesetzt ist', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    expect(mockPush).not.toHaveBeenCalledWith('/gruppenkennung');
+  });
+
+  it('führt nicht weiter, solange der Plan leer ist — die neue Reihenfolge fragt die Kennung später', async () => {
+    await seedOhneKennung([]);
+    await zeige();
+
+    expect(mockPush).not.toHaveBeenCalledWith('/gruppenkennung');
+  });
+});
+
 describe('Kennzeichnung eines leeren Wochentags', () => {
   it('nennt den Gültigkeitszeitraum als Grund, wenn er den Tag geleert hat', async () => {
     const abgelaufen = Math.floor(new Date(2026, 7, 31, 12, 0, 0).getTime() / 1000);

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react-nativ
 
 import { ThemeProvider } from '@/theme';
 import { __resetModulauswahlAktionForTest } from '../modulauswahlAktion';
+import { __leseWeiterAktionForTest, __resetWeiterAktionForTest } from '../weiterAktion';
 import { ModulauswahlVerwerfenZugang } from '../ui/ModulauswahlVerwerfenZugang';
 import { CourseSelectionScreen } from './CourseSelectionScreen';
 
@@ -63,6 +64,7 @@ function perEndpunkt() {
 beforeEach(() => {
   jest.clearAllMocks();
   __resetModulauswahlAktionForTest();
+  __resetWeiterAktionForTest();
   mockEinrichtung = { endpunkte: ['INPBPI', 'TUPB'], gruppenkennung: 'C8', gruppenkennungVorschlag: null };
   mockEntries = [];
   mockStudiengaenge = [
@@ -90,6 +92,11 @@ function renderScreen() {
     </ThemeProvider>,
   );
 }
+
+// Der Weiter-Bedienweg sitzt in der Kopfzeile (`_layout.tsx`), also außerhalb
+// des Bildschirms. Hier wird geprüft, was der Bildschirm anmeldet; dass das
+// Kopfzeilen-Symbol daran hängt, prüft `WeiterZugang.test.tsx`.
+const weiterAktion = __leseWeiterAktionForTest;
 
 function offiziellerEintrag(over: Record<string, unknown>) {
   return {
@@ -123,6 +130,35 @@ describe('Gliederung des Auswahlbestands', () => {
     expect(screen.getByText('Tutorium Mathematik')).toBeTruthy();
     expect(screen.queryByLabelText('V übernehmen')).toBeNull();
     expect(screen.queryByLabelText(/Mo.*C-D/)).toBeNull();
+  });
+});
+
+describe('Eigener Schritt für die Gruppenkennung nach der Modulauswahl', () => {
+  it('Nach der Modulauswahl: führt auf den Schritt zur Gruppenkennung, bevor der Planungsmodus erreichbar ist', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
+
+    expect(weiterAktion()?.freigegeben).toBe(true);
+    weiterAktion()?.weiter();
+
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/gruppenkennung',
+      params: { module: '43051|2' },
+    });
+    expect(mockRouter.push).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: '/planung' }));
+  });
+
+  it('bleibt zurückgenommen und führt nicht weiter, solange kein Modul angekreuzt ist', () => {
+    renderScreen();
+    expect(weiterAktion()?.freigegeben).toBe(false);
+    weiterAktion()?.weiter();
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it('führt den Weg nicht mehr am Seitenende, sondern allein in der Kopfzeile', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
+    expect(screen.queryByLabelText('Weiter zur Planung')).toBeNull();
   });
 });
 

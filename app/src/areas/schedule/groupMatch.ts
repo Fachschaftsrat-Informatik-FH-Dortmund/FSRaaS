@@ -1,5 +1,12 @@
-// SCHED-F-050 bis SCHED-F-090: Gruppenzuordnung. Prüft, ob ein `studentSet`-Wert
+// SCHED-F-060 bis SCHED-F-090: Gruppenzuordnung. Prüft, ob ein `studentSet`-Wert
 // aus INT-002 eine Gruppenkennung (Muster `^[A-Z][0-9]+$`, SCHED-F-040) einschließt.
+//
+// Die Kennung ist immer gesetzt: Seit dem Requirement „Gruppenkennung
+// verpflichtend vor dem Planungsmodus" führt kein Weg mehr am Schritt zur
+// Gruppenkennung vorbei, und der frühere Zweig „keine Kennung gesetzt → jeder
+// Termin gilt als zugehörig" (ehemals SCHED-F-050) ist entfallen. Der Parameter
+// ist deshalb auf `string` verengt — wer ohne Kennung rechnen will, fällt beim
+// Übersetzen auf, statt stillschweigend auf „alles zugehörig" zu laufen.
 // Die Beispieltabelle in `openspec/specs/schedule/spec.md` Abschnitt 4 ist die
 // verbindliche Testvorgabe (QA-F-030) — siehe `groupMatch.test.ts`. Reine Funktion
 // ohne React.
@@ -115,16 +122,13 @@ function liegtImBereich(gruppe: GeparsteGruppenkennung, von: Grenze, bis: Grenze
 }
 
 /**
- * SCHED-F-050 bis SCHED-F-090: Ist ein Termin mit gegebenem `studentSet` der
- * angegebenen Gruppenkennung zugehörig? `gruppenkennung` ist `null`/leer, solange
- * keine Gruppenkennung eingegeben wurde — dann gilt jeder Termin als zugehörig
- * (SCHED-F-050). Ein unbekanntes Muster — bei `studentSet` oder, defensiv, bei der
- * Gruppenkennung selbst — fällt sicher auf „zugehörig" zurück und wird protokolliert
- * (SEC-F-060, Abschnitt 9 der Spec: „sichtbar statt fälschlich als fremd markiert").
+ * SCHED-F-060 bis SCHED-F-090: Ist ein Termin mit gegebenem `studentSet` der
+ * angegebenen Gruppenkennung zugehörig? Ein unbekanntes Muster — bei `studentSet`
+ * oder, defensiv, bei der Gruppenkennung selbst — fällt sicher auf „zugehörig"
+ * zurück und wird protokolliert (SEC-F-060, Abschnitt 9 der Spec: „sichtbar statt
+ * fälschlich als fremd markiert").
  */
-export function gruppenzugehoerig(gruppenkennung: string | null | undefined, studentSet: string): boolean {
-  if (!gruppenkennung) return true; // SCHED-F-050
-
+export function gruppenzugehoerig(gruppenkennung: string, studentSet: string): boolean {
   const geparst = parseStudentSet(studentSet);
   if (geparst.art === 'wildcard') return true; // SCHED-F-060
   if (geparst.art === 'unbekannt') {
@@ -149,14 +153,18 @@ export interface Gruppentreffer {
 }
 
 /**
- * SCHED-F-650: Während der Eingabe einer Gruppenkennung zurückmelden, wie
- * viele Termine des übergebenen Auswahlbestands sie einschließt (Ergebnis von
+ * Requirement „Rückmeldung während der Eingabe der Gruppenkennung": zurückmelden,
+ * wie viele der übergebenen Termine die Kennung einschließt (Ergebnis von
  * {@link gruppenzugehoerig} je Termin). Der Fall „0 von N" ist ein reguläres
  * Ergebnis, kein Fehler — die Funktion wirft nie und meldet ihn wie jeden
  * anderen Zählwert.
+ *
+ * Welche Termine die Bezugsmenge bilden, entscheidet der Aufrufer: seit dem
+ * Gerätetest vom 2026-09-09 sind es allein die Termine der gewählten Module,
+ * nicht mehr der gesamte Auswahlbestand.
  */
 export function zaehleGruppenTreffer(
-  gruppenkennung: string | null | undefined,
+  gruppenkennung: string,
   termine: readonly { studentSet: string }[],
 ): Gruppentreffer {
   const gesamt = termine.length;

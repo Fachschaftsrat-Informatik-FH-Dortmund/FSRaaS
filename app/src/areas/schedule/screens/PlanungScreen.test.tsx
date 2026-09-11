@@ -158,6 +158,27 @@ function renderScreen() {
   );
 }
 
+describe('Gruppenkennung verpflichtend vor dem Planungsmodus', () => {
+  it('zeigt ohne gesetzte Kennung statt des Planungsmodus den Weg auf den Schritt zur Gruppenkennung', () => {
+    mockEinrichtung = { endpunkte: ['INPBPI'], gruppenkennung: null };
+    renderScreen();
+
+    expect(screen.getByText('Gruppenkennung fehlt')).toBeTruthy();
+    // Der Planungsmodus selbst bleibt verschlossen.
+    expect(screen.queryByText(/08:00–09:30/)).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Gruppenkennung festlegen'));
+    expect(mockRouter.push).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: '/gruppenkennung' }),
+    );
+  });
+
+  it('öffnet den Planungsmodus, sobald eine Kennung gesetzt ist', () => {
+    renderScreen();
+    expect(screen.queryByText('Gruppenkennung fehlt')).toBeNull();
+  });
+});
+
 describe('Wege und Übergänge: kein doppelter Zugang zur Modulauswahl', () => {
   it('bietet keinen Verweis „Zur Modulauswahl" mehr — die Modulauswahl bleibt über den Zurück-Weg der Kopfzeile erreichbar', () => {
     renderScreen();
