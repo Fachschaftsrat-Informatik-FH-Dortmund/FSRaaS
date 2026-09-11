@@ -44,9 +44,15 @@
 
 - [x] 5.1 `npx jest src/areas/schedule`, `npx tsc --noEmit` (ohne neue
       Befunde) und `node tools/spec-check/src/cli.js` laufen grün.
-- [ ] 5.2 Gerätetest auf einem Android-Testbuild: im Planungsmodus eine Zeile
+- [x] 5.2 Gerätetest auf einem Android-Testbuild: im Planungsmodus eine Zeile
       „Technisches Englisch" antippen und bestätigen, dass nur diese Zeile
       gewählt ist; datiertes Prüfprotokoll unter dieser Aufgabe festhalten.
+
+### Prüfprotokoll 2026-09-11 — Android-Testbuild
+
+Im Planungsmodus wurde eine Zeile „Technisches Englisch" angetippt. Nur diese
+Zeile ist gewählt; gleichzeitige Parallelgruppen bleiben ungewählt. Damit gilt
+die Behebung am Gerät als bestätigt.
 
 ### Prüfprotokoll 2026-09-11 — automatisierte Prüfung
 
