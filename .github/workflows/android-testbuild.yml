@@ -106,7 +106,7 @@ jobs:
       # Reihenfolge zwingend APK-zuerst: bricht der Upload ab, bleibt die
       # Sidecar-Datei auf dem alten, korrekten Stand stehen (design.md).
       - name: APK hochladen
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
