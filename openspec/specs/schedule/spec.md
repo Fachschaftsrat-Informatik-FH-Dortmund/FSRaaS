@@ -1455,6 +1455,12 @@ Ursprünglicher Text: „Das System muss der Nutzerin einen Schalter bereitstell
 
 Status: entfallen (Entscheidung 2026-09-08). Grund: Von den drei Filtern, die der Schalter aufheben sollte, entfallen zwei — die Gruppenfilterung mit demselben Change, die Eingrenzung auf ein Fachsemester mit `stundenplan-einrichtung-endpunkte`. Für den verbleibenden Gültigkeitszeitraum, der stets gilt, braucht es keinen Sammelschalter. Ersatzlos: Der Gültigkeitszeitraum wird künftig immer angewandt; ein Termin außerhalb seines Zeitraums erscheint nicht mehr, der Leerzustand nennt diesen Grund weiterhin (Requirement „Kennzeichnung eines leeren Wochentags"). Ein gerätelokal gespeicherter Wert `alleAnzeigen` wird beim Laden verworfen.
 
+### Ehemals SCHED-F-050: Alle Termine ohne Gruppenkennung
+
+Ursprünglicher Text: „Solange keine Gruppenkennung angegeben ist, muss das System alle abgerufenen Termine unabhängig von ihrem `studentSet` anzeigen." Herkunft: Alt: lib/areas/schedule/viewmodels/schedule_overview_viewmodel.dart:210.
+
+Status: entfallen (Entscheidung 2026-09-11, nach dem Gerätetest vom 2026-09-09, Issue #68). Grund: Die Gruppenkennung ist seit dem Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus" verbindlich und nicht überspringbar; der Zustand „keine Gruppenkennung angegeben", den diese Anforderung beschreibt, kann damit nicht mehr entstehen. Solange er entstehen konnte, blieb die Gruppenzuordnung — die eigentliche fachliche Leistung dieses Bereichs, mit belegten Fehlern in beiden Alt-Apps — für jede Nutzerin wirkungslos, die den Schritt übersprang. Ersatzlos: Die Freiheit, Termine unabhängig von der eigenen Gruppe zu sehen, entfällt nicht — sie wird vom Requirement „Kennzeichnung gruppenfremder Termine statt Entfernen" getragen, das eine gesetzte Kennung ausdrücklich nur kennzeichnen und nie filtern lässt. Ein persönlicher Plan aus einer früheren Fassung der App ohne Kennung bleibt unverändert erhalten und führt beim Öffnen des Stundenplans auf den Schritt zur Gruppenkennung.
+
 ## Scope / Nicht-Scope
 
 ### Scope
@@ -1556,7 +1562,6 @@ Status: entfallen (Entscheidung 2026-09-08). Grund: Von den drei Filtern, die de
 
 | Gruppenkennung | studentSet | zugehörig | Begründung |
 |---|---|---|---|
-| (keine) | C8 | ja | Ohne Gruppenkennung gelten alle Termine als zugehörig. |
 | C8 | C8 | ja | Einzelwert, Buchstabenteil der Kennung (C) stimmt mit dem Buchstabenteil von `studentSet` überein. |
 | C8 | C3 | ja | Einzelwert, nur der Buchstabe wird verglichen; die Zahl im `studentSet` bleibt unberücksichtigt. |
 | C8 | D3 | nein | Einzelwert, Buchstabe C weicht von D ab. |
@@ -1714,6 +1719,8 @@ Nutzt INT-001 (FBWS Studiengänge) für die Studiengangs-/Semesterauswahl, INT-0
 | INT-019 nicht erreichbar | Hinweis mit Wiederholen-Option; manuelle Angabe von Buchstabe und Zahl bleibt jederzeit möglich, die Einrichtung ist dadurch nicht blockiert |
 | Gruppenkennung liegt ohne Zahl vor (Altbestand oder unerwartete INT-019-Antwort) | Termine an Bereichsgrenzen mit Zahl als zugehörig behandeln, Vorfall protokollieren (SEC-F-060), Nachtrag der Zahl anbieten |
 | Nach der Matrikelnummer-Ermittlung erhaltene Kennung wird von der Nutzerin abgelehnt | Kennung wird nicht übernommen, Eingabefeld für die manuelle Angabe erhält den Fokus |
+| Persönlicher Plan aus einer früheren Fassung der App trägt keine Gruppenkennung | Termine des Plans bleiben unverändert erhalten; beim Öffnen des Stundenplans wird die Nutzerin auf den Schritt zur Gruppenkennung geführt |
+| Schritt zur Gruppenkennung ohne festgelegte Kennung verlassen | Übergang in den Planungsmodus wird verwehrt, die fehlende Angabe benannt; ein Überspringen wird nicht angeboten |
 
 ## Offline-Verhalten
 
@@ -1738,7 +1745,7 @@ Diese Capability führt keine eigenen nicht-funktionalen Anforderungen mehr. Es 
 
 ## Akzeptanzkriterien
 
-- Alle Beispielszenarien aus der Beispieltabelle Gruppenzuordnung (keine Gruppenkennung, Einzelwert, Wildcard, Bereich mit Gruppen innerhalb/außerhalb/an den Grenzen, Bereich mit offener Grenze) liefern das in den Requirements festgelegte Ergebnis.
+- Alle Beispielszenarien aus der Beispieltabelle Gruppenzuordnung (Einzelwert, Wildcard, Bereich mit Gruppen innerhalb/außerhalb/an den Grenzen, Bereich mit offener Grenze) liefern das in den Requirements festgelegte Ergebnis.
 - Eigene und offizielle Termine sind in der Darstellung eindeutig unterscheidbar und beide über einen sichtbaren Bedienweg löschbar.
 - Der automatische Sprung zum aktuellen Wochentag berücksichtigt Wochenenden korrekt.
 - Eine aus dem Prüfungsplan ausgewählte Prüfung sowie eine eigen eingetragene Prüfung sind beide eindeutig als Prüfung erkennbar.

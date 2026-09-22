@@ -6,6 +6,7 @@ import { EinrichtungHeaderZugang } from '@/areas/schedule/ui/EinrichtungHeaderZu
 import { ModulauswahlVerwerfenZugang } from '@/areas/schedule/ui/ModulauswahlVerwerfenZugang';
 import { PlanungSpeichernZugang } from '@/areas/schedule/ui/PlanungSpeichernZugang';
 import { VerwaltungsblattZugang } from '@/areas/schedule/ui/VerwaltungsblattZugang';
+import { WeiterZugang } from '@/areas/schedule/ui/WeiterZugang';
 import { useTheme } from '@/theme';
 import { useReducedMotion } from '@/ui/reducedMotion';
 
@@ -17,6 +18,19 @@ function WochenansichtKopfzeile() {
     <View style={styles.kopfzeilenGruppe}>
       <EinrichtungHeaderZugang />
       <VerwaltungsblattZugang />
+    </View>
+  );
+}
+
+// Requirements „Symbol für das Zurücksetzen der Auswahl" und „Weiterführender
+// Bedienweg in der Kopfzeile": In der Modulauswahl stehen beide Wege
+// nebeneinander — das Zurücksetzen links, der weiterführende Weg rechts außen
+// an derselben Stelle wie auf den beiden anderen Schritten.
+function ModulauswahlKopfzeile() {
+  return (
+    <View style={styles.kopfzeilenGruppe}>
+      <ModulauswahlVerwerfenZugang />
+      <WeiterZugang />
     </View>
   );
 }
@@ -52,10 +66,17 @@ export default function ScheduleLayout() {
         name="index"
         options={{ title: t('nav.schedule'), headerRight: () => <WochenansichtKopfzeile /> }}
       />
-      <Stack.Screen name="einrichtung" options={{ title: t('schedule.einrichtungTitel') }} />
+      <Stack.Screen
+        name="einrichtung"
+        options={{ title: t('schedule.einrichtungTitel'), headerRight: () => <WeiterZugang /> }}
+      />
       <Stack.Screen
         name="kurse"
-        options={{ title: t('schedule.kurseTitel'), headerRight: () => <ModulauswahlVerwerfenZugang /> }}
+        options={{ title: t('schedule.kurseTitel'), headerRight: () => <ModulauswahlKopfzeile /> }}
+      />
+      <Stack.Screen
+        name="gruppenkennung"
+        options={{ title: t('schedule.gruppenkennungTitel'), headerRight: () => <WeiterZugang /> }}
       />
       <Stack.Screen
         name="planung"

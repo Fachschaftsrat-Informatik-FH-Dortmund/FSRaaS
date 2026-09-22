@@ -9,6 +9,12 @@ import { useModulauswahlAktion } from '../modulauswahlAktion';
 // in `app/(tabs)/(schedule)/_layout.tsx` — wie `PlanungSpeichernZugang".
 // Außerhalb der Modulauswahl liefert `useModulauswahlAktion` `null`, die
 // Schaltfläche verschwindet dann vollständig.
+//
+// Requirement „Symbol für das Zurücksetzen der Auswahl" (design.md,
+// Entscheidung 4): `refresh` statt des früheren `close`. Das Kreuz bezeichnete
+// ein Schließen, nicht ein Zurücksetzen, und stand zudem gleichlautend im
+// Planungsmodus. `refresh` unterscheidet sich sichtbar vom `arrow-forward` des
+// weiterführenden Wegs, der in derselben Kopfzeile daneben steht.
 export function ModulauswahlVerwerfenZugang() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -24,7 +30,7 @@ export function ModulauswahlVerwerfenZugang() {
       style={styles.zugang}
       hitSlop={8}
     >
-      <Ionicons name="close" size={22} color={colors.text} />
+      <Ionicons name="refresh" size={22} color={colors.text} />
     </Pressable>
   );
 }

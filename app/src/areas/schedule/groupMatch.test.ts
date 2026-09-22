@@ -8,8 +8,7 @@ jest.mock('@/errors/AppError', () => ({
 
 describe('QA-F-030 Beispieltabelle aus spec.md Abschnitt 4 (Gruppenzuordnung)', () => {
   // Jede Zeile exakt wie in der Spec-Tabelle, inklusive der dort genannten Begründung.
-  const faelle: { kennung: string | null; studentSet: string; erwartet: boolean; grund: string }[] = [
-    { kennung: null, studentSet: 'C8', erwartet: true, grund: 'ohne Gruppenkennung gelten alle Termine als zugehörig' },
+  const faelle: { kennung: string; studentSet: string; erwartet: boolean; grund: string }[] = [
     { kennung: 'C8', studentSet: 'C8', erwartet: true, grund: 'Einzelwert, Buchstabenteil stimmt überein' },
     { kennung: 'C8', studentSet: 'C3', erwartet: true, grund: 'Einzelwert, nur der Buchstabe zählt' },
     { kennung: 'C8', studentSet: 'D3', erwartet: false, grund: 'Einzelwert, Buchstabe C weicht von D ab' },
@@ -53,14 +52,6 @@ describe('QA-F-030 Beispieltabelle aus spec.md Abschnitt 4 (Gruppenzuordnung)', 
 
   it.each(faelle)('$kennung gegen studentSet=$studentSet → $erwartet ($grund)', ({ kennung, studentSet, erwartet }) => {
     expect(gruppenzugehoerig(kennung, studentSet)).toBe(erwartet);
-  });
-});
-
-describe('SCHED-F-050 ohne Gruppenkennung sind alle Termine zugehörig', () => {
-  it('liefert true, wenn keine Gruppenkennung angegeben ist', () => {
-    expect(gruppenzugehoerig(null, 'C8')).toBe(true);
-    expect(gruppenzugehoerig(undefined, 'A1-C9')).toBe(true);
-    expect(gruppenzugehoerig('', 'D3')).toBe(true);
   });
 });
 
@@ -188,7 +179,7 @@ describe('Bereichsangabe im studentSet — unvollständige Gruppenkennung ohne Z
   });
 });
 
-describe('SCHED-F-650 Rückmeldung, wie viele Termine des Auswahlbestands eine Gruppenkennung einschließt', () => {
+describe('Rückmeldung während der Eingabe der Gruppenkennung', () => {
   const termine = [
     { studentSet: 'C8' },
     { studentSet: 'D3' },
@@ -209,11 +200,7 @@ describe('SCHED-F-650 Rückmeldung, wie viele Termine des Auswahlbestands eine G
     });
   });
 
-  it('meldet „0 von 0", wenn der Auswahlbestand leer ist', () => {
+  it('meldet „0 von 0", wenn die Bezugsmenge leer ist', () => {
     expect(zaehleGruppenTreffer('C8', [])).toEqual({ eingeschlossen: 0, gesamt: 0 });
-  });
-
-  it('zählt ohne Gruppenkennung jeden Termin als eingeschlossen (SCHED-F-050)', () => {
-    expect(zaehleGruppenTreffer(null, termine)).toEqual({ eingeschlossen: 4, gesamt: 4 });
   });
 });

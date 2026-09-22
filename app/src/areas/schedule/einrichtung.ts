@@ -6,11 +6,18 @@ import { readJson, writeJson } from '@/storage/kv';
 // Requirements „Auswahl der Endpunkte des Lehrangebots" und „Gruppenkennung
 // ohne Matrikelnummer": die einmalig gewählte Einrichtung des Stundenplans —
 // beliebig viele Endpunkte des Lehrangebots (`endpunkte`, INT-001-Kurznamen,
-// gleichrangig, kein Hauptendpunkt) und optionale Gruppenkennung (Muster
+// gleichrangig, kein Hauptendpunkt) und die Gruppenkennung (Muster
 // `^[A-Z][0-9]+$` — Buchstabe und Zahl beide verpflichtend, SCHED-F-720).
 // Rein gerätelokal (DATA-F-010). Reaktiver Modul-Speicher wie
 // `canteen/selection.ts`, damit alle Stundenplan-Bildschirme denselben Stand
 // teilen.
+//
+// Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus": `null`
+// steht nur noch für „noch nicht festgelegt" — beim ersten Durchlauf der
+// Einrichtung und bei einem persönlichen Plan aus einer früheren Fassung der
+// App. Es gibt keinen Bedienweg mehr, der eine gesetzte Kennung wieder auf
+// `null` zurückführt; allein `clear()` (die Aktion „Stundenplan zurücksetzen")
+// entfernt sie zusammen mit den Endpunkten.
 //
 // SCHED-F-690/F-700: die per INT-019 aus einer Matrikelnummer ermittelte
 // Gruppenkennung wird nicht automatisch übernommen, sondern als Vorschlag
@@ -126,9 +133,15 @@ export function useEinrichtung() {
     schreiben({ ...snapshot, endpunkte: naechste });
   }, []);
 
-  /** SCHED-F-040: Gruppenkennung setzen (großgeschrieben) oder mit `null` entfernen. */
-  const setGruppenkennung = useCallback((wert: string | null) => {
-    const bereinigt = wert && wert.trim() !== '' ? wert.trim().toUpperCase() : null;
+  /**
+   * SCHED-F-040 und Requirement „Gruppenkennung verpflichtend vor dem
+   * Planungsmodus": Gruppenkennung setzen (großgeschrieben). Eine gesetzte
+   * Kennung lässt sich nur durch eine andere ersetzen — eine leere Eingabe
+   * bleibt bewusst wirkungslos, statt sie ersatzlos zu entfernen.
+   */
+  const setGruppenkennung = useCallback((wert: string) => {
+    const bereinigt = wert.trim().toUpperCase();
+    if (bereinigt === '') return;
     schreiben({ ...snapshot, gruppenkennung: bereinigt });
   }, []);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, PanResponder, ScrollView, StyleSheet, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -132,6 +132,21 @@ export function ScheduleScreen() {
   const [stand, setStand] = useState<Ansichtsstand | null>(null);
   const allesGeladen = einrichtungGeladen && planGeladen && einstellungenGeladen && standGeladen;
 
+  // Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus", Szenario
+  // „Bestehender Plan ohne Kennung" (design.md, Entscheidung 6.3): Termine im
+  // Plan ohne gesetzte Kennung kann nur eine frühere Fassung der App
+  // hinterlassen haben — die neue Reihenfolge setzt die Kennung vor den ersten
+  // Planeintrag. Die Einträge bleiben dabei unangetastet (Requirement „Kein
+  // selbsttätiges Entfernen des Stundenplans"); geführt wird allein die
+  // Nutzerin, und das einmalig je Aufbau der Ansicht.
+  const kennungNachgefordert = useRef(false);
+  useEffect(() => {
+    if (!allesGeladen || kennungNachgefordert.current) return;
+    if (einrichtung.gruppenkennung !== null || entries.length === 0) return;
+    kennungNachgefordert.current = true;
+    router.push('/gruppenkennung');
+  }, [allesGeladen, einrichtung.gruppenkennung, entries.length, router]);
+
   // Requirement „Sprung zum aktuellen Wochentag": einmalig beim Öffnen, sobald
   // alle gerätelokalen Stände vorliegen. Der Ausweichtag am Wochenende gilt
   // laut Anforderung allein beim automatischen Sprung.
@@ -183,9 +198,13 @@ export function ScheduleScreen() {
     [stand],
   );
 
+  // Ohne gesetzte Gruppenkennung lässt sich keine Zugehörigkeit berechnen
+  // (Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus"); dieser
+  // Zustand führt ohnehin auf den Schritt zur Gruppenkennung, die Einblendung
+  // ruht bis dahin.
   const alternativenTermine = useMemo(
     () =>
-      stand && einstellungen.alternativenEinblenden && auswahlbestand.alleGeladen
+      stand && einstellungen.alternativenEinblenden && auswahlbestand.alleGeladen && einrichtung.gruppenkennung
         ? alternativenDesTages(alleModule, entries, stand.wochentag, einrichtung.gruppenkennung)
         : [],
     [

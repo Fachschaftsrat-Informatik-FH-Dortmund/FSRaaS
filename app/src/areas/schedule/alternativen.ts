@@ -35,7 +35,7 @@ export function alternativenDesTages(
   module: readonly Modul[],
   entries: readonly PlanEntry[],
   wochentag: Weekday,
-  gruppenkennung: string | null,
+  gruppenkennung: string,
 ): OfficialPlanEntry[] {
   const ergebnis: OfficialPlanEntry[] = [];
   // Derselbe Rohtermin kann in mehreren gewählten Modulen stehen (Change

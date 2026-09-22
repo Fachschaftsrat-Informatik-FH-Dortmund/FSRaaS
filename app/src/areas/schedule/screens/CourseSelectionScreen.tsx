@@ -13,6 +13,7 @@ import { useEinrichtung } from '../einrichtung';
 import { baueModulliste, type Modul, type ModulAbschnitt } from '../kursbaum';
 import { filtereModulAbschnitte } from '../kurssuche';
 import { registriereModulauswahlAktion } from '../modulauswahlAktion';
+import { registriereWeiterAktion } from '../weiterAktion';
 import { planEintraegeFuerModul } from '../planungsstand';
 import { useScheduleEntries } from '../planStore';
 import type { OfficialTermin, PlanEntry } from '../typen';
@@ -89,6 +90,23 @@ export function CourseSelectionScreen() {
     });
     return () => registriereModulauswahlAktion(null);
   }, []);
+
+  // Requirements „Weiterführender Bedienweg in der Kopfzeile" und „Eigener
+  // Schritt für die Gruppenkennung nach der Modulauswahl": Der Weg zum
+  // nächsten Schritt sitzt in der Kopfzeile (`weiterAktion.ts`) und führt auf
+  // den Schritt zur Gruppenkennung, nicht mehr unmittelbar in den
+  // Planungsmodus. Die angekreuzten Module reisen unverändert als
+  // Routenparameter mit (design.md, Entscheidung 3).
+  useEffect(() => {
+    registriereWeiterAktion({
+      freigegeben: auswahl.length > 0,
+      weiter: () => {
+        if (auswahl.length === 0) return;
+        router.push({ pathname: '/gruppenkennung', params: { module: auswahl.join(',') } });
+      },
+    });
+    return () => registriereWeiterAktion(null);
+  }, [auswahl, router]);
 
   function verwerfenBestaetigt() {
     setVerwerfenBestaetigen(false);
@@ -213,16 +231,6 @@ export function CourseSelectionScreen() {
               ),
             }))}
             contentContainerStyle={styles.liste}
-            fuss={
-              auswahl.length > 0 ? (
-                <View style={styles.weiterZurPlanung}>
-                  <AppButton
-                    label={t('schedule.weiterZurPlanung')}
-                    onPress={() => router.push({ pathname: '/planung', params: { module: auswahl.join(',') } })}
-                  />
-                </View>
-              ) : undefined
-            }
           />
         )}
       </AsyncStates>
@@ -328,5 +336,4 @@ const styles = StyleSheet.create({
   bestaetigung: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10, marginVertical: 6 },
   bestaetigungSchwebend: { position: 'absolute', left: 12, right: 12, bottom: 12 },
   bestaetigungAktionen: { flexDirection: 'row', gap: 10 },
-  weiterZurPlanung: { marginTop: 12 },
 });

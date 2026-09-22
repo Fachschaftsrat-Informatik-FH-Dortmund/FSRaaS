@@ -104,13 +104,37 @@ describe('SCHED-F-040 Eingabe einer Gruppenkennung nach dem Muster ^[A-Z][0-9]*$
     expect(GRUPPENKENNUNG_MUSTER.test(result.current.einrichtung.gruppenkennung!)).toBe(true);
   });
 
-  it('entfernt die Gruppenkennung wieder mit null', async () => {
+});
+
+describe('Gruppenkennung verpflichtend vor dem Planungsmodus', () => {
+  it('ersetzt eine gesetzte Kennung durch eine andere', async () => {
     const { result } = renderHook(() => useEinrichtung());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
     act(() => result.current.setGruppenkennung('C8'));
     await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBe('C8'));
-    act(() => result.current.setGruppenkennung(null));
+    act(() => result.current.setGruppenkennung('D3'));
+    await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBe('D3'));
+  });
+
+  it('lässt eine gesetzte Kennung bei leerer Eingabe unverändert stehen', async () => {
+    const { result } = renderHook(() => useEinrichtung());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.setGruppenkennung('C8'));
+    await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBe('C8'));
+    act(() => result.current.setGruppenkennung(''));
+    act(() => result.current.setGruppenkennung('   '));
+    expect(result.current.einrichtung.gruppenkennung).toBe('C8');
+  });
+
+  it('entfernt die Kennung allein über das Zurücksetzen des Stundenplans', async () => {
+    const { result } = renderHook(() => useEinrichtung());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.setGruppenkennung('C8'));
+    await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBe('C8'));
+    act(() => result.current.clear());
     await waitFor(() => expect(result.current.einrichtung.gruppenkennung).toBeNull());
   });
 });
