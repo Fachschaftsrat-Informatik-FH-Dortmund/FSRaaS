@@ -1,4 +1,5 @@
 import { TextInput } from 'react-native';
+import { useEffect as mockUseEffect } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
@@ -7,9 +8,13 @@ import { __leseWeiterAktionForTest, __resetWeiterAktionForTest } from '../weiter
 
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 let mockParams: { module?: string };
+// `useFocusEffect` (expo-router) verhält sich hier wie `useEffect`: Ohne
+// echten Navigations-Stapel gibt es keinen Fokuswechsel zu simulieren — der
+// Bildschirm ist beim Rendern schlicht fokussiert.
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
   useLocalSearchParams: () => mockParams,
+  useFocusEffect: (effect: () => void | (() => void)) => mockUseEffect(effect, [effect]),
 }));
 
 let mockEinrichtung: any;

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
@@ -110,19 +110,28 @@ export function GruppenkennungScreen() {
   // benennt die fehlende Angabe (Requirement „Gruppenkennung verpflichtend vor
   // dem Planungsmodus", Szenario „Weitergehen ohne Kennung") — eine wortlos
   // abgeblendete Schaltfläche verwehrte zwar, benennte aber nichts.
-  useEffect(() => {
-    registriereWeiterAktion({
-      freigegeben: gespeicherteKennung !== null,
-      weiter: () => {
-        if (gespeicherteKennung === null) {
-          setFehlendeAngabe(true);
-          return;
-        }
-        router.push({ pathname: '/planung', params: { module: modulSchluessel.join(',') } });
-      },
-    });
-    return () => registriereWeiterAktion(null);
-  }, [gespeicherteKennung, modulSchluessel, router]);
+  //
+  // `useFocusEffect` statt `useEffect`: Das Register ist bildschirmübergreifend
+  // gemeinsam (`weiterAktion.ts`, Kopfkommentar). Bleibt dieser Bildschirm beim
+  // Vorwärtsnavigieren im Stapel bestehen und wird über „Zurück" wieder
+  // sichtbar, muss er sich beim Wiedererlangen des Fokus erneut anmelden — ein
+  // reiner Mount-Effekt liefe dabei nicht erneut und das Kopfzeilen-Symbol
+  // bliebe verwaist (Fund aus dem Gerätetest, Prüfprotokoll 2026-09-22).
+  useFocusEffect(
+    useCallback(() => {
+      registriereWeiterAktion({
+        freigegeben: gespeicherteKennung !== null,
+        weiter: () => {
+          if (gespeicherteKennung === null) {
+            setFehlendeAngabe(true);
+            return;
+          }
+          router.push({ pathname: '/planung', params: { module: modulSchluessel.join(',') } });
+        },
+      });
+      return () => registriereWeiterAktion(null);
+    }, [gespeicherteKennung, modulSchluessel, router]),
+  );
 
   if (!einrichtungGeladen || !matrikelnummerGeladen) {
     return (
