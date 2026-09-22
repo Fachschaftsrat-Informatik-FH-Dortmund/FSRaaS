@@ -1,5 +1,5 @@
 import { useEffect as mockUseEffect } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
 import { __resetModulauswahlAktionForTest } from '../modulauswahlAktion';
@@ -141,17 +141,22 @@ describe('Gliederung des Auswahlbestands', () => {
 });
 
 describe('Eigener Schritt für die Gruppenkennung nach der Modulauswahl', () => {
-  it('Nach der Modulauswahl: führt auf den Schritt zur Gruppenkennung, bevor der Planungsmodus erreichbar ist', () => {
+  it('Nach der Modulauswahl: führt auf den Schritt zur Gruppenkennung, bevor der Planungsmodus erreichbar ist', async () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
 
     expect(weiterAktion()?.freigegeben).toBe(true);
     weiterAktion()?.weiter();
 
-    expect(mockRouter.push).toHaveBeenCalledWith({
-      pathname: '/gruppenkennung',
-      params: { module: '43051|2' },
-    });
+    // Das Kopfzeilen-Symbol ist sofort abgemeldet, der Sprung folgt einen Frame
+    // später (Change `weiter-bedienweg-absturzschutz`, design.md Entscheidung 2).
+    expect(weiterAktion()).toBeNull();
+    await waitFor(() =>
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        pathname: '/gruppenkennung',
+        params: { module: '43051|2' },
+      }),
+    );
     expect(mockRouter.push).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: '/planung' }));
   });
 

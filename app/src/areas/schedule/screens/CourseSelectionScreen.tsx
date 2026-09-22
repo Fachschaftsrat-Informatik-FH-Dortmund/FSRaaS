@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { AnkerListe } from '@/ui/AnkerListe';
@@ -13,7 +13,7 @@ import { useEinrichtung } from '../einrichtung';
 import { baueModulliste, type Modul, type ModulAbschnitt } from '../kursbaum';
 import { filtereModulAbschnitte } from '../kurssuche';
 import { registriereModulauswahlAktion } from '../modulauswahlAktion';
-import { registriereWeiterAktion } from '../weiterAktion';
+import { navigiereNachAbmeldung, useWeiterAktionAnmelden } from '../weiterAktion';
 import { planEintraegeFuerModul } from '../planungsstand';
 import { useScheduleEntries } from '../planStore';
 import type { OfficialTermin, PlanEntry } from '../typen';
@@ -98,24 +98,18 @@ export function CourseSelectionScreen() {
   // Planungsmodus. Die angekreuzten Module reisen unverändert als
   // Routenparameter mit (design.md, Entscheidung 3).
   //
-  // `useFocusEffect` statt `useEffect`: Das Register ist bildschirmübergreifend
-  // gemeinsam (`weiterAktion.ts`, Kopfkommentar). Bleibt dieser Bildschirm beim
-  // Vorwärtsnavigieren im Stapel bestehen und wird über „Zurück" wieder
-  // sichtbar, muss er sich beim Wiedererlangen des Fokus erneut anmelden — ein
-  // reiner Mount-Effekt liefe dabei nicht erneut und das Kopfzeilen-Symbol
-  // bliebe verwaist (Fund aus dem Gerätetest, Prüfprotokoll 2026-09-22).
-  useFocusEffect(
-    useCallback(() => {
-      registriereWeiterAktion({
-        freigegeben: auswahl.length > 0,
-        weiter: () => {
-          if (auswahl.length === 0) return;
-          router.push({ pathname: '/gruppenkennung', params: { module: auswahl.join(',') } });
-        },
-      });
-      return () => registriereWeiterAktion(null);
-    }, [auswahl, router]),
-  );
+  // An- und Abmeldung liegen in `useWeiterAktionAnmelden`, der Navigationsweg
+  // hinter `navigiereNachAbmeldung` — beides für alle drei Bildschirme dieses
+  // Bedienwegs gleich (Change `weiter-bedienweg-absturzschutz`, design.md
+  // Entscheidungen 2 und 3).
+  const weiter = useCallback(() => {
+    if (auswahl.length === 0) return;
+    navigiereNachAbmeldung(() =>
+      router.push({ pathname: '/gruppenkennung', params: { module: auswahl.join(',') } }),
+    );
+  }, [auswahl, router]);
+
+  useWeiterAktionAnmelden(auswahl.length > 0, weiter);
 
   function verwerfenBestaetigt() {
     setVerwerfenBestaetigen(false);

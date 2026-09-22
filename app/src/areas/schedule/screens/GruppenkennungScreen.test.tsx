@@ -1,6 +1,6 @@
 import { TextInput } from 'react-native';
 import { useEffect as mockUseEffect } from 'react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
 import { GruppenkennungScreen } from './GruppenkennungScreen';
@@ -159,17 +159,22 @@ describe('Gruppenkennung verpflichtend vor dem Planungsmodus', () => {
     expect(screen.getByText(/Ohne Gruppenkennung geht es nicht weiter/)).toBeTruthy();
   });
 
-  it('führt mit gesetzter Kennung in den Planungsmodus und reicht die gewählten Module weiter', () => {
+  it('führt mit gesetzter Kennung in den Planungsmodus und reicht die gewählten Module weiter', async () => {
     mockEinrichtung.gruppenkennung = 'C8';
     mockParams = { module: '46813|4,46884|2' };
     renderScreen();
 
     weiterAktion()?.weiter();
 
-    expect(mockRouter.push).toHaveBeenCalledWith({
-      pathname: '/planung',
-      params: { module: '46813|4,46884|2' },
-    });
+    // Das Kopfzeilen-Symbol ist sofort abgemeldet, der Sprung folgt einen Frame
+    // später (Change `weiter-bedienweg-absturzschutz`, design.md Entscheidung 2).
+    expect(weiterAktion()).toBeNull();
+    await waitFor(() =>
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        pathname: '/planung',
+        params: { module: '46813|4,46884|2' },
+      }),
+    );
   });
 
   it('Kennung ersetzen statt entfernen: bietet keinen Bedienweg zum ersatzlosen Entfernen', () => {

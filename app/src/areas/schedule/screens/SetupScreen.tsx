@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
@@ -11,7 +11,7 @@ import { describeAge } from '@/ui/state/dataAge';
 import { useStudiengaenge, type FbwsStudiengang } from '../api';
 import { filtereEndpunktGruppen, gruppiereEndpunkte, type EndpunktGruppe } from '../endpunkte';
 import { useEinrichtung } from '../einrichtung';
-import { registriereWeiterAktion } from '../weiterAktion';
+import { navigiereNachAbmeldung, useWeiterAktionAnmelden } from '../weiterAktion';
 
 // Einrichtungs-Bildschirm des Stundenplans (Roadmap-Schritt 5, Etappe
 // „Einrichtung"): Mehrfachauswahl der Endpunkte des Lehrangebots
@@ -59,23 +59,16 @@ export function SetupScreen() {
   // gewählten Endpunkt gibt es nichts, worüber die Modulauswahl entscheiden
   // könnte — der Weg bleibt dann zurückgenommen und führt nicht weiter.
   //
-  // `useFocusEffect` statt `useEffect`: Das Register ist bildschirmübergreifend
-  // gemeinsam (`weiterAktion.ts`, Kopfkommentar). Bleibt dieser Bildschirm beim
-  // Vorwärtsnavigieren im Stapel bestehen und wird über „Zurück" wieder
-  // sichtbar, muss er sich beim Wiedererlangen des Fokus erneut anmelden — ein
-  // reiner Mount-Effekt liefe dabei nicht erneut und das Kopfzeilen-Symbol
-  // bliebe verwaist (Fund aus dem Gerätetest, Prüfprotokoll 2026-09-22).
-  useFocusEffect(
-    useCallback(() => {
-      registriereWeiterAktion({
-        freigegeben: hatEndpunkte,
-        weiter: () => {
-          if (hatEndpunkte) router.push('/kurse');
-        },
-      });
-      return () => registriereWeiterAktion(null);
-    }, [hatEndpunkte, router]),
-  );
+  // An- und Abmeldung liegen in `useWeiterAktionAnmelden`, der Navigationsweg
+  // hinter `navigiereNachAbmeldung` — beides für alle drei Bildschirme dieses
+  // Bedienwegs gleich (Change `weiter-bedienweg-absturzschutz`, design.md
+  // Entscheidungen 2 und 3).
+  const weiter = useCallback(() => {
+    if (!hatEndpunkte) return;
+    navigiereNachAbmeldung(() => router.push('/kurse'));
+  }, [hatEndpunkte, router]);
+
+  useWeiterAktionAnmelden(hatEndpunkte, weiter);
 
   if (!einrichtungGeladen) {
     return (
