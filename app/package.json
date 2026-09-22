@@ -9,6 +9,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "prebuild": "expo prebuild",
+    "release": "node scripts/release.mjs",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:contract": "jest --config jest.contract.config.js",
