@@ -1,31 +1,33 @@
-import type { Mensa } from './api';
+import type { Oeffnungsangaben } from './api';
 
-// MENSA: Auflösung der gepflegten wöchentlichen Öffnungszeiten aus den
-// Mensa-Stammdaten (Vertrag: „Ein Eintrag je Wochentag, Montag zuerst", Einträge
-// dürfen `null` sein). Reine Fachlogik ohne React (Capability
-// `quality-and-testing`, Abschnitt 5). Der Wiedereröffnungshinweis an einer
-// geschlossenen Mensa stützt sich seit `canteen-wiedereroeffnung-aus-speiseplan`
-// nicht mehr auf diese Wochenangabe, sondern auf das vom Backend gelieferte Feld
-// `naechsteOeffnung` (siehe api.ts, CanteenScreen.tsx).
+// MENSA: Auflösung der Öffnungszeit eines Wochentags aus den Öffnungsangaben der
+// Mensa-Schnittstelle (Requirement „Öffnungszeiten je Mensa und Wochentag").
+// Bis 2026-09-22 kamen diese Zeiten aus handgepflegten Stammdaten; sie verfielen
+// dort unbemerkt (Hauptmensa freitags: gepflegt `11:30 - 14:00`, tatsächlich
+// `11:30 - 14:15`). Reine Fachlogik ohne React (Capability `quality-and-testing`,
+// Abschnitt 5). Der Wiedereröffnungshinweis an einer geschlossenen Mensa stützt
+// sich nicht auf diese Wochenangabe (siehe CanteenScreen.tsx).
 
-/** Index in `oeffnungszeiten` (Montag zuerst) für ein ISO-Datum. */
-function wochentagIndex(datum: string): number {
+/** Wochentag nach ISO 8601 (1 = Montag … 7 = Sonntag) für ein ISO-Datum. */
+function isoWochentag(datum: string): number {
   const [y, m, d] = datum.split('-').map(Number);
   const tag = new Date(y!, m! - 1, d!).getDay(); // 0 = Sonntag … 6 = Samstag
-  return (tag + 6) % 7; // 0 = Montag … 6 = Sonntag
+  return tag === 0 ? 7 : tag;
 }
 
 /**
  * Öffnungszeit der Mensa für den Wochentag des angezeigten Datums, oder `null`,
- * wenn die Stammdaten für diesen Wochentag keinen Eintrag führen. Der Vertrag
- * legt nur „Montag zuerst" fest: eine siebenstellige Liste bedient auch Samstag
- * und Sonntag, eine kürzere (oder lückenhafte) liefert dort und für jeden nicht
- * gepflegten Tag `null` — ohne die übrigen Tage zu verlieren (design.md D8).
+ * wenn die Schnittstelle für diesen Wochentag keine führt oder die Mensa an ihm
+ * regulär geschlossen ist. Der Wochenplan der Quelle trägt keinen Datumsbezug;
+ * maßgeblich ist deshalb allein der Wochentag. Fehlt eine der beiden Zeiten,
+ * entfällt die Angabe, statt eine halbe Spanne anzuzeigen.
  */
-export function oeffnungszeitFuer(mensa: Mensa | undefined, datum: string): string | null {
-  const zeiten = mensa?.oeffnungszeiten;
-  if (!zeiten) return null;
-  const i = wochentagIndex(datum);
-  if (i >= zeiten.length) return null;
-  return zeiten[i] ?? null;
+export function oeffnungszeitFuer(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): string | null {
+  const tag = angaben?.wochenplan?.find((w) => w.wochentag === isoWochentag(datum));
+  if (!tag || !tag.geoeffnet) return null;
+  if (tag.oeffnet == null || tag.schliesst == null) return null;
+  return `${tag.oeffnet} - ${tag.schliesst}`;
 }

@@ -10,15 +10,22 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }));
 
-const mockMensen = [
-  {
-    id: 'Mensa',
-    name: 'Hauptmensa',
-    standardAuswahl: true,
-    reihenfolge: 10,
-    oeffnungszeiten: ['11:30 - 14:45', 'a', 'b', 'c', 'd'],
-  },
-];
+const mockMensen = [{ id: 'Mensa', name: 'Hauptmensa', standardAuswahl: true, reihenfolge: 10 }];
+
+// Öffnungsangaben aus der Mensa-Schnittstelle (INT-020) statt aus den Stammdaten.
+// Montag bis Freitag geöffnet, am Wochenende nicht.
+const mockOeffnungsangaben = {
+  heute: { datum: '2026-09-07', geoeffnet: true },
+  wochenplan: [1, 2, 3, 4, 5].map((wochentag) => ({
+    wochentag,
+    geoeffnet: true,
+    oeffnet: '11:30',
+    schliesst: '14:45',
+  })),
+  vorausschau: [],
+  schliesstage: [],
+  standAlter: { abgerufenAm: '2026-09-07T10:00:00Z', quelleErreichbar: true },
+};
 
 let mockSelection: any;
 let mockPlaene: Record<string, any>;
@@ -55,6 +62,7 @@ jest.mock('../api', () => ({
     data: { kategorien: [], zusatzstoffe: [], kennzeichnungen: [] },
   }),
   useSpeisepläne: (ids: string[]) => ids.map((id) => mockPlaene[id] ?? leer()),
+  useOeffnungsangaben: (ids: string[]) => ids.map(() => ({ data: mockOeffnungsangaben })),
 }));
 jest.mock('../registerBackgroundTask', () => ({
   nachholenBeimAppStart: jest.fn(() => Promise.resolve()),

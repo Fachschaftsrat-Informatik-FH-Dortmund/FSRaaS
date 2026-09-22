@@ -23,9 +23,11 @@ import {
   apiSprache,
   speiseplanQueryOptions,
   useMensen,
+  useOeffnungsangaben,
   useSpeisepläne,
   type Gericht,
   type Mensa,
+  type Oeffnungsangaben,
 } from '../api';
 import { konsolidiere, type KonsolidiertesGericht } from '../consolidate';
 import { useFavorites } from '../favorites';
@@ -196,6 +198,12 @@ function MensaListe({
 }) {
   const { t } = useTranslation();
   const ergebnisse = useSpeisepläne(ids, datum);
+  // Öffnungsangaben je gewählter Mensa (INT-020), Ablösung der zuvor gepflegten
+  // Stammdaten-Öffnungszeiten. Gleiche Reihenfolge wie `ids`.
+  const oeffnungErgebnisse = useOeffnungsangaben(ids);
+  const oeffnungVon = new Map<string, Oeffnungsangaben | undefined>(
+    ids.map((id, i) => [id, oeffnungErgebnisse[i]?.data]),
+  );
 
   const proMensa = ids.map((id, i) => ({
     mensaId: id,
@@ -230,6 +238,7 @@ function MensaListe({
           proMensa={data.proMensa}
           datum={datum}
           mensen={mensen}
+          oeffnungVon={oeffnungVon}
           onBlaettern={onBlaettern}
           onAktualisieren={() => void aggregat.refetch()}
           aktualisiertGerade={aggregat.isFetching}
@@ -243,6 +252,7 @@ function GerichtListe({
   proMensa,
   datum,
   mensen,
+  oeffnungVon,
   onBlaettern,
   onAktualisieren,
   aktualisiertGerade,
@@ -250,6 +260,8 @@ function GerichtListe({
   proMensa: { mensaId: string; gerichte: Gericht[]; naechsteOeffnung: string | null }[];
   datum: string;
   mensen: Mensa[];
+  /** Öffnungsangaben je Mensa-Kennung (INT-020); fehlend, solange nicht geladen. */
+  oeffnungVon: Map<string, Oeffnungsangaben | undefined>;
   onBlaettern: (richtung: -1 | 1) => void;
   onAktualisieren: () => void;
   aktualisiertGerade: boolean;
@@ -369,10 +381,7 @@ function GerichtListe({
     : proMensa
         .filter((p) => !geschlossene.includes(p.mensaId))
         .map((p) => {
-          const zeit = oeffnungszeitFuer(
-            mensen.find((m) => m.id === p.mensaId),
-            datum,
-          );
+          const zeit = oeffnungszeitFuer(oeffnungVon.get(p.mensaId), datum);
           return zeit ? t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit }) : null;
         })
         .filter((z): z is string => z !== null);
@@ -492,10 +501,7 @@ function GerichtListe({
         // Mensa-Kennung.
         const zeit =
           mensaGruppierung && abschnitt.art !== 'geschlossen'
-            ? oeffnungszeitFuer(
-                mensen.find((m) => m.id === abschnitt.id),
-                datum,
-              )
+            ? oeffnungszeitFuer(oeffnungVon.get(abschnitt.id), datum)
             : null;
         // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
         // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.

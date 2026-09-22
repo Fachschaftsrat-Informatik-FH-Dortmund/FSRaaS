@@ -22,21 +22,24 @@ let mockHas: jest.Mock;
 const mockToggle = jest.fn();
 
 const mockMensen = [
-  {
-    id: 'Mensa',
-    name: 'Hauptmensa',
-    standardAuswahl: true,
-    reihenfolge: 10,
-    oeffnungszeiten: ['11:30 - 14:45', 'a', 'b', 'c', 'd'],
-  },
-  {
-    id: 'Sued',
-    name: 'Mensa Süd',
-    standardAuswahl: false,
-    reihenfolge: 20,
-    oeffnungszeiten: ['12:00 - 14:00', 'a', 'b', 'c', 'd'],
-  },
+  { id: 'Mensa', name: 'Hauptmensa', standardAuswahl: true, reihenfolge: 10 },
+  { id: 'Sued', name: 'Mensa Süd', standardAuswahl: false, reihenfolge: 20 },
 ];
+
+// Öffnungsangaben kommen seit der Ablösung von INT-015 aus der Mensa-Schnittstelle
+// (INT-020), nicht mehr aus den Stammdaten. Die Tests laufen auf einem festen
+// Montag (siehe `MONTAG` unten), der Wochenplan ist deshalb auf Montag zugeschnitten.
+const oeffnung = (oeffnet: string, schliesst: string) => ({
+  heute: { datum: '2026-09-07', geoeffnet: true },
+  wochenplan: [{ wochentag: 1, geoeffnet: true, oeffnet, schliesst }],
+  vorausschau: [],
+  schliesstage: [],
+  standAlter: { abgerufenAm: '2026-09-07T10:00:00Z', quelleErreichbar: true },
+});
+const mockOeffnung: Record<string, unknown> = {
+  Mensa: oeffnung('11:30', '14:45'),
+  Sued: oeffnung('12:00', '14:00'),
+};
 
 let mockPreset: any;
 const mockPresetSpies = {
@@ -80,6 +83,7 @@ jest.mock('../api', () => ({
   useMensen: () => ({ mensen: mockMensen, istAusgangsbestand: false, query: {} }),
   useMensaVerzeichnisse: () => mockVerzeichnisse,
   useSpeisepläne: (ids: string[]) => ids.map((id) => mockPlaene[id] ?? leer()),
+  useOeffnungsangaben: (ids: string[]) => ids.map((id) => ({ data: mockOeffnung[id] })),
 }));
 jest.mock('../registerBackgroundTask', () => ({
   nachholenBeimAppStart: jest.fn(() => Promise.resolve()),

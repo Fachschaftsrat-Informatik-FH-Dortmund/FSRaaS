@@ -13,6 +13,7 @@ export type Mensa = components['schemas']['Mensa'];
 export type Gericht = components['schemas']['Gericht'];
 export type Schluesselwert = components['schemas']['Schluesselwert'];
 export type StandAlter = components['schemas']['StandAlter'];
+export type Oeffnungsangaben = components['schemas']['Oeffnungsangaben'];
 
 export interface Speiseplan {
   gerichte: Gericht[];
@@ -22,6 +23,8 @@ export interface Speiseplan {
 }
 export interface Verzeichnisse {
   kategorien: Schluesselwert[];
+  /** Teilmenge von `zusatzstoffe`, die die Quelle als Allergen einordnet. */
+  allergene?: Schluesselwert[];
   zusatzstoffe: Schluesselwert[];
   kennzeichnungen: Schluesselwert[];
 }
@@ -93,6 +96,34 @@ export function useSpeisepläne(mensaIds: string[], datum: string) {
   const sprache = apiSprache(i18n.language);
   return useQueries({
     queries: mensaIds.map((mensaId) => speiseplanQueryOptions(mensaId, datum, sprache)),
+  });
+}
+
+/** Query-Optionen für die Öffnungsangaben einer Mensa. */
+export function oeffnungQueryOptions(mensaId: string, sprache: 'de' | 'en') {
+  return {
+    queryKey: ['mensaOeffnung', mensaId, sprache] as const,
+    staleTime: staleTime('mensaOeffnung'),
+    gcTime: gcTime('mensaOeffnung'),
+    queryFn: async (): Promise<Oeffnungsangaben> =>
+      unwrap(
+        await api.GET('/mensen/{mensaId}/oeffnung', {
+          params: { path: { mensaId }, header: { 'Accept-Language': sprache } },
+        }),
+      ),
+  };
+}
+
+/**
+ * Öffnungsangaben mehrerer Mensen: ein Query je gewählter Mensa. Sie hängen
+ * nicht am angezeigten Tag — der Wochenplan gilt ohne Datumsbezug, Vorausschau
+ * und Schließtage tragen ihren eigenen Horizont.
+ */
+export function useOeffnungsangaben(mensaIds: string[]) {
+  const { i18n } = useTranslation();
+  const sprache = apiSprache(i18n.language);
+  return useQueries({
+    queries: mensaIds.map((mensaId) => oeffnungQueryOptions(mensaId, sprache)),
   });
 }
 

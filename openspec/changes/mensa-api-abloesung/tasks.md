@@ -1,9 +1,9 @@
 ## 1. Vertrag
 
-- [ ] 1.1 `openspec/specs/api-contract.yaml` additiv erweitern: `Gericht` um `komponenten` (Liste), `allergene` (Liste) und `co2Klasse`; `zusatzstoffe` behält seine bisherige Bedeutung. Verifikation: der Vertrag validiert, und die Beschreibung jedes neuen Feldes nennt INT-020 als Quelle statt INT-015.
-- [ ] 1.2 `Mensa` um `anschrift`, `beschreibung` und `kartenUrl` erweitern und die gepflegten `oeffnungszeiten` daraus entfernen. Verifikation: der Vertrag validiert, und kein Schema führt mehr ein pflegbares Öffnungszeitenfeld.
-- [ ] 1.3 Neues Schema für die Öffnungsangaben je Mensa (heutiger Stand mit Grund, Wochenplan, Vorausschau, Schließtage mit Zeitraum und Geltungsbereich) sowie ein Feld für den gemeldeten Datenstand. Verifikation: der Vertrag validiert.
-- [ ] 1.4 Typen aus dem Vertrag erzeugen (App und Backend). Verifikation: der Erzeugungslauf endet fehlerfrei, und `tsc` sowie der Backend-Build übersetzen ohne Fehler.
+- [x] 1.1 `openspec/specs/api-contract.yaml` additiv erweitern: `Gericht` um `komponenten` (Liste), `allergene` (Liste) und `co2Klasse`; `zusatzstoffe` behält seine bisherige Bedeutung. Verifikation: der Vertrag validiert, und die Beschreibung jedes neuen Feldes nennt INT-020 als Quelle statt INT-015.
+- [x] 1.2 `Mensa` um `anschrift`, `beschreibung` und `kartenUrl` erweitern und die gepflegten `oeffnungszeiten` daraus entfernen. Verifikation: der Vertrag validiert, und kein Schema führt mehr ein pflegbares Öffnungszeitenfeld.
+- [x] 1.3 Neues Schema für die Öffnungsangaben je Mensa (heutiger Stand mit Grund, Wochenplan, Vorausschau, Schließtage mit Zeitraum und Geltungsbereich) sowie ein Feld für den gemeldeten Datenstand. Verifikation: der Vertrag validiert.
+- [x] 1.4 Typen aus dem Vertrag erzeugen (App und Backend). Verifikation: der Erzeugungslauf endet fehlerfrei, und `tsc` sowie der Backend-Build übersetzen ohne Fehler.
 
 ## 2. Backend — Anbindung an INT-020
 

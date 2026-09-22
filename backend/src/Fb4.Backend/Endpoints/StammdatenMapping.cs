@@ -14,7 +14,8 @@ internal static class StammdatenMapping
         StandardAuswahl = e.StandardAuswahl,
         Reihenfolge = e.Reihenfolge,
         SpeiseplanUrl = e.SpeiseplanUrl,
-        Oeffnungszeiten = e.Oeffnungszeiten.ToList(),
+        // Öffnungszeiten stehen nicht mehr in den Stammdaten: sie kommen aus INT-020
+        // (Capability `canteen`, Requirement „Öffnungszeiten je Mensa und Wochentag").
     };
 
     public static MensaEintrag ToEntity(this Mensa d) => new()
@@ -25,7 +26,8 @@ internal static class StammdatenMapping
         StandardAuswahl = d.StandardAuswahl,
         Reihenfolge = d.Reihenfolge,
         SpeiseplanUrl = d.SpeiseplanUrl,
-        Oeffnungszeiten = (d.Oeffnungszeiten ?? []).ToList(),
+        // Kein Öffnungszeitenfeld mehr im Vertrag — die Verwaltung pflegt sie nicht
+        // (Capability `admin`, Requirement „Pflege der Stammdaten-Listen").
     };
 
     public static Raum ToDto(this RaumEintrag e) => new()

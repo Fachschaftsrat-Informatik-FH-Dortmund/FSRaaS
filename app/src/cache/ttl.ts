@@ -16,6 +16,7 @@ export function untilEndOfDay(now: Date = new Date()): number {
 
 export type CachedResource =
   | 'speiseplan'
+  | 'mensaOeffnung'
   | 'mensaVerzeichnisse'
   | 'news'
   | 'raumtermine'
@@ -30,6 +31,10 @@ type Ttl = number | (() => number);
 
 const TTL: Record<CachedResource, Ttl> = {
   speiseplan: () => untilEndOfDay(),
+  // Öffnungsangaben ändern sich seltener als der Speiseplan, tragen aber die
+  // Vorausschau und die Schließtage — ein Tag hält sie aktuell genug, ohne die
+  // Quelle bei jedem Tagwechsel erneut zu befragen.
+  mensaOeffnung: DAY,
   mensaVerzeichnisse: DAY,
   news: 15 * MINUTE,
   raumtermine: 15 * MINUTE,
