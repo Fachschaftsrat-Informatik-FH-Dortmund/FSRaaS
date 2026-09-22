@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { AnkerListe } from '@/ui/AnkerListe';
@@ -97,16 +97,25 @@ export function CourseSelectionScreen() {
   // den Schritt zur Gruppenkennung, nicht mehr unmittelbar in den
   // Planungsmodus. Die angekreuzten Module reisen unverändert als
   // Routenparameter mit (design.md, Entscheidung 3).
-  useEffect(() => {
-    registriereWeiterAktion({
-      freigegeben: auswahl.length > 0,
-      weiter: () => {
-        if (auswahl.length === 0) return;
-        router.push({ pathname: '/gruppenkennung', params: { module: auswahl.join(',') } });
-      },
-    });
-    return () => registriereWeiterAktion(null);
-  }, [auswahl, router]);
+  //
+  // `useFocusEffect` statt `useEffect`: Das Register ist bildschirmübergreifend
+  // gemeinsam (`weiterAktion.ts`, Kopfkommentar). Bleibt dieser Bildschirm beim
+  // Vorwärtsnavigieren im Stapel bestehen und wird über „Zurück" wieder
+  // sichtbar, muss er sich beim Wiedererlangen des Fokus erneut anmelden — ein
+  // reiner Mount-Effekt liefe dabei nicht erneut und das Kopfzeilen-Symbol
+  // bliebe verwaist (Fund aus dem Gerätetest, Prüfprotokoll 2026-09-22).
+  useFocusEffect(
+    useCallback(() => {
+      registriereWeiterAktion({
+        freigegeben: auswahl.length > 0,
+        weiter: () => {
+          if (auswahl.length === 0) return;
+          router.push({ pathname: '/gruppenkennung', params: { module: auswahl.join(',') } });
+        },
+      });
+      return () => registriereWeiterAktion(null);
+    }, [auswahl, router]),
+  );
 
   function verwerfenBestaetigt() {
     setVerwerfenBestaetigen(false);

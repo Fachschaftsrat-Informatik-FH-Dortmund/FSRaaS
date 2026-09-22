@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
@@ -58,15 +58,24 @@ export function SetupScreen() {
   // Komponentenbaums), nicht mehr als Schaltfläche am Seitenende. Ohne einen
   // gewählten Endpunkt gibt es nichts, worüber die Modulauswahl entscheiden
   // könnte — der Weg bleibt dann zurückgenommen und führt nicht weiter.
-  useEffect(() => {
-    registriereWeiterAktion({
-      freigegeben: hatEndpunkte,
-      weiter: () => {
-        if (hatEndpunkte) router.push('/kurse');
-      },
-    });
-    return () => registriereWeiterAktion(null);
-  }, [hatEndpunkte, router]);
+  //
+  // `useFocusEffect` statt `useEffect`: Das Register ist bildschirmübergreifend
+  // gemeinsam (`weiterAktion.ts`, Kopfkommentar). Bleibt dieser Bildschirm beim
+  // Vorwärtsnavigieren im Stapel bestehen und wird über „Zurück" wieder
+  // sichtbar, muss er sich beim Wiedererlangen des Fokus erneut anmelden — ein
+  // reiner Mount-Effekt liefe dabei nicht erneut und das Kopfzeilen-Symbol
+  // bliebe verwaist (Fund aus dem Gerätetest, Prüfprotokoll 2026-09-22).
+  useFocusEffect(
+    useCallback(() => {
+      registriereWeiterAktion({
+        freigegeben: hatEndpunkte,
+        weiter: () => {
+          if (hatEndpunkte) router.push('/kurse');
+        },
+      });
+      return () => registriereWeiterAktion(null);
+    }, [hatEndpunkte, router]),
+  );
 
   if (!einrichtungGeladen) {
     return (

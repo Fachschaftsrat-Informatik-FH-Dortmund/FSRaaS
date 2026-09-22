@@ -2,7 +2,7 @@
 
 ### Requirement: Weiterführender Bedienweg in der Kopfzeile
 
-Das System muss den Bedienweg zum nächsten Schritt der Einrichtung, der Modulauswahl und des Schritts zur Gruppenkennung in der Kopfzeile rechts oben anbieten, nicht am Seitenende. Er muss als hervorgehobene Primäraktion der jeweiligen Ansicht erkennbar sein. Herkunft: Recherche: Gerätetest 2026-09-09 (Issue #68), Ausgestaltung entschieden 2026-09-11, auf den Schritt zur Gruppenkennung ausgedehnt 2026-09-11. Der Schritt zur Gruppenkennung entsteht mit diesem Change und gehört zum selben Ablauf; ein abweichender Ort für seinen Weiter-Weg brächte genau die Uneinheitlichkeit zurück, die der Gerätetest beanstandet hat.
+Das System muss den Bedienweg zum nächsten Schritt der Einrichtung, der Modulauswahl und des Schritts zur Gruppenkennung in der Kopfzeile rechts oben anbieten, nicht am Seitenende. Er muss als hervorgehobene Primäraktion der jeweiligen Ansicht erkennbar sein. Herkunft: Recherche: Gerätetest (Issue #68), 2026-09-09, Ausgestaltung entschieden 2026-09-11, auf den Schritt zur Gruppenkennung ausgedehnt 2026-09-11. Der Schritt zur Gruppenkennung entsteht mit diesem Change und gehört zum selben Ablauf; ein abweichender Ort für seinen Weiter-Weg brächte genau die Uneinheitlichkeit zurück, die der Gerätetest beanstandet hat.
 
 #### Scenario: Nächster Schritt in der Einrichtung
 - **WHEN** die Nutzerin die Einrichtung mit mindestens einem gewählten Endpunkt geöffnet hat
@@ -18,7 +18,7 @@ Das System muss den Bedienweg zum nächsten Schritt der Einrichtung, der Modulau
 
 ### Requirement: Symbol für das Zurücksetzen der Auswahl
 
-Das System muss den Bedienweg „Auswahl zurücksetzen" der Modulauswahl mit einem Symbol kennzeichnen, das das Zurücksetzen bezeichnet und sich von den übrigen Symbolen der Kopfzeile unterscheidet. Herkunft: Recherche: Gerätetest 2026-09-09 (Issue #68), Ausgestaltung entschieden 2026-09-11.
+Das System muss den Bedienweg „Auswahl zurücksetzen" der Modulauswahl mit einem Symbol kennzeichnen, das das Zurücksetzen bezeichnet und sich von den übrigen Symbolen der Kopfzeile unterscheidet. Herkunft: Recherche: Gerätetest (Issue #68), 2026-09-09, Ausgestaltung entschieden 2026-09-11.
 
 #### Scenario: Zurücksetzen in der Kopfzeile
 - **WHEN** die Nutzerin die Modulauswahl geöffnet hat
@@ -26,7 +26,7 @@ Das System muss den Bedienweg „Auswahl zurücksetzen" der Modulauswahl mit ein
 
 ### Requirement: Eigener Schritt für die Gruppenkennung nach der Modulauswahl
 
-Das System muss die Festlegung der Gruppenkennung als eigenen Schritt zwischen der Modulauswahl und dem Planungsmodus führen. Dieser Schritt trägt beide Wege — die Ermittlung über die Matrikelnummer und die Eingabe von Hand —; die Einrichtung selbst verlangt danach allein die Wahl der Endpunkte. Herkunft: Recherche: Gerätetest 2026-09-09 (Issue #68), Ausgestaltung entschieden 2026-09-11. Erst nach der Modulauswahl steht ein von der Nutzerin selbst gewählter Terminbestand fest, gegen den die Rückmeldung während der Eingabe zählen kann (Requirement „Rückmeldung während der Eingabe der Gruppenkennung").
+Das System muss die Festlegung der Gruppenkennung als eigenen Schritt zwischen der Modulauswahl und dem Planungsmodus führen. Dieser Schritt trägt beide Wege — die Ermittlung über die Matrikelnummer und die Eingabe von Hand —; die Einrichtung selbst verlangt danach allein die Wahl der Endpunkte. Herkunft: Recherche: Gerätetest (Issue #68), 2026-09-09, Ausgestaltung entschieden 2026-09-11. Erst nach der Modulauswahl steht ein von der Nutzerin selbst gewählter Terminbestand fest, gegen den die Rückmeldung während der Eingabe zählen kann (Requirement „Rückmeldung während der Eingabe der Gruppenkennung").
 
 #### Scenario: Nach der Modulauswahl
 - **WHEN** die Nutzerin die Modulauswahl abschließt
@@ -38,7 +38,7 @@ Das System muss die Festlegung der Gruppenkennung als eigenen Schritt zwischen d
 
 ### Requirement: Gruppenkennung verpflichtend vor dem Planungsmodus
 
-Das System muss eine gesetzte Gruppenkennung verlangen, bevor der Planungsmodus erreichbar ist; ein Überspringen dieses Schritts darf es nicht anbieten. Die Kennung bleibt jederzeit über den Zugang zur Einrichtung änderbar, lässt sich dort aber nur durch eine andere ersetzen, nicht ersatzlos entfernen. Allein die Aktion „Stundenplan zurücksetzen" (Capability `data-and-storage`, Löschkonzept) entfernt sie zusammen mit den gewählten Endpunkten; die Einrichtung beginnt danach von vorn und führt erneut über diesen Schritt. Trägt ein persönlicher Plan aus einer früheren Fassung der App keine Gruppenkennung, muss das System ihn unverändert erhalten und die Nutzerin beim Öffnen des Stundenplans auf den Schritt zur Gruppenkennung führen. Herkunft: Recherche: Gerätetest 2026-09-09 (Issue #68), Entscheidung 2026-09-11. Ohne Kennung bleibt die Gruppenzuordnung wirkungslos — die fachliche Leistung dieses Bereichs, in der beide Alt-Apps belegte Fehler tragen; die Freiheit, gruppenfremde Termine dennoch zu sehen, sichert das Requirement „Kennzeichnung gruppenfremder Termine statt Entfernen", das eine gesetzte Kennung ausdrücklich nur kennzeichnen und nie filtern lässt. Ein Weg zum ersatzlosen Entfernen der Kennung stellte den Zustand ohne Kennung wieder her, den dieses Requirement ausschließt; der Plan aus einer früheren Fassung bleibt nach dem Requirement „Kein selbsttätiges Entfernen des Stundenplans" der Capability `data-and-storage` erhalten.
+Das System muss eine gesetzte Gruppenkennung verlangen, bevor der Planungsmodus erreichbar ist; ein Überspringen dieses Schritts darf es nicht anbieten. Die Kennung bleibt jederzeit über den Zugang zur Einrichtung änderbar, lässt sich dort aber nur durch eine andere ersetzen, nicht ersatzlos entfernen. Allein die Aktion „Stundenplan zurücksetzen" (Capability `data-and-storage`, Löschkonzept) entfernt sie zusammen mit den gewählten Endpunkten; die Einrichtung beginnt danach von vorn und führt erneut über diesen Schritt. Trägt ein persönlicher Plan aus einer früheren Fassung der App keine Gruppenkennung, muss das System ihn unverändert erhalten und die Nutzerin beim Öffnen des Stundenplans auf den Schritt zur Gruppenkennung führen. Herkunft: Recherche: Gerätetest (Issue #68), 2026-09-09, Entscheidung 2026-09-11. Ohne Kennung bleibt die Gruppenzuordnung wirkungslos — die fachliche Leistung dieses Bereichs, in der beide Alt-Apps belegte Fehler tragen; die Freiheit, gruppenfremde Termine dennoch zu sehen, sichert das Requirement „Kennzeichnung gruppenfremder Termine statt Entfernen", das eine gesetzte Kennung ausdrücklich nur kennzeichnen und nie filtern lässt. Ein Weg zum ersatzlosen Entfernen der Kennung stellte den Zustand ohne Kennung wieder her, den dieses Requirement ausschließt; der Plan aus einer früheren Fassung bleibt nach dem Requirement „Kein selbsttätiges Entfernen des Stundenplans" der Capability `data-and-storage` erhalten.
 
 #### Scenario: Weitergehen ohne Kennung
 - **WHEN** die Nutzerin auf dem Schritt zur Gruppenkennung weitergehen will, ohne eine Kennung festgelegt zu haben
