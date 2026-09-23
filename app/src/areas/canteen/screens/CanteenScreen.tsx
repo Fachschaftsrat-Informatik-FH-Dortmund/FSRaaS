@@ -47,7 +47,7 @@ import {
 import { useCanteenSelection } from '../selection';
 import { AnkerListe } from '@/ui/AnkerListe';
 import { wischRichtung } from '../gesten';
-import { oeffnungszeitFuer } from '../oeffnungszeiten';
+import { ausgabezeitFuer, oeffnungszeitFuer } from '../oeffnungszeiten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 
 // MENSA: Tages-Speiseplan als eine über die gewählten Mensen zusammengefasste
@@ -372,15 +372,25 @@ function GerichtListe({
   // Fußbereich den vollen Kontext, unabhängig von der Gruppierung.
   // Für eine Mensa ohne Angebot am Tag ohnehin keine Öffnungszeit (MENSA-F-290).
   const mensaAbschnitteAktiv = mensaGruppierung && hatGerichte;
+  // Ausgabezeit ergänzt die Öffnungszeit nur, wo die Quelle sie führt — sie tut
+  // das ausschließlich bei Abweichung (Requirement „Ausweis der Ausgabezeit bei
+  // abweichender Öffnungszeit"), etwa Max-Ophüls-Platz: offen ab 08:00,
+  // Essensausgabe ab 11:30.
   const oeffnungszeilen = mensaAbschnitteAktiv
     ? []
     : proMensa
         .filter((p) => !geschlossene.includes(p.mensaId))
-        .map((p) => {
-          const zeit = oeffnungszeitFuer(oeffnungVon.get(p.mensaId), datum);
-          return zeit ? t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit }) : null;
-        })
-        .filter((z): z is string => z !== null);
+        .flatMap((p) => {
+          const angaben = oeffnungVon.get(p.mensaId);
+          const zeit = oeffnungszeitFuer(angaben, datum);
+          if (!zeit) return [];
+          const zeilen = [t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit })];
+          const ausgabe = ausgabezeitFuer(angaben, datum);
+          if (ausgabe) {
+            zeilen.push(t('mensa.ausgabezeitMensa', { mensa: nameVon(p.mensaId), zeit: ausgabe }));
+          }
+          return zeilen;
+        });
 
   const fuss = (
     <View style={styles.fuss}>
@@ -499,6 +509,10 @@ function GerichtListe({
           mensaGruppierung && abschnitt.art !== 'geschlossen'
             ? oeffnungszeitFuer(oeffnungVon.get(abschnitt.id), datum)
             : null;
+        const ausgabe =
+          mensaGruppierung && abschnitt.art !== 'geschlossen'
+            ? ausgabezeitFuer(oeffnungVon.get(abschnitt.id), datum)
+            : null;
         // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
         // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.
         const zeigeKopf = mensaGruppierung
@@ -522,6 +536,16 @@ function GerichtListe({
                       ]}
                     >
                       {t('mensa.oeffnungszeit', { zeit })}
+                    </Text>
+                  ) : null}
+                  {ausgabe ? (
+                    <Text
+                      style={[
+                        styles.oeffnungPille,
+                        { color: colors.text, backgroundColor: colors.surface },
+                      ]}
+                    >
+                      {t('mensa.ausgabezeit', { zeit: ausgabe })}
                     </Text>
                   ) : null}
                 </View>

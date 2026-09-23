@@ -66,6 +66,8 @@
     "keinAngebotHinweis": "There is no menu for this day. Another canteen may be open.",
     "oeffnungszeit": "Open {{zeit}}",
     "oeffnungszeitMensa": "{{mensa}}: open {{zeit}}",
+    "ausgabezeit": "Serving {{zeit}}",
+    "ausgabezeitMensa": "{{mensa}}: serving {{zeit}}",
     "geschlossenHeute": "{{mensa}} is closed on this day.",
     "wiederGeoeffnet": "Reopens on {{tag}}.",
     "wiederGeoeffnetDatum": "({{datum}})",

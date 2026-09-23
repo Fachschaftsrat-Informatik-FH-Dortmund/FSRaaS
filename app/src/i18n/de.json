@@ -66,6 +66,8 @@
     "keinAngebotHinweis": "Für diesen Tag liegt kein Speiseplan vor. Vielleicht hat eine andere Mensa geöffnet.",
     "oeffnungszeit": "Geöffnet {{zeit}}",
     "oeffnungszeitMensa": "{{mensa}}: geöffnet {{zeit}}",
+    "ausgabezeit": "Essensausgabe {{zeit}}",
+    "ausgabezeitMensa": "{{mensa}}: Essensausgabe {{zeit}}",
     "geschlossenHeute": "{{mensa}} hat an diesem Tag geschlossen.",
     "wiederGeoeffnet": "Wieder geöffnet am {{tag}}.",
     "wiederGeoeffnetDatum": "({{datum}})",

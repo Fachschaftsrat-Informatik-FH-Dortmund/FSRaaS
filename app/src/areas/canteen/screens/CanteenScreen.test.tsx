@@ -43,6 +43,19 @@ const wochenplanMit = (zeit: string) => {
 const mockOeffnung: Record<string, any> = {
   Mensa: wochenplanMit('11:30 - 14:45'),
   Sued: wochenplanMit('12:00 - 14:00'),
+  // Max-Ophüls-Platz: offen ab 08:00, Essensausgabe erst ab 11:30 — die Quelle
+  // führt `ausgabeBeginn` nur bei Abweichung von der Öffnungszeit.
+  Ophuels: {
+    wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({
+      wochentag,
+      geoeffnet: true,
+      oeffnet: '08:00',
+      schliesst: '14:15',
+      ausgabeBeginn: '11:30',
+    })),
+    vorausschau: [],
+    schliesstage: [],
+  },
 };
 
 const mockMensen = [
@@ -57,6 +70,12 @@ const mockMensen = [
     name: 'Mensa Süd',
     standardAuswahl: false,
     reihenfolge: 20,
+  },
+  {
+    id: 'Ophuels',
+    name: 'Max-Ophüls-Platz',
+    standardAuswahl: false,
+    reihenfolge: 30,
   },
 ];
 
@@ -494,6 +513,39 @@ describe('Öffnungszeit an der Mensa-Abschnittsüberschrift', () => {
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText(/Hauptmensa: geöffnet/)).toBeTruthy();
     expect(screen.queryByText('Geöffnet 11:30 - 14:45')).toBeNull();
+  });
+});
+
+describe('Ausweis der Ausgabezeit bei abweichender Öffnungszeit', () => {
+  it('zeigt bei Mensa-Gruppierung Öffnungs- und Ausgabezeit an der Abschnittsüberschrift', async () => {
+    mockSelection = { ids: ['Ophuels'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Ophuels: qr([gericht()]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 08:00 - 14:15')).toBeTruthy();
+    expect(screen.getByText('Essensausgabe 11:30 - 14:15')).toBeTruthy();
+  });
+
+  it('zeigt ohne Abweichung keine gesonderte Ausgabezeit (Hauptmensa)', async () => {
+    renderScreen(); // Standard-Auswahl: nur „Mensa" — kein `ausgabeBeginn` in der Quelle.
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 11:30 - 14:45')).toBeTruthy();
+    expect(screen.queryByText(/Essensausgabe/)).toBeNull();
+  });
+
+  it('zeigt ohne Mensa-Gruppierung die Ausgabezeit am Ende der Gerichtsliste', async () => {
+    mockSelection = { ids: ['Ophuels'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Ophuels: qr([gericht()]) };
+    mockPreset = {
+      id: 'preis',
+      eigen: false,
+      gruppierung: 'keine',
+      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText(/Max-Ophüls-Platz: geöffnet 08:00 - 14:15/)).toBeTruthy();
+    expect(screen.getByText(/Max-Ophüls-Platz: Essensausgabe 11:30 - 14:15/)).toBeTruthy();
   });
 });
 
