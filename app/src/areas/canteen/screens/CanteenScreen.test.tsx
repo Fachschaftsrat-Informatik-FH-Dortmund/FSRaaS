@@ -630,6 +630,15 @@ describe('Öffnungszeit an der Mensa-Abschnittsüberschrift', () => {
     expect(screen.getByText(/Hauptmensa: geöffnet/)).toBeTruthy();
     expect(screen.queryByText('Geöffnet 11:30 - 14:45')).toBeNull();
   });
+
+  it('zeigt bei einer geöffneten Mensa ohne Speiseplan deren Öffnungszeit an der Abschnittsüberschrift, zusammen mit dem Hinweis', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) }; // mockOeffnung.Sued: geöffnet, ohne Speiseplan.
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 12:00 - 14:00')).toBeTruthy();
+    expect(screen.getByText('Mensa Süd: Für diesen Tag liegt kein Speiseplan vor.')).toBeTruthy();
+  });
 });
 
 describe('Ausweis der Ausgabezeit bei abweichender Öffnungszeit', () => {
