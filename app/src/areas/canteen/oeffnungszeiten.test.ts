@@ -1,5 +1,5 @@
-import { ausgabezeitFuer, istGeoeffnet, oeffnungszeitFuer } from './oeffnungszeiten';
-import type { Oeffnungsangaben, Oeffnungstag } from './api';
+import { ausgabezeitFuer, istGeoeffnet, oeffnungszeitFuer, schliessungFuer } from './oeffnungszeiten';
+import type { Oeffnungsangaben, Oeffnungstag, Schliesstag } from './api';
 
 // 2026-09-07 ist ein Montag, 2026-09-11 ein Freitag, 2026-09-12 ein Samstag,
 // 2026-09-13 ein Sonntag.
@@ -77,5 +77,49 @@ describe('Ausweis der Ausgabezeit bei abweichender Öffnungszeit', () => {
     // Hauptmensa: die Quelle setzt servingOpen nur bei Abweichung.
     expect(oeffnungszeitFuer(wochenplan, '2026-09-07')).toBe('11:30 - 14:45');
     expect(ausgabezeitFuer(wochenplan, '2026-09-07')).toBeNull();
+  });
+});
+
+describe('Grund und Zeitraum einer Schließung', () => {
+  const schliesstag = (t: Partial<Schliesstag>): Schliesstag =>
+    ({ bezeichnung: 'Betriebsferien', feiertag: false, geltungsbereich: 'mensa', ...t }) as Schliesstag;
+
+  it('nennt Grund und Enddatum einer Schließung (Mensa Süd, Betriebsferien bis 04.10.)', () => {
+    const sued = angaben({
+      vorausschau: [
+        tag({ datum: '2026-09-07', wochentag: 1, geoeffnet: false, grund: 'Restaurant-Schließtag: Betriebsferien' }),
+      ],
+      schliesstage: [schliesstag({ von: '2026-08-28', bis: '2026-10-04' })],
+    });
+    expect(schliessungFuer(sued, '2026-09-07')).toEqual({
+      grund: 'Restaurant-Schließtag: Betriebsferien',
+      bis: '2026-10-04',
+    });
+  });
+
+  it('nennt allein den Grund ohne passenden Schließzeitraum', () => {
+    const ohneZeitraum = angaben({
+      vorausschau: [
+        tag({ datum: '2026-09-07', wochentag: 1, geoeffnet: false, grund: 'Feiertag' }),
+      ],
+      schliesstage: [],
+    });
+    expect(schliessungFuer(ohneZeitraum, '2026-09-07')).toEqual({ grund: 'Feiertag', bis: null });
+  });
+
+  it('liefert nichts ohne Grundangabe', () => {
+    const ohneGrund = angaben({
+      vorausschau: [tag({ datum: '2026-09-07', wochentag: 1, geoeffnet: false })],
+      schliesstage: [schliesstag({ von: '2026-09-01', bis: '2026-09-10' })],
+    });
+    expect(schliessungFuer(ohneGrund, '2026-09-07')).toBeNull();
+  });
+
+  it('liefert nichts für einen geöffneten Tag', () => {
+    expect(schliessungFuer(wochenplan, '2026-09-07')).toBeNull();
+  });
+
+  it('liefert nichts ohne Öffnungsangaben', () => {
+    expect(schliessungFuer(undefined, '2026-09-07')).toBeNull();
   });
 });

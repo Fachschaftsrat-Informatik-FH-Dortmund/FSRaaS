@@ -47,7 +47,13 @@ import {
 import { useCanteenSelection } from '../selection';
 import { AnkerListe } from '@/ui/AnkerListe';
 import { wischRichtung } from '../gesten';
-import { ausgabezeitFuer, istGeoeffnet, oeffnungszeitFuer } from '../oeffnungszeiten';
+import {
+  ausgabezeitFuer,
+  istGeoeffnet,
+  oeffnungszeitFuer,
+  schliessungFuer,
+  type Schliessungsangabe,
+} from '../oeffnungszeiten';
 import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 
 // MENSA: Tages-Speiseplan als eine über die gewählten Mensen zusammengefasste
@@ -424,11 +430,15 @@ function GerichtListe({
         </Text>
       ) : null}
       {!mensaAbschnitteAktiv
-        ? wirklichGeschlossen.map((id) => (
-            <Text key={id} style={[styles.fussZeile, { color: colors.textMuted }]}>
-              {t('mensa.geschlossenHeute', { mensa: nameVon(id) })}
-            </Text>
-          ))
+        ? wirklichGeschlossen.map((id) => {
+            const schliessung = schliessungFuer(oeffnungVon.get(id), datum);
+            return (
+              <Text key={id} style={[styles.fussZeile, { color: colors.textMuted }]}>
+                {t('mensa.geschlossenHeute', { mensa: nameVon(id) })}
+                {schliessung != null ? ` ${formatSchliessung(schliessung, t)}` : ''}
+              </Text>
+            );
+          })
         : null}
       {!mensaAbschnitteAktiv
         ? offenOhneSpeiseplan.map((id) => (
@@ -547,6 +557,10 @@ function GerichtListe({
         const kopfName = mensaGruppierung ? nameVon(abschnitt.id) : abschnitt.titel;
         const wieder =
           abschnitt.art === 'geschlossen' ? (naechsteOeffnungVon.get(abschnitt.id) ?? null) : null;
+        const schliessung =
+          abschnitt.art === 'geschlossen'
+            ? schliessungFuer(oeffnungVon.get(abschnitt.id), datum)
+            : null;
         return {
           id: abschnitt.id,
           inhalt: (
@@ -579,6 +593,7 @@ function GerichtListe({
               {abschnitt.art === 'geschlossen' ? (
                 <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
                   {t('mensa.geschlossenHeute', { mensa: nameVon(abschnitt.id) })}
+                  {schliessung != null ? ` ${formatSchliessung(schliessung, t)}` : ''}
                   {wieder != null ? ` ${formatWiedereroeffnung(wieder, datum, t)}` : ''}
                 </Text>
               ) : null}
@@ -701,6 +716,12 @@ function formatDatum(datum: string, t: TFunction): string {
   return `${t(`mensa.weekday.${wd}`)}, ${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.${y}`;
 }
 
+/** ISO-Datum als `TT.MM.` ohne Jahr, wie im Wiedereröffnungs- und Schließungshinweis verwendet. */
+function formatKurzdatum(datum: string): string {
+  const [, m, d] = datum.split('-').map(Number);
+  return `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.`;
+}
+
 /**
  * Wiedereröffnungshinweis (Requirement „Wiedereröffnungshinweis an der
  * geschlossenen Mensa", design.md D3): der Wochentag des ermittelten Tages,
@@ -713,8 +734,19 @@ function formatWiedereroeffnung(naechsteOeffnung: string, datum: string, t: TFun
   const wd = new Date(y!, m! - 1, d!).getDay();
   const basis = t('mensa.wiederGeoeffnet', { tag: t(`mensa.weekday.${wd}`) });
   if (tageDifferenz(datum, naechsteOeffnung) <= 6) return basis;
-  const kurzdatum = `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.`;
-  return `${basis} ${t('mensa.wiederGeoeffnetDatum', { datum: kurzdatum })}`;
+  return `${basis} ${t('mensa.wiederGeoeffnetDatum', { datum: formatKurzdatum(naechsteOeffnung) })}`;
+}
+
+/**
+ * Schließungshinweis mit Grund und Enddatum (Requirement „Grund und Zeitraum
+ * einer Schließung"): der Grund wird unverändert wiedergegeben, wie ihn die
+ * Quelle liefert, ergänzt um das Enddatum, sofern die Quelle eines führt. Ohne
+ * Grundangabe bleibt es beim reinen Geschlossen-Hinweis — `null`.
+ */
+function formatSchliessung(schliessung: Schliessungsangabe, t: TFunction): string {
+  return schliessung.bis
+    ? t('mensa.schliessungsgrundBis', { grund: schliessung.grund, datum: formatKurzdatum(schliessung.bis) })
+    : t('mensa.schliessungsgrund', { grund: schliessung.grund });
 }
 
 /** Anzahl ganzer Tage zwischen zwei ISO-Datumsangaben (`bis` − `von`). */

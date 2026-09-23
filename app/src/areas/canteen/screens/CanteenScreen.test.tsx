@@ -52,6 +52,16 @@ const geschlossenAlleTage = () => ({
   schliesstage: [],
 });
 
+// Geschlossen am angezeigten Tag (MONTAG = 2026-09-07) mit Grund und optional
+// Enddatum — für Tests des Requirements „Grund und Zeitraum einer Schließung".
+const geschlossenMitGrund = (grund: string, zeitraum?: { von: string; bis: string }) => ({
+  wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({ wochentag, geoeffnet: false })),
+  vorausschau: [{ datum: '2026-09-07', wochentag: 1, geoeffnet: false, grund }],
+  schliesstage: zeitraum
+    ? [{ bezeichnung: grund, feiertag: false, geltungsbereich: 'mensa', ...zeitraum }]
+    : [],
+});
+
 const ophuelsOeffnung = () => ({
   // Max-Ophüls-Platz: offen ab 08:00, Essensausgabe erst ab 11:30 — die Quelle
   // führt `ausgabeBeginn` nur bei Abweichung von der Öffnungszeit.
@@ -395,6 +405,33 @@ describe('Geschlossen-Hinweis für geschlossene Mensa', () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.queryByText(/hat an diesem Tag geschlossen/)).toBeNull();
+  });
+});
+
+describe('Grund und Zeitraum einer Schließung', () => {
+  it('nennt Grund und Enddatum zusammen mit dem Geschlossen-Hinweis (Mensa Süd, Betriebsferien bis 04.10.)', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    mockOeffnung.Sued = geschlossenMitGrund('Restaurant-Schließtag: Betriebsferien', {
+      von: '2026-08-28',
+      bis: '2026-10-04',
+    });
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(
+      screen.getByText(
+        'Mensa Süd hat an diesem Tag geschlossen. Restaurant-Schließtag: Betriebsferien (bis 04.10.)',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('zeigt allein den Geschlossen-Hinweis ohne Grundangabe', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    mockOeffnung.Sued = geschlossenAlleTage(); // ohne `grund`
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Mensa Süd hat an diesem Tag geschlossen.')).toBeTruthy();
   });
 });
 

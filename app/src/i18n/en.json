@@ -72,6 +72,8 @@
     "keinSpeiseplanHeute": "{{mensa}}: no menu for this day.",
     "wiederGeoeffnet": "Reopens on {{tag}}.",
     "wiederGeoeffnetDatum": "({{datum}})",
+    "schliessungsgrund": "{{grund}}",
+    "schliessungsgrundBis": "{{grund}} (until {{datum}})",
     "mensaGefiltert": "All dishes at this canteen are hidden by your filters.",
     "angebotIn": "Available at: {{mensen}}",
     "alleMensenAnzeigen": "Show all canteens",

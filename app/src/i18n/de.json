@@ -72,6 +72,8 @@
     "keinSpeiseplanHeute": "{{mensa}}: Für diesen Tag liegt kein Speiseplan vor.",
     "wiederGeoeffnet": "Wieder geöffnet am {{tag}}.",
     "wiederGeoeffnetDatum": "({{datum}})",
+    "schliessungsgrund": "{{grund}}",
+    "schliessungsgrundBis": "{{grund}} (bis {{datum}})",
     "mensaGefiltert": "Alle Gerichte dieser Mensa sind durch deine Filter ausgeblendet.",
     "angebotIn": "Angeboten in: {{mensen}}",
     "alleMensenAnzeigen": "Alle Mensen anzeigen",

@@ -1,4 +1,4 @@
-import type { Oeffnungsangaben, Oeffnungstag } from './api';
+import type { Oeffnungsangaben, Oeffnungstag, Schliesstag } from './api';
 
 // MENSA: Auflösung der Öffnungszeit eines Tages aus den Öffnungsangaben der
 // Mensa-Schnittstelle (Capability `canteen`, Requirement „Öffnungszeiten je Mensa
@@ -73,4 +73,34 @@ export function istGeoeffnet(
   datum: string,
 ): boolean | undefined {
   return oeffnungstagFuer(angaben, datum)?.geoeffnet;
+}
+
+/** Ob `datum` in den vom Schließtag `s` beschriebenen Zeitraum bzw. Einzeltag fällt. */
+function inSchliesstag(s: Schliesstag, datum: string): boolean {
+  if (s.von && s.bis) return s.von <= datum && datum <= s.bis;
+  return s.datum === datum;
+}
+
+export interface Schliessungsangabe {
+  /** Klartextgrund, wie die Quelle ihn liefert — nicht in eine eigene Formulierung übersetzt. */
+  grund: string;
+  /** Letzter Tag der Schließung (ISO-Datum), oder `null` ohne bekanntes Enddatum. */
+  bis: string | null;
+}
+
+/**
+ * Grund und Zeitraum der Schließung eines geschlossenen Tages (Requirement „Grund
+ * und Zeitraum einer Schließung"): der Klartextgrund kommt aus der Öffnungsangabe
+ * des Tages selbst (`heute`/`wochenplan`/`vorausschau`), das Enddatum aus dem
+ * dazu passenden Eintrag in `schliesstage`. `null`, wenn der Tag geöffnet ist oder
+ * die Quelle zu ihm keinen Grund führt.
+ */
+export function schliessungFuer(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): Schliessungsangabe | null {
+  const tag = oeffnungstagFuer(angaben, datum);
+  if (!tag || tag.geoeffnet || !tag.grund) return null;
+  const zeitraum = angaben?.schliesstage?.find((s) => inSchliesstag(s, datum));
+  return { grund: tag.grund, bis: zeitraum?.bis ?? zeitraum?.datum ?? null };
 }
