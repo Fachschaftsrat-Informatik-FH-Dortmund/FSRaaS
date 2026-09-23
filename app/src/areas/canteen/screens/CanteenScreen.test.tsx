@@ -289,6 +289,33 @@ describe('MENSA-F-010 / MENSA-F-030 / MENSA-F-220 Gerichte des Tages mit dem Pre
   });
 });
 
+describe('Gerichtsbezeichnung nach Komponenten gegliedert', () => {
+  it('zeigt die erste Komponente hervorgehoben als Namen und die weiteren darunter als Beiwerk, nicht als eine Zeile mit Trennzeichen', async () => {
+    mockPlaene = {
+      Mensa: qr([
+        gericht({
+          bezeichnung: 'Gebackener Kabeljau',
+          komponenten: ['Gebackener Kabeljau', 'Dillsauce oder', 'Dip', 'Salzkartoffeln'],
+        }),
+      ]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Gebackener Kabeljau')).toBeTruthy());
+    expect(screen.getByText('Dillsauce oder')).toBeTruthy();
+    expect(screen.getByText('Dip')).toBeTruthy();
+    expect(screen.getByText('Salzkartoffeln')).toBeTruthy();
+    expect(
+      screen.queryByText('Gebackener Kabeljau | Dillsauce oder | Dip | Salzkartoffeln'),
+    ).toBeNull();
+  });
+
+  it('zeigt bei fehlenden Komponenten allein die Bezeichnung als Namen', async () => {
+    mockPlaene = { Mensa: qr([gericht({ bezeichnung: 'Bolognese', komponenten: undefined })]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+  });
+});
+
 describe('MENSA-F-012 / MENSA-F-014 zusammengefasste Liste über die gewählten Mensen', () => {
   it('führt ein an beiden Mensen angebotenes Gericht einmal und nennt beide Mensen', async () => {
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };

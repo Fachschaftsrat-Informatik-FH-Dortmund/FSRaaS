@@ -96,6 +96,24 @@ describe('MENSA-F-130 Ansicht aller Mensen nach Mensa getrennt', () => {
   });
 });
 
+describe('Gerichtsbezeichnung nach Komponenten gegliedert', () => {
+  it('zeigt die erste Komponente hervorgehoben als Namen und die weiteren darunter als Beiwerk', async () => {
+    mockPlaene = {
+      Mensa: qr([
+        gericht({
+          bezeichnung: 'Gebackener Kabeljau',
+          komponenten: ['Gebackener Kabeljau', 'Dillsauce oder', 'Dip'],
+        }),
+      ]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Gebackener Kabeljau')).toBeTruthy());
+    expect(screen.getByText('Dillsauce oder')).toBeTruthy();
+    expect(screen.getByText('Dip')).toBeTruthy();
+    expect(screen.queryByText('Gebackener Kabeljau | Dillsauce oder | Dip')).toBeNull();
+  });
+});
+
 describe('MENSA-F-140 Mensen ohne Angebot am Tag auslassen', () => {
   it('lässt eine Mensa ohne Gerichte aus', async () => {
     renderScreen();

@@ -107,6 +107,11 @@ function MensaAbschnitt({
           ) : null}
           {gs.map((g, i) => {
             const istBetroffen = betroffen(g);
+            // Gerichtsbezeichnung nach Komponenten gegliedert (Requirement
+            // „Gerichtsbezeichnung nach Komponenten gegliedert"): siehe
+            // CanteenScreen.tsx, GerichtKarte.
+            const [name, ...beiwerk] =
+              g.komponenten && g.komponenten.length > 0 ? g.komponenten : [g.bezeichnung];
             return (
               <View
                 key={`${g.schluessel}-${i}`}
@@ -118,7 +123,12 @@ function MensaAbschnitt({
                 accessibilityState={istBetroffen ? { disabled: true } : undefined}
                 accessibilityHint={istBetroffen ? t('mensa.durchFilterBetroffen') : undefined}
               >
-                <Text style={[styles.bezeichnung, { color: colors.text }]}>{g.bezeichnung}</Text>
+                <Text style={[styles.bezeichnung, { color: colors.text }]}>{name}</Text>
+                {beiwerk.map((zeile, j) => (
+                  <Text key={j} style={[styles.klein, { color: colors.textMuted }]}>
+                    {zeile}
+                  </Text>
+                ))}
                 {g.kennzeichnungen && g.kennzeichnungen.length > 0 ? (
                   <Text style={[styles.klein, { color: colors.textMuted }]}>
                     {g.kennzeichnungen.join(' · ')}

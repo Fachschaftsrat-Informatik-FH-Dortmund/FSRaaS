@@ -40,7 +40,7 @@
 
 ## 6. App — Gerichtsdarstellung
 
-- [ ] 6.1 Gerichtsbezeichnung nach Komponenten gegliedert darstellen, erste Komponente hervorgehoben. Verifikation: Test `Gerichtsbezeichnung nach Komponenten gegliedert`.
+- [x] 6.1 Gerichtsbezeichnung nach Komponenten gegliedert darstellen, erste Komponente hervorgehoben. Verifikation: Test `Gerichtsbezeichnung nach Komponenten gegliedert`. Erledigt: `GerichtKarte` (`CanteenScreen.tsx`) und die Gerichtskarte in `CanteenAllScreen.tsx` zerlegen `komponenten` in Name (hervorgehoben, wie bisher) und Beiwerk-Zeilen darunter; ohne `komponenten` (additives Vertragsfeld, kann fehlen) fällt beides auf `bezeichnung` als alleinigen Namen zurück.
 - [ ] 6.2 Allergene und Zusatzstoffe am Gericht unterscheidbar ausweisen. Verifikation: Test `Gerichtsangaben — Kategorie, Bezeichnung, Preise, Zusatzstoffe`.
 - [ ] 6.3 Kennzeichnungen aus dem festen Vokabular der Quelle anzeigen, einschließlich „artgerecht". Verifikation: Test `Anzeige von Gericht-Kennzeichnungen`.
 - [ ] 6.4 CO₂-Klasse und Klimateller-Abzeichen anzeigen. Verifikation: Test `Anzeige der CO₂-Klasse am Gericht`.

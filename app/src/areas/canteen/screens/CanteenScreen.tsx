@@ -648,6 +648,12 @@ function GerichtKarte({
   const { t } = useTranslation();
   const { colors } = useTheme();
   const g = eintrag.massgeblich;
+  // Gerichtsbezeichnung nach Komponenten gegliedert (Requirement
+  // „Gerichtsbezeichnung nach Komponenten gegliedert"): die erste Komponente
+  // ist der Name, die weiteren sind Beiwerk — nie als eine Zeile mit
+  // Trennzeichen zusammengezogen. `komponenten` ist additiv (Vertrag,
+  // Abschnitt 1) und kann fehlen; dann trägt `bezeichnung` allein den Namen.
+  const [name, ...beiwerk] = g.komponenten && g.komponenten.length > 0 ? g.komponenten : [g.bezeichnung];
 
   return (
     <View
@@ -658,7 +664,7 @@ function GerichtKarte({
       ]}
     >
       <View style={styles.kartekopf}>
-        <Text style={[styles.bezeichnung, { color: colors.text }]}>{g.bezeichnung}</Text>
+        <Text style={[styles.bezeichnung, { color: colors.text }]}>{name}</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: favorit }}
@@ -671,6 +677,12 @@ function GerichtKarte({
           </Text>
         </Pressable>
       </View>
+
+      {beiwerk.map((zeile, i) => (
+        <Text key={i} style={[styles.beiwerk, { color: colors.textMuted }]}>
+          {zeile}
+        </Text>
+      ))}
 
       {zeigeAnbieter ? (
         <Text style={[styles.anbieter, { color: colors.textMuted }]}>
@@ -794,6 +806,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bezeichnung: { fontSize: 15, fontWeight: '600', flex: 1 },
+  beiwerk: { fontSize: 13 },
   stern: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   anbieter: { fontSize: 13 },
   kennzeichnungen: { fontSize: 13 },
