@@ -34,36 +34,29 @@ public static class SeedData
 
     static IEnumerable<MensaEintrag> Mensen()
     {
-        (string id, string name, string itmc, int order, bool std, string[] zeiten)[] rows =
+        // Öffnungszeiten stehen hier nicht mehr: sie werden seit der Ablösung von
+        // INT-015 nicht gepflegt, sondern je Anfrage aus INT-020 bezogen
+        // (Capability `admin`, entfallenes Pflegerecht).
+        (string id, string name, string quelleId, int order, bool std)[] rows =
         [
-            ("Mensa", "Hauptmensa", "341", 10, true,
-                ["11:30 - 14:45", "11:30 - 14:45", "11:30 - 14:45", "11:30 - 14:45", "11:30 - 14:00"]),
-            ("Kostbar", "Kostbar", "456", 20, false,
-                ["8:00 - 14:30", "8:00 - 14:30", "8:00 - 14:30", "8:00 - 14:30", "8:00 - 14:30"]),
-            ("Sonnen", "Mensa Sonnenstrasse", "455", 40, false,
-                ["7:30 - 14:00", "7:30 - 14:00", "7:30 - 14:00", "7:30 - 14:00", "7:30 - 14:00"]),
-            ("Sued", "Mensa Sued", "342", 50, false,
-                ["11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:00"]),
-            ("Max", "Max-Ophuels-Platz", "453", 60, false,
-                ["11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15", "11:30 - 14:15"]),
-            ("Arch", "Archeteria Campus Sued", "452", 80, false,
-                ["8:00 - 15:00", "8:00 - 15:00", "8:00 - 15:00", "8:00 - 15:00", "8:00 - 14:30"]),
-            ("Soest", "Mensaforum Soest", "451", 90, false,
-                ["7:00 - 14:00", "7:00 - 14:00", "7:00 - 14:00", "7:00 - 14:00", "7:00 - 14:00"]),
-            ("Foodfakultaet", "Food Fakultaet", "474", 100, false,
-                ["11:30 - 19:30", "11:30 - 19:30", "11:30 - 19:30", "11:30 - 19:30", "11:30 - 18:30"]),
-            ("Galerie", "Galerie", "451", 120, false,
-                ["7:30 - 15:00", "7:30 - 15:00", "7:30 - 15:00", "7:30 - 15:00", "7:30 - 15:00"]),
+            ("Mensa", "Hauptmensa", "341", 10, true),
+            ("Kostbar", "Kostbar", "456", 20, false),
+            ("Sonnen", "Mensa Sonnenstrasse", "455", 40, false),
+            ("Sued", "Mensa Sued", "342", 50, false),
+            ("Max", "Max-Ophuels-Platz", "453", 60, false),
+            ("Arch", "Archeteria Campus Sued", "452", 80, false),
+            ("Soest", "Mensaforum Soest", "451", 90, false),
+            ("Foodfakultaet", "Food Fakultaet", "474", 100, false),
+            ("Galerie", "Galerie", "451", 120, false),
         ];
         return rows.Select(r => new MensaEintrag
         {
             Id = r.id,
             Name = r.name,
-            QuelleId = r.itmc,
+            QuelleId = r.quelleId,
             StandardAuswahl = r.std,
             Reihenfolge = r.order,
-            SpeiseplanUrl = $"https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr={r.itmc}&limit=100",
-            Oeffnungszeiten = [.. r.zeiten],
+            SpeiseplanUrl = $"https://www.stwdo.de/speiseplan/speiseplan/naechste-2-wochen?verbrauchsortnr={r.quelleId}&limit=100",
         });
     }
 

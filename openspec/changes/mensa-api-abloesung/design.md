@@ -71,6 +71,29 @@ Die Quelle gibt an, die Allergencodes aus den Beschreibungszeilen entfernt zu ha
 
 Ebenso bleibt der Sprachrückfall: `nameEn`/`linesEn` fehlten bei 10 von 73 Gerichten; dort tritt die deutsche Fassung an ihre Stelle, statt die Bezeichnung leer zu lassen (Capability `security-and-privacy`: keine stillen Fehler).
 
+### Die englische Legende kommt aus der Quelle, nicht aus der App
+
+Bei der Umsetzung von Abschnitt 2 am 2026-09-23 zeigte sich: `GET /legend` führt je
+Eintrag genau ein `label`, und zwar auf Deutsch — eine Sprachwahl bietet die
+Schnittstelle nicht. INT-015 lieferte diese Verzeichnisse zweisprachig (`{de, en}`).
+Betroffen sind die 11 Zusatzstoff-, 27 Allergen- und 10 Kennzeichnungs-Klartexte; die
+Gerichtsbezeichnung bleibt über `linesEn` zweisprachig.
+
+Das Requirement „Gerichtskategorien und Zusatzstoffhinweise in Oberflächensprache"
+(vormals MENSA-F-048) ist davon **nicht verletzt**: es fordert die Anzeige in der
+gewählten Sprache ausdrücklich nur, „sofern die Quelle sie in dieser Sprache liefert".
+Das Backend reicht deshalb bis auf Weiteres den deutschen Klartext in beiden Sprachen
+durch — anforderungskonform, aber nicht das Ziel.
+
+Gewählt (Entscheidung FSR FB4, 2026-09-23): `mensa-api` wird um eine englische Legende
+ergänzt, das Backend liest sie, sobald sie vorliegt. Die Alternative — die 48 Klartexte
+in die Übersetzung der App aufzunehmen — wäre schneller gewesen und hätte nichts
+blockiert; sie schüfe aber eine zweite Stelle, die nachziehen muss, wenn das
+Studierendenwerk seine Codes ändert. Genau dieses Nachziehen ist in beiden
+Vorgängerprojekten unterblieben. Die Quelle liegt im eigenen Verantwortungsbereich des
+FSR, also wird sie dort behoben, wo sie herkommt. Der Nachlauf in `mensa-api` und das
+Auslesen im Backend sind **nicht** Teil dieses Changes.
+
 ### Öffnung und Speiseplan als zwei getrennte Tatsachen
 
 Bisher war „kein Gericht" der einzige Anhaltspunkt für „geschlossen". Die neue Quelle meldet die Öffnung selbst, und die Prüfung hat beide Angaben gegeneinander abgeglichen: in 105 Tag/Mensa-Paaren kein Fall, in dem die Schnittstelle eine Mensa als geschlossen führte, während ihr Speiseplan Gerichte enthielt. Daraus folgt die Aufteilung in drei Zustände je Mensa und Tag:
@@ -118,6 +141,5 @@ Neue Felder: `komponenten` (Liste), `allergene` (Liste), `co2Klasse`, die Stando
 
 ## Open Questions
 
-- **Woher die englischen Klartexte der Kennzeichnungen, Zusatzstoffe und Allergene künftig kommen.** Bei der Umsetzung von Abschnitt 2 am 2026-09-23 zeigte sich: `GET /legend` führt je Eintrag genau ein `label`, und zwar auf Deutsch — eine Sprachwahl bietet die Schnittstelle nicht. INT-015 lieferte diese Verzeichnisse dagegen zweisprachig (`{de, en}`), und genau darauf stützte sich MENSA-F-048. Die Gerichtsbezeichnung bleibt zweisprachig (`linesEn`); betroffen sind allein die 11 Zusatzstoff-, 27 Allergen- und 10 Kennzeichnungs-Klartexte. Der Backend-Anteil reicht vorerst den deutschen Klartext in beiden Sprachen durch. Drei Wege stehen offen: die 48 Klartexte in die eigene Übersetzung der App aufnehmen (die Codes sind stabil, bei den Kennzeichnungen ohnehin englische Schlüssel wie `vegetarian`, `climate-plate`); `mensa-api` um eine englische Legende ergänzen (eigener Verantwortungsbereich); oder MENSA-F-048 auf die Gerichtsbezeichnung einschränken. Zu entscheiden, bevor Abschnitt 6 und 7 die Anzeige und das Filtermenü umbauen.
 - Ab welchem gemeldeten Datenalter der Altershinweis greifen soll. Beeinflusst weder Specs noch Zuschnitt: die Anforderung nennt „älter als die festgelegte Gültigkeitsdauer", der konkrete Wert ist Konfiguration und bei der Umsetzung zu wählen.
 - Ob die Beschreibung einer Mensa in der Auswahlliste oder erst in einer Detailansicht steht. Eine Gestaltungsfrage innerhalb der bestehenden Anforderung, ohne Rückwirkung auf Vertrag oder Backend.

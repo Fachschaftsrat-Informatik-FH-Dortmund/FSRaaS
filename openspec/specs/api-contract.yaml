@@ -76,7 +76,10 @@ paths:
     get:
       tags: [mensa]
       summary: Auswählbare Mensen
-      description: Erfüllt API-F-230 für MENSA-F-020; Öffnungszeiten gemäß MENSA-F-047.
+      description: >-
+        Erfüllt API-F-230 für MENSA-F-020. Öffnungszeiten stehen nicht mehr hier,
+        sondern unter `/mensen/{mensaId}/oeffnungszeiten` — sie werden seit der
+        Ablösung von INT-015 nicht mehr gepflegt, sondern aus INT-020 bezogen.
       security: []
       responses:
         "200":
@@ -983,15 +986,26 @@ components:
         name: { type: string }
         quelleId:
           type: string
-          description: Kennung im Quellsystem INT-015.
+          description: >-
+            Kennung im Quellsystem INT-020 — die Verbrauchsortnummer des
+            Studierendenwerks. INT-015 verwendete dieselbe Zahl, weshalb die
+            Quellenablösung keine Neuschlüsselung erforderte.
         standardAuswahl: { type: boolean }
         reihenfolge: { type: integer }
         speiseplanUrl: { type: string, format: uri }
-        oeffnungszeiten:
-          type: array
-          description: Ein Eintrag je Wochentag, Montag zuerst (MENSA-F-047).
-          items:
-            type: [string, "null"]
+        anschrift:
+          type: [string, "null"]
+          description: >-
+            Anschrift der Mensa (INT-020 `address`). Fehlt sie, entfällt sie
+            ersatzlos, ohne dass die übrigen Angaben ausbleiben (Capability
+            `canteen`, Requirement „Standortangaben der Mensa").
+        beschreibung:
+          type: [string, "null"]
+          description: Beschreibung der Mensa aus dem CMS der Quelle (INT-020 `description`).
+        kartenUrl:
+          type: [string, "null"]
+          format: uri
+          description: Verweis auf die Lage der Mensa in einem Kartendienst (INT-020 `mapsUrl`).
 
     Oeffnungstag:
       type: object

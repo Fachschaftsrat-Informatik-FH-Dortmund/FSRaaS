@@ -10,13 +10,35 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }));
 
+
+// Öffnungsangaben kommen seit der Ablösung von INT-015 aus der Schnittstelle
+// (Requirement „Öffnungszeiten je Mensa und Wochentag"), nicht mehr aus den
+// Stammdaten. Der Wochenplan führt alle sieben Tage mit derselben Zeit, damit die
+// Erwartungen unabhängig vom angezeigten Datum gelten.
+const wochenplanMit = (zeit: string) => {
+  const [oeffnet, schliesst] = zeit.split(' - ');
+  return {
+    wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({
+      wochentag,
+      geoeffnet: true,
+      oeffnet,
+      schliesst,
+    })),
+    vorausschau: [],
+    schliesstage: [],
+  };
+};
+
+const mockOeffnung: Record<string, any> = {
+  Mensa: wochenplanMit('11:30 - 14:45'),
+};
+
 const mockMensen = [
   {
     id: 'Mensa',
     name: 'Hauptmensa',
     standardAuswahl: true,
     reihenfolge: 10,
-    oeffnungszeiten: ['11:30 - 14:45', 'a', 'b', 'c', 'd'],
   },
 ];
 
@@ -51,6 +73,7 @@ jest.mock('../api', () => ({
     queryFn: async () => ({ gerichte: [], standAlter: {} }),
   }),
   useMensen: () => ({ mensen: mockMensen, istAusgangsbestand: false, query: {} }),
+  useOeffnungsangaben: (ids: string[]) => ids.map((id) => ({ data: mockOeffnung[id] })),
   useMensaVerzeichnisse: () => ({
     data: { kategorien: [], zusatzstoffe: [], kennzeichnungen: [] },
   }),
