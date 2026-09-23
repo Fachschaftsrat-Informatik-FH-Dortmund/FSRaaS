@@ -80,8 +80,9 @@ export function CanteenScreen() {
     void nachholenBeimAppStart();
   }, []);
 
-  // Nachbartage vorab laden, damit das Überspringen leerer Wochenenden
-  // (MENSA-F-044) gegen echten Bestand entscheidet statt „unbekannt".
+  // Nachbartage vorab laden, damit das Blättern nicht auf den ersten Abruf
+  // wartet. Für das Überspringen geschlossener Wochenendtage ist dieser
+  // Vorlauf nicht mehr nötig — dafür genügt die Öffnungsangabe (unten).
   useEffect(() => {
     if (ids.length === 0) return;
     for (const tag of [verschiebe(datum, 1), verschiebe(datum, 2)]) {
@@ -91,24 +92,27 @@ export function CanteenScreen() {
     }
   }, [datum, ids, sprache, queryClient]);
 
-  const hatAngebot = (tag: string): boolean | undefined => {
+  // Öffnungsangaben je gewählter Mensa, unabhängig vom angezeigten Tag —
+  // dieselbe Abfrage wie in `GerichtListe`, von React Query über den
+  // gemeinsamen `queryKey` dedupliziert. Maßgeblich für das Überspringen
+  // geschlossener Wochenendtage (Requirement „Überspringen geschlossener
+  // Wochenendtage"), nicht mehr das Vorliegen eines Speiseplans.
+  const oeffnungsQueries = useOeffnungsangaben(ids);
+  const oeffnungVon = new Map(ids.map((id, i) => [id, oeffnungsQueries[i]?.data]));
+
+  const istOffenAn = (tag: string): boolean | undefined => {
     let bekannt = false;
     for (const id of ids) {
-      const daten = queryClient.getQueryData<{ gerichte: Gericht[] }>([
-        'speiseplan',
-        id,
-        tag,
-        sprache,
-      ]);
-      if (daten === undefined) continue;
+      const offen = istGeoeffnet(oeffnungVon.get(id), tag);
+      if (offen === undefined) continue;
       bekannt = true;
-      if (daten.gerichte.length > 0) return true;
+      if (offen === true) return true;
     }
     return bekannt ? false : undefined;
   };
 
   const blaettern = (richtung: -1 | 1) => {
-    const ziel = naechsterTag(datum, richtung, hatAngebot);
+    const ziel = naechsterTag(datum, richtung, istOffenAn);
     if (ziel) setDatum(ziel);
   };
 

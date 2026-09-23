@@ -44,6 +44,12 @@ const mockMensen = [
     standardAuswahl: true,
     reihenfolge: 10,
   },
+  {
+    id: 'Canape',
+    name: 'Canapé',
+    standardAuswahl: false,
+    reihenfolge: 20,
+  },
 ];
 
 let mockSelection: any;
@@ -193,12 +199,12 @@ describe('Geschlossene Abschnitte nur, wenn überhaupt etwas angeboten wird', ()
   });
 });
 
-describe('Überspringen angebotsfreier Wochenendtage: der aktuelle Tag ist ausgenommen', () => {
-  it('blättert vom angebotsfreien Samstag auf den Montag und wieder zurück auf den Samstag', async () => {
+describe('Überspringen geschlossener Wochenendtage', () => {
+  it('blättert vom geschlossenen Samstag auf den Montag und wieder zurück auf den Samstag (der aktuelle Tag ist ausgenommen)', async () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
 
-    // Vorwärts: der angebotsfreie Sonntag wird übersprungen.
+    // Vorwärts: der geschlossene Sonntag wird übersprungen.
     fireEvent.press(screen.getByLabelText('Nächster Tag'));
     await waitFor(() => expect(screen.getByText('Montag, 07.09.2026')).toBeTruthy());
 
@@ -207,5 +213,37 @@ describe('Überspringen angebotsfreier Wochenendtage: der aktuelle Tag ist ausge
     expect(zurueck.props.accessibilityState.disabled).toBe(false);
     fireEvent.press(zurueck);
     await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
+  });
+
+  it('überspringt einen Samstag nicht, an dem eine gewählte Mensa laut Öffnungsangabe geöffnet ist, obwohl sie keinen Speiseplan führt', async () => {
+    // Canapé (Iserlohn) ist samstags geöffnet, führt aber grundsätzlich keinen
+    // Speiseplan (proposal.md) — maßgeblich für das Überspringen ist die
+    // Öffnungsangabe, nicht das Vorliegen eines Speiseplans. „Heute" wird für
+    // diesen Test auf einen Donnerstag vorverlegt, damit der Samstag ein
+    // erreichbarer Folgetag ist, keine Untergrenze.
+    jest.setSystemTime(new Date(2026, 8, 3, 12, 0, 0)); // Donnerstag, 2026-09-03
+    try {
+      mockSelection = { ids: ['Canape'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+      mockOeffnung.Canape = {
+        wochenplan: [1, 2, 3, 4, 5, 6].map((w) => ({
+          wochentag: w,
+          geoeffnet: true,
+          oeffnet: '11:00',
+          schliesst: '14:00',
+        })),
+        vorausschau: [],
+        schliesstage: [],
+      };
+      mockPlaene = { Canape: qr([]) }; // nie ein Speiseplan
+      renderScreen();
+      await waitFor(() => expect(screen.getByText('Donnerstag, 03.09.2026')).toBeTruthy());
+
+      fireEvent.press(screen.getByLabelText('Nächster Tag'));
+      await waitFor(() => expect(screen.getByText('Freitag, 04.09.2026')).toBeTruthy());
+      fireEvent.press(screen.getByLabelText('Nächster Tag'));
+      await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
+    } finally {
+      jest.setSystemTime(SAMSTAG);
+    }
   });
 });
