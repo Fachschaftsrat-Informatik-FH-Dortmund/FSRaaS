@@ -1,8 +1,8 @@
 ---
 status: draft
-version: 0.5.2
+version: 0.5.3
 owner: FSR FB4
-last_reviewed: 2026-09-07
+last_reviewed: 2026-09-24
 ---
 
 # Projektweite offene Fragen
@@ -39,7 +39,7 @@ Frühere Einträge dieser Tabelle, deren Klärung inzwischen erfolgt ist. Die En
 | In welchem Umfang wird die erste Ausbaustufe ausgeliefert, angesichts von sechs Features mit ungeklärten Fremdsystem-Zugängen? | Zwei Ausbaustufen; die erste enthält nur, was ohne offene Fremdsystem-Klärung baubar ist. Keine Anforderung entfällt, es verschiebt sich allein der Umsetzungszeitpunkt. | `decisions/0012-zuschnitt-der-ersten-ausbaustufe.md`, `product/roadmap.md`, Entscheidung FSR FB4, 2026-08-25 |
 | Werden gruppenfremde Stundenplan-Termine ausgeblendet oder gekennzeichnet? | Gekennzeichnet und sichtbar, mit einem Schalter zum Ausblenden. Löst den Widerspruch zwischen SCHED-F-140 und UX-F-080 auf. | `openspec/specs/schedule/spec.md` SCHED-F-140/145, Entscheidung FSR FB4, 2026-08-25 |
 | Braucht die App Schreibzugriff auf den Gerätekalender? | Ja. Die Android-Alt-App schreibt Termine direkt in einen wählbaren Kalender; die Neuentwicklung übernimmt das, mit dem Datei-Export als Rückfallweg. Die gegenteilige Festlegung vom selben Tag ist damit revidiert. | `openspec/specs/schedule/spec.md` SCHED-F-175/177, `openspec/specs/security-and-privacy/spec.md` Abschnitt 5, Entscheidung FSR FB4, 2026-08-25 |
-| Woher stammt die Mensa-Liste, und bleibt der Speiseplan an `hemacode.de` gebunden? | Weder noch: Der Speiseplan kommt aus der offiziellen ITMC-Schnittstelle der TU Dortmund (INT-015), die Mensa-Liste aus den vom FSR gepflegten Stammdaten. | `openspec/specs/integrations/spec.md` INT-015, `openspec/specs/canteen/spec.md`, Befund aus dem Android-Quellcode, 2026-08-25 |
+| Woher stammt die Mensa-Liste, und bleibt der Speiseplan an `hemacode.de` gebunden? | Weder noch: Der Speiseplan kommt aus der FSR-eigenen Mensa-API (`mensa.fb4.it`), die seit dieser Entscheidung an die Stelle der ITMC-Schnittstelle (INT-015) getreten ist — der Registereintrag folgt mit dem Archivieren des Change `mensa-api-abloesung`; die Mensa-Liste weiterhin aus den vom FSR gepflegten Stammdaten. | `openspec/specs/integrations/spec.md`, `openspec/specs/canteen/spec.md`, Entscheidung FSR FB4, 2026-09-22 (`specs/decisions/0021-mensa-api-des-fsr-ohne-eigenen-zwischenspeicher.md`) |
 | Deckt der raumbezogene Endpunkt alle Räume ab, und bleibt die Backend-Aggregation nötig? | Der Endpunkt nimmt in der Form `Room/*/AllEvents` einen Platzhalter entgegen und liefert alle Raumtermine in einem Aufruf. Die Aggregation entfällt ersatzlos. | `openspec/specs/integrations/spec.md` INT-009, `openspec/specs/architecture/spec.md` ARCH-F-045, Befund aus dem Android-Quellcode, 2026-08-25 |
 | Wie wird der automatische Semesterticket-Bezug ermöglicht, den die Android-Alt-App bietet? | Gar nicht auf dem dortigen Weg — er erfordert Passwort-Replay gegen das Hochschulportal. Zunächst wird über die Authentik-Federation ein tokenbasierter Weg geprüft; bis dahin bleibt es beim manuellen Import. | `openspec/specs/integrations/spec.md` INT-017, `openspec/specs/semester-ticket/spec.md`, Entscheidung FSR FB4, 2026-08-25 |
 | Bietet die Android-Alt-App eine zweite News-Quelle, und wird sie übernommen? | Ja, den Fachbereich Wirtschaft (FB9) mit eigenem Endpunkt und eigener Auswertung. Bewusst nicht übernommen, da außerhalb der Zielgruppe. | `openspec/specs/integrations/spec.md` INT-016, `openspec/specs/news/spec.md` Nicht-Scope, Entscheidung FSR FB4, 2026-08-25 |
