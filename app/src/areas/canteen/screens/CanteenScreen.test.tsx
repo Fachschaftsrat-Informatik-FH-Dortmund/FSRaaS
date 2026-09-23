@@ -577,6 +577,17 @@ describe('Nicht auswählbare Chips ohne sichtbaren Abschnitt', () => {
     fireEvent.press(chip);
     expect(screen.getByText(/Mensa Süd hat an diesem Tag geschlossen\./)).toBeTruthy();
   });
+
+  it('lässt bei Mensa-Gruppierung den Chip einer geöffneten Mensa ohne Speiseplan auswählbar, er führt zu ihrem Abschnitt mit dem Hinweis auf den fehlenden Speiseplan', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) }; // mockOeffnung.Sued: geöffnet, ohne Speiseplan.
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    const chip = screen.getByLabelText('Mensa Süd');
+    expect(chip.props.accessibilityState.disabled).toBe(false);
+    fireEvent.press(chip);
+    expect(screen.getByText('Mensa Süd: Für diesen Tag liegt kein Speiseplan vor.')).toBeTruthy();
+  });
 });
 
 describe('Hinweis bei vollständig gefilterter Mensa', () => {
