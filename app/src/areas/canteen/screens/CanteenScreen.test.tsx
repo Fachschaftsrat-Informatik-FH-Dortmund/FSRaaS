@@ -492,6 +492,19 @@ describe('Wiedereröffnungshinweis an der geschlossenen Mensa', () => {
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText(/Wieder geöffnet am Sonntag\. \(20\.09\.\)$/)).toBeTruthy();
   });
+
+  it('nennt den Wiedereröffnungstag auch für eine Mensa ohne Speiseplan (Mensa ohne Speiseplan)', async () => {
+    // Die Betriebsferien der Mensa Süd enden am 04.10.; ihr Speiseplan könnte —
+    // wie bei drei der 15 Standorte — grundsätzlich leer bleiben. `naechsteOeffnung`
+    // kommt vom Backend aus Öffnungsvorschau und Schließtagen, unabhängig davon,
+    // ob je ein Speiseplan vorliegt (`gerichte` ist auch hier stets leer).
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockOeffnung.Sued = geschlossenAlleTage();
+    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, '2026-10-04') };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText(/Wieder geöffnet am Sonntag\. \(04\.10\.\)$/)).toBeTruthy();
+  });
 });
 
 describe('Keine Öffnungszeit für geschlossene Mensa', () => {
