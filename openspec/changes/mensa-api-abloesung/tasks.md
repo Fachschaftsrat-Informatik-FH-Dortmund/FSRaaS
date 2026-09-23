@@ -1,25 +1,25 @@
 ## 1. Vertrag
 
-- [ ] 1.1 `openspec/specs/api-contract.yaml` additiv erweitern: `Gericht` um `komponenten` (Liste), `allergene` (Liste) und `co2Klasse`; `zusatzstoffe` behält seine bisherige Bedeutung. Verifikation: der Vertrag validiert, und die Beschreibung jedes neuen Feldes nennt INT-020 als Quelle statt INT-015.
+- [ ] 1.1 (Vertragsteil erledigt: `komponenten`, `allergene` und `co2Klasse` stehen im Schema und in den erzeugten Typen. Der Punkt bleibt offen, bis 1.2 und 1.4 mit der App nachziehen.) `openspec/specs/api-contract.yaml` additiv erweitern: `Gericht` um `komponenten` (Liste), `allergene` (Liste) und `co2Klasse`; `zusatzstoffe` behält seine bisherige Bedeutung. Verifikation: der Vertrag validiert, und die Beschreibung jedes neuen Feldes nennt INT-020 als Quelle statt INT-015.
 - [ ] 1.2 `Mensa` um `anschrift`, `beschreibung` und `kartenUrl` erweitern und die gepflegten `oeffnungszeiten` daraus entfernen. Verifikation: der Vertrag validiert, und kein Schema führt mehr ein pflegbares Öffnungszeitenfeld.
-- [ ] 1.3 Neues Schema für die Öffnungsangaben je Mensa (heutiger Stand mit Grund, Wochenplan, Vorausschau, Schließtage mit Zeitraum und Geltungsbereich) sowie ein Feld für den gemeldeten Datenstand. Verifikation: der Vertrag validiert.
+- [ ] 1.3 (erledigt: `Oeffnungstag`, `Schliesstag`, `Schliessbereich` und `Oeffnungsangaben` stehen im Vertrag, ausgeliefert über `GET /mensen/{mensaId}/oeffnungszeiten`; der gemeldete Datenstand steht als `StandAlter.quelleStand`. Bleibt offen, bis der Vertrag mit 1.2 und 1.4 vollständig ist.) Neues Schema für die Öffnungsangaben je Mensa (heutiger Stand mit Grund, Wochenplan, Vorausschau, Schließtage mit Zeitraum und Geltungsbereich) sowie ein Feld für den gemeldeten Datenstand. Verifikation: der Vertrag validiert.
 - [ ] 1.4 Typen aus dem Vertrag erzeugen (App und Backend). Verifikation: der Erzeugungslauf endet fehlerfrei, und `tsc` sowie der Backend-Build übersetzen ohne Fehler.
 
 ## 2. Backend — Anbindung an INT-020
 
-- [ ] 2.1 Client gegen `mensa.fb4.it` anlegen, der `ItmcMensaClient` ersetzt: Zielsystem ausschließlich über Konfiguration, TLS, eigener `User-Agent`. Verifikation: ein Test belegt, dass die Basisadresse aus der Konfiguration stammt und nicht im Quellcode steht.
-- [ ] 2.2 Schlüsselbildung auf die mit ` | ` zusammengefügten Komponenten umstellen, `GerichtNormalisierung` unverändert lassen. Verifikation: Test `Normalisierung von Gerichtsbezeichnungen vor der Verknüpfung` belegt, dass `lines` `["Gebackene Kartoffelecken", "Kräutermayonaise"]` denselben Schlüssel ergibt wie der frühere ITMC-Rohtitel `"Gebackene Kartoffelecken | Kräutermayonaise (20c,26,28,4)"`.
-- [ ] 2.3 Sprachrückfall und Code-Bereinigung: fehlt `nameEn`/`linesEn`, tritt die deutsche Fassung ein; verbliebene Code-Klammern werden entfernt. Verifikation: Tests mit den am 2026-09-22 beobachteten Fällen — `"herbal mayonnaise (20c,26,281,4)"` und ein Gericht ohne `nameEn`.
-- [ ] 2.4 Vertragstest gegen INT-020, der bei struktureller Abweichung sichtbar fehlschlägt statt sie weiterzuverarbeiten (Capability `quality-and-testing`). Verifikation: der Test schlägt fehl, wenn ein Pflichtfeld aus `Meal`, `Day` oder `Hours` fehlt oder seinen Typ wechselt.
-- [ ] 2.5 Durchreichen je Tag und Mensa umsetzen, mit Beachtung des von der Quelle gesetzten `Cache-Control`. Verifikation: Test `Mensa-Daten durchreichen statt zwischenspeichern` belegt, dass zwei Anfragen innerhalb der Frist einen Abruf auslösen und keine Ablage entsteht.
-- [ ] 2.6 Gemeldeten Datenstand der Quelle an die App weiterreichen. Verifikation: Test `Weitergabe des Datenalters der Mensa-Schnittstelle`.
-- [ ] 2.7 Fehler der Quelle als Fehler ausliefern, nie als leere Gerichtsliste. Verifikation: Test `Sichtbarer Fehler bei nicht erreichbarer Mensa-Schnittstelle`.
+- [x] 2.1 Client gegen `mensa.fb4.it` anlegen, der `ItmcMensaClient` ersetzt: Zielsystem ausschließlich über Konfiguration, TLS, eigener `User-Agent`. Verifikation: ein Test belegt, dass die Basisadresse aus der Konfiguration stammt und nicht im Quellcode steht.
+- [x] 2.2 Schlüsselbildung auf die mit ` | ` zusammengefügten Komponenten umstellen, `GerichtNormalisierung` unverändert lassen. Verifikation: Test `Normalisierung von Gerichtsbezeichnungen vor der Verknüpfung` belegt, dass `lines` `["Gebackene Kartoffelecken", "Kräutermayonaise"]` denselben Schlüssel ergibt wie der frühere ITMC-Rohtitel `"Gebackene Kartoffelecken | Kräutermayonaise (20c,26,28,4)"`.
+- [x] 2.3 Sprachrückfall und Code-Bereinigung: fehlt `nameEn`/`linesEn`, tritt die deutsche Fassung ein; verbliebene Code-Klammern werden entfernt. Verifikation: Tests mit den am 2026-09-22 beobachteten Fällen — `"herbal mayonnaise (20c,26,281,4)"` und ein Gericht ohne `nameEn`.
+- [x] 2.4 Vertragstest gegen INT-020, der bei struktureller Abweichung sichtbar fehlschlägt statt sie weiterzuverarbeiten (Capability `quality-and-testing`). Verifikation: der Test schlägt fehl, wenn ein Pflichtfeld aus `Meal`, `Day` oder `Hours` fehlt oder seinen Typ wechselt.
+- [x] 2.5 Durchreichen je Tag und Mensa umsetzen, mit Beachtung des von der Quelle gesetzten `Cache-Control`. Verifikation: Test `Mensa-Daten durchreichen statt zwischenspeichern` belegt, dass zwei Anfragen innerhalb der Frist einen Abruf auslösen und keine Ablage entsteht.
+- [x] 2.6 Gemeldeten Datenstand der Quelle an die App weiterreichen. Verifikation: Test `Weitergabe des Datenalters der Mensa-Schnittstelle`.
+- [x] 2.7 Fehler der Quelle als Fehler ausliefern, nie als leere Gerichtsliste. Verifikation: Test `Sichtbarer Fehler bei nicht erreichbarer Mensa-Schnittstelle`.
 
 ## 3. Backend — Abbau des Zwischenspeichers
 
-- [ ] 3.1 `SpeiseplanStore.cs`, `SpeiseplanAktualisierungJob.cs` und `SpeiseplanAbrufZeitplan.cs` samt zugehöriger Tests entfernen. Verifikation: der Backend-Build übersetzt, und keine Datei verweist mehr auf diese Typen.
-- [ ] 3.2 EF-Core-Migration, die die Tabelle des Speiseplan-Zwischenspeichers und die Verzeichniseinträge entfernt. Verifikation: `dotnet ef database update` läuft gegen eine Kopie des Bestands durch; da es ein reiner Lesecache war, entsteht kein Datenverlust.
-- [ ] 3.3 Persistenzmodelle `SpeiseplanTag`, `GerichtCache` und `MensaVerzeichnisEintrag` entfernen oder auf reine Übertragungsformen zurückführen. Verifikation: der Backend-Build übersetzt, und die Testsuite läuft grün.
+- [x] 3.1 `SpeiseplanStore.cs`, `SpeiseplanAktualisierungJob.cs` und `SpeiseplanAbrufZeitplan.cs` samt zugehöriger Tests entfernen. Verifikation: der Backend-Build übersetzt, und keine Datei verweist mehr auf diese Typen.
+- [ ] 3.2 EF-Core-Migration, die die Tabelle des Speiseplan-Zwischenspeichers und die Verzeichniseinträge entfernt. Verifikation: `dotnet ef database update` läuft gegen eine Kopie des Bestands durch; da es ein reiner Lesecache war, entsteht kein Datenverlust. — Migration liegt vor (`20260923003227_MensaZwischenspeicherEntfaellt`, entfernt `Speiseplaene`, `MensaVerzeichnis` und `MensaStand`, `Down` legt sie wieder an); `dotnet ef migrations script` erzeugt sie fehlerfrei. Der Lauf gegen eine Kopie des Bestands steht noch aus.
+- [x] 3.3 Persistenzmodelle `SpeiseplanTag`, `GerichtCache` und `MensaVerzeichnisEintrag` entfernen oder auf reine Übertragungsformen zurückführen. Verifikation: der Backend-Build übersetzt, und die Testsuite läuft grün.
 
 ## 4. Backend — Stammdaten
 

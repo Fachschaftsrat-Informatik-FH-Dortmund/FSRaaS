@@ -35,7 +35,7 @@ servers:
 
 tags:
   - name: mensa
-    description: Speiseplan und Mensa-Stammdaten (MENSA, INT-015)
+    description: Speiseplan, Öffnungsangaben und Mensa-Stammdaten (MENSA, INT-020)
   - name: raum
     description: Raumsuche, Raumtermine und Besetzt-Meldungen (RAUM, INT-009)
   - name: news
@@ -92,7 +92,10 @@ paths:
     get:
       tags: [mensa]
       summary: Speiseplan einer Mensa für einen Tag
-      description: Zwischenspeicher von INT-015, erfüllt API-F-070.
+      description: >-
+        Durchgereicht aus INT-020, erfüllt API-F-070. Das Backend hält keinen
+        eigenen Speiseplan-Bestand (Capability `backend-and-api`, Requirement
+        „Mensa-Daten durchreichen statt zwischenspeichern").
       security: []
       parameters:
         - $ref: "#/components/parameters/MensaId"
@@ -116,9 +119,10 @@ paths:
                     format: date
                     nullable: true
                     description: >
-                      Nächster Tag nach `datum`, für den der Speiseplan-Zwischenspeicher
-                      dieser Mensa ein Angebot führt. Nur gesetzt, wenn `gerichte` leer
-                      ist; `null`, wenn kein solcher Tag im bekannten Zeithorizont liegt.
+                      Nächster Tag nach `datum`, für den die Öffnungsangaben von INT-020
+                      diese Mensa als geöffnet führen (Öffnungsvorschau und Schließtage
+                      gemeinsam). Nur gesetzt, wenn `gerichte` leer ist; `null`, wenn der
+                      Vorausblick der Quelle keinen solchen Tag hergibt.
         "404":
           description: Unbekannte Mensa-Kennung
           content:
@@ -130,7 +134,9 @@ paths:
     get:
       tags: [mensa]
       summary: Gerichtskategorien und Zusatzstoffverzeichnis
-      description: Zwischenspeicher von INT-015, erfüllt API-F-075, MENSA-F-035 und MENSA-F-048.
+      description: >-
+        Durchgereicht aus INT-020 (`GET /legend`), erfüllt API-F-075, MENSA-F-035
+        und MENSA-F-048.
       security: []
       parameters:
         - $ref: "#/components/parameters/Sprache"
@@ -148,11 +154,49 @@ paths:
                     items: { $ref: "#/components/schemas/Schluesselwert" }
                   zusatzstoffe:
                     type: array
+                    description: >-
+                      Zusatzstoffe **und** Allergene, wie schon vor der Ablösung von
+                      INT-015 (INT-020 `legend.additives` + `legend.allergens`). Die
+                      Bedeutung bleibt unverändert, damit eine ältere App sich nicht
+                      anders verhält (ADR 0016).
+                    items: { $ref: "#/components/schemas/Schluesselwert" }
+                  allergene:
+                    type: array
+                    description: >-
+                      Allein die Allergene (INT-020 `legend.allergens`), damit die App
+                      sie von den Zusatzstoffen getrennt führen kann. Teilmenge von
+                      `zusatzstoffe`.
                     items: { $ref: "#/components/schemas/Schluesselwert" }
                   kennzeichnungen:
                     type: array
-                    description: Ernährungs-/Herkunftsmerkmale (INT-015 `types`), erfüllt MENSA-F-035.
+                    description: Ernährungs-/Herkunftsmerkmale (INT-020 `legend.tags`), erfüllt MENSA-F-035.
                     items: { $ref: "#/components/schemas/Schluesselwert" }
+        default: { $ref: "#/components/responses/Fehler" }
+
+  /mensen/{mensaId}/oeffnungszeiten:
+    get:
+      tags: [mensa]
+      summary: Öffnungs- und Schließangaben einer Mensa
+      description: >-
+        Durchgereicht aus INT-020 (`GET /canteens/{id}/hours`). Grundlage für den
+        Geschlossen-Hinweis, die Öffnungszeit je Wochentag, den Ausweis der
+        Ausgabezeit, den Wiedereröffnungshinweis und das Überspringen
+        geschlossener Wochenendtage (Capability `canteen`).
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/MensaId"
+        - $ref: "#/components/parameters/Sprache"
+      responses:
+        "200":
+          description: Öffnungsangaben der Mensa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Oeffnungsangaben" }
+        "404":
+          description: Unbekannte Mensa-Kennung
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         default: { $ref: "#/components/responses/Fehler" }
 
   # ---------------------------------------------------------------------- Raum
@@ -892,12 +936,26 @@ components:
     StandAlter:
       type: object
       description: |
-        Alter des ausgelieferten Zwischenspeicher-Stands. Die App weist es aus,
-        wenn Daten nicht mehr taufrisch sind (DATA-F-090, RAUM Abschnitt 9).
+        Alter der ausgelieferten Daten. Die App weist es aus, wenn Daten nicht
+        mehr taufrisch sind (DATA-F-090, RAUM Abschnitt 9).
       required: [abgerufenAm]
       properties:
-        abgerufenAm: { type: string, format: date-time }
+        abgerufenAm:
+          type: string
+          format: date-time
+          description: >-
+            Zeitpunkt, zu dem das Backend die Daten bezogen hat. Beim Durchreichen
+            ist das der Zeitpunkt der Anfrage selbst.
         quelleErreichbar: { type: boolean, default: true }
+        quelleStand:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Von der Quelle selbst gemeldeter Stand ihrer Daten (INT-020 `updated`),
+            unabhängig vom Zeitpunkt des eigenen Abrufs. Speist den Altershinweis
+            auch dann, wenn die Quelle erreichbar ist, aber veraltete Daten liefert
+            (Capability `data-and-storage`). `null`, wenn die Quelle keinen Stand
+            meldet.
 
     Stammdaten:
       type: object
@@ -935,6 +993,98 @@ components:
           items:
             type: [string, "null"]
 
+    Oeffnungstag:
+      type: object
+      description: >-
+        Öffnungsangabe eines Tages (INT-020 `hours.today`, `hours.forecast[]`,
+        `hours.week[]`). Im Wochenplan trägt der Eintrag keinen Datumsbezug,
+        sondern allein den Wochentag.
+      required: [geoeffnet]
+      properties:
+        datum:
+          type: [string, "null"]
+          format: date
+          description: Tag, auf den sich die Angabe bezieht; `null` im Wochenplan.
+        wochentag:
+          type: [integer, "null"]
+          description: Wochentag nach ISO 8601 (1 = Montag, 7 = Sonntag).
+        geoeffnet: { type: boolean }
+        oeffnet:
+          type: [string, "null"]
+          description: Öffnungszeit als `HH:MM` in Ortszeit; `null`, wenn geschlossen.
+        schliesst:
+          type: [string, "null"]
+          description: Schließzeit als `HH:MM` in Ortszeit; `null`, wenn geschlossen.
+        ausgabeBeginn:
+          type: [string, "null"]
+          description: >-
+            Beginn der Essensausgabe als `HH:MM`, nur gesetzt, wenn er von `oeffnet`
+            abweicht (INT-020 `servingOpen`). Am Max-Ophüls-Platz öffnet das Haus um
+            08:00, die Ausgabe beginnt um 11:30.
+        ausgabeEnde:
+          type: [string, "null"]
+          description: Ende der Essensausgabe als `HH:MM`, nur bei Abweichung von `schliesst`.
+        grund:
+          type: [string, "null"]
+          description: >-
+            Klartextgrund der Schließung, wie die Quelle ihn liefert (INT-020
+            `reason`), z. B. „Restaurant-Schließtag: Betriebsferien". Wird nicht in
+            eine eigene Formulierung übersetzt.
+
+    Schliessbereich:
+      type: string
+      description: >-
+        Geltungsbereich eines Schließtags (INT-020 `closures[].scope`): `global`
+        betrifft alle Häuser des Studierendenwerks, `mensa` nur diese Mensa.
+      enum: [global, mensa]
+
+    Schliesstag:
+      type: object
+      description: Ein Schließtag oder Schließzeitraum (INT-020 `closures[]`).
+      required: [bezeichnung, feiertag, geltungsbereich]
+      properties:
+        bezeichnung:
+          type: string
+          description: Klartextbezeichnung der Schließung (INT-020 `label`).
+        datum:
+          type: [string, "null"]
+          format: date
+          description: Einzelner Schließtag; gesetzt, wenn `von`/`bis` fehlen.
+        von:
+          type: [string, "null"]
+          format: date
+          description: Erster Tag eines Schließzeitraums.
+        bis:
+          type: [string, "null"]
+          format: date
+          description: Letzter Tag eines Schließzeitraums.
+        feiertag: { type: boolean }
+        geltungsbereich: { $ref: "#/components/schemas/Schliessbereich" }
+
+    Oeffnungsangaben:
+      type: object
+      description: >-
+        Öffnungs- und Schließangaben einer Mensa, durchgereicht aus INT-020
+        (`GET /canteens/{id}/hours`). Maßgeblich für „geöffnet oder geschlossen";
+        das Fehlen von Gerichten ist es nicht (Capability `canteen`).
+      required: [mensaId, heute, wochenplan, vorausschau, schliesstage, standAlter]
+      properties:
+        mensaId: { type: string }
+        heute: { $ref: "#/components/schemas/Oeffnungstag" }
+        wochenplan:
+          type: array
+          description: Regulärer Wochenplan ohne Datumsbezug, Montag zuerst (INT-020 `week`).
+          items: { $ref: "#/components/schemas/Oeffnungstag" }
+        vorausschau:
+          type: array
+          description: Sieben Tage ab heute mit Datumsbezug (INT-020 `forecast`).
+          items: { $ref: "#/components/schemas/Oeffnungstag" }
+        schliesstage:
+          type: array
+          description: Schließtage der nächsten 30 Tage (INT-020 `closures`).
+          items: { $ref: "#/components/schemas/Schliesstag" }
+        standAlter: { $ref: "#/components/schemas/StandAlter" }
+
     Gericht:
       type: object
       required: [schluessel, kategorie, bezeichnung]
@@ -946,25 +1096,56 @@ components:
           type: string
           description: >-
             Anzeigekategorie in der über Accept-Language gewählten Sprache
-            (INT-015 `counterNames`, ersatzweise `counter`). Leerer String, wenn
+            (INT-020 `categories[].name`). Leerer String, wenn
             die Quelle zu diesem Gericht keine Kategorie liefert (Food Fakultät) —
             die App führt solche Gerichte ohne Kategorieüberschrift (MENSA-F-160).
             `Beilagen` wird von der App abgesetzt dargestellt (MENSA-F-040).
         bezeichnung:
           type: string
-          description: Gerichtsbezeichnung in der gewählten Sprache (INT-015 `title`), ohne die inline stehenden Zusatzstoff-Codes.
+          description: >-
+            Gerichtsbezeichnung in der gewählten Sprache, die Komponenten mit ` | `
+            zusammengefügt (INT-020 `lines`/`linesEn`), ohne die inline stehenden
+            Zusatzstoff-Codes. Zeichengleich mit der Bezeichnung vor der Ablösung von
+            INT-015; für die gegliederte Anzeige dient `komponenten`.
+        komponenten:
+          type: array
+          description: >-
+            Bezeichnung nach Komponenten zerlegt, in der gewählten Sprache (INT-020
+            `lines`/`linesEn`), ohne die inline stehenden Zusatzstoff-Codes. Die erste
+            Komponente ist der Name des Gerichts, die weiteren sein Beiwerk (Capability
+            `canteen`, Requirement „Gerichtsbezeichnung nach Komponenten gegliedert").
+            Mit ` | ` zusammengefügt ergibt sie `bezeichnung`.
+          items: { type: string }
         preisStudierende:
           type: [number, "null"]
-          description: Preis in Euro. Das Backend parst den INT-015-String (`"3,30 €"`); nicht parsebar → null.
+          description: Preis in Euro (INT-020 `prices.student`, bereits als Zahl geliefert); fehlt die Angabe → null.
         preisMitarbeitende: { type: [number, "null"] }
         preisGaeste: { type: [number, "null"] }
         zusatzstoffe:
           type: array
-          description: Zusatzstoff-/Allergenhinweise in der gewählten Sprache (INT-015 `additives`, über das Verzeichnis aufgelöst).
+          description: >-
+            Zusatzstoff- **und** Allergenhinweise in der gewählten Sprache (INT-020
+            `additives`, über die Legende aufgelöst). Behält die Bedeutung, die das
+            Feld vor der Ablösung von INT-015 hatte, damit eine ältere App sich nicht
+            anders verhält (ADR 0016).
           items: { type: string }
+        allergene:
+          type: array
+          description: >-
+            Allein die Allergenhinweise in der gewählten Sprache, aufgelöst über
+            `legend.allergens` von INT-020. Teilmenge von `zusatzstoffe`; erlaubt der
+            App, beide unterscheidbar auszuweisen (Capability `canteen`).
+          items: { type: string }
+        co2Klasse:
+          type: [string, "null"]
+          description: >-
+            CO₂-Klasse des Gerichts, wie die Quelle sie führt (INT-020 `co2Class`;
+            Stand 2026-09-22 `A`, `B`, `C` oder `E`, wobei allein `A` als Klimateller
+            gilt); `null`, wenn die Quelle keine führt. Bewusst kein Enum: ein
+            unbekannter Code wird unverändert weitergereicht statt verschluckt.
         kennzeichnungen:
           type: array
-          description: Ernährungs-/Herkunftsmerkmale in der gewählten Sprache (INT-015 `type`), erfüllt MENSA-F-035. Leer, wenn die Quelle keine liefert.
+          description: Ernährungs-/Herkunftsmerkmale in der gewählten Sprache (INT-020 `tags`), erfüllt MENSA-F-035. Leer, wenn die Quelle keine liefert.
           items: { type: string }
 
     Schluesselwert:
