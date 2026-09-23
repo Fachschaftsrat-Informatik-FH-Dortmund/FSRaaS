@@ -29,7 +29,7 @@ describe('Weiterführender Bedienweg in der Kopfzeile', () => {
   it('bietet den Weg als Symbol an, sobald ein Bildschirm ihn anmeldet', () => {
     const weiter = jest.fn();
     renderZugang();
-    act(() => registriereWeiterAktion({ freigegeben: true, weiter }));
+    act(() => registriereWeiterAktion({}, { freigegeben: true, weiter }));
 
     const zugang = screen.getByLabelText('Weiter zum nächsten Schritt');
     expect(zugang.props.accessibilityState?.disabled).toBe(false);
@@ -42,7 +42,7 @@ describe('Weiterführender Bedienweg in der Kopfzeile', () => {
   it('bleibt ohne Freigabe bedienbar, damit der Bildschirm die fehlende Angabe benennen kann', () => {
     const weiter = jest.fn();
     renderZugang();
-    act(() => registriereWeiterAktion({ freigegeben: false, weiter }));
+    act(() => registriereWeiterAktion({}, { freigegeben: false, weiter }));
 
     const zugang = screen.getByLabelText('Weiter zum nächsten Schritt');
     // Der zurückgenommene Zustand steht im accessibilityState, nicht allein in
@@ -77,7 +77,7 @@ describe('Symbol für das Zurücksetzen der Auswahl', () => {
     );
     act(() => {
       registriereModulauswahlAktion({ verwerfen: jest.fn() });
-      registriereWeiterAktion({ freigegeben: true, weiter: jest.fn() });
+      registriereWeiterAktion({}, { freigegeben: true, weiter: jest.fn() });
     });
 
     expect(screen.getByText('refresh')).toBeTruthy();

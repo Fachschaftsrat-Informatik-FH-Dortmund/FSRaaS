@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
@@ -10,7 +10,7 @@ import { useGruppenkennungErmitteln, useStudiengaenge, useTermineFuerEndpunkte }
 import { GRUPPENKENNUNG_MUSTER, useEinrichtung, useMatrikelnummer } from '../einrichtung';
 import { zaehleGruppenTreffer } from '../groupMatch';
 import { baueModulliste } from '../kursbaum';
-import { registriereWeiterAktion } from '../weiterAktion';
+import { navigiereNachAbmeldung, useWeiterAktionAnmelden } from '../weiterAktion';
 
 // Schritt zur Gruppenkennung (Requirement „Eigener Schritt für die
 // Gruppenkennung nach der Modulauswahl"): der eigene Bildschirm zwischen
@@ -111,27 +111,22 @@ export function GruppenkennungScreen() {
   // dem Planungsmodus", Szenario „Weitergehen ohne Kennung") — eine wortlos
   // abgeblendete Schaltfläche verwehrte zwar, benennte aber nichts.
   //
-  // `useFocusEffect` statt `useEffect`: Das Register ist bildschirmübergreifend
-  // gemeinsam (`weiterAktion.ts`, Kopfkommentar). Bleibt dieser Bildschirm beim
-  // Vorwärtsnavigieren im Stapel bestehen und wird über „Zurück" wieder
-  // sichtbar, muss er sich beim Wiedererlangen des Fokus erneut anmelden — ein
-  // reiner Mount-Effekt liefe dabei nicht erneut und das Kopfzeilen-Symbol
-  // bliebe verwaist (Fund aus dem Gerätetest, Prüfprotokoll 2026-09-22).
-  useFocusEffect(
-    useCallback(() => {
-      registriereWeiterAktion({
-        freigegeben: gespeicherteKennung !== null,
-        weiter: () => {
-          if (gespeicherteKennung === null) {
-            setFehlendeAngabe(true);
-            return;
-          }
-          router.push({ pathname: '/planung', params: { module: modulSchluessel.join(',') } });
-        },
-      });
-      return () => registriereWeiterAktion(null);
-    }, [gespeicherteKennung, modulSchluessel, router]),
-  );
+  // An- und Abmeldung liegen in `useWeiterAktionAnmelden`, der Navigationsweg
+  // hinter `navigiereNachAbmeldung` — beides für alle drei Bildschirme dieses
+  // Bedienwegs gleich (Change `weiter-bedienweg-absturzschutz`, design.md
+  // Entscheidungen 2 und 3). Das Benennen der fehlenden Angabe navigiert nicht
+  // und läuft darum unverzögert.
+  const weiter = useCallback(() => {
+    if (gespeicherteKennung === null) {
+      setFehlendeAngabe(true);
+      return;
+    }
+    navigiereNachAbmeldung(() =>
+      router.push({ pathname: '/planung', params: { module: modulSchluessel.join(',') } }),
+    );
+  }, [gespeicherteKennung, modulSchluessel, router]);
+
+  useWeiterAktionAnmelden(gespeicherteKennung !== null, weiter);
 
   if (!einrichtungGeladen || !matrikelnummerGeladen) {
     return (

@@ -1,5 +1,5 @@
 import { useEffect as mockUseEffect } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { ThemeProvider } from '@/theme';
 import { SetupScreen } from './SetupScreen';
@@ -138,13 +138,17 @@ describe('Eigener Schritt für die Gruppenkennung nach der Modulauswahl', () => 
 });
 
 describe('Weiterführender Bedienweg in der Kopfzeile', () => {
-  it('Nächster Schritt in der Einrichtung: meldet den Weg mit mindestens einem gewählten Endpunkt freigegeben an', () => {
+  it('Nächster Schritt in der Einrichtung: meldet den Weg mit mindestens einem gewählten Endpunkt freigegeben an', async () => {
     mockEinrichtung.endpunkte = ['INPBPI'];
     renderScreen();
     const aktion = weiterAktion();
     expect(aktion?.freigegeben).toBe(true);
     aktion?.weiter();
-    expect(mockRouter.push).toHaveBeenCalledWith('/kurse');
+
+    // Das Kopfzeilen-Symbol ist sofort abgemeldet, der Sprung folgt einen Frame
+    // später (Change `weiter-bedienweg-absturzschutz`, design.md Entscheidung 2).
+    expect(weiterAktion()).toBeNull();
+    await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith('/kurse'));
   });
 
   it('bleibt zurückgenommen und führt nicht weiter, solange kein Endpunkt gewählt ist', () => {
