@@ -31,6 +31,7 @@ import {
 import { konsolidiere, type KonsolidiertesGericht } from '../consolidate';
 import { useFavorites } from '../favorites';
 import { useGerichtFilter } from '../filter';
+import { reineZusatzstoffe } from '../gerichtsangaben';
 import { useSortierGruppierung } from '../sortierPreset';
 import { wendeAn, type SortierKontext } from '../sortierung';
 import {
@@ -703,9 +704,15 @@ function GerichtKarte({
         })}
       </Text>
 
-      {g.zusatzstoffe && g.zusatzstoffe.length > 0 ? (
+      {g.allergene && g.allergene.length > 0 ? (
         <Text style={[styles.zusatzstoffe, { color: colors.textMuted }]}>
-          {t('mensa.zusatzstoffe', { liste: g.zusatzstoffe.join(', ') })}
+          {t('mensa.allergene', { liste: g.allergene.join(', ') })}
+        </Text>
+      ) : null}
+
+      {reineZusatzstoffe(g).length > 0 ? (
+        <Text style={[styles.zusatzstoffe, { color: colors.textMuted }]}>
+          {t('mensa.zusatzstoffe', { liste: reineZusatzstoffe(g).join(', ') })}
         </Text>
       ) : null}
     </View>

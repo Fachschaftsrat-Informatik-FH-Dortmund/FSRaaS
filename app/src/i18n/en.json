@@ -110,6 +110,7 @@
     "preise": "Students {{studierende}} · Staff {{mitarbeitende}} · Guests {{gaeste}}",
     "preisEinzeln": "{{gruppe}} {{preis}}",
     "zusatzstoffe": "Additives: {{liste}}",
+    "allergene": "Allergens: {{liste}}",
     "sortierZugang": "Open sorting and grouping",
     "sortierTitel": "Sorting & grouping",
     "presetsTitel": "Presets",

@@ -9,6 +9,7 @@ import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
 import { useMensen, useSpeisepläne, type Gericht } from '../api';
 import { useGerichtFilter, type GerichtKennzeichen } from '../filter';
 import { gruppiereNachKategorie } from '../consolidate';
+import { reineZusatzstoffe } from '../gerichtsangaben';
 import { preisText } from '../preise';
 import { isoHeute } from '../tageswahl';
 import { AnkerListe } from '@/ui/AnkerListe';
@@ -141,9 +142,14 @@ function MensaAbschnitt({
                     gaeste: preisText(g.preisGaeste),
                   })}
                 </Text>
-                {g.zusatzstoffe && g.zusatzstoffe.length > 0 ? (
+                {g.allergene && g.allergene.length > 0 ? (
                   <Text style={[styles.klein, { color: colors.textMuted }]}>
-                    {t('mensa.zusatzstoffe', { liste: g.zusatzstoffe.join(', ') })}
+                    {t('mensa.allergene', { liste: g.allergene.join(', ') })}
+                  </Text>
+                ) : null}
+                {reineZusatzstoffe(g).length > 0 ? (
+                  <Text style={[styles.klein, { color: colors.textMuted }]}>
+                    {t('mensa.zusatzstoffe', { liste: reineZusatzstoffe(g).join(', ') })}
                   </Text>
                 ) : null}
               </View>
