@@ -25,13 +25,25 @@ public sealed class MensaQuelleStub : HttpMessageHandler
     /// <summary>Wirft bei jedem Abruf — die Quelle ist nicht erreichbar.</summary>
     public bool NichtErreichbar { get; set; }
 
+    /// <summary>
+    /// Legende der Quelle. Seit ihrer Erweiterung vom 2026-09-24 traegt jeder Eintrag
+    /// zusaetzlich <c>labelEn</c>; <c>20c</c> bleibt hier bewusst ohne englische
+    /// Fassung und belegt damit den Sprachrueckfall auf <c>label</c>.
+    /// </summary>
     public const string LegendeStandard = """
-    {"tags":[{"code":"vegan","label":"Vegan"},{"code":"beef","label":"Rind"},
-              {"code":"animal-welfare","label":"Artgerecht"},{"code":"climate-plate","label":"Klimateller"}],
-     "additives":[{"code":"2","label":"mit Konservierungsstoff"},{"code":"4","label":"geschwärzt"}],
-     "allergens":[{"code":"20a","label":"Weizen"},{"code":"20c","label":"Gerste"},
-                  {"code":"26","label":"Sellerie"},{"code":"28","label":"Milch"}],
-     "climate":[{"code":"A","label":"sehr gut"}]}
+    {"tags":[{"code":"vegan","label":"Vegan","labelEn":"Vegan"},
+              {"code":"beef","label":"Rind","labelEn":"Beef"},
+              {"code":"animal-welfare","label":"Artgerecht","labelEn":"Animal welfare"},
+              {"code":"climate-plate","label":"Klimateller","labelEn":"Climate plate"}],
+     "additives":[{"code":"2","label":"mit Konservierungsstoff","labelEn":"with preservative"},
+                  {"code":"4","label":"geschwärzt","labelEn":"blackened"}],
+     "allergens":[{"code":"20a","label":"Weizen","labelEn":"Wheat"},
+                  {"code":"20c","label":"Gerste"},
+                  {"code":"26","label":"Sellerie","labelEn":"Celery"},
+                  {"code":"28","label":"Milch","labelEn":"Milk"}],
+     "climate":[{"code":"A","label":"sehr gut","labelEn":"very good"}],
+     "note":"Allergene gelten jeweils auch für Erzeugnisse daraus.",
+     "noteEn":"Allergens also cover products made from them."}
     """;
 
     public const string ZustandStandard = """

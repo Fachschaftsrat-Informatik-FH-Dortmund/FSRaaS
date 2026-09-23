@@ -80,9 +80,16 @@ public sealed class FsrMensaClient(HttpClient http)
         [property: JsonPropertyName("week")] IReadOnlyList<OeffnungstagDto>? Week,
         [property: JsonPropertyName("closures")] IReadOnlyList<SchliesstagDto>? Closures);
 
+    /// <summary>
+    /// Eintrag der Legende. <c>labelEn</c> ist seit der Erweiterung der Quelle vom
+    /// 2026-09-24 vorhanden und traegt die englische Fassung; massgeblich bleibt
+    /// <c>label</c>. Fehlt <c>labelEn</c>, tritt <c>label</c> an seine Stelle
+    /// (INT-020, Register).
+    /// </summary>
     public sealed record LegendeEintragDto(
         [property: JsonPropertyName("code")] string? Code,
-        [property: JsonPropertyName("label")] string? Label);
+        [property: JsonPropertyName("label")] string? Label,
+        [property: JsonPropertyName("labelEn")] string? LabelEn);
 
     /// <summary>Antwort von <c>GET /legend</c>.</summary>
     public sealed record LegendeDto(

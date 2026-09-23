@@ -48,7 +48,9 @@ GET https://mensa.fb4.it/openapi.json
 
 `GET /canteens/{id}/hours` → `{ canteen, today, forecast[], week[], closures[] }`. `today` ist `{ date, isOpen, reason? }` mit einem Klartextgrund wie `"Restaurant-Schließtag: Betriebsferien"`. `forecast` sind sieben Tage ab heute, `week` der reguläre Wochenplan ohne Datumsbezug. Ein Tageseintrag trägt `isOpen` sowie, wenn geöffnet, `open`/`close` und — **nur bei Abweichung** — zusätzlich `servingOpen`/`servingClose` für die Essensausgabe. `closures` sind die Schließtage der nächsten 30 Tage als `{ label, date? , from?, to?, isHoliday, scope }`; `scope` ist `global` (alle Häuser) oder `canteen` (nur diese Mensa), und entweder `date` oder das Paar `from`/`to` ist gesetzt.
 
-`GET /legend` → `{ tags[], additives[], allergens[], climate[], note? }`, je Eintrag `{ code, label }`. Stand 2026-09-22: 10 Kennzeichen, 11 Zusatzstoffe (`1`–`11`), 27 Allergene (`20`–`33`, mit Unterschlüsseln `20a`–`20f` für Gluten und `27a`–`27h` für Nüsse) und 4 CO₂-Klassen. **Diese Quelle trennt Allergene von Zusatzstoffen**, was INT-015 nicht tat; im Gericht-Objekt stehen beide gemeinsam unter `additives` und werden erst über die Legende zugeordnet.
+`GET /legend` → `{ tags[], additives[], allergens[], climate[], note?, noteEn? }`, je Eintrag `{ code, label, labelEn? }`. Stand 2026-09-22: 10 Kennzeichen, 11 Zusatzstoffe (`1`–`11`), 27 Allergene (`20`–`33`, mit Unterschlüsseln `20a`–`20f` für Gluten und `27a`–`27h` für Nüsse) und 4 CO₂-Klassen. **Diese Quelle trennt Allergene von Zusatzstoffen**, was INT-015 nicht tat; im Gericht-Objekt stehen beide gemeinsam unter `additives` und werden erst über die Legende zugeordnet.
+
+`labelEn` kam am 2026-09-24 hinzu (nachgeprüft am selben Tag: alle 52 Einträge tragen sie) und ist damit die einzige Feldänderung der Quelle seit der Verifikation vom 2026-09-22; die Fassung blieb `0.2.0`. `label` ist die maßgebliche, deutsche Fassung, `labelEn` eine Übersetzung der Quelle selbst — fehlt sie zu einem Code, tritt `label` an ihre Stelle. Damit trägt die Quelle die Zweisprachigkeit der Klartexte wieder selbst, wie es INT-015 mit `{de, en}` tat, und die App braucht keine eigene Übersetzung der 48 Klartexte (Capability `canteen`, Requirement „Gerichtskategorien und Zusatzstoffhinweise in Oberflächensprache").
 
 `GET /health` → `{ status, canteens, meals, cache, lastFailure? }`. `status` ist `ok`, `degraded` (ein Abruf schlug fehl) oder `cold` (noch nichts geladen). **Überalterung zeigt `status` nicht an:** bei der Prüfung am 2026-09-22 meldete er `ok`, während die Speisepläne 6,7 Tage alt waren. Maßgeblich für das Datenalter ist deshalb `cache.<gruppe>.updated` beziehungsweise das `updated` der jeweiligen Antwort, nicht `status`.
 
@@ -64,11 +66,15 @@ GET https://mensa.fb4.it/openapi.json
 
 **Zugehörige Stammdaten:** Anzeigereihenfolge und Standardauswahl der Mensen sind **nicht** Teil dieser Schnittstelle, sondern werden vom eigenen Backend gepflegt (siehe INT-008 und Capability `admin`). Öffnungszeiten, Anschrift, Beschreibung und Kartenverweis stammen dagegen aus dieser Schnittstelle und werden nicht mehr gepflegt.
 
-Quelle: `https://mensa.fb4.it/openapi.json` (Fassung 0.2.0), Repository `Fachschaftsrat-Informatik-FH-Dortmund/mensa-api`; live abgefragt, Feldstruktur und Öffnungsangaben verifiziert am 2026-09-22
+Quelle: `https://mensa.fb4.it/openapi.json` (Fassung 0.2.0), Repository `Fachschaftsrat-Informatik-FH-Dortmund/mensa-api`; live abgefragt, Feldstruktur und Öffnungsangaben verifiziert am 2026-09-22, Legende nach ihrer Erweiterung um `labelEn`/`noteEn` erneut verifiziert am 2026-09-24
 
 #### Scenario: Standort ohne Speiseplan
 - **WHEN** ein Standort `hasMenu: false` führt und seine Öffnungsangaben ihn als geöffnet ausweisen
 - **THEN** verarbeitet das System ihn als geöffnete Mensa ohne Speiseplan, nicht als geschlossene
+
+#### Scenario: Klartext ohne englische Fassung
+- **WHEN** die Legende zu einem Code keine englische Fassung führt und die Oberflächensprache Englisch ist
+- **THEN** zeigt das System die deutsche Fassung dieses Codes an, statt den Klartext leer zu lassen
 
 #### Scenario: Datenalter trotz unauffälligem Zustand
 - **WHEN** `GET /health` den Zustand `ok` meldet, der gemeldete Stand der Daten aber älter ist als deren Gültigkeitsdauer

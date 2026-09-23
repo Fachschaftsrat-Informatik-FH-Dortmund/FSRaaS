@@ -91,8 +91,20 @@ in die Übersetzung der App aufzunehmen — wäre schneller gewesen und hätte n
 blockiert; sie schüfe aber eine zweite Stelle, die nachziehen muss, wenn das
 Studierendenwerk seine Codes ändert. Genau dieses Nachziehen ist in beiden
 Vorgängerprojekten unterblieben. Die Quelle liegt im eigenen Verantwortungsbereich des
-FSR, also wird sie dort behoben, wo sie herkommt. Der Nachlauf in `mensa-api` und das
-Auslesen im Backend sind **nicht** Teil dieses Changes.
+FSR, also wird sie dort behoben, wo sie herkommt.
+
+**Nachtrag 2026-09-24: eingetroffen und umgesetzt.** Die Quelle führt seit diesem Tag je
+Legendeneintrag ein `labelEn` — nachgeprüft: alle 52 Einträge tragen es, die Fassung der
+Schnittstelle blieb `0.2.0`, und es ist deren einzige Feldänderung seit der Verifikation
+vom 2026-09-22. Das Backend liest es nun, gesteuert über dasselbe `Accept-Language`, das
+schon die Gerichtsbezeichnung umschaltet und das der Vertrag an `/mensen/verzeichnisse`
+bereits vorsah. Fehlt `labelEn` zu einem Code, tritt `label` ein — derselbe
+Sprachrückfall wie bei `linesEn`, aus demselben Grund (keine stillen Fehler, SEC-F-060).
+Damit entfällt der Vorbehalt „anforderungskonform, aber nicht das Ziel": die Anzeige
+erfolgt in der gewählten Sprache, weil die Quelle sie nun in dieser Sprache liefert.
+Entgegen der ursprünglichen Abgrenzung ist das Auslesen im Backend damit **doch** Teil
+dieses Changes (Entscheidung FSR FB4, 2026-09-24) — der Nachlauf in `mensa-api` selbst
+bleibt außerhalb, er ist dort bereits erfolgt.
 
 ### Öffnung und Speiseplan als zwei getrennte Tatsachen
 

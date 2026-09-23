@@ -40,9 +40,12 @@ public static class MensaEndpoints
             return Results.Ok(await quelle.OeffnungsangabenAsync(mensaId, ct));
         }).AllowAnonymous().WithTags("mensa");
 
-        app.MapGet("/mensen/verzeichnisse", async (MensaQuelle quelle, CancellationToken ct) =>
+        app.MapGet("/mensen/verzeichnisse", async (
+            [FromHeader(Name = "Accept-Language")] string? sprache,
+            MensaQuelle quelle, CancellationToken ct) =>
         {
-            var (kategorien, zusatzstoffe, allergene, kennzeichnungen) = await quelle.VerzeichnisseAsync(ct);
+            var (kategorien, zusatzstoffe, allergene, kennzeichnungen) =
+                await quelle.VerzeichnisseAsync(Sprache(sprache), ct);
             return Results.Ok(new { kategorien, zusatzstoffe, allergene, kennzeichnungen });
         }).AllowAnonymous().WithTags("mensa");
 
@@ -51,8 +54,9 @@ public static class MensaEndpoints
 
     /// <summary>
     /// Vertrag: Accept-Language mit Enum de/en, Standard de. Wirkt auf die
-    /// Gerichtsbezeichnung (INT-020 <c>linesEn</c>); die Legende von INT-020 führt
-    /// nur deutsche Klartexte.
+    /// Gerichtsbezeichnung (INT-020 <c>linesEn</c>) und auf die Klartexte der
+    /// Legende (INT-020 <c>labelEn</c>, seit der Erweiterung der Quelle vom
+    /// 2026-09-24). Fehlt die englische Fassung, tritt die deutsche ein.
     /// </summary>
     static string Sprache(string? header) =>
         header?.TrimStart().StartsWith("en", StringComparison.OrdinalIgnoreCase) == true ? "en" : "de";

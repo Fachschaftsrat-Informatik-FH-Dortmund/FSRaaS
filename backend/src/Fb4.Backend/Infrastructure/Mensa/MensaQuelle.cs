@@ -56,7 +56,7 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
         var quelleId = await QuelleIdAsync(mensaId, ct);
 
         var tag = FsrMensaClient.Pruefen(await quelle.TagAsync(quelleId, datum, ct));
-        var legende = await LegendeAsync(ct);
+        var legende = await LegendeAsync(sprache, ct);
 
         var gerichte = (tag.Categories ?? [])
             .SelectMany(k => (k.Meals ?? []).Select(m => Legende.Anreichern(
@@ -120,9 +120,9 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
     public async Task<(IReadOnlyList<Schluesselwert> kategorien,
         IReadOnlyList<Schluesselwert> zusatzstoffe,
         IReadOnlyList<Schluesselwert> allergene,
-        IReadOnlyList<Schluesselwert> kennzeichnungen)> VerzeichnisseAsync(CancellationToken ct)
+        IReadOnlyList<Schluesselwert> kennzeichnungen)> VerzeichnisseAsync(string sprache, CancellationToken ct)
     {
-        var legende = await LegendeAsync(ct);
+        var legende = await LegendeAsync(sprache, ct);
         return ([], legende.Zusatzstoffe, legende.Allergene, legende.Kennzeichnungen);
     }
 
@@ -163,12 +163,16 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
     }
 
     // --------------------------------------------------------------- Legende
-    async Task<Legende> LegendeAsync(CancellationToken ct) => Legende.Aus(await quelle.LegendeAsync(ct));
+    async Task<Legende> LegendeAsync(string sprache, CancellationToken ct) =>
+        Legende.Aus(await quelle.LegendeAsync(ct), sprache);
 
     /// <summary>
     /// Aufgeloeste Legende von INT-020. Die Quelle fuehrt Allergene getrennt von den
     /// Zusatzstoffen; im Gericht stehen beide gemeinsam unter <c>additives</c> und
-    /// werden erst hier zugeordnet.
+    /// werden erst hier zugeordnet. Die Klartexte kommen in der angefragten Sprache
+    /// aus der Quelle selbst (<c>label</c>/<c>labelEn</c>) — die App uebersetzt sie
+    /// nicht (Requirement „Gerichtskategorien und Zusatzstoffhinweise in
+    /// Oberflaechensprache", design.md).
     /// </summary>
     internal sealed record Legende(
         IReadOnlyList<Schluesselwert> Zusatzstoffe,
@@ -177,11 +181,19 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
         IReadOnlyDictionary<string, string> Klartext,
         IReadOnlySet<string> AllergenCodes)
     {
-        public static Legende Aus(FsrMensaClient.LegendeDto roh)
+        public static Legende Aus(FsrMensaClient.LegendeDto roh, string sprache)
         {
+            // Die Quelle fuehrt je Eintrag `label` (deutsch, massgeblich) und seit dem
+            // 2026-09-24 `labelEn`. Fehlt die englische Fassung, tritt die deutsche an
+            // ihre Stelle, statt die Bezeichnung leer zu lassen (SEC-F-060, keine
+            // stillen Fehler) — derselbe Sprachrueckfall wie bei `linesEn`.
+            string Klar(FsrMensaClient.LegendeEintragDto x) => sprache == "en"
+                ? Leer(x.LabelEn) ?? Leer(x.Label) ?? x.Code!
+                : Leer(x.Label) ?? x.Code!;
+
             List<Schluesselwert> Werte(IReadOnlyList<FsrMensaClient.LegendeEintragDto>? e) => (e ?? [])
                 .Where(x => !string.IsNullOrWhiteSpace(x.Code))
-                .Select(x => new Schluesselwert { Id = x.Code!, Bezeichnung = x.Label ?? x.Code! })
+                .Select(x => new Schluesselwert { Id = x.Code!, Bezeichnung = Klar(x) })
                 .ToList();
 
             var zusatzstoffe = Werte(roh.Additives);

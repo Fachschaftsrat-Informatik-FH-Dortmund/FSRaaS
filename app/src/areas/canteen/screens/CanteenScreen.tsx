@@ -281,7 +281,7 @@ function GerichtListe({
   const nurEineMensa = ids.length === 1;
   // Wiedereröffnungshinweis (Requirement „Wiedereröffnungshinweis an der
   // geschlossenen Mensa"): das Backend liefert `naechsteOeffnung` je Mensa
-  // bereits mit dem Tages-Speiseplan (api.ts, SpeiseplanStore.TagAsync).
+  // bereits mit dem Tages-Speiseplan (api.ts, MensaQuelle.TagAsync).
   const naechsteOeffnungVon = useMemo(
     () => new Map(proMensa.map((p) => [p.mensaId, p.naechsteOeffnung])),
     [proMensa],

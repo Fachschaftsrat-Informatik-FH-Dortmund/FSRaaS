@@ -161,6 +161,54 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
         Assert.Equal("sauce bolognese | spaghetti", antwort!.Gerichte[0].Bezeichnung);
     }
 
+    /// <summary>
+    /// Requirement „Gerichtskategorien und Zusatzstoffhinweise in
+    /// Oberflaechensprache": die Klartexte der Legende kommen seit der Erweiterung
+    /// der Quelle vom 2026-09-24 zweisprachig (INT-020 <c>label</c>/<c>labelEn</c>).
+    /// Die App uebersetzt sie nicht selbst (design.md, „Die englische Legende kommt
+    /// aus der Quelle, nicht aus der App").
+    /// </summary>
+    [Fact]
+    public async Task Gerichtskategorien_und_Zusatzstoffhinweise_in_Oberflaechensprache()
+    {
+        QuelleLiefert(TagMitGerichten);
+
+        var antwort = await AbrufenAsync(sprache: "en");
+
+        // `2` = Konservierungsstoff, `20a` = Weizen — beide am ersten Gericht.
+        Assert.Contains("with preservative", antwort!.Gerichte[0].Zusatzstoffe!);
+        Assert.Contains("Wheat", antwort.Gerichte[0].Allergene!);
+        Assert.Contains("Beef", antwort.Gerichte[0].Kennzeichnungen!);
+
+        var deutsch = await AbrufenAsync();
+        Assert.Contains("mit Konservierungsstoff", deutsch!.Gerichte[0].Zusatzstoffe!);
+        Assert.Contains("Weizen", deutsch.Gerichte[0].Allergene!);
+        Assert.Contains("Rind", deutsch.Gerichte[0].Kennzeichnungen!);
+    }
+
+    /// <summary>
+    /// Sprachrueckfall der Legende: fehlt <c>labelEn</c> zu einem Code, tritt die
+    /// deutsche Fassung ein, statt den Klartext leer zu lassen (SEC-F-060, keine
+    /// stillen Fehler). Im Stub traegt `20c` bewusst kein <c>labelEn</c>.
+    /// </summary>
+    [Fact]
+    public async Task Legende_ohne_englische_Fassung_faellt_auf_die_deutsche_zurueck()
+    {
+        factory.Quelle.Zuruecksetzen();
+        var client = factory.CreateClient();
+        var anfrage = new HttpRequestMessage(HttpMethod.Get, "/v1/mensen/verzeichnisse");
+        anfrage.Headers.Add("Accept-Language", "en");
+
+        var rumpf = await (await client.SendAsync(anfrage)).Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Contains(rumpf.GetProperty("allergene").EnumerateArray(),
+            e => e.GetProperty("id").GetString() == "20a"
+                 && e.GetProperty("bezeichnung").GetString() == "Wheat");
+        Assert.Contains(rumpf.GetProperty("allergene").EnumerateArray(),
+            e => e.GetProperty("id").GetString() == "20c"
+                 && e.GetProperty("bezeichnung").GetString() == "Gerste");
+    }
+
     [Fact]
     public async Task MENSA_F_060_Tag_ohne_Angebot_ist_kein_Fehler_sondern_leere_Liste()
     {
