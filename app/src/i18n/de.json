@@ -69,6 +69,7 @@
     "ausgabezeit": "Essensausgabe {{zeit}}",
     "ausgabezeitMensa": "{{mensa}}: Essensausgabe {{zeit}}",
     "geschlossenHeute": "{{mensa}} hat an diesem Tag geschlossen.",
+    "keinSpeiseplanHeute": "{{mensa}}: Für diesen Tag liegt kein Speiseplan vor.",
     "wiederGeoeffnet": "Wieder geöffnet am {{tag}}.",
     "wiederGeoeffnetDatum": "({{datum}})",
     "mensaGefiltert": "Alle Gerichte dieser Mensa sind durch deine Filter ausgeblendet.",

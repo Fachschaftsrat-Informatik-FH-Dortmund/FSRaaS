@@ -52,6 +52,17 @@ export interface SortierKontext {
   sprache: string;
   /** Bis Roadmap-Schritt 9 liefert der Resolver immer `undefined` (D4). */
   bewertung?: BewertungResolver;
+  /**
+   * Öffnungsstatus einer Mensa am angezeigten Tag (Requirements „Geschlossen-Hinweis
+   * für geschlossene Mensa" / „Hinweis für geöffnete Mensa ohne Speiseplan"):
+   * `false` = geschlossen, `true`/`undefined` (unbekannt) = geöffnet oder
+   * unbestimmt. Nur bei Gruppierung „nach Mensa" ausgewertet, für eine gewählte
+   * Mensa ohne Gerichte an diesem Tag. Fehlt der Resolver, gilt jede Mensa ohne
+   * Gerichte als „ohne Speiseplan", nie als geschlossen — konsistent mit
+   * `istGeoeffnet` in `oeffnungszeiten.ts`, wo eine unbekannte Angabe ebenfalls
+   * nicht als geschlossen gilt.
+   */
+  istGeoeffnet?: (mensaId: string) => boolean | undefined;
 }
 
 export interface Abschnitt {
@@ -59,10 +70,15 @@ export interface Abschnitt {
   /** `null` = keine Überschrift (Gruppierung „keine" oder kategorielose Sammelgruppe). */
   titel: string | null;
   /**
-   * `'geschlossen'` = gewählte Mensa ohne Angebot am Tag, mit leerer Gerichtsliste;
-   * entsteht nur bei Gruppierung „nach Mensa" (design.md D2). Sonst `'gerichte'`.
+   * Drei Zustände je Mensa und Tag (design.md „Öffnung und Speiseplan als zwei
+   * getrennte Tatsachen"): `'geschlossen'` = laut Öffnungsangabe geschlossen,
+   * `'ohneSpeiseplan'` = geöffnet oder unbestimmt, aber ohne Gerichte, `'gerichte'`
+   * = mit Gerichten (auch wenn die Öffnungsangabe „geschlossen" meldet — ein
+   * Speiseplan sticht die Öffnungsangabe, dieser Fall trat in 105 geprüften
+   * Tag/Mensa-Paaren nie auf). `'geschlossen'`/`'ohneSpeiseplan'` entstehen nur
+   * bei Gruppierung „nach Mensa" (design.md D2).
    */
-  zustand: 'gerichte' | 'geschlossen';
+  zustand: 'gerichte' | 'geschlossen' | 'ohneSpeiseplan';
   gerichte: KonsolidiertesGericht[];
 }
 
@@ -229,7 +245,11 @@ export function wendeAn(
       abschnitte: geordnet.map((gr) => ({
         id: gr.id,
         titel: gr.titel,
-        zustand: geschlossen.has(gr.id) ? ('geschlossen' as const) : ('gerichte' as const),
+        zustand: geschlossen.has(gr.id)
+          ? kontext.istGeoeffnet?.(gr.id) === false
+            ? ('geschlossen' as const)
+            : ('ohneSpeiseplan' as const)
+          : ('gerichte' as const),
         gerichte: sortiert(gr.gerichte),
       })),
       gruppierungAktiv: true,

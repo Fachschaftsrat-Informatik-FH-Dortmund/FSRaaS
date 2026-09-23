@@ -13,16 +13,19 @@ jest.mock('expo-router', () => ({
 
 // Öffnungsangaben kommen seit der Ablösung von INT-015 aus der Schnittstelle
 // (Requirement „Öffnungszeiten je Mensa und Wochentag"), nicht mehr aus den
-// Stammdaten. Der Wochenplan führt alle sieben Tage mit derselben Zeit, damit die
-// Erwartungen unabhängig vom angezeigten Datum gelten.
-const wochenplanMit = (zeit: string) => {
+// Stammdaten. Am Wochenende laut Öffnungsangabe geschlossen — seit der
+// Unterscheidung von „geschlossen" und „offen ohne Speiseplan" (Requirements
+// „Geschlossen-Hinweis für geschlossene Mensa" / „Hinweis für geöffnete Mensa
+// ohne Speiseplan") genügt eine leere Gerichtsliste allein nicht mehr, um als
+// geschlossen zu gelten.
+const wochentagsGeoeffnetMit = (zeit: string) => {
   const [oeffnet, schliesst] = zeit.split(' - ');
   return {
     wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({
       wochentag,
-      geoeffnet: true,
-      oeffnet,
-      schliesst,
+      geoeffnet: wochentag <= 5,
+      oeffnet: wochentag <= 5 ? oeffnet : null,
+      schliesst: wochentag <= 5 ? schliesst : null,
     })),
     vorausschau: [],
     schliesstage: [],
@@ -30,7 +33,8 @@ const wochenplanMit = (zeit: string) => {
 };
 
 const mockOeffnung: Record<string, any> = {
-  Mensa: wochenplanMit('11:30 - 14:45'),
+  Mensa: wochentagsGeoeffnetMit('11:30 - 14:45'),
+  Sued: wochentagsGeoeffnetMit('12:00 - 14:00'),
 };
 
 const mockMensen = [

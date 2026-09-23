@@ -69,6 +69,7 @@
     "ausgabezeit": "Serving {{zeit}}",
     "ausgabezeitMensa": "{{mensa}}: serving {{zeit}}",
     "geschlossenHeute": "{{mensa}} is closed on this day.",
+    "keinSpeiseplanHeute": "{{mensa}}: no menu for this day.",
     "wiederGeoeffnet": "Reopens on {{tag}}.",
     "wiederGeoeffnetDatum": "({{datum}})",
     "mensaGefiltert": "All dishes at this canteen are hidden by your filters.",

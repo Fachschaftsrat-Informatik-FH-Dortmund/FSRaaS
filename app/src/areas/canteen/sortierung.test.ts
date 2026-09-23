@@ -114,8 +114,44 @@ describe('Gliederung nach Mensa-Auswahlreihenfolge bei aktiver Mensa-Gruppierung
     );
     expect(s.abschnitte.map((a) => a.titel)).toEqual(['Hauptmensa', 'Mensa Süd', 'Mensa Nord']);
     const sued = s.abschnitte.find((a) => a.titel === 'Mensa Süd')!;
-    expect(sued.zustand).toBe('geschlossen');
+    // Ohne `istGeoeffnet`-Resolver gilt eine Mensa ohne Angebot als „offen ohne
+    // Speiseplan", nie als geschlossen (siehe Requirements „Geschlossen-Hinweis
+    // für geschlossene Mensa" / „Hinweis für geöffnete Mensa ohne Speiseplan").
+    expect(sued.zustand).toBe('ohneSpeiseplan');
     expect(sued.gerichte).toEqual([]);
+  });
+
+  it('führt eine laut Öffnungsangabe geschlossene Mensa ohne Angebot als geschlossen', () => {
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [])]);
+    const s = wendeAn(
+      kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+      k,
+      { ...ctx, istGeoeffnet: () => false },
+    );
+    expect(s.abschnitte.find((a) => a.titel === 'Mensa Süd')!.zustand).toBe('geschlossen');
+  });
+
+  it('führt eine laut Öffnungsangabe geöffnete Mensa ohne Angebot als ohne Speiseplan', () => {
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [])]);
+    const s = wendeAn(
+      kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+      k,
+      { ...ctx, istGeoeffnet: () => true },
+    );
+    expect(s.abschnitte.find((a) => a.titel === 'Mensa Süd')!.zustand).toBe('ohneSpeiseplan');
+  });
+
+  it('lässt eine Mensa mit Angebot als „gerichte" gelten, auch wenn die Öffnungsangabe „geschlossen" meldet', () => {
+    const mitAngebot = konsolidiere([
+      plan('Mensa', [g()]),
+      plan('Sued', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
+    ]);
+    const s = wendeAn(
+      kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+      mitAngebot,
+      { ...ctx, istGeoeffnet: () => false },
+    );
+    expect(s.abschnitte.find((a) => a.titel === 'Mensa Süd')!.zustand).toBe('gerichte');
   });
 
   it('erzeugt bei Gruppierung „keine" und „nach Kategorie" keinen geschlossenen Abschnitt', () => {

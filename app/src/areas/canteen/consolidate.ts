@@ -41,7 +41,15 @@ export interface KonsolidierteSektion {
 export interface Konsolidierung {
   /** Ein Abschnitt je gewählter Mensa mit Angebot, in Auswahlreihenfolge (MENSA-F-025). */
   sektionen: KonsolidierteSektion[];
-  /** Gewählte Mensen ohne Angebot am Tag (MENSA-F-049); Quelle unterscheidet nicht „zu" von „keine Daten". */
+  /**
+   * Gewählte Mensen ohne Gerichte am Tag (MENSA-F-049). Ob dahinter eine
+   * Schließung oder eine geöffnete Mensa ohne Speiseplan steht, entscheidet
+   * allein die Öffnungsangabe der Quelle (`oeffnungszeiten.ts`), die dieser
+   * reinen Fachlogik ohne React nicht vorliegt — die Unterscheidung trifft die
+   * aufrufende Stelle (`sortierung.ts` / `CanteenScreen.tsx`, Requirements
+   * „Geschlossen-Hinweis für geschlossene Mensa" / „Hinweis für geöffnete
+   * Mensa ohne Speiseplan").
+   */
   geschlossene: string[];
 }
 
