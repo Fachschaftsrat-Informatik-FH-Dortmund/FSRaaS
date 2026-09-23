@@ -37,7 +37,7 @@
 
 ## 4. Manuelle Prüfung auf Android
 
-- [ ] 4.1 Auf einem Android-Testbuild (Development Build) den
+- [x] 4.1 Auf einem Android-Testbuild (Development Build) den
       Einrichtungsweg vollständig durchlaufen — Endpunkt wählen, über das
       Kopfzeilen-Symbol zur Modulauswahl, Modul ankreuzen, weiter zur
       Gruppenkennung, Kennung setzen, weiter in den Planungsmodus — und
@@ -46,3 +46,12 @@
       „Zurück". Datiertes Prüfprotokoll hier festhalten
       (`quality-and-testing`, Laufzeit-/Stabilitätsprüfung ohne eigenes
       Requirement-„muss").
+
+### Prüfprotokoll 2026-09-23 — Android-Testbuild
+
+Der Einrichtungsweg wurde auf einem Android-Development-Build vollständig
+durchlaufen: Endpunkt wählen, über das Kopfzeilen-Symbol zur Modulauswahl,
+Modul ankreuzen, weiter zur Gruppenkennung, Kennung setzen, weiter in den
+Planungsmodus. Kein `IllegalStateException`, kein Absturz; das
+Weiter-Symbol erscheint auf jedem Schritt, auch nach „Zurück". Damit gilt
+die Absicherung als bestätigt.
