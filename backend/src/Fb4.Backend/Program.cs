@@ -21,6 +21,23 @@ builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<JobStatusRegistry>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddMemoryCache();
+
+// Mensa-Schnittstelle INT-020 (mensa.fb4.it): Zielsystem ausschliesslich aus der
+// Konfiguration (MensaQuelleOptions), eigener User-Agent (Bot-Filter vorgelagerter
+// Proxys) und Standard-Resilienz (Timeout, Retry mit Backoff, Circuit Breaker —
+// API-N-120, ADR 0015). Der AntwortGueltigkeitHandler beachtet die
+// Gueltigkeitsdauer, die die Quelle selbst setzt; ein eigener Bestand entsteht
+// nicht (Capability `backend-and-api`).
+builder.Services.AddTransient<AntwortGueltigkeitHandler>();
+builder.Services.AddHttpClient<FsrMensaClient>(c =>
+{
+    c.BaseAddress = MensaQuelleOptions.BasisadresseAus(builder.Configuration);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd(MensaQuelleOptions.UserAgent);
+})
+    .AddHttpMessageHandler<AntwortGueltigkeitHandler>()
+    .AddStandardResilienceHandler();
 
 // PostgreSQL über EF Core (ADR 0011, backend-and-api.md Abschnitt 8).
 // Ohne Verbindungszeichenfolge bleibt der Context nicht konfiguriert — das
@@ -31,24 +48,12 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddDbContext<Fb4DbContext>(o => o.UseNpgsql(connectionString));
     builder.Services.AddScoped<StammdatenStore>();
     builder.Services.AddScoped<AuditLog>();
-    builder.Services.AddScoped<SpeiseplanStore>();
-
-    // Mensa-Speiseplan-Quelle INT-015: eigener User-Agent (Bot-Filter vorgelagerter
-    // Proxys) und Standard-Resilienz (Timeout, Retry mit Backoff, Circuit Breaker —
-    // API-N-120, ADR 0015).
-    builder.Services.AddHttpClient<ItmcMensaClient>(c =>
-    {
-        c.BaseAddress = new Uri(
-            builder.Configuration["Itmc:BaseUrl"]
-            ?? "https://mobil.itmc.tu-dortmund.de/canteen-menu/v3/");
-        c.DefaultRequestHeaders.UserAgent.ParseAdd("fb4-backend");
-    }).AddStandardResilienceHandler();
+    builder.Services.AddScoped<MensaQuelle>();
 
     // Reihenfolge zählt: der Host wartet StartAsync des DbInitializers vollständig
     // ab (Migration + Seed), bevor die periodischen Jobs ihren ersten Durchlauf beginnen.
     builder.Services.AddHostedService<DbInitializer>();
     builder.Services.AddHostedService<VerwaltungsprotokollAufraeumJob>();
-    builder.Services.AddHostedService<SpeiseplanAktualisierungJob>();
 }
 else
 {

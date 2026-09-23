@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Fb4.Backend.Tests.Infrastruktur;
@@ -29,6 +30,12 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
         new(System.Text.Encoding.UTF8.GetBytes("test-signing-key-fuer-fb4-backend-tests-0123456789"));
 
     readonly string _dbName = "fb4-tests-" + Guid.NewGuid().ToString("N");
+
+    /// <summary>
+    /// Steht an der Stelle von INT-020. Tests legen die Antworten je Pfad fest und
+    /// lesen ab, wie oft abgerufen wurde.
+    /// </summary>
+    public MensaQuelleStub Quelle { get; } = new();
 
     public IServiceScope NewScope() => Services.CreateScope();
 
@@ -72,6 +79,9 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
         builder.UseSetting("Authentik:Audience", Audience);
         builder.UseSetting("Authentik:ManagementApiBaseUrl", "");
         builder.UseSetting("Authentik:ManagementApiToken", "");
+        // Zielsystem der Mensa-Schnittstelle kommt ausschliesslich aus der
+        // Konfiguration; im Test zeigt es ins Leere und wird abgefangen.
+        builder.UseSetting(MensaQuelleOptions.BasisadresseSchluessel, "https://mensa.test.invalid/");
 
         builder.ConfigureTestServices(services =>
         {
@@ -79,12 +89,23 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
             if (descriptor is not null) services.Remove(descriptor);
             services.AddDbContext<Fb4DbContext>(o => o.UseInMemoryDatabase(_dbName));
             // Feature-Dienste hängen produktiv an der Verbindungszeichenfolge
-            // (Program.cs); im Test kommt die Datenbank von hier. Der
-            // INT-015-Abruf-Job wird bewusst nicht registriert — Endpunkttests
-            // seeden den Zwischenspeicher direkt.
+            // (Program.cs); im Test kommt die Datenbank von hier.
             services.AddScoped<StammdatenStore>();
             services.AddScoped<AuditLog>();
-            services.AddScoped<SpeiseplanStore>();
+            services.AddScoped<MensaQuelle>();
+
+            // Die Mensa-Schnittstelle wird durch den Stub ersetzt. Resilienz aus:
+            // Wiederholungsversuche wuerden die Abrufzaehlung verfaelschen, an der
+            // das Durchreichen nachgewiesen wird.
+            services.AddHttpClient<FsrMensaClient>()
+                .ConfigurePrimaryHttpMessageHandler(() => Quelle);
+            services.Configure<HttpStandardResilienceOptions>(
+                nameof(FsrMensaClient) + "-standard", o =>
+                {
+                    o.Retry.Delay = TimeSpan.Zero;
+                    o.Retry.ShouldHandle = _ => ValueTask.FromResult(false);
+                    o.CircuitBreaker.ShouldHandle = _ => ValueTask.FromResult(false);
+                });
 
             services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, o =>
             {

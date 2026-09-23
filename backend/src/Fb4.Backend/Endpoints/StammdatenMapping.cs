@@ -14,7 +14,6 @@ internal static class StammdatenMapping
         StandardAuswahl = e.StandardAuswahl,
         Reihenfolge = e.Reihenfolge,
         SpeiseplanUrl = e.SpeiseplanUrl,
-        Oeffnungszeiten = e.Oeffnungszeiten.ToList(),
     };
 
     public static MensaEintrag ToEntity(this Mensa d) => new()
@@ -25,7 +24,6 @@ internal static class StammdatenMapping
         StandardAuswahl = d.StandardAuswahl,
         Reihenfolge = d.Reihenfolge,
         SpeiseplanUrl = d.SpeiseplanUrl,
-        Oeffnungszeiten = (d.Oeffnungszeiten ?? []).ToList(),
     };
 
     public static Raum ToDto(this RaumEintrag e) => new()

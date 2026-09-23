@@ -6,13 +6,18 @@ import { gcTime, staleTime } from '@/cache/ttl';
 import { api, unwrap } from '@/net/client';
 import ausgangsbestand from './assets/stammdaten-ausgangsbestand.json';
 
-// Lesezugriff auf den Mensa-Speiseplan-Zwischenspeicher des Backends (MENSA, INT-008).
-// Kontofrei. Gültigkeitsdauer je Datenart aus @/cache/ttl (DATA-F-080).
+// Lesezugriff auf die Mensa-Daten über das eigene Backend (MENSA, INT-008).
+// Kontofrei. Gültigkeitsdauer je Datenart aus @/cache/ttl (DATA-F-080). Das
+// Backend reicht Speisepläne und Öffnungsangaben aus INT-020 durch; die App
+// spricht die Mensa-Schnittstelle nie selbst an (Capability `architecture`).
 
 export type Mensa = components['schemas']['Mensa'];
 export type Gericht = components['schemas']['Gericht'];
 export type Schluesselwert = components['schemas']['Schluesselwert'];
 export type StandAlter = components['schemas']['StandAlter'];
+export type Oeffnungsangaben = components['schemas']['Oeffnungsangaben'];
+export type Oeffnungstag = components['schemas']['Oeffnungstag'];
+export type Schliesstag = components['schemas']['Schliesstag'];
 
 export interface Speiseplan {
   gerichte: Gericht[];
@@ -93,6 +98,28 @@ export function useSpeisepläne(mensaIds: string[], datum: string) {
   const sprache = apiSprache(i18n.language);
   return useQueries({
     queries: mensaIds.map((mensaId) => speiseplanQueryOptions(mensaId, datum, sprache)),
+  });
+}
+
+/** Query-Optionen für die Öffnungsangaben einer Mensa — geteilt von Einzel- und Sammelabruf. */
+export function oeffnungsangabenQueryOptions(mensaId: string) {
+  return {
+    queryKey: ['oeffnungsangaben', mensaId] as const,
+    staleTime: staleTime('stammdaten'),
+    gcTime: gcTime('stammdaten'),
+    queryFn: async (): Promise<Oeffnungsangaben> =>
+      unwrap(await api.GET('/mensen/{mensaId}/oeffnungszeiten', { params: { path: { mensaId } } })),
+  };
+}
+
+/**
+ * Öffnungsangaben mehrerer Mensen (Requirement „Öffnungszeiten je Mensa und
+ * Wochentag"). Ein Query je gewählter Mensa, unabhängig vom angezeigten Tag: die
+ * Antwort trägt Wochenplan, Vorausschau und Schließtage in einem.
+ */
+export function useOeffnungsangaben(mensaIds: string[]) {
+  return useQueries({
+    queries: mensaIds.map((mensaId) => oeffnungsangabenQueryOptions(mensaId)),
   });
 }
 

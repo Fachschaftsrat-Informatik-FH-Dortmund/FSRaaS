@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Fb4.Backend.Contract.Generated;
 using Fb4.Backend.Tests.Infrastruktur;
 using Xunit;
@@ -43,6 +44,42 @@ public class StammdatenPflegeTests(TestAppFactory factory) : IClassFixture<TestA
         var mensen = await client.GetFromJsonAsync<List<Mensa>>("/v1/mensen");
         Assert.Single(mensen!);
         Assert.Equal("Testmensa", mensen![0].Name);
+    }
+
+    /// <summary>
+    /// Requirement „Pflege der Stammdaten-Listen", Scenario „Mensa-Eintrag
+    /// bearbeiten": Anzeigereihenfolge und Standardauswahl bleiben pflegbar, die
+    /// Öffnungszeiten nicht mehr — sie kommen seit der Ablösung von INT-015 aus
+    /// der Schnittstelle (Capability `admin`, entfallenes Pflegerecht). Ein
+    /// mitgeschicktes Öffnungszeitenfeld nimmt der Vertrag nicht mehr an; es wird
+    /// verworfen, statt einen Bestand aufzubauen, den niemand mehr pflegt.
+    /// </summary>
+    [Fact]
+    public async Task Pflege_der_Stammdaten_Listen_nimmt_kein_Oeffnungszeitenfeld_mehr_an()
+    {
+        var client = factory.CreateClientAls(Rolle.FsrRedaktion);
+        var (daten, etag) = await Laden(client);
+
+        // Der erzeugte Vertragstyp führt das Feld nicht mehr — schon der
+        // Übersetzungslauf schlüge sonst fehl.
+        Assert.DoesNotContain(typeof(Mensa).GetProperties(),
+            eigenschaft => eigenschaft.Name.Contains("Oeffnungszeit", StringComparison.Ordinal));
+
+        // Und ein von Hand mitgeschicktes Feld landet nirgends.
+        var neu = daten with
+        {
+            Mensen = [new Mensa { Id = "Neu", Name = "Testmensa", StandardAuswahl = true, Reihenfolge = 5 }],
+        };
+        var anfrage = Put(etag, neu);
+        var response = await client.SendAsync(anfrage);
+        response.EnsureSuccessStatusCode();
+
+        var rumpf = await client.GetFromJsonAsync<JsonElement>("/v1/mensen");
+        var eintrag = rumpf.EnumerateArray().Single();
+        Assert.False(eintrag.TryGetProperty("oeffnungszeiten", out _));
+        // Reihenfolge und Standardauswahl bleiben unberührt.
+        Assert.Equal(5, eintrag.GetProperty("reihenfolge").GetInt32());
+        Assert.True(eintrag.GetProperty("standardAuswahl").GetBoolean());
     }
 
     [Fact]

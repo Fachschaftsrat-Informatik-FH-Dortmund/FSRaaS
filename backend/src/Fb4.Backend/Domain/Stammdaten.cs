@@ -11,13 +11,14 @@ public class MensaEintrag
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
-    /// <summary>Kennung im Quellsystem INT-015 (ITMC).</summary>
+    /// <summary>
+    /// Kennung im Quellsystem INT-020 — die Verbrauchsortnummer des
+    /// Studierendenwerks, dieselbe Zahl, die INT-015 verwendete.
+    /// </summary>
     public string? QuelleId { get; set; }
     public bool StandardAuswahl { get; set; }
     public int Reihenfolge { get; set; }
     public string? SpeiseplanUrl { get; set; }
-    /// <summary>Ein Eintrag je Wochentag, Montag zuerst (MENSA-F-047).</summary>
-    public List<string?> Oeffnungszeiten { get; set; } = [];
 }
 
 /// <summary>Ein Eintrag der vom FSR gepflegten Raumliste.</summary>

@@ -1,41 +1,81 @@
-import { oeffnungszeitFuer } from './oeffnungszeiten';
-import type { Mensa } from './api';
+import { ausgabezeitFuer, istGeoeffnet, oeffnungszeitFuer } from './oeffnungszeiten';
+import type { Oeffnungsangaben, Oeffnungstag } from './api';
 
 // 2026-09-07 ist ein Montag, 2026-09-11 ein Freitag, 2026-09-12 ein Samstag,
-// 2026-09-13 ein Sonntag, 2026-09-14 ein Montag.
-const mensa = (oeffnungszeiten: (string | null)[] | undefined): Mensa =>
-  ({ id: 'M', name: 'Mensa', standardAuswahl: true, reihenfolge: 10, oeffnungszeiten }) as Mensa;
+// 2026-09-13 ein Sonntag.
 
-describe('Öffnungszeit-Auflösung nach Wochentag', () => {
-  it('bedient eine fünfstellige Liste von Montag bis Freitag', () => {
-    const m = mensa(['Mo', 'Di', 'Mi', 'Do', 'Fr']);
-    expect(oeffnungszeitFuer(m, '2026-09-07')).toBe('Mo');
-    expect(oeffnungszeitFuer(m, '2026-09-11')).toBe('Fr');
+const tag = (t: Partial<Oeffnungstag>): Oeffnungstag => ({ geoeffnet: true, ...t }) as Oeffnungstag;
+
+const angaben = (teile: Partial<Oeffnungsangaben>): Oeffnungsangaben =>
+  ({
+    mensaId: 'M',
+    heute: tag({ datum: '2026-09-07', wochentag: 1 }),
+    wochenplan: [],
+    vorausschau: [],
+    schliesstage: [],
+    standAlter: { abgerufenAm: '2026-09-07T08:00:00Z' },
+    ...teile,
+  }) as Oeffnungsangaben;
+
+const wochenplan = angaben({
+  wochenplan: [
+    tag({ wochentag: 1, oeffnet: '11:30', schliesst: '14:45' }),
+    tag({ wochentag: 5, oeffnet: '11:30', schliesst: '14:15' }),
+    tag({ wochentag: 6, geoeffnet: false }),
+    tag({ wochentag: 7, geoeffnet: false }),
+  ],
+});
+
+describe('Öffnungszeiten je Mensa und Wochentag', () => {
+  it('löst die Öffnungszeit über den Wochentag des angezeigten Tages auf', () => {
+    expect(oeffnungszeitFuer(wochenplan, '2026-09-07')).toBe('11:30 - 14:45');
+    expect(oeffnungszeitFuer(wochenplan, '2026-09-11')).toBe('11:30 - 14:15');
   });
 
-  it('liefert für Samstag und Sonntag einer fünfstelligen Liste nichts', () => {
-    const m = mensa(['Mo', 'Di', 'Mi', 'Do', 'Fr']);
-    expect(oeffnungszeitFuer(m, '2026-09-12')).toBeNull();
-    expect(oeffnungszeitFuer(m, '2026-09-13')).toBeNull();
+  it('liefert für einen geschlossenen Tag keine Öffnungszeit', () => {
+    expect(oeffnungszeitFuer(wochenplan, '2026-09-12')).toBeNull();
+    expect(oeffnungszeitFuer(wochenplan, '2026-09-13')).toBeNull();
   });
 
-  it('bedient eine siebenstellige Liste auch am Wochenende', () => {
-    const m = mensa(['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']);
-    expect(oeffnungszeitFuer(m, '2026-09-12')).toBe('Sa');
-    expect(oeffnungszeitFuer(m, '2026-09-13')).toBe('So');
+  it('lässt einen im Wochenplan gar nicht geführten Tag ohne Angabe', () => {
+    // Dienstag fehlt im Plan — keine Angabe, kein Fehler.
+    expect(oeffnungszeitFuer(wochenplan, '2026-09-08')).toBeNull();
+    expect(istGeoeffnet(wochenplan, '2026-09-08')).toBeUndefined();
   });
 
-  it('behandelt einen null-Eintrag wie eine fehlende Angabe, ohne die übrigen Tage zu verlieren', () => {
-    const m = mensa(['Mo', null, 'Mi']);
-    expect(oeffnungszeitFuer(m, '2026-09-07')).toBe('Mo');
-    expect(oeffnungszeitFuer(m, '2026-09-08')).toBeNull();
-    expect(oeffnungszeitFuer(m, '2026-09-09')).toBe('Mi');
-    // Donnerstag ist gar nicht gepflegt (Liste zu kurz) — kein Eintrag, kein Fehler.
-    expect(oeffnungszeitFuer(m, '2026-09-10')).toBeNull();
+  it('zieht die datierte Vorausschau dem regulären Wochenplan vor', () => {
+    // Am Montag ausnahmsweise geschlossen, obwohl der Wochenplan ihn führt.
+    const mitVorausschau = angaben({
+      wochenplan: wochenplan.wochenplan,
+      vorausschau: [tag({ datum: '2026-09-07', wochentag: 1, geoeffnet: false, grund: 'Betriebsferien' })],
+    });
+
+    expect(oeffnungszeitFuer(mitVorausschau, '2026-09-07')).toBeNull();
+    expect(istGeoeffnet(mitVorausschau, '2026-09-07')).toBe(false);
+    // Ein Tag außerhalb der Vorausschau fällt weiterhin auf den Wochenplan zurück.
+    expect(oeffnungszeitFuer(mitVorausschau, '2026-09-11')).toBe('11:30 - 14:15');
   });
 
-  it('liefert ohne hinterlegte Öffnungszeiten nichts', () => {
-    expect(oeffnungszeitFuer(mensa(undefined), '2026-09-07')).toBeNull();
+  it('liefert ohne Öffnungsangaben nichts', () => {
     expect(oeffnungszeitFuer(undefined, '2026-09-07')).toBeNull();
+    expect(istGeoeffnet(undefined, '2026-09-07')).toBeUndefined();
+  });
+});
+
+describe('Ausweis der Ausgabezeit bei abweichender Öffnungszeit', () => {
+  it('weist die Ausgabezeit aus, wo die Quelle eine abweichende führt', () => {
+    // Max-Ophüls-Platz: offen ab 08:00, Essensausgabe ab 11:30.
+    const max = angaben({
+      wochenplan: [tag({ wochentag: 1, oeffnet: '08:00', schliesst: '14:15', ausgabeBeginn: '11:30' })],
+    });
+
+    expect(oeffnungszeitFuer(max, '2026-09-07')).toBe('08:00 - 14:15');
+    expect(ausgabezeitFuer(max, '2026-09-07')).toBe('11:30 - 14:15');
+  });
+
+  it('weist ohne Abweichung allein die Öffnungszeit aus', () => {
+    // Hauptmensa: die Quelle setzt servingOpen nur bei Abweichung.
+    expect(oeffnungszeitFuer(wochenplan, '2026-09-07')).toBe('11:30 - 14:45');
+    expect(ausgabezeitFuer(wochenplan, '2026-09-07')).toBeNull();
   });
 });

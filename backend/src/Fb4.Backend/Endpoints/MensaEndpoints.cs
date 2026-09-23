@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 namespace Fb4.Backend.Endpoints;
 
 /// <summary>
-/// Kontofreie Auslieferung des Mensa-Speiseplans (MENSA, API-F-070/F-075). Alle
-/// Antworten kommen aus dem eigenen Zwischenspeicher; INT-015 wird nie synchron
-/// aufgerufen (das erledigt <see cref="SpeiseplanAktualisierungJob"/>).
+/// Kontofreie Auslieferung des Mensa-Speiseplans und der Öffnungsangaben (MENSA,
+/// API-F-070/F-075). Alle Antworten werden je Anfrage aus INT-020 durchgereicht;
+/// das Backend hält keinen eigenen Bestand (Capability <c>backend-and-api</c>,
+/// Requirement „Mensa-Daten durchreichen statt zwischenspeichern"). Fällt die
+/// Quelle aus, endet die Anfrage als Fehler — nie als leere Gerichtsliste.
 /// </summary>
 public static class MensaEndpoints
 {
@@ -17,30 +19,41 @@ public static class MensaEndpoints
         app.MapGet("/mensen/{mensaId}/speiseplan/{datum}", async (
             string mensaId, string datum,
             [FromHeader(Name = "Accept-Language")] string? sprache,
-            SpeiseplanStore store, CancellationToken ct) =>
+            MensaQuelle quelle, CancellationToken ct) =>
         {
             if (!DateOnly.TryParse(datum, CultureInfo.InvariantCulture, out var tag))
                 throw ApiException.BadRequest("datum_ungueltig", "Das Datum muss im Format JJJJ-MM-TT angegeben sein.");
 
-            if (!await store.MensaBekanntAsync(mensaId, ct))
+            if (!await quelle.MensaBekanntAsync(mensaId, ct))
                 throw ApiException.NotFound("mensa_unbekannt", $"Keine Mensa mit der Kennung „{mensaId}“.");
 
-            var (gerichte, stand, naechsteOeffnung) = await store.TagAsync(mensaId, tag, Sprache(sprache), ct);
+            var (gerichte, stand, naechsteOeffnung) = await quelle.TagAsync(mensaId, tag, Sprache(sprache), ct);
             return Results.Ok(new { gerichte, standAlter = stand, naechsteOeffnung });
         }).AllowAnonymous().WithTags("mensa");
 
-        app.MapGet("/mensen/verzeichnisse", async (
-            [FromHeader(Name = "Accept-Language")] string? sprache,
-            SpeiseplanStore store, CancellationToken ct) =>
+        app.MapGet("/mensen/{mensaId}/oeffnungszeiten", async (
+            string mensaId, MensaQuelle quelle, CancellationToken ct) =>
         {
-            var (kategorien, zusatzstoffe, kennzeichnungen) = await store.VerzeichnisseAsync(Sprache(sprache), ct);
-            return Results.Ok(new { kategorien, zusatzstoffe, kennzeichnungen });
+            if (!await quelle.MensaBekanntAsync(mensaId, ct))
+                throw ApiException.NotFound("mensa_unbekannt", $"Keine Mensa mit der Kennung „{mensaId}“.");
+
+            return Results.Ok(await quelle.OeffnungsangabenAsync(mensaId, ct));
+        }).AllowAnonymous().WithTags("mensa");
+
+        app.MapGet("/mensen/verzeichnisse", async (MensaQuelle quelle, CancellationToken ct) =>
+        {
+            var (kategorien, zusatzstoffe, allergene, kennzeichnungen) = await quelle.VerzeichnisseAsync(ct);
+            return Results.Ok(new { kategorien, zusatzstoffe, allergene, kennzeichnungen });
         }).AllowAnonymous().WithTags("mensa");
 
         return app;
     }
 
-    /// <summary>Vertrag: Accept-Language mit Enum de/en, Standard de.</summary>
+    /// <summary>
+    /// Vertrag: Accept-Language mit Enum de/en, Standard de. Wirkt auf die
+    /// Gerichtsbezeichnung (INT-020 <c>linesEn</c>); die Legende von INT-020 führt
+    /// nur deutsche Klartexte.
+    /// </summary>
     static string Sprache(string? header) =>
         header?.TrimStart().StartsWith("en", StringComparison.OrdinalIgnoreCase) == true ? "en" : "de";
 }

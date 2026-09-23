@@ -1,31 +1,76 @@
-import type { Mensa } from './api';
+import type { Oeffnungsangaben, Oeffnungstag } from './api';
 
-// MENSA: Auflösung der gepflegten wöchentlichen Öffnungszeiten aus den
-// Mensa-Stammdaten (Vertrag: „Ein Eintrag je Wochentag, Montag zuerst", Einträge
-// dürfen `null` sein). Reine Fachlogik ohne React (Capability
-// `quality-and-testing`, Abschnitt 5). Der Wiedereröffnungshinweis an einer
-// geschlossenen Mensa stützt sich seit `canteen-wiedereroeffnung-aus-speiseplan`
-// nicht mehr auf diese Wochenangabe, sondern auf das vom Backend gelieferte Feld
-// `naechsteOeffnung` (siehe api.ts, CanteenScreen.tsx).
+// MENSA: Auflösung der Öffnungszeit eines Tages aus den Öffnungsangaben der
+// Mensa-Schnittstelle (Capability `canteen`, Requirement „Öffnungszeiten je Mensa
+// und Wochentag"). Seit der Ablösung von INT-015 kommen sie nicht mehr aus
+// gepflegten Stammdaten, sondern aus INT-020 — die gepflegte Angabe war
+// nachweislich veraltet (Hauptmensa freitags `11:30 - 14:00` statt `11:30 - 14:15`).
+// Reine Fachlogik ohne React (Capability `quality-and-testing`, Abschnitt 5).
 
-/** Index in `oeffnungszeiten` (Montag zuerst) für ein ISO-Datum. */
-function wochentagIndex(datum: string): number {
+/** ISO-8601-Wochentag eines ISO-Datums: 1 = Montag … 7 = Sonntag. */
+function isoWochentag(datum: string): number {
   const [y, m, d] = datum.split('-').map(Number);
   const tag = new Date(y!, m! - 1, d!).getDay(); // 0 = Sonntag … 6 = Samstag
-  return (tag + 6) % 7; // 0 = Montag … 6 = Sonntag
+  return tag === 0 ? 7 : tag;
 }
 
 /**
- * Öffnungszeit der Mensa für den Wochentag des angezeigten Datums, oder `null`,
- * wenn die Stammdaten für diesen Wochentag keinen Eintrag führen. Der Vertrag
- * legt nur „Montag zuerst" fest: eine siebenstellige Liste bedient auch Samstag
- * und Sonntag, eine kürzere (oder lückenhafte) liefert dort und für jeden nicht
- * gepflegten Tag `null` — ohne die übrigen Tage zu verlieren (design.md D8).
+ * Eintrag der Öffnungsangaben für ein Datum. Die Vorausschau trägt den
+ * Datumsbezug und geht deshalb vor; reicht sie nicht bis zu diesem Tag, tritt
+ * der reguläre Wochenplan ein. Fehlt beides, bleibt es bei `undefined` — die
+ * Angabe ist dann unbekannt, nicht „geschlossen".
  */
-export function oeffnungszeitFuer(mensa: Mensa | undefined, datum: string): string | null {
-  const zeiten = mensa?.oeffnungszeiten;
-  if (!zeiten) return null;
-  const i = wochentagIndex(datum);
-  if (i >= zeiten.length) return null;
-  return zeiten[i] ?? null;
+export function oeffnungstagFuer(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): Oeffnungstag | undefined {
+  if (!angaben) return undefined;
+  const ausVorausschau = angaben.vorausschau?.find((t) => t.datum === datum);
+  if (ausVorausschau) return ausVorausschau;
+  const wochentag = isoWochentag(datum);
+  return angaben.wochenplan?.find((t) => t.wochentag === wochentag);
+}
+
+/** Zeitspanne `HH:MM - HH:MM`, oder `null`, wenn die Quelle keine Zeiten führt. */
+function spanne(von: string | null | undefined, bis: string | null | undefined): string | null {
+  if (!von) return null;
+  return bis ? `${von} - ${bis}` : von;
+}
+
+/**
+ * Öffnungszeit der Mensa für den angezeigten Tag, oder `null`. Für eine an
+ * diesem Tag geschlossene Mensa wird bewusst nichts geliefert: ihre Öffnungszeit
+ * darf in keiner Darstellungsform erscheinen (Requirement „Keine Öffnungszeit für
+ * geschlossene Mensa").
+ */
+export function oeffnungszeitFuer(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): string | null {
+  const tag = oeffnungstagFuer(angaben, datum);
+  if (!tag?.geoeffnet) return null;
+  return spanne(tag.oeffnet, tag.schliesst);
+}
+
+/**
+ * Ausgabezeit, sofern die Quelle sie führt und sie von der Öffnungszeit abweicht.
+ * INT-020 setzt `servingOpen`/`servingClose` ausschließlich bei Abweichung, also
+ * genügt deren Vorhandensein als Bedingung (Requirement „Ausweis der Ausgabezeit
+ * bei abweichender Öffnungszeit").
+ */
+export function ausgabezeitFuer(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): string | null {
+  const tag = oeffnungstagFuer(angaben, datum);
+  if (!tag?.geoeffnet) return null;
+  return spanne(tag.ausgabeBeginn ?? null, tag.ausgabeEnde ?? tag.schliesst);
+}
+
+/** Ob die Mensa an diesem Tag geöffnet ist. Unbekannte Angabe gilt nicht als geschlossen. */
+export function istGeoeffnet(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): boolean | undefined {
+  return oeffnungstagFuer(angaben, datum)?.geoeffnet;
 }

@@ -23,6 +23,7 @@ import {
   apiSprache,
   speiseplanQueryOptions,
   useMensen,
+  useOeffnungsangaben,
   useSpeisepläne,
   type Gericht,
   type Mensa,
@@ -270,6 +271,13 @@ function GerichtListe({
   const konsolidierung = useMemo(() => konsolidiere(proMensa), [proMensa]);
   const geschlossene = konsolidierung.geschlossene;
   const ids = proMensa.map((p) => p.mensaId);
+
+  // Öffnungsangaben je gewählter Mensa (Requirement „Öffnungszeiten je Mensa und
+  // Wochentag"): ein Abruf je Mensa, unabhängig vom angezeigten Tag — die Antwort
+  // trägt Wochenplan, Vorausschau und Schließtage in einem. Seit der Ablösung von
+  // INT-015 kommen die Zeiten aus der Schnittstelle, nicht aus den Stammdaten.
+  const oeffnungsQueries = useOeffnungsangaben(ids);
+  const oeffnungVon = new Map(ids.map((id, i) => [id, oeffnungsQueries[i]?.data]));
   const nurEineMensa = ids.length === 1;
   // Wiedereröffnungshinweis (Requirement „Wiedereröffnungshinweis an der
   // geschlossenen Mensa"): das Backend liefert `naechsteOeffnung` je Mensa
@@ -369,10 +377,7 @@ function GerichtListe({
     : proMensa
         .filter((p) => !geschlossene.includes(p.mensaId))
         .map((p) => {
-          const zeit = oeffnungszeitFuer(
-            mensen.find((m) => m.id === p.mensaId),
-            datum,
-          );
+          const zeit = oeffnungszeitFuer(oeffnungVon.get(p.mensaId), datum);
           return zeit ? t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit }) : null;
         })
         .filter((z): z is string => z !== null);
@@ -492,10 +497,7 @@ function GerichtListe({
         // Mensa-Kennung.
         const zeit =
           mensaGruppierung && abschnitt.art !== 'geschlossen'
-            ? oeffnungszeitFuer(
-                mensen.find((m) => m.id === abschnitt.id),
-                datum,
-              )
+            ? oeffnungszeitFuer(oeffnungVon.get(abschnitt.id), datum)
             : null;
         // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
         // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.

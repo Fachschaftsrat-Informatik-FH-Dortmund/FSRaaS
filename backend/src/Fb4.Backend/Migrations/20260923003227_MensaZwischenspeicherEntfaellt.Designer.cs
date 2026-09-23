@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Fb4.Backend.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Fb4.Backend.Migrations
 {
     [DbContext(typeof(Fb4DbContext))]
-    partial class Fb4DbContextModelSnapshot : ModelSnapshot
+    [Migration("20260923003227_MensaZwischenspeicherEntfaellt")]
+    partial class MensaZwischenspeicherEntfaellt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -78,6 +81,10 @@ namespace Fb4.Backend.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("Oeffnungszeiten")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<string>("QuelleId")
                         .HasColumnType("text");
