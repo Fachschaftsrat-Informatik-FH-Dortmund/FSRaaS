@@ -1,4 +1,4 @@
-import { ausgabezeitFuer, istGeoeffnet, oeffnungszeitFuer } from './oeffnungszeiten';
+import { ausgabezeitFuer, istGeoeffnet, oeffnungszeitFuer, schliessungFuer } from './oeffnungszeiten';
 import type { Oeffnungsangaben, Oeffnungstag } from './api';
 
 // 2026-09-07 ist ein Montag, 2026-09-11 ein Freitag, 2026-09-12 ein Samstag,
@@ -77,5 +77,67 @@ describe('Ausweis der Ausgabezeit bei abweichender Öffnungszeit', () => {
     // Hauptmensa: die Quelle setzt servingOpen nur bei Abweichung.
     expect(oeffnungszeitFuer(wochenplan, '2026-09-07')).toBe('11:30 - 14:45');
     expect(ausgabezeitFuer(wochenplan, '2026-09-07')).toBeNull();
+  });
+});
+
+describe('Grund und Zeitraum einer Schließung', () => {
+  // Mensa Süd, Stand 2026-09-22: Betriebsferien bis zum 04.10.
+  const betriebsferien = angaben({
+    wochenplan: [tag({ wochentag: 1, oeffnet: '11:30', schliesst: '14:15' })],
+    vorausschau: [
+      tag({
+        datum: '2026-09-07',
+        wochentag: 1,
+        geoeffnet: false,
+        grund: 'Restaurant-Schließtag: Betriebsferien',
+      }),
+    ],
+    schliesstage: [
+      {
+        bezeichnung: 'Betriebsferien',
+        von: '2026-09-01',
+        bis: '2026-10-04',
+        feiertag: false,
+        geltungsbereich: 'mensa',
+      },
+    ],
+  });
+
+  it('nennt Grund und Enddatum der Schließung', () => {
+    expect(schliessungFuer(betriebsferien, '2026-09-07')).toEqual({
+      grund: 'Restaurant-Schließtag: Betriebsferien',
+      bis: '2026-10-04',
+    });
+  });
+
+  it('nimmt die Bezeichnung des Schließtags, wo der Tag selbst keinen Grund führt', () => {
+    const ohneGrundAmTag = angaben({
+      wochenplan: betriebsferien.wochenplan,
+      vorausschau: [tag({ datum: '2026-09-07', wochentag: 1, geoeffnet: false })],
+      schliesstage: betriebsferien.schliesstage,
+    });
+
+    expect(schliessungFuer(ohneGrundAmTag, '2026-09-07')).toEqual({
+      grund: 'Betriebsferien',
+      bis: '2026-10-04',
+    });
+  });
+
+  it('liefert ohne jede Grundangabe nichts — es bleibt beim Geschlossen-Hinweis', () => {
+    // Samstag: im Wochenplan geschlossen, ohne Grund und ohne Schließtag.
+    expect(schliessungFuer(wochenplan, '2026-09-12')).toBeNull();
+  });
+
+  it('liefert für eine geöffnete Mensa nichts', () => {
+    expect(schliessungFuer(betriebsferien, '2026-09-14')).toBeNull(); // Montag, laut Wochenplan offen
+  });
+
+  it('nennt ein Enddatum nicht, das nicht über den angezeigten Tag hinausreicht', () => {
+    const letzterTag = angaben({
+      vorausschau: [tag({ datum: '2026-10-04', wochentag: 7, geoeffnet: false })],
+      schliesstage: betriebsferien.schliesstage,
+    });
+
+    expect(schliessungFuer(letzterTag, '2026-10-04')).toEqual({ grund: 'Betriebsferien', bis: null });
   });
 });

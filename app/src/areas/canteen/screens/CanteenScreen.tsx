@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -20,13 +19,12 @@ import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
 import {
-  apiSprache,
-  speiseplanQueryOptions,
   useMensen,
   useOeffnungsangaben,
   useSpeisepläne,
   type Gericht,
   type Mensa,
+  type Oeffnungsangaben,
 } from '../api';
 import { konsolidiere, type KonsolidiertesGericht } from '../consolidate';
 import { useFavorites } from '../favorites';
@@ -47,8 +45,13 @@ import {
 import { useCanteenSelection } from '../selection';
 import { AnkerListe } from '@/ui/AnkerListe';
 import { wischRichtung } from '../gesten';
-import { oeffnungszeitFuer } from '../oeffnungszeiten';
-import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
+import {
+  ausgabezeitFuer,
+  istGeoeffnet,
+  oeffnungszeitFuer,
+  schliessungFuer,
+} from '../oeffnungszeiten';
+import { isoHeute, naechsterTag } from '../tageswahl';
 
 // MENSA: Tages-Speiseplan als eine über die gewählten Mensen zusammengefasste
 // Gerichtsliste (MENSA-F-012 ff.). Abschnitte und Gerichte-Reihenfolge folgen
@@ -56,16 +59,15 @@ import { isoHeute, naechsterTag, verschiebe } from '../tageswahl';
 // Requirements „Wahl der Gruppierung" ff.); die maßgebliche Mensa bleibt an die
 // Auswahlreihenfolge gebunden. Blättern über die Datumsauswahl (MENSA-F-045) und
 // Wischen (MENSA-F-046), begrenzt auf heute und Folgetage (MENSA-F-042),
-// Wochenenden ohne Angebot übersprungen (MENSA-F-044). Herunterziehen lädt neu
-// (MENSA-F-240). Der Stern-Merker (MENSA-F-080, in der Spec entfallen) bleibt
-// bewusst bis Roadmap-Schritt 9 im Code — siehe canteen/spec.md „Umsetzungsstand".
+// geschlossene Wochenendtage übersprungen (Requirement „Überspringen
+// geschlossener Wochenendtage"). Herunterziehen lädt neu (MENSA-F-240). Der
+// Stern-Merker (MENSA-F-080, in der Spec entfallen) bleibt bewusst bis
+// Roadmap-Schritt 9 im Code — siehe canteen/spec.md „Umsetzungsstand".
 
 export function CanteenScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const sprache = apiSprache(i18n.language);
   const { ids, loaded } = useCanteenSelection();
   const { mensen } = useMensen();
   const [datum, setDatum] = useState(isoHeute);
@@ -74,35 +76,31 @@ export function CanteenScreen() {
     void nachholenBeimAppStart();
   }, []);
 
-  // Nachbartage vorab laden, damit das Überspringen leerer Wochenenden
-  // (MENSA-F-044) gegen echten Bestand entscheidet statt „unbekannt".
-  useEffect(() => {
-    if (ids.length === 0) return;
-    for (const tag of [verschiebe(datum, 1), verschiebe(datum, 2)]) {
-      for (const id of ids) {
-        void queryClient.prefetchQuery(speiseplanQueryOptions(id, tag, sprache));
-      }
-    }
-  }, [datum, ids, sprache, queryClient]);
+  // Öffnungsangaben je gewählter Mensa (Requirement „Öffnungszeiten je Mensa und
+  // Wochentag"): ein Abruf je Mensa, unabhängig vom angezeigten Tag — die Antwort
+  // trägt Wochenplan, Vorausschau und Schließtage in einem. Sie steht hier oben,
+  // weil das Überspringen geschlossener Wochenendtage sie braucht, und wird an die
+  // Liste weitergegeben, statt dort ein zweites Mal abgerufen zu werden.
+  const oeffnungsQueries = useOeffnungsangaben(ids);
+  const oeffnungVon = new Map(ids.map((id, i) => [id, oeffnungsQueries[i]?.data]));
 
-  const hatAngebot = (tag: string): boolean | undefined => {
+  // Maßgeblich für das Überspringen eines Wochenendtages ist die Öffnungsangabe,
+  // nicht das Vorliegen eines Speiseplans: der Speiseplan führt grundsätzlich
+  // keine Wochenendtage. Weil die Öffnungsangaben Wochenplan und Vorausschau in
+  // einem tragen, ist dafür kein Vorabruf benachbarter Tage nötig.
+  const eineGeoeffnet = (tag: string): boolean | undefined => {
     let bekannt = false;
     for (const id of ids) {
-      const daten = queryClient.getQueryData<{ gerichte: Gericht[] }>([
-        'speiseplan',
-        id,
-        tag,
-        sprache,
-      ]);
-      if (daten === undefined) continue;
+      const offen = istGeoeffnet(oeffnungVon.get(id), tag);
+      if (offen === undefined) continue;
       bekannt = true;
-      if (daten.gerichte.length > 0) return true;
+      if (offen) return true;
     }
     return bekannt ? false : undefined;
   };
 
   const blaettern = (richtung: -1 | 1) => {
-    const ziel = naechsterTag(datum, richtung, hatAngebot);
+    const ziel = naechsterTag(datum, richtung, eineGeoeffnet);
     if (ziel) setDatum(ziel);
   };
 
@@ -179,29 +177,44 @@ export function CanteenScreen() {
         </Pressable>
       </View>
 
-      <MensaListe ids={ids} datum={datum} mensen={mensen} onBlaettern={blaettern} />
+      <MensaListe
+        ids={ids}
+        datum={datum}
+        mensen={mensen}
+        oeffnungVon={oeffnungVon}
+        onBlaettern={blaettern}
+      />
     </Screen>
   );
 }
+
+/** Öffnungsangaben je Mensa-Kennung; `undefined` = noch nicht geladen. */
+type OeffnungKarte = Map<string, Oeffnungsangaben | undefined>;
 
 function MensaListe({
   ids,
   datum,
   mensen,
+  oeffnungVon,
   onBlaettern,
 }: {
   ids: string[];
   datum: string;
   mensen: Mensa[];
+  oeffnungVon: OeffnungKarte;
   onBlaettern: (richtung: -1 | 1) => void;
 }) {
   const { t } = useTranslation();
   const ergebnisse = useSpeisepläne(ids, datum);
 
+  // `geoeffnet` entscheidet über den Zustand einer Mensa ohne Gericht — geschlossen
+  // oder geöffnet ohne Speiseplan (Requirements „Geschlossen-Hinweis für
+  // geschlossene Mensa" / „Hinweis für geöffnete Mensa ohne Speiseplan").
   const proMensa = ids.map((id, i) => ({
     mensaId: id,
     gerichte: ergebnisse[i]?.data?.gerichte ?? [],
     naechsteOeffnung: ergebnisse[i]?.data?.naechsteOeffnung ?? null,
+    geoeffnet: istGeoeffnet(oeffnungVon.get(id), datum),
   }));
 
   const irgendwasGeladen = ergebnisse.some((r) => r.data !== undefined);
@@ -231,6 +244,7 @@ function MensaListe({
           proMensa={data.proMensa}
           datum={datum}
           mensen={mensen}
+          oeffnungVon={oeffnungVon}
           onBlaettern={onBlaettern}
           onAktualisieren={() => void aggregat.refetch()}
           aktualisiertGerade={aggregat.isFetching}
@@ -244,13 +258,20 @@ function GerichtListe({
   proMensa,
   datum,
   mensen,
+  oeffnungVon,
   onBlaettern,
   onAktualisieren,
   aktualisiertGerade,
 }: {
-  proMensa: { mensaId: string; gerichte: Gericht[]; naechsteOeffnung: string | null }[];
+  proMensa: {
+    mensaId: string;
+    gerichte: Gericht[];
+    naechsteOeffnung: string | null;
+    geoeffnet: boolean | undefined;
+  }[];
   datum: string;
   mensen: Mensa[];
+  oeffnungVon: OeffnungKarte;
   onBlaettern: (richtung: -1 | 1) => void;
   onAktualisieren: () => void;
   aktualisiertGerade: boolean;
@@ -270,18 +291,14 @@ function GerichtListe({
 
   const konsolidierung = useMemo(() => konsolidiere(proMensa), [proMensa]);
   const geschlossene = konsolidierung.geschlossene;
+  const ohneSpeiseplan = konsolidierung.ohneSpeiseplan;
   const ids = proMensa.map((p) => p.mensaId);
-
-  // Öffnungsangaben je gewählter Mensa (Requirement „Öffnungszeiten je Mensa und
-  // Wochentag"): ein Abruf je Mensa, unabhängig vom angezeigten Tag — die Antwort
-  // trägt Wochenplan, Vorausschau und Schließtage in einem. Seit der Ablösung von
-  // INT-015 kommen die Zeiten aus der Schnittstelle, nicht aus den Stammdaten.
-  const oeffnungsQueries = useOeffnungsangaben(ids);
-  const oeffnungVon = new Map(ids.map((id, i) => [id, oeffnungsQueries[i]?.data]));
   const nurEineMensa = ids.length === 1;
   // Wiedereröffnungshinweis (Requirement „Wiedereröffnungshinweis an der
-  // geschlossenen Mensa"): das Backend liefert `naechsteOeffnung` je Mensa
-  // bereits mit dem Tages-Speiseplan (api.ts, MensaQuelle.TagAsync).
+  // geschlossenen Mensa"): das Backend ermittelt `naechsteOeffnung` je Mensa aus
+  // Öffnungsvorschau und Schließtagen und liefert sie mit dem Tages-Speiseplan
+  // (api.ts, MensaQuelle.NaechsteOeffnung) — nicht mehr aus einem
+  // Speiseplan-Bestand, dessen Horizont je Mensa schwankte.
   const naechsteOeffnungVon = useMemo(
     () => new Map(proMensa.map((p) => [p.mensaId, p.naechsteOeffnung])),
     [proMensa],
@@ -311,12 +328,12 @@ function GerichtListe({
   const angezeigte: {
     id: string;
     titel: string | null;
-    art: 'gerichte' | 'geschlossen' | 'gefiltert';
+    art: 'gerichte' | 'geschlossen' | 'ohneSpeiseplan' | 'gefiltert';
     gerichte: KonsolidiertesGericht[];
   }[] = [];
   for (const a of struktur.abschnitte) {
-    if (a.zustand === 'geschlossen') {
-      angezeigte.push({ id: a.id, titel: a.titel, art: 'geschlossen', gerichte: [] });
+    if (a.zustand === 'geschlossen' || a.zustand === 'ohneSpeiseplan') {
+      angezeigte.push({ id: a.id, titel: a.titel, art: a.zustand, gerichte: [] });
       continue;
     }
     const sichtbar = a.gerichte.filter((e) => !betroffen(e.massgeblich));
@@ -333,10 +350,11 @@ function GerichtListe({
   // Chip-Leiste (Requirement „Chip-Leiste zeigt Gruppen der aktiven Gruppierung"):
   // die Gruppen der aktiven Gruppierung in Gruppenreihenfolge; ohne Gruppierung
   // keine Chips. Bei Mensa-Gruppierung führt jede gewählte Mensa einen Abschnitt
-  // — mit Angebot, Geschlossen- oder Filter-Hinweis —, ihr Chip ist damit stets
-  // auswählbar; nicht auswählbar bleibt nur eine Gruppe ohne eigenen Abschnitt,
-  // was künftig allein die Kategorie-Gruppierung betrifft (Requirement „Nicht
-  // auswählbare Chips ohne sichtbaren Abschnitt").
+  // — mit Angebot, mit Geschlossen-Hinweis, mit dem Hinweis auf den fehlenden
+  // Speiseplan oder mit Filter-Hinweis —, ihr Chip ist damit stets auswählbar;
+  // nicht auswählbar bleibt nur eine Gruppe ohne eigenen Abschnitt, was allein
+  // die Kategorie-Gruppierung betrifft (Requirement „Nicht auswählbare Chips
+  // ohne sichtbaren Abschnitt").
   const chips = !struktur.gruppierungAktiv
     ? []
     : mensaGruppierung
@@ -362,24 +380,65 @@ function GerichtListe({
     }),
   ).current;
 
-  // Öffnungszeit-Zeilen und Geschlossen-Zeilen erscheinen im Fußbereich nur noch,
-  // wenn die Gruppierung nicht „nach Mensa" ist — bei Mensa-Gruppierung tragen
-  // die Abschnittsüberschriften die Öffnungszeit und die geschlossenen Abschnitte
-  // den Geschlossen-Hinweis (design.md D5, Requirements „Öffnungszeit an der
-  // Mensa-Abschnittsüberschrift" / „Geschlossen-Hinweis für Mensa ohne Angebot").
-  // Führt am Tag keine gewählte Mensa ein Angebot, entstehen gar keine
-  // Abschnitte (design.md D4, Leerzustand „Heute kein Angebot") — dann trägt der
-  // Fußbereich den vollen Kontext, unabhängig von der Gruppierung.
-  // Für eine Mensa ohne Angebot am Tag ohnehin keine Öffnungszeit (MENSA-F-290).
+  /**
+   * Öffnungszeit-Zeile einer Mensa für den Fußbereich, mit der Ausgabezeit, wo die
+   * Quelle eine abweichende führt (Requirement „Ausweis der Ausgabezeit bei
+   * abweichender Öffnungszeit"). `null`, wenn die Mensa am Tag geschlossen ist
+   * oder die Quelle keine Zeit führt.
+   */
+  const oeffnungZeile = (id: string): string | null => {
+    const zeit = oeffnungszeitFuer(oeffnungVon.get(id), datum);
+    if (!zeit) return null;
+    const ausgabe = ausgabezeitFuer(oeffnungVon.get(id), datum);
+    const mensa = nameVon(id);
+    return ausgabe
+      ? t('mensa.oeffnungszeitMensaMitAusgabe', { mensa, zeit, ausgabe })
+      : t('mensa.oeffnungszeitMensa', { mensa, zeit });
+  };
+
+  /**
+   * Geschlossen-Hinweis samt Grund, Zeitraum und Wiedereröffnungstag — wortgleich,
+   * ob er im Abschnitt der Mensa steht (Gruppierung „nach Mensa") oder am
+   * Listenende (Requirements „Geschlossen-Hinweis für geschlossene Mensa",
+   * „Grund und Zeitraum einer Schließung", „Wiedereröffnungshinweis an der
+   * geschlossenen Mensa").
+   */
+  const geschlossenText = (id: string): string => {
+    const teile = [t('mensa.geschlossenHeute', { mensa: nameVon(id) })];
+    const schliessung = schliessungFuer(oeffnungVon.get(id), datum);
+    if (schliessung) {
+      const { grund, bis } = schliessung;
+      const datumKurz = bis != null ? kurzdatum(bis) : null;
+      if (grund != null && datumKurz != null) {
+        teile.push(t('mensa.schliessungGrundBis', { grund, datum: datumKurz }));
+      } else if (grund != null) {
+        teile.push(t('mensa.schliessungGrund', { grund }));
+      } else if (datumKurz != null) {
+        teile.push(t('mensa.schliessungBis', { datum: datumKurz }));
+      }
+    }
+    const wieder = naechsteOeffnungVon.get(id) ?? null;
+    if (wieder != null) teile.push(formatWiedereroeffnung(wieder, datum, t));
+    return teile.join(' ');
+  };
+
+  // Öffnungszeit-, Geschlossen- und „kein Speiseplan"-Zeilen erscheinen im
+  // Fußbereich nur, wenn die Gruppierung nicht „nach Mensa" ist — bei
+  // Mensa-Gruppierung tragen die Abschnittsüberschriften die Öffnungszeit und die
+  // Abschnitte selbst die Hinweise (design.md D5, Requirements „Öffnungszeit an
+  // der Mensa-Abschnittsüberschrift" / „Geschlossen-Hinweis für geschlossene
+  // Mensa" / „Hinweis für geöffnete Mensa ohne Speiseplan"). Führt am Tag keine
+  // gewählte Mensa ein Angebot, entstehen gar keine Abschnitte (design.md D4,
+  // Leerzustand „Heute kein Angebot") — dann trägt der Fußbereich den vollen
+  // Kontext, unabhängig von der Gruppierung. Für eine geschlossene Mensa
+  // erscheint keine Öffnungszeit (Requirement „Keine Öffnungszeit für
+  // geschlossene Mensa"); für eine geöffnete ohne Speiseplan erscheint sie.
   const mensaAbschnitteAktiv = mensaGruppierung && hatGerichte;
   const oeffnungszeilen = mensaAbschnitteAktiv
     ? []
     : proMensa
         .filter((p) => !geschlossene.includes(p.mensaId))
-        .map((p) => {
-          const zeit = oeffnungszeitFuer(oeffnungVon.get(p.mensaId), datum);
-          return zeit ? t('mensa.oeffnungszeitMensa', { mensa: nameVon(p.mensaId), zeit }) : null;
-        })
+        .map((p) => oeffnungZeile(p.mensaId))
         .filter((z): z is string => z !== null);
 
   const fuss = (
@@ -397,7 +456,14 @@ function GerichtListe({
       {!mensaAbschnitteAktiv
         ? geschlossene.map((id) => (
             <Text key={id} style={[styles.fussZeile, { color: colors.textMuted }]}>
-              {t('mensa.geschlossenHeute', { mensa: nameVon(id) })}
+              {geschlossenText(id)}
+            </Text>
+          ))
+        : null}
+      {!mensaAbschnitteAktiv
+        ? ohneSpeiseplan.map((id) => (
+            <Text key={id} style={[styles.fussZeile, { color: colors.textMuted }]}>
+              {t('mensa.keinSpeiseplanMensa', { mensa: nameVon(id) })}
             </Text>
           ))
         : null}
@@ -491,22 +557,26 @@ function GerichtListe({
       fuss={fuss}
       abschnitte={angezeigte.map((abschnitt) => {
         // Öffnungszeit an der Überschrift nur bei Mensa-Gruppierung und nur für
-        // eine Mensa mit Angebot bzw. vollständig gefilterte Mensa — nie für eine
-        // geschlossene (design.md D5, Requirement „Keine Öffnungszeit für Mensa
-        // ohne Angebot"). Die Abschnitts-Kennung ist bei Mensa-Gruppierung die
-        // Mensa-Kennung.
+        // eine Mensa, die die Schnittstelle nicht als geschlossen führt — also
+        // auch für eine geöffnete ohne Speiseplan und für eine vollständig
+        // gefilterte, nie für eine geschlossene (design.md D5, Requirements
+        // „Keine Öffnungszeit für geschlossene Mensa" / „Öffnungszeit an der
+        // Mensa-Abschnittsüberschrift"). Die Abschnitts-Kennung ist bei
+        // Mensa-Gruppierung die Mensa-Kennung.
         const zeit =
           mensaGruppierung && abschnitt.art !== 'geschlossen'
             ? oeffnungszeitFuer(oeffnungVon.get(abschnitt.id), datum)
             : null;
+        // Ausgabezeit nur, wo die Quelle eine von der Öffnungszeit abweichende
+        // führt (Requirement „Ausweis der Ausgabezeit bei abweichender
+        // Öffnungszeit").
+        const ausgabe = zeit ? ausgabezeitFuer(oeffnungVon.get(abschnitt.id), datum) : null;
         // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
         // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.
         const zeigeKopf = mensaGruppierung
           ? true
           : struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel != null;
         const kopfName = mensaGruppierung ? nameVon(abschnitt.id) : abschnitt.titel;
-        const wieder =
-          abschnitt.art === 'geschlossen' ? (naechsteOeffnungVon.get(abschnitt.id) ?? null) : null;
         return {
           id: abschnitt.id,
           inhalt: (
@@ -524,12 +594,26 @@ function GerichtListe({
                       {t('mensa.oeffnungszeit', { zeit })}
                     </Text>
                   ) : null}
+                  {ausgabe ? (
+                    <Text
+                      style={[
+                        styles.oeffnungPille,
+                        { color: colors.text, backgroundColor: colors.surface },
+                      ]}
+                    >
+                      {t('mensa.ausgabezeit', { zeit: ausgabe })}
+                    </Text>
+                  ) : null}
                 </View>
               ) : null}
               {abschnitt.art === 'geschlossen' ? (
                 <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
-                  {t('mensa.geschlossenHeute', { mensa: nameVon(abschnitt.id) })}
-                  {wieder != null ? ` ${formatWiedereroeffnung(wieder, datum, t)}` : ''}
+                  {geschlossenText(abschnitt.id)}
+                </Text>
+              ) : null}
+              {abschnitt.art === 'ohneSpeiseplan' ? (
+                <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
+                  {t('mensa.keinSpeiseplan')}
                 </Text>
               ) : null}
               {abschnitt.art === 'gefiltert' ? (
@@ -658,8 +742,13 @@ function formatWiedereroeffnung(naechsteOeffnung: string, datum: string, t: TFun
   const wd = new Date(y!, m! - 1, d!).getDay();
   const basis = t('mensa.wiederGeoeffnet', { tag: t(`mensa.weekday.${wd}`) });
   if (tageDifferenz(datum, naechsteOeffnung) <= 6) return basis;
-  const kurzdatum = `${String(d).padStart(2, '0')}.${String(m).padStart(2, '0')}.`;
-  return `${basis} ${t('mensa.wiederGeoeffnetDatum', { datum: kurzdatum })}`;
+  return `${basis} ${t('mensa.wiederGeoeffnetDatum', { datum: kurzdatum(naechsteOeffnung) })}`;
+}
+
+/** ISO-Datum als Tag und Monat (`04.10.`) — das Jahr trägt keine Auskunft hinzu. */
+function kurzdatum(isoDatum: string): string {
+  const [, m, d] = isoDatum.split('-');
+  return `${d}.${m}.`;
 }
 
 /** Anzahl ganzer Tage zwischen zwei ISO-Datumsangaben (`bis` − `von`). */

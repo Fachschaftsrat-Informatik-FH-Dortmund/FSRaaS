@@ -30,14 +30,14 @@
 ## 5. App — Öffnungs- und Schließzustände
 
 - [x] 5.1 Öffnungszeiten aus der Schnittstelle beziehen und je Wochentag anzeigen. Verifikation: Test `Öffnungszeiten je Mensa und Wochentag`.
-- [ ] 5.2 (Datenweg steht: `ausgabezeitFuer` in `app/src/areas/canteen/oeffnungszeiten.ts` samt Test mit den Werten des Max-Ophüls-Platzes und der Hauptmensa. Offen ist allein die Anzeige.) Ausgabezeit zusätzlich ausweisen, wenn sie abweicht. Verifikation: Test `Ausweis der Ausgabezeit bei abweichender Öffnungszeit` mit den Werten des Max-Ophüls-Platzes (offen ab 08:00, Ausgabe ab 11:30) und der Hauptmensa (keine Abweichung).
-- [ ] 5.3 Die drei Zustände je Mensa und Tag umsetzen — geöffnet mit Gerichten, geöffnet ohne Speiseplan, geschlossen. Verifikation: Tests `Geschlossen-Hinweis für geschlossene Mensa` und `Hinweis für geöffnete Mensa ohne Speiseplan`.
-- [ ] 5.4 Schließungsgrund und Zeitraum anzeigen. Verifikation: Test `Grund und Zeitraum einer Schließung` mit dem Fall der Mensa Süd (Betriebsferien bis 04.10.).
-- [ ] 5.5 Wiedereröffnungshinweis auf Öffnungsvorschau und Schließtage umstellen. Verifikation: Test `Wiedereröffnungshinweis an der geschlossenen Mensa`, einschließlich des Falls einer Mensa ohne Speiseplan.
-- [ ] 5.6 Öffnungszeit für geschlossene Mensen unterdrücken, für geöffnete ohne Speiseplan anzeigen. Verifikation: Test `Keine Öffnungszeit für geschlossene Mensa`.
-- [ ] 5.7 Öffnungszeit an der Abschnittsüberschrift auch im Fall „geöffnet ohne Speiseplan" führen. Verifikation: Test `Öffnungszeit an der Mensa-Abschnittsüberschrift`.
-- [ ] 5.8 Wochenend-Überspringen auf die Öffnungsangabe umstellen. Verifikation: Test `Überspringen geschlossener Wochenendtage` mit einem samstags geöffneten Standort ohne Speiseplan.
-- [ ] 5.9 Chip-Leiste um den Abschnitt der geöffneten Mensa ohne Speiseplan ergänzen. Verifikation: Test `Nicht auswählbare Chips ohne sichtbaren Abschnitt`.
+- [x] 5.2 Ausgabezeit zusätzlich ausweisen, wenn sie abweicht. Verifikation: Test `Ausweis der Ausgabezeit bei abweichender Öffnungszeit` mit den Werten des Max-Ophüls-Platzes (offen ab 08:00, Ausgabe ab 11:30) und der Hauptmensa (keine Abweichung).
+- [x] 5.3 Die drei Zustände je Mensa und Tag umsetzen — geöffnet mit Gerichten, geöffnet ohne Speiseplan, geschlossen. Verifikation: Tests `Geschlossen-Hinweis für geschlossene Mensa` und `Hinweis für geöffnete Mensa ohne Speiseplan`.
+- [x] 5.4 Schließungsgrund und Zeitraum anzeigen. Verifikation: Test `Grund und Zeitraum einer Schließung` mit dem Fall der Mensa Süd (Betriebsferien bis 04.10.).
+- [x] 5.5 Wiedereröffnungshinweis auf Öffnungsvorschau und Schließtage umstellen. Verifikation: Test `Wiedereröffnungshinweis an der geschlossenen Mensa`, einschließlich des Falls einer Mensa ohne Speiseplan.
+- [x] 5.6 Öffnungszeit für geschlossene Mensen unterdrücken, für geöffnete ohne Speiseplan anzeigen. Verifikation: Test `Keine Öffnungszeit für geschlossene Mensa`.
+- [x] 5.7 Öffnungszeit an der Abschnittsüberschrift auch im Fall „geöffnet ohne Speiseplan" führen. Verifikation: Test `Öffnungszeit an der Mensa-Abschnittsüberschrift`.
+- [x] 5.8 Wochenend-Überspringen auf die Öffnungsangabe umstellen. Verifikation: Test `Überspringen geschlossener Wochenendtage` mit einem samstags geöffneten Standort ohne Speiseplan.
+- [x] 5.9 Chip-Leiste um den Abschnitt der geöffneten Mensa ohne Speiseplan ergänzen. Verifikation: Test `Nicht auswählbare Chips ohne sichtbaren Abschnitt`.
 
 ## 6. App — Gerichtsdarstellung
 

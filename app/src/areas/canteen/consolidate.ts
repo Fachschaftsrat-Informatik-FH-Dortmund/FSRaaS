@@ -41,13 +41,31 @@ export interface KonsolidierteSektion {
 export interface Konsolidierung {
   /** Ein Abschnitt je gewählter Mensa mit Angebot, in Auswahlreihenfolge (MENSA-F-025). */
   sektionen: KonsolidierteSektion[];
-  /** Gewählte Mensen ohne Angebot am Tag (MENSA-F-049); Quelle unterscheidet nicht „zu" von „keine Daten". */
+  /**
+   * Gewählte Mensen, die die Mensa-Schnittstelle am Tag als geschlossen führt und
+   * die kein Gericht führen (Requirement „Geschlossen-Hinweis für geschlossene
+   * Mensa"). Maßgeblich ist die Öffnungsangabe, nicht das Fehlen von Gerichten.
+   */
   geschlossene: string[];
+  /**
+   * Gewählte Mensen ohne Gericht am Tag, die die Schnittstelle nicht als
+   * geschlossen führt (Requirement „Hinweis für geöffnete Mensa ohne
+   * Speiseplan"). Drei Standorte führen grundsätzlich nie einen Speiseplan und
+   * sind dennoch geöffnet.
+   */
+  ohneSpeiseplan: string[];
 }
 
 export interface MensaTagesplan {
   mensaId: string;
   gerichte: Gericht[];
+  /**
+   * Öffnungsangabe der Schnittstelle für den angezeigten Tag; `undefined` =
+   * unbekannt (noch nicht geladen oder von der Quelle nicht geführt). Unbekannt
+   * gilt nicht als geschlossen: der Geschlossen-Hinweis ist eine Aussage der
+   * Schnittstelle, und ohne sie darf sie nicht behauptet werden.
+   */
+  geoeffnet?: boolean | undefined;
 }
 
 /** Rang der Kategorie in der Gruppenreihenfolge: benannt → kategorielos (F-160) → Beilagen (F-040). */
@@ -84,7 +102,14 @@ export function gruppiereNachKategorie<T extends { kategorie: string }>(
  * `proMensa` ist in Auswahlreihenfolge (MENSA-F-025) zu übergeben.
  */
 export function konsolidiere(proMensa: MensaTagesplan[]): Konsolidierung {
-  const geschlossene = proMensa.filter((p) => p.gerichte.length === 0).map((p) => p.mensaId);
+  // Drei Zustände je Mensa und Tag (design.md „Öffnung und Speiseplan als zwei
+  // getrennte Tatsachen"): geöffnet mit Gerichten, geöffnet ohne Speiseplan,
+  // geschlossen. Eine Mensa mit Gerichten führt immer ihre Gerichte — auch wenn
+  // die Schnittstelle sie als geschlossen führt: eine offene Mensa ohne
+  // Speiseplan ist ein Ärgernis, eine verschwiegene Gerichtsliste ein Fehler.
+  const ohneAngebot = proMensa.filter((p) => p.gerichte.length === 0);
+  const geschlossene = ohneAngebot.filter((p) => p.geoeffnet === false).map((p) => p.mensaId);
+  const ohneSpeiseplan = ohneAngebot.filter((p) => p.geoeffnet !== false).map((p) => p.mensaId);
 
   const eintraege = new Map<string, KonsolidiertesGericht>();
   // je Mensa die Schlüssel der Gerichte, für die sie die erste anbietende Mensa ist,
@@ -128,5 +153,5 @@ export function konsolidiere(proMensa: MensaTagesplan[]): Konsolidierung {
     // ein Gericht nur an einer später gewählten Mensa → eigener Abschnitt).
     .filter((s) => s.gruppen.length > 0);
 
-  return { sektionen, geschlossene };
+  return { sektionen, geschlossene, ohneSpeiseplan };
 }
