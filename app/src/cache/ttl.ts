@@ -60,6 +60,22 @@ export function gcTime(resource: CachedResource): number {
 }
 
 /**
+ * Höchstalter, das ein von der **Quelle selbst** gemeldeter Datenstand haben
+ * darf, bevor die App ihn mit einem Altershinweis versieht — auch bei
+ * bestehender Netzverbindung (Capability `data-and-storage`, Requirement
+ * „Altershinweis bei veralteten Daten der Mensa-Schnittstelle").
+ *
+ * Mindestens ein Tag: der `staleTime` des Speiseplans endet mit dem laufenden
+ * Tag (`untilEndOfDay`) und ginge am Abend gegen null, sodass jeder Stand als
+ * veraltet gälte. Fachlich trägt ein Stand von gestern oder älter den heutigen
+ * Plan nicht mehr — die Messung vom 2026-09-22 fand 6,7 Tage alte Speisepläne
+ * bei weiterhin `ok` meldendem Zustandsendpunkt der Quelle.
+ */
+export function quelleMaxAlter(resource: CachedResource): number {
+  return Math.max(staleTime(resource), DAY);
+}
+
+/**
  * Arbeitsziel-Obergrenze für den gesamten persistierten Zwischenspeicher
  * (DATA-N-150, einschließlich TanStack-Query-Persister-Cache gemäß ADR 0013).
  * Byte-genaue Durchsetzung ist offen (data-and-storage.md Abschnitt 9); der

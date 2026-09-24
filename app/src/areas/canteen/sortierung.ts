@@ -8,18 +8,20 @@ import type { PriceGroup } from './priceGroup';
 // der Zusammenfassung (`consolidate.ts`): `wendeAn` nimmt die konsolidierten
 // Gerichte plus einen Kontext und ein Preset und liefert die Anzeigestruktur.
 //
-// Drei unabhängige Bausteine: Gruppierung (keine / nach Mensa / nach Kategorie),
-// Gruppenreihenfolge (Kriterium + Richtung, nur bei aktiver Gruppierung) und
+// Drei unabhängige Bausteine: Gruppierung (keine / nach Mensa / nach Kategorie /
+// nach CO₂-Klasse), Gruppenreihenfolge (Kriterium + Richtung, nur bei aktiver
+// Gruppierung) und
 // Gerichte-Sortierung (Kriterium + Richtung). Die maßgebliche Mensa bleibt an
 // die Mensa-Auswahlreihenfolge gebunden, unabhängig von der Gruppenreihenfolge.
 
-export type Gruppierung = 'keine' | 'mensa' | 'kategorie';
+export type Gruppierung = 'keine' | 'mensa' | 'kategorie' | 'co2';
 export type Sortierkriterium =
   | 'quelle'
   | 'bezeichnung'
   | 'preis'
   | 'eigeneBewertung'
-  | 'community';
+  | 'community'
+  | 'co2';
 /** Kriterium für die Reihenfolge der Gruppen selbst. */
 export type GruppenKriterium = 'reihenfolge' | 'alphabetisch';
 export type Richtung = 'auf' | 'ab';
@@ -50,6 +52,12 @@ export interface SortierKontext {
   mensaName: (id: string) => string;
   /** Oberflächensprache für lokalisierte Sortierung (`Intl.Collator`). */
   sprache: string;
+  /**
+   * Überschrift eines CO₂-Klassen-Abschnitts. Optional, damit vorhandene
+   * Aufrufer unverändert übersetzen; ohne sie trägt der Abschnitt den Schlüssel
+   * der Quelle als Titel.
+   */
+  co2Name?: (klasse: string) => string;
   /** Bis Roadmap-Schritt 9 liefert der Resolver immer `undefined` (D4). */
   bewertung?: BewertungResolver;
 }
@@ -80,6 +88,7 @@ const ALLE_KRITERIEN: readonly Sortierkriterium[] = [
   'preis',
   'eigeneBewertung',
   'community',
+  'co2',
 ];
 
 // -------------------------------------------------------------- Gerichte-Sortierung
@@ -114,6 +123,28 @@ export function sortiereGerichte(
     return [...gerichte].sort(
       (a, b) => vz * c.compare(a.massgeblich.bezeichnung, b.massgeblich.bezeichnung) || nachQuelle(a, b),
     );
+  }
+
+  if (kriterium === 'co2') {
+    // Die Quelle führt die Klassen als Buchstaben (Stand 2026-09-22 `A`, `B`,
+    // `C`, `E`); aufsteigend sortiert steht damit die beste zuerst. Verglichen
+    // wird der Schlüssel selbst, damit ein von der Quelle neu aufgenommener Code
+    // einsortiert wird, statt zu verschwinden. Gerichte ohne Klasse stehen —
+    // unabhängig von der Richtung — am Ende, wie unbepreiste und unbewertete.
+    const c = collator(kontext.sprache);
+    const mitKlasse: KonsolidiertesGericht[] = [];
+    const ohneKlasse: KonsolidiertesGericht[] = [];
+    for (const g of gerichte) {
+      if (g.massgeblich.co2Klasse) mitKlasse.push(g);
+      else ohneKlasse.push(g);
+    }
+    mitKlasse.sort(
+      (a, b) =>
+        vz * c.compare(a.massgeblich.co2Klasse ?? '', b.massgeblich.co2Klasse ?? '') ||
+        nachQuelle(a, b),
+    );
+    ohneKlasse.sort(nachQuelle);
+    return [...mitKlasse, ...ohneKlasse];
   }
 
   if (kriterium === 'preis') {
@@ -244,6 +275,36 @@ export function wendeAn(
     };
   }
 
+  if (kombination.gruppierung === 'co2') {
+    // Ein Abschnitt je CO₂-Klasse über alle gewählten Mensen (Requirement „Wahl
+    // der Gruppierung"). Gerichte, zu denen die Quelle keine Klasse führt,
+    // sammeln sich ohne Überschrift am Ende — dieselbe Form wie die
+    // kategorielose Sammelgruppe, über `rang` von der Gruppenordnung ausgenommen.
+    const proKlasse = new Map<string, KonsolidiertesGericht[]>();
+    for (const g of alle) {
+      const klasse = g.massgeblich.co2Klasse ?? '';
+      if (!proKlasse.has(klasse)) proKlasse.set(klasse, []);
+      proKlasse.get(klasse)!.push(g);
+    }
+    const gruppen = [...proKlasse.entries()].map(([klasse, gs]) => ({
+      id: klasse === '' ? '__ohneCo2' : `co2:${klasse}`,
+      titel: klasse === '' ? null : (kontext.co2Name?.(klasse) ?? klasse),
+      rang: klasse === '' ? 1 : 0,
+      ersteQuelle: Math.min(...gs.map((x) => x.quellrang)),
+      gerichte: gs,
+    }));
+    const geordnet = ordneGruppen(gruppen, kombination.gruppenreihenfolge, kontext, true);
+    return {
+      abschnitte: geordnet.map((gr) => ({
+        id: gr.id,
+        titel: gr.titel,
+        zustand: 'gerichte' as const,
+        gerichte: sortiert(gr.gerichte),
+      })),
+      gruppierungAktiv: true,
+    };
+  }
+
   // gruppierung === 'kategorie': ein Abschnitt je Kategorie über alle gewählten
   // Mensen; kategorielose Sammelgruppe (ohne Überschrift) und Beilagen am Ende.
   const proKategorie = new Map<string, KonsolidiertesGericht[]>();
@@ -256,7 +317,11 @@ export function wendeAn(
     id: kategorie === '' ? '__ohne' : `kat:${kategorie}`,
     titel: kategorie === '' ? null : kategorie,
     rang: kategorieRang(kategorie),
-    // Reihenfolge der Ausgabestellen in der Quelle: erstes Auftreten der Kategorie.
+    // Reihenfolge der Ausgabestellen, wie die Mensa-Schnittstelle sie für den
+    // angezeigten Tag liefert (INT-020; vor der Ablösung INT-015): erstes
+    // Auftreten der Kategorie. Der Wert selbst stammt aus `quellrang`, den die
+    // Konsolidierung aus der Antwortreihenfolge der Schnittstelle bildet.
+
     ersteQuelle: Math.min(...gs.map((x) => x.quellrang)),
     gerichte: gs,
   }));
@@ -346,7 +411,7 @@ export function loeseAuf(
 
 // -------------------------------------------------------------- Validierung
 
-const GRUPPIERUNGEN: readonly Gruppierung[] = ['keine', 'mensa', 'kategorie'];
+const GRUPPIERUNGEN: readonly Gruppierung[] = ['keine', 'mensa', 'kategorie', 'co2'];
 const GRUPPEN_KRITERIEN: readonly GruppenKriterium[] = ['reihenfolge', 'alphabetisch'];
 const RICHTUNGEN: readonly Richtung[] = ['auf', 'ab'];
 

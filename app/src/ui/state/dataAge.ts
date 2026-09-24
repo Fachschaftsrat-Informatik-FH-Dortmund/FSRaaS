@@ -27,3 +27,23 @@ export function describeAge(updatedAt: number, now: number = Date.now()): DataAg
 export function shouldShowAge(params: { isOffline: boolean; isStale: boolean; hasData: boolean }): boolean {
   return params.hasData && params.isOffline && params.isStale;
 }
+
+/**
+ * Ob ein von der **Quelle selbst** gemeldeter Datenstand als veraltet gilt
+ * (Requirement „Altershinweis bei veralteten Daten der Mensa-Schnittstelle").
+ * Anders als `shouldShowAge` hängt das nicht am Netzzustand: eine erreichbare
+ * Quelle kann veraltete Daten liefern, ohne das selbst zu melden.
+ *
+ * Meldet die Quelle keinen Stand, gilt nichts als veraltet — eine fehlende
+ * Angabe ist kein Befund.
+ */
+export function quelleVeraltet(params: {
+  quelleStand: string | null | undefined;
+  maxAlterMs: number;
+  now?: number;
+}): boolean {
+  if (!params.quelleStand) return false;
+  const stand = Date.parse(params.quelleStand);
+  if (Number.isNaN(stand)) return false;
+  return (params.now ?? Date.now()) - stand > params.maxAlterMs;
+}

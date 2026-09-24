@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
+import { quelleMaxAlter } from '@/cache/ttl';
 import { useConsent } from '@/consent/ConsentProvider';
 import { useTheme } from '@/theme';
 import { AppButton, MessageView } from '@/ui/primitives';
@@ -218,6 +219,20 @@ function MensaListe({
   }));
 
   const irgendwasGeladen = ergebnisse.some((r) => r.data !== undefined);
+
+  // Von der Quelle selbst gemeldeter Stand (INT-020 `updated`, vom Backend als
+  // `standAlter.quelleStand` durchgereicht). Maßgeblich ist der älteste über die
+  // gewählten Mensen: der Hinweis soll den schlechtesten angezeigten Stand
+  // nennen, nicht den besten (Requirement „Altershinweis bei veralteten Daten
+  // der Mensa-Schnittstelle").
+  const quelleStaende = ergebnisse
+    .map((r) => r.data?.standAlter?.quelleStand)
+    .filter((x): x is string => typeof x === 'string' && x.length > 0);
+  const aeltesterQuelleStand =
+    quelleStaende.length > 0
+      ? quelleStaende.reduce((a, b) => (Date.parse(a) <= Date.parse(b) ? a : b))
+      : null;
+
   const aktualisierteMs = ergebnisse
     .filter((r) => r.data !== undefined && r.dataUpdatedAt > 0)
     .map((r) => r.dataUpdatedAt);
@@ -238,6 +253,10 @@ function MensaListe({
       query={aggregat}
       isEmpty={() => false}
       emptyNextStep={t('mensa.keinAngebotHinweis')}
+      quelleStand={{
+        zeitpunkt: aeltesterQuelleStand,
+        maxAlterMs: quelleMaxAlter('speiseplan'),
+      }}
     >
       {(data) => (
         <GerichtListe
@@ -313,6 +332,9 @@ function GerichtListe({
     mensaReihenfolge: ids,
     mensaName: nameVon,
     sprache: i18n.language,
+    // Überschrift eines CO₂-Klassen-Abschnitts — derselbe Klartext wie am
+    // Gericht, damit Abschnitt und Abzeichen dieselbe Sprache sprechen.
+    co2Name: (klasse) => t('mensa.co2Klasse', { klasse }),
     bewertung: () => undefined,
   };
   const struktur = wendeAn(preset, konsolidierung, kontext);

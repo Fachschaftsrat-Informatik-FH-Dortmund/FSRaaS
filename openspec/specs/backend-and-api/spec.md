@@ -112,30 +112,6 @@ Das System muss News vorab abrufen und der App ausschließlich aus dem eigenen Z
 - **WHEN** die App News anfragt
 - **THEN** liefert das Backend sie aus dem eigenen Zwischenspeicher, ohne die Fremdquelle live anzufragen
 
-### Requirement: Mensa-Speisepläne aus Zwischenspeicher ausliefern
-
-Das System muss Mensa-Speisepläne vorab abrufen und der App ausschließlich aus dem eigenen Zwischenspeicher ausliefern. Herkunft: NEU (vormals API-F-070).
-
-#### Scenario: Speiseplan-Abruf
-- **WHEN** die App den Speiseplan anfragt
-- **THEN** liefert das Backend ihn aus dem eigenen Zwischenspeicher
-
-### Requirement: Öffnungszeiten, Kategorien und Zusatzstoffe aus Zwischenspeicher
-
-Das System muss Öffnungszeiten, Gerichtskategorien und Zusatzstoffverzeichnis vorab abrufen und der App aus dem eigenen Zwischenspeicher ausliefern. Herkunft: Recherche: alte apps/android-fb4, retrofit/MenuApi.java, 2026-08-25 (vormals API-F-075).
-
-#### Scenario: Zusatzstoffverzeichnis abrufen
-- **WHEN** die App das Zusatzstoffverzeichnis anfragt
-- **THEN** liefert das Backend es aus dem eigenen Zwischenspeicher
-
-### Requirement: Auffrischungszeitplan des Speiseplan-Zwischenspeichers
-
-Das System muss den Speiseplan-Zwischenspeicher so aus der Mensa-Quelle auffrischen, dass eine Aktualisierung vor der morgendlichen und vor der mittäglichen studentischen Nutzungsspitze sowie zeitnah nach dem Ende des Mensabetriebs abgeschlossen ist, zusätzlich zu einem regelmäßigen Grundintervall über den Tag. Herkunft: NEU (vormals API-F-076). Der Speiseplan-Zwischenspeicher wurde zuvor in einem festen 6-Stunden-Intervall ab Prozessstart aufgefrischt, was die Nutzungsspitzen nur zufällig traf. Da Studierende typischerweise morgens vor dem Aufstehen und kurz vor der Essenszeit nachsehen (Capability `canteen`), wird auf feste Ortszeit-Läufe umgestellt (z. B. gegen 05:30 und 10:00 Uhr) sowie einen Lauf zeitnah nach Betriebsende (z. B. gegen 15:30 Uhr), da Änderungen am Angebot des Folgetags erfahrungsgemäß gegen Ende des laufenden Betriebstags eingetragen werden. Der Lauf bleibt ein fester, sparsamer Zeitplan (Capability `non-functional`) — kein fortlaufendes Polling. Die konkreten Uhrzeiten und die Ortszeitzone sind konfigurierbar, nicht fest verdrahtet.
-
-#### Scenario: Lauf nach Betriebsende
-- **WHEN** der Mensabetrieb für den Tag endet
-- **THEN** frischt ein zeitnaher Lauf den Speiseplan-Zwischenspeicher noch am selben Abend auf, statt erst am nächsten Morgen
-
 ### Requirement: TLS zwischen App und Backend
 
 Das System muss alle Aufrufe zwischen App und Backend ausschließlich über TLS führen. Herkunft: Alt: alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart:21 (vormals API-N-020).
@@ -500,7 +476,45 @@ Das System muss über einen im Repository beschriebenen, automatisierten Ablauf 
 - **WHEN** ein CI-Lauf auf `main` erfolgreich abschließt
 - **THEN** löst der automatisierte Ablauf Build, Test, Übertragung und Neustart aus und prüft danach den Betriebszustand
 
+### Requirement: Mensa-Daten durchreichen statt zwischenspeichern
+
+Das System muss Speisepläne, Öffnungszeiten und das Verzeichnis der Kennzeichnungen bei jeder Anfrage der App aus der Mensa-Schnittstelle beziehen und darf sie nicht in einem eigenen Bestand vorhalten. Die von der Schnittstelle gesetzte Gültigkeitsdauer einer Antwort darf dabei beachtet werden; eine eigene Aufbewahrung über diese Dauer hinaus, eine eigene Auffrischungslogik oder ein eigener Datenbestand sind ausgeschlossen. Herkunft: NEU, entschieden 2026-09-22. Die Mensa-Schnittstelle ist selbst ein Zwischenspeicher im Verantwortungsbereich des FSR; ein zweiter davor bringt keinen Gewinn, sondern eine weitere Stelle, an der ein veralteter Stand hängen bleiben kann.
+
+#### Scenario: Speiseplan-Abruf
+- **WHEN** die App den Speiseplan eines Tages anfragt
+- **THEN** bezieht das Backend ihn aus der Mensa-Schnittstelle und liefert ihn aus, ohne ihn in einem eigenen Bestand abzulegen
+
+#### Scenario: Gültigkeitsdauer der Quelle
+- **WHEN** die Mensa-Schnittstelle zu einer Antwort eine Gültigkeitsdauer angibt
+- **THEN** darf das Backend die Antwort für diese Dauer wiederverwenden, ohne darüber hinaus eine eigene Aufbewahrung zu führen
+
+#### Scenario: Kein eigener Auffrischungslauf
+- **WHEN** geprüft wird, ob das Backend Mensa-Daten selbsttätig auffrischt
+- **THEN** findet kein eigener Auffrischungslauf statt, und der Bestand entsteht allein aus den Anfragen der App
+
+### Requirement: Weitergabe des Datenalters der Mensa-Schnittstelle
+
+Das System muss den von der Mensa-Schnittstelle gemeldeten Stand ihrer Daten an die App weitergeben. Herkunft: Recherche: mensa.fb4.it, Feld `updated` sowie `GET /health`, 2026-09-22. Die Schnittstelle lädt erst auf Anfrage: bei einer Messung am 2026-09-22 waren ihre Speisepläne 6,7 Tage alt, während ihr Zustandsendpunkt weiterhin `ok` meldete — ihre Überalterung ist aus dem Zustand allein nicht erkennbar, wohl aber aus dem mitgelieferten Stand.
+
+#### Scenario: Antwort mit gemeldetem Stand
+- **WHEN** die Mensa-Schnittstelle zu einer Antwort den Stand ihrer Daten meldet
+- **THEN** gibt das Backend diesen Stand mit der eigenen Antwort an die App weiter
+
+### Requirement: Sichtbarer Fehler bei nicht erreichbarer Mensa-Schnittstelle
+
+Falls die Mensa-Schnittstelle nicht erreichbar ist oder eine unbrauchbare Antwort liefert, muss das System der App einen Fehler melden und darf keine Leerantwort als gültiges Ergebnis ausliefern. Herkunft: NEU, entschieden 2026-09-22. Mit dem Wegfall des eigenen Zwischenspeichers hat das Backend bei einem Ausfall der Quelle keinen letzten guten Stand mehr; die Rückfallebene ist der gerätelokale Bestand der App, der nur greift, wenn der Fehler als solcher erkennbar ist.
+
+#### Scenario: Quelle nicht erreichbar
+- **WHEN** die Mensa-Schnittstelle bei einer Anfrage der App nicht erreichbar ist
+- **THEN** meldet das Backend einen Fehler, statt eine leere Gerichtsliste als gültiges Ergebnis auszuliefern
+
 ## Entfallene Anforderungen (historisch)
+
+### Ehemals API-F-076: Auffrischungszeitplan des Speiseplan-Zwischenspeichers
+
+Ursprünglicher Text: „Das System muss den Speiseplan-Zwischenspeicher so aus der Mensa-Quelle auffrischen, dass eine Aktualisierung vor der morgendlichen und vor der mittäglichen studentischen Nutzungsspitze sowie zeitnah nach dem Ende des Mensabetriebs abgeschlossen ist, zusätzlich zu einem regelmäßigen Grundintervall über den Tag." Herkunft: NEU.
+
+Status: entfallen (entschieden 2026-09-22, umgesetzt 2026-09-24 mit dem Change `mensa-api-abloesung`). Grund: Der Zeitplan regelte die Auffrischung eines Zwischenspeichers, den es nicht mehr gibt. Das Backend reicht Speisepläne seither je Anfrage aus INT-020 durch und beachtet dabei die von der Quelle gesetzte Gültigkeitsdauer; ein eigener Bestand und damit ein eigener Auffrischungslauf entfallen. Ersetzt durch „Mensa-Daten durchreichen statt zwischenspeichern" in dieser Capability. Siehe `specs/decisions/0021-mensa-api-des-fsr-ohne-eigenen-zwischenspeicher.md`.
 
 ### Ehemals API-F-180: Import des Prüfungsplans
 

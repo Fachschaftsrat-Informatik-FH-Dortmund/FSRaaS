@@ -3,7 +3,7 @@ nummer: 0007
 titel: Datenquellen für Mensa und News
 status: vorgeschlagen
 datum: 2026-08-24
-zuletzt_ergaenzt: 2026-09-22
+zuletzt_ergaenzt: 2026-09-24
 betrifft:
   - ../../openspec/specs/canteen/spec.md
   - ../../openspec/specs/news/spec.md
@@ -36,7 +36,7 @@ Es ist eine Übergangsphase nötig, in der beide Wege (bisheriger Abruf über `h
 
 **Ergänzung 2026-08-26 — Mensa-Seite gelöst, News-Seite weiterhin offen.** Der Befund vom 2026-08-25 (siehe `platform/integrations.md`, INT-015) löst die Mensa-Hälfte dieser Entscheidung anders als hier ursprünglich angenommen: nicht über einen direkten OpenMensa-Zugriff oder eine Zwischenspeicherung der bisherigen Vermittler-Daten, sondern über eine zuvor unbekannte, offizielle Mensa-API des ITMC der TU Dortmund (INT-015) — TLS-gesichert, institutionell betrieben, mit Öffnungszeiten und zweisprachigen Bezeichnungen. INT-004 gilt damit als abgelöst. Die News-Seite (INT-003, weiterhin `hemacode.de`) ist von diesem Befund nicht betroffen und bleibt ungelöst; die Entscheidung dieses ADR (Ablösung über das eigene Backend) gilt dafür unverändert.
 
-**Ergänzung 2026-09-22 — Mensa-Seite an ADR 0021 abgegeben.** Die Mensa-Hälfte dieser Entscheidung gilt nicht mehr: INT-015 ist durch die FSR-eigene Mensa-API (`mensa.fb4.it`) abgelöst, und der hier entschiedene **Zwischenspeicher im eigenen Backend entfällt für die Mensa ersatzlos** — die neue Quelle ist selbst ein Cache im eigenen Verantwortungsbereich, das Backend reicht nur noch durch. Begründung, Alternativen und Folgen stehen in `0021-mensa-api-des-fsr-ohne-eigenen-zwischenspeicher.md`. Für die News-Seite (INT-003) gilt dieser ADR unverändert weiter, einschließlich des Zwischenspeichers.
+**Ergänzung 2026-09-22 — Mensa-Seite an ADR 0021 abgegeben** (Registerkennung am 2026-09-24 nachgetragen). Die Mensa-Hälfte dieser Entscheidung gilt nicht mehr: INT-015 ist durch die FSR-eigene Mensa-API (`mensa.fb4.it`, **INT-020**) abgelöst, und der hier entschiedene **Zwischenspeicher im eigenen Backend entfällt für die Mensa ersatzlos** — die neue Quelle ist selbst ein Cache im eigenen Verantwortungsbereich, das Backend reicht nur noch durch. Begründung, Alternativen und Folgen stehen in `0021-mensa-api-des-fsr-ohne-eigenen-zwischenspeicher.md`. Für die News-Seite (INT-003) gilt dieser ADR unverändert weiter, einschließlich des Zwischenspeichers.
 
 ## Offene Punkte
 

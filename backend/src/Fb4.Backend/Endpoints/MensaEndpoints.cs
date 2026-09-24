@@ -44,9 +44,9 @@ public static class MensaEndpoints
             [FromHeader(Name = "Accept-Language")] string? sprache,
             MensaQuelle quelle, CancellationToken ct) =>
         {
-            var (kategorien, zusatzstoffe, allergene, kennzeichnungen) =
+            var (kategorien, zusatzstoffe, allergene, kennzeichnungen, co2Klassen) =
                 await quelle.VerzeichnisseAsync(Sprache(sprache), ct);
-            return Results.Ok(new { kategorien, zusatzstoffe, allergene, kennzeichnungen });
+            return Results.Ok(new { kategorien, zusatzstoffe, allergene, kennzeichnungen, co2Klassen });
         }).AllowAnonymous().WithTags("mensa");
 
         return app;

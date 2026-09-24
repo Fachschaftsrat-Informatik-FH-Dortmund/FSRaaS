@@ -120,10 +120,11 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
     public async Task<(IReadOnlyList<Schluesselwert> kategorien,
         IReadOnlyList<Schluesselwert> zusatzstoffe,
         IReadOnlyList<Schluesselwert> allergene,
-        IReadOnlyList<Schluesselwert> kennzeichnungen)> VerzeichnisseAsync(string sprache, CancellationToken ct)
+        IReadOnlyList<Schluesselwert> kennzeichnungen,
+        IReadOnlyList<Schluesselwert> co2Klassen)> VerzeichnisseAsync(string sprache, CancellationToken ct)
     {
         var legende = await LegendeAsync(sprache, ct);
-        return ([], legende.Zusatzstoffe, legende.Allergene, legende.Kennzeichnungen);
+        return ([], legende.Zusatzstoffe, legende.Allergene, legende.Kennzeichnungen, legende.Co2Klassen);
     }
 
     // ------------------------------------------------------------------ Stand
@@ -178,6 +179,7 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
         IReadOnlyList<Schluesselwert> Zusatzstoffe,
         IReadOnlyList<Schluesselwert> Allergene,
         IReadOnlyList<Schluesselwert> Kennzeichnungen,
+        IReadOnlyList<Schluesselwert> Co2Klassen,
         IReadOnlyDictionary<string, string> Klartext,
         IReadOnlySet<string> AllergenCodes)
     {
@@ -199,6 +201,13 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
             var zusatzstoffe = Werte(roh.Additives);
             var allergene = Werte(roh.Allergens);
             var kennzeichnungen = Werte(roh.Tags);
+            // CO2-Klassen (INT-020 `legend.climate`): Schluessel und Klartext, wie die
+            // Quelle sie fuehrt. Die App zaehlt sie nicht selbst auf, sondern bietet den
+            // Ausschluss ueber dieses Verzeichnis an (Requirement „Ausschluss nach
+            // Kennzeichnung"). Sie gehen bewusst NICHT in `Klartext` ein: ihre Codes
+            // (`A`, `B`, ...) stehen in einem eigenen Feld des Gerichts und wuerden dort
+            // mit keinem Zusatzstoff- oder Kennzeichnungscode zusammentreffen.
+            var co2Klassen = Werte(roh.Climate);
 
             // `zusatzstoffe` behaelt seine bisherige Bedeutung (Zusatzstoffe UND
             // Allergene), damit eine aeltere App sich nicht anders verhaelt (ADR 0016).
@@ -212,6 +221,7 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
                 gemeinsam.OrderBy(w => w.Id, StringComparer.Ordinal).ToList(),
                 allergene,
                 kennzeichnungen,
+                co2Klassen,
                 klartext,
                 allergene.Select(a => a.Id).ToHashSet(StringComparer.Ordinal));
         }

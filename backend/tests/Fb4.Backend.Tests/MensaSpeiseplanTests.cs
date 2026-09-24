@@ -412,6 +412,32 @@ public class MensaSpeiseplanTests(TestAppFactory factory) : IClassFixture<TestAp
             e => e.GetProperty("id").GetString() == "2");
         Assert.Contains(rumpf.GetProperty("kennzeichnungen").EnumerateArray(),
             e => e.GetProperty("id").GetString() == "vegan");
+        // CO₂-Klassen kommen ebenfalls aus der Legende (`climate`), damit das
+        // Filtermenü sie anbieten kann, ohne sie im App-Code aufzuzählen
+        // (Requirement „Ausschluss nach Kennzeichnung“).
+        var co2 = Assert.Single(rumpf.GetProperty("co2Klassen").EnumerateArray());
+        Assert.Equal("A", co2.GetProperty("id").GetString());
+        Assert.Equal("sehr gut", co2.GetProperty("bezeichnung").GetString());
+    }
+
+    /// <summary>
+    /// Die Klartexte der CO₂-Klassen folgen demselben <c>Accept-Language</c> wie die
+    /// übrige Legende (Requirement „Gerichtskategorien und Zusatzstoffhinweise in
+    /// Oberflächensprache“).
+    /// </summary>
+    [Fact]
+    public async Task CO2_Klassen_folgen_der_Oberflaechensprache()
+    {
+        factory.Quelle.Zuruecksetzen();
+        var client = factory.CreateClient();
+        var anfrage = new HttpRequestMessage(HttpMethod.Get, "/v1/mensen/verzeichnisse");
+        anfrage.Headers.Add("Accept-Language", "en");
+
+        var antwort = await client.SendAsync(anfrage);
+        var rumpf = await antwort.Content.ReadFromJsonAsync<JsonElement>();
+
+        var co2 = Assert.Single(rumpf.GetProperty("co2Klassen").EnumerateArray());
+        Assert.Equal("very good", co2.GetProperty("bezeichnung").GetString());
     }
 
     // --------------------------------------------------------- Öffnungsangaben

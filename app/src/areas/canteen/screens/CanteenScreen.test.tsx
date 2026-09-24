@@ -926,3 +926,55 @@ describe('MENSA-F-080 / Abschnitt 7 Lieblingsgericht markieren und Hervorhebung'
     expect(mockToggle).toHaveBeenCalledWith({ schluessel: 'bolognese', bezeichnung: 'Bolognese' });
   });
 });
+
+describe('Altershinweis bei veralteten Daten der Mensa-Schnittstelle', () => {
+  const TAG = 24 * 60 * 60_000;
+
+  const mitQuelleStand = (alterMs: number | null) =>
+    qr([gericht()], {
+      data: {
+        gerichte: [gericht()],
+        standAlter: {
+          abgerufenAm: new Date().toISOString(),
+          quelleStand: alterMs === null ? null : new Date(Date.now() - alterMs).toISOString(),
+        },
+        naechsteOeffnung: null,
+      },
+    });
+
+  it('zeigt den Hinweis bei bestehender Netzverbindung, wenn die Quelle einen überalterten Stand meldet', async () => {
+    // Messung vom 2026-09-22: 6,7 Tage alte Speisepläne, während `/health` der
+    // Quelle weiterhin `ok` meldete. Ohne diesen Hinweis wäre das für die
+    // Nutzerin nicht von einem aktuellen Plan zu unterscheiden.
+    mockPlaene = { Mensa: mitQuelleStand(7 * TAG) };
+    renderScreen();
+    await waitFor(() =>
+      expect(screen.getByText(/Die Mensa-Schnittstelle meldet einen veralteten Stand/)).toBeTruthy(),
+    );
+    // Die Gerichte werden trotzdem angezeigt, nicht durch den Hinweis ersetzt.
+    expect(screen.getByText('Bolognese')).toBeTruthy();
+  });
+
+  it('zeigt keinen Hinweis, solange die Quelle einen Stand innerhalb der Gültigkeitsdauer meldet', async () => {
+    mockPlaene = { Mensa: mitQuelleStand(60_000) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText(/veralteten Stand/)).toBeNull();
+  });
+
+  it('zeigt keinen Hinweis, wenn die Quelle gar keinen Stand meldet', async () => {
+    mockPlaene = { Mensa: mitQuelleStand(null) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText(/veralteten Stand/)).toBeNull();
+  });
+
+  it('richtet sich nach der ältesten gemeldeten Angabe über die gewählten Mensen', async () => {
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn() };
+    mockPlaene = { Mensa: mitQuelleStand(60_000), Sued: mitQuelleStand(7 * TAG) };
+    renderScreen();
+    await waitFor(() =>
+      expect(screen.getByText(/Die Mensa-Schnittstelle meldet einen veralteten Stand/)).toBeTruthy(),
+    );
+  });
+});

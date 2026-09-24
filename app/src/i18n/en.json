@@ -141,14 +141,16 @@
     "gruppierung": {
       "keine": "no grouping",
       "mensa": "by canteen",
-      "kategorie": "by category"
+      "kategorie": "by category",
+      "co2": "by CO₂ class"
     },
     "sortierkriterium": {
       "quelle": "canteen order",
       "bezeichnung": "name",
       "preis": "price",
       "eigeneBewertung": "my rating",
-      "community": "overall community rating"
+      "community": "overall community rating",
+      "co2": "CO₂ class"
     },
     "gruppenkriterium": {
       "reihenfolgeMensa": "my canteen order",
@@ -167,7 +169,15 @@
       "4": "Thursday",
       "5": "Friday",
       "6": "Saturday"
-    }
+    },
+    "allergeneTitel": "Allergens",
+    "zusatzstoffeTitel": "Additives",
+    "allergenGruppe": {
+      "20": "All types of gluten",
+      "27": "All types of nuts"
+    },
+    "allergenGruppeAllgemein": "All subgroups of {{stamm}}",
+    "co2AusschliessenTitel": "Exclude CO₂ classes"
   },
   "schedule": {
     "einrichtungTitel": "Setup",
@@ -414,7 +424,8 @@
     "minutesAgo": "{{count}} min ago",
     "hoursAgo": "{{count}} h ago",
     "daysAgo": "{{count}} d ago",
-    "offlineHint": "Offline – last loaded state"
+    "offlineHint": "Offline – last loaded state",
+    "quelleHinweis": "The canteen interface reports outdated data"
   },
   "consent": {
     "title": "Privacy",

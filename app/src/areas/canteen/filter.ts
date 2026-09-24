@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useMensaVerzeichnisse, type Gericht } from './api';
-import { baueTokenGruppen, gerichtDietBetroffen } from './dietFilter';
+import { baueTokenGruppen, gerichtCo2Betroffen, gerichtDietBetroffen } from './dietFilter';
 import { useDietPreference } from './dietPreference';
 import { gerichtBetroffen } from './intoleranceFilter';
 import { useIntolerances } from './intolerances';
@@ -10,8 +10,9 @@ import { usePriceGroup } from './priceGroup';
 import { usePriceLimit } from './priceLimit';
 
 // MENSA-F-190 / F-200 / F-210: gebündelter Filter — Preis-Höchstgrenze (F-235),
-// Unverträglichkeiten (Zusatzstoffe, F-180), Lebensstil-Vorgabe (F-250) und
-// Ausschluss (F-260). Ein Gericht ist „betroffen", wenn eine Vorgabe zutrifft;
+// Unverträglichkeiten (Allergene und Zusatzstoffe, F-180), Lebensstil-Vorgabe
+// (F-250) sowie Ausschluss nach Kennzeichnung und CO₂-Klasse (F-260). Ein
+// Gericht ist „betroffen", wenn eine Vorgabe zutrifft;
 // die Hauptansicht blendet betroffene Gerichte aus, die Ansicht aller Mensen
 // graut sie aus.
 
@@ -43,11 +44,14 @@ export function useGerichtFilter() {
     const nurZeigen = baueTokenGruppen(prefs.nurZeigen, (id) => kennzLabel.get(id));
     const ausschluss = baueTokenGruppen(prefs.ausschluss, (id) => kennzLabel.get(id));
 
+    const co2Ausschluss = prefs.co2Ausschluss;
+
     const aktiv =
       limit != null ||
       zusatzAusgewaehlt.size > 0 ||
       nurZeigen.length > 0 ||
-      ausschluss.length > 0;
+      ausschluss.length > 0 ||
+      co2Ausschluss.length > 0;
 
     const betroffen = (g: GerichtKennzeichen): boolean => {
       if (limit != null) {
@@ -56,7 +60,8 @@ export function useGerichtFilter() {
       }
       return (
         gerichtBetroffen(g.zusatzstoffe, zusatzAusgewaehlt) ||
-        gerichtDietBetroffen(g.kennzeichnungen, nurZeigen, ausschluss)
+        gerichtDietBetroffen(g.kennzeichnungen, nurZeigen, ausschluss) ||
+        gerichtCo2Betroffen(g.co2Klasse, co2Ausschluss)
       );
     };
 

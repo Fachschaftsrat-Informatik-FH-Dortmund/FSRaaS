@@ -147,3 +147,57 @@ describe('ARCH-N-020 Eine wiederverwendbare Grundstruktur statt je Bildschirm', 
     expect(true).toBe(true);
   });
 });
+
+describe('Altershinweis bei veralteten Daten der Mensa-Schnittstelle', () => {
+  const TAG = 24 * 60 * 60_000;
+  const inhalt = () => <Text>Inhalt</Text>;
+
+  it('zeigt den Altershinweis auch bei bestehender Netzverbindung, wenn die Quelle einen überalterten Stand meldet', () => {
+    mockOnline.mockReturnValue(true);
+    const q = query({ data: { x: 1 }, isStale: false });
+    render(
+      <AsyncStates
+        query={q}
+        emptyNextStep={NEXT_STEP}
+        quelleStand={{ zeitpunkt: new Date(Date.now() - 7 * TAG).toISOString(), maxAlterMs: TAG }}
+      >
+        {inhalt}
+      </AsyncStates>,
+    );
+    expect(screen.getByText(/Die Mensa-Schnittstelle meldet einen veralteten Stand/)).toBeTruthy();
+    expect(screen.getByText(/vor 7 Tg\./)).toBeTruthy();
+    expect(screen.getByText('Inhalt')).toBeTruthy();
+  });
+
+  it('zeigt keinen Hinweis, solange die Quelle einen Stand innerhalb der Gültigkeitsdauer meldet', () => {
+    mockOnline.mockReturnValue(true);
+    const q = query({ data: { x: 1 }, isStale: false });
+    render(
+      <AsyncStates
+        query={q}
+        emptyNextStep={NEXT_STEP}
+        quelleStand={{ zeitpunkt: new Date(Date.now() - 60_000).toISOString(), maxAlterMs: TAG }}
+      >
+        {inhalt}
+      </AsyncStates>,
+    );
+    expect(screen.queryByText(/veralteten Stand/)).toBeNull();
+    expect(screen.queryByText(/Offline/)).toBeNull();
+  });
+
+  it('nennt offline den Offline-Grund, nicht zusätzlich den der Quelle', () => {
+    mockOnline.mockReturnValue(false);
+    const q = query({ data: { x: 1 }, isStale: true });
+    render(
+      <AsyncStates
+        query={q}
+        emptyNextStep={NEXT_STEP}
+        quelleStand={{ zeitpunkt: new Date(Date.now() - 7 * TAG).toISOString(), maxAlterMs: TAG }}
+      >
+        {inhalt}
+      </AsyncStates>,
+    );
+    expect(screen.getByText(/Offline – zuletzt geladener Stand/)).toBeTruthy();
+    expect(screen.queryByText(/Die Mensa-Schnittstelle meldet/)).toBeNull();
+  });
+});

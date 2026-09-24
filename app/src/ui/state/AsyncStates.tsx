@@ -6,7 +6,7 @@ import { AppError } from '@/errors/AppError';
 import { useOnlineStatus } from '@/state/useOnlineStatus';
 import { useTheme } from '@/theme';
 import { AppButton, MessageView } from '@/ui/primitives';
-import { describeAge, shouldShowAge } from './dataAge';
+import { describeAge, quelleVeraltet, shouldShowAge } from './dataAge';
 
 // EINZIGE Grundstruktur für Lade-, Leer-, Fehler- und Offline-Zustand
 // (ARCH-F-130, ARCH-N-020, UX-F-100). Jede datenabhängige Ansicht rendert ihre
@@ -47,6 +47,15 @@ export interface AsyncStatesProps<T> {
    * (z. B. ein Filter-Schalter direkt darüber) und keinen eigenen Knopf braucht.
    */
   emptyAction?: ReactNode;
+  /**
+   * Von der Quelle selbst gemeldeter Stand der angezeigten Daten, sofern die
+   * Datenart einen führt. Ist er älter als sein Höchstalter, zeigt die
+   * Grundstruktur den Altershinweis **auch bei bestehender Netzverbindung**
+   * (Capability `data-and-storage`, Requirement „Altershinweis bei veralteten
+   * Daten der Mensa-Schnittstelle"). Der Offline-Fall (DATA-F-090) bleibt
+   * unverändert und hat Vorrang, weil er die umfassendere Aussage trägt.
+   */
+  quelleStand?: { zeitpunkt: string | null | undefined; maxAlterMs: number };
 }
 
 export function AsyncStates<T>({
@@ -56,6 +65,7 @@ export function AsyncStates<T>({
   emptyNextStep,
   emptyTitle,
   emptyAction,
+  quelleStand,
 }: AsyncStatesProps<T>) {
   const { t } = useTranslation();
   const online = useOnlineStatus();
@@ -104,17 +114,37 @@ export function AsyncStates<T>({
     );
   }
 
-  // 4. Daten — bei veraltetem Offline-Stand mit sichtbarem Altershinweis (DATA-F-090).
+  // 4. Daten — bei veraltetem Offline-Stand mit sichtbarem Altershinweis
+  // (DATA-F-090) und, unabhängig davon, wenn die Quelle selbst einen
+  // überalterten Stand meldet (Requirement „Altershinweis bei veralteten Daten
+  // der Mensa-Schnittstelle"). Der Offline-Hinweis geht vor: er nennt zugleich
+  // den Grund, aus dem gerade nicht nachgeladen werden kann.
   const showAge = shouldShowAge({ isOffline: !online, isStale: query.isStale, hasData });
+  const quelleAlt =
+    !showAge &&
+    quelleVeraltet({
+      quelleStand: quelleStand?.zeitpunkt,
+      maxAlterMs: quelleStand?.maxAlterMs ?? 0,
+    });
   return (
     <View style={styles.fill}>
-      {showAge ? <DataAgeBanner updatedAt={query.dataUpdatedAt} /> : null}
+      {showAge ? <DataAgeBanner updatedAt={query.dataUpdatedAt} grund="offline" /> : null}
+      {quelleAlt ? (
+        <DataAgeBanner updatedAt={Date.parse(quelleStand!.zeitpunkt!)} grund="quelle" />
+      ) : null}
       {children(data)}
     </View>
   );
 }
 
-function DataAgeBanner({ updatedAt }: { updatedAt: number }) {
+function DataAgeBanner({
+  updatedAt,
+  grund,
+}: {
+  updatedAt: number;
+  /** `offline` = kein Netzzugriff, `quelle` = die Quelle meldet einen alten Stand. */
+  grund: 'offline' | 'quelle';
+}) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const age = describeAge(updatedAt);
@@ -125,7 +155,8 @@ function DataAgeBanner({ updatedAt }: { updatedAt: number }) {
     >
       <Text style={[styles.ageText, { color: colors.onBanner }]}>
         {'⊘ '}
-        {t('dataAge.offlineHint')} · {t('dataAge.prefix')} {t(age.key, { count: age.count })}
+        {grund === 'offline' ? t('dataAge.offlineHint') : t('dataAge.quelleHinweis')} ·{' '}
+        {t('dataAge.prefix')} {t(age.key, { count: age.count })}
       </Text>
     </View>
   );

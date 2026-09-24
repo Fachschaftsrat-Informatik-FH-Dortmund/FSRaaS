@@ -1,4 +1,4 @@
-import { baueTokenGruppen, gerichtDietBetroffen } from './dietFilter';
+import { baueTokenGruppen, gerichtCo2Betroffen, gerichtDietBetroffen } from './dietFilter';
 
 describe('MENSA-F-250 Lebensstil-Vorgabe (nur Gerichte mit allen gewählten Kennzeichnungen)', () => {
   it('blendet Gerichte aus, die nicht jede geforderte Kennzeichnung tragen', () => {
@@ -21,12 +21,27 @@ describe('MENSA-F-250 Lebensstil-Vorgabe (nur Gerichte mit allen gewählten Kenn
   });
 });
 
-describe('MENSA-F-260 Ausschluss (Gericht mit einer der Kennzeichnungen verbergen)', () => {
+describe('MENSA-F-260 Ausschluss nach Kennzeichnung', () => {
   it('blendet Gerichte mit einer ausgeschlossenen Kennzeichnung aus', () => {
     const ausschluss = [['9', 'Schwein']];
     expect(gerichtDietBetroffen(['Schwein', 'Rind'], [], ausschluss)).toBe(true);
     expect(gerichtDietBetroffen(['Rind'], [], ausschluss)).toBe(false);
     expect(gerichtDietBetroffen(undefined, [], ausschluss)).toBe(false);
+  });
+
+  it('blendet Gerichte einer ausgeschlossenen CO₂-Klasse aus', () => {
+    expect(gerichtCo2Betroffen('E', ['E'])).toBe(true);
+    expect(gerichtCo2Betroffen('A', ['E'])).toBe(false);
+  });
+
+  it('schließt ohne CO₂-Klasse am Gericht und ohne gewählte Klasse nichts aus', () => {
+    expect(gerichtCo2Betroffen(null, ['E'])).toBe(false);
+    expect(gerichtCo2Betroffen(undefined, ['E'])).toBe(false);
+    expect(gerichtCo2Betroffen('E', [])).toBe(false);
+  });
+
+  it('lässt einen von der Quelle neu aufgenommenen Code durch, statt ihn zu verschlucken', () => {
+    expect(gerichtCo2Betroffen('D', ['E'])).toBe(false);
   });
 });
 

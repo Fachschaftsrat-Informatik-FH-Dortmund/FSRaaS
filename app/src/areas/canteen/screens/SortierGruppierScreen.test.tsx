@@ -67,6 +67,21 @@ describe('Sortierkriterien für Gerichte', () => {
     expect(within(kriterium).getByLabelText('Reihenfolge der Mensa')).toBeTruthy();
     expect(within(kriterium).queryByLabelText('Reihenfolge der Quelle')).toBeNull();
   });
+
+  it('bietet alle geforderten Kriterien an, einschließlich der CO₂-Klasse', async () => {
+    renderScreen();
+    const kriterium = await screen.findByLabelText('Sortierung der Gerichte');
+    for (const label of [
+      'Reihenfolge der Mensa',
+      'Bezeichnung',
+      'Preis',
+      'eigene Bewertungsstufe',
+      'Community-Gesamtbewertung',
+      'CO₂-Klasse',
+    ]) {
+      expect(within(kriterium).getByLabelText(label)).toBeTruthy();
+    }
+  });
 });
 
 describe('Gruppenreihenfolge-Kriterien bei Mensa-Gruppierung', () => {
@@ -129,6 +144,15 @@ describe('Wahl der Gruppierung', () => {
     fireEvent.press(screen.getByLabelText('keine Gruppierung'));
     expect(mockSpies.stelleEin).toHaveBeenCalledWith(
       expect.objectContaining({ gruppierung: 'keine' }),
+    );
+  });
+
+  it('bietet die Gruppierung nach CO₂-Klasse an und übernimmt sie', async () => {
+    renderScreen();
+    await waitFor(() => expect(screen.getByLabelText('nach CO₂-Klasse')).toBeTruthy());
+    fireEvent.press(screen.getByLabelText('nach CO₂-Klasse'));
+    expect(mockSpies.stelleEin).toHaveBeenCalledWith(
+      expect.objectContaining({ gruppierung: 'co2' }),
     );
   });
 });

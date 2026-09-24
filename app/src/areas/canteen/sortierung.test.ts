@@ -82,6 +82,46 @@ describe('Wahl der Gruppierung', () => {
     // „Menü 1" bündelt Bolognese (Mensa) und Suppe (Süd).
     expect(namen(s.abschnitte[0]!.gerichte)).toEqual(['Bolognese', 'Suppe']);
   });
+
+  it('„nach CO₂-Klasse" gliedert die Liste in Abschnitte je Klasse', () => {
+    const mitKlasse = konsolidiere([
+      plan('Mensa', [
+        g({ schluessel: 'a', bezeichnung: 'Auflauf', co2Klasse: 'E' }),
+        g({ schluessel: 'b', bezeichnung: 'Bowl', co2Klasse: 'A' }),
+        g({ schluessel: 'c', bezeichnung: 'Curry', co2Klasse: 'A' }),
+      ]),
+    ]);
+    const s = wendeAn(
+      kombi({
+        gruppierung: 'co2',
+        gruppenreihenfolge: { kriterium: 'alphabetisch', richtung: 'auf' },
+      }),
+      mitKlasse,
+      kontext({ co2Name: (klasse) => `CO₂-Klasse ${klasse}` }),
+    );
+    expect(s.abschnitte.map((a) => a.titel)).toEqual(['CO₂-Klasse A', 'CO₂-Klasse E']);
+    expect(namen(s.abschnitte[0]!.gerichte)).toEqual(['Bowl', 'Curry']);
+    expect(s.gruppierungAktiv).toBe(true);
+  });
+
+  it('sammelt Gerichte ohne CO₂-Klasse ohne Überschrift am Ende', () => {
+    const gemischt = konsolidiere([
+      plan('Mensa', [
+        g({ schluessel: 'a', bezeichnung: 'Auflauf' }),
+        g({ schluessel: 'b', bezeichnung: 'Bowl', co2Klasse: 'A' }),
+      ]),
+    ]);
+    const s = wendeAn(
+      kombi({
+        gruppierung: 'co2',
+        gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      }),
+      gemischt,
+      kontext({ co2Name: (klasse) => `CO₂-Klasse ${klasse}` }),
+    );
+    expect(s.abschnitte.map((a) => a.titel)).toEqual(['CO₂-Klasse A', null]);
+    expect(namen(s.abschnitte[1]!.gerichte)).toEqual(['Auflauf']);
+  });
 });
 
 describe('Gliederung nach Mensa-Auswahlreihenfolge bei aktiver Mensa-Gruppierung', () => {
@@ -208,6 +248,24 @@ describe('Sortierkriterien für Gerichte', () => {
   it('sortiert Bezeichnung lokalisiert absteigend', () => {
     const s = sortiereGerichte(eins, { kriterium: 'bezeichnung', richtung: 'ab' }, kontext());
     expect(namen(s)).toEqual(['Curry', 'Brot', 'Auflauf']);
+  });
+
+  it('sortiert nach CO₂-Klasse, beste zuerst, und stellt Gerichte ohne Klasse ans Ende', () => {
+    const mitKlasse = konsolidiere([
+      plan('Mensa', [
+        g({ schluessel: 'a', bezeichnung: 'Auflauf', co2Klasse: 'E' }),
+        g({ schluessel: 'b', bezeichnung: 'Bowl' }),
+        g({ schluessel: 'c', bezeichnung: 'Curry', co2Klasse: 'A' }),
+      ]),
+    ]);
+    const alle = mitKlasse.sektionen[0]!.gruppen.flatMap((gr) => gr.gerichte);
+
+    const auf = sortiereGerichte(alle, { kriterium: 'co2', richtung: 'auf' }, kontext());
+    expect(namen(auf)).toEqual(['Curry', 'Auflauf', 'Bowl']);
+
+    // Auch absteigend bleibt das Gericht ohne Klasse am Ende.
+    const ab = sortiereGerichte(alle, { kriterium: 'co2', richtung: 'ab' }, kontext());
+    expect(namen(ab)).toEqual(['Auflauf', 'Curry', 'Bowl']);
   });
 
   it('nutzt den Bewertungs-Resolver für eigene und Community-Bewertung', () => {
