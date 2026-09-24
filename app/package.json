@@ -39,7 +39,7 @@
     "expo-localization": "~57.0.1",
     "expo-quick-actions": "~6.0.2",
     "expo-router": "~57.0.20",
-    "expo-secure-store": "~57.0.3",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.3",
     "expo-task-manager": "~57.0.16",
