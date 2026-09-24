@@ -432,14 +432,24 @@ GitHub-Anmeldung.
 
 Der Workflow bricht ab, wenn der `versionCode` nicht strikt größer ist als der
 des zuletzt veröffentlichten Testbuilds (Sidecar-Datei
-`app-latest.versioncode`). Vor jedem neuen Testbuild:
+`app-latest.versioncode`). Vor jedem neuen Testbuild, in `app/`:
 
-1. In `app/app.json` `expo.android.versionCode` erhöhen (und bei Bedarf
-   `expo.version`/`versionName`).
-2. `npx expo prebuild --platform android` lokal ausführen.
-3. Den resultierenden Diff in `android/app/build.gradle` (nur der
-   `versionCode`/`versionName`-Wert sollte sich ändern) im selben Merge wie die
-   `app.json`-Änderung committen.
+```
+npm run release
+```
+
+Zeigt die aktuelle Version und den aktuellen `versionCode` aus `app.json`,
+fragt nach der neuen Version, schlägt den nächsthöheren `versionCode` vor
+(überschreibbar, muss strikt größer sein) und ruft anschließend
+`npx expo prebuild --platform android` auf, damit `android/app/build.gradle`
+mitzieht (`app/scripts/release.mjs`).
+
+Danach von Hand:
+
+1. Den resultierenden Diff in `app.json` und `android/app/build.gradle` (nur
+   der `versionCode`/`versionName`-Wert sollte sich ändern) prüfen.
+2. Beide Dateien gemeinsam committen.
+3. Push nach main.
 4. Erst danach den Workflow auslösen.
 
 `app.json` ist die Quelle der Wahrheit — `android/app/build.gradle` folgt ihr,
