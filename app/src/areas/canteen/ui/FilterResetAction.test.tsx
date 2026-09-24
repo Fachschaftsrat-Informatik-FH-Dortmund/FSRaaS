@@ -7,7 +7,7 @@ const mockIntoleranceClear = jest.fn();
 const mockDietClear = jest.fn();
 const mockPriceClear = jest.fn();
 let mockCodes: string[];
-let mockPrefs: { nurZeigen: string[]; ausschluss: string[] };
+let mockPrefs: { nurZeigen: string[]; ausschluss: string[]; co2Ausschluss: string[] };
 let mockLimit: number | null;
 
 jest.mock('../intolerances', () => ({
@@ -23,7 +23,7 @@ jest.mock('../priceLimit', () => ({
 beforeEach(() => {
   jest.clearAllMocks();
   mockCodes = [];
-  mockPrefs = { nurZeigen: [], ausschluss: [] };
+  mockPrefs = { nurZeigen: [], ausschluss: [], co2Ausschluss: [] };
   mockLimit = null;
 });
 afterEach(cleanup);
@@ -45,7 +45,7 @@ describe('MENSA-F-270 „Alle Filter entfernen" oben rechts', () => {
   });
 
   it('leert bei gesetzter Vorgabe Unverträglichkeiten, Diät-Vorgabe und Preisfilter', () => {
-    mockPrefs = { nurZeigen: ['vegan'], ausschluss: [] };
+    mockPrefs = { nurZeigen: ['vegan'], ausschluss: [], co2Ausschluss: [] };
     renderAction();
     fireEvent.press(screen.getByLabelText('Alle Filter entfernen'));
     expect(mockDietClear).toHaveBeenCalled();
@@ -55,6 +55,13 @@ describe('MENSA-F-270 „Alle Filter entfernen" oben rechts', () => {
 
   it('ist schon bei gesetztem Preisfilter allein auslösbar', () => {
     mockLimit = 4;
+    renderAction();
+    const knopf = screen.getByLabelText('Alle Filter entfernen');
+    expect(knopf.props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('ist schon bei gesetztem CO₂-Klassen-Ausschluss allein auslösbar', () => {
+    mockPrefs = { nurZeigen: [], ausschluss: [], co2Ausschluss: ['E'] };
     renderAction();
     const knopf = screen.getByLabelText('Alle Filter entfernen');
     expect(knopf.props.accessibilityState.disabled).toBe(false);

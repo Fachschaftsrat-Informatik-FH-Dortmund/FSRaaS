@@ -76,9 +76,9 @@ export function SortierGruppierScreen() {
   // `'reihenfolge'`.
   const gruppenKriteriumLabel = (k: GruppenKriterium) => {
     if (k === 'reihenfolge') {
-      return kombi.gruppierung === 'mensa'
-        ? t('mensa.gruppenkriterium.reihenfolgeMensa')
-        : t('mensa.gruppenkriterium.reihenfolgeKategorie');
+      if (kombi.gruppierung === 'mensa') return t('mensa.gruppenkriterium.reihenfolgeMensa');
+      if (kombi.gruppierung === 'co2') return t('mensa.gruppenkriterium.reihenfolgeCo2');
+      return t('mensa.gruppenkriterium.reihenfolgeKategorie');
     }
     return t(`mensa.gruppenkriterium.${k}`);
   };

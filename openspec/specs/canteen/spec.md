@@ -106,7 +106,7 @@ Das System muss der Nutzerin das Festlegen der Reihenfolge ermöglichen, in der 
 
 ### Requirement: Gerichtsangaben — Kategorie, Bezeichnung, Preise, Zusatzstoffe
 
-Das System muss zu jedem Gericht Kategorie, Bezeichnung, Preis für Studierende, Mitarbeitende und Gäste sowie die Allergen- und Zusatzstoffhinweise anzeigen; Allergene und Zusatzstoffe müssen dabei als solche unterscheidbar sein. Herkunft: Alt: lib/areas/canteen/models/meal.dart (vormals MENSA-F-030), um die Unterscheidung von Allergenen und Zusatzstoffen ergänzt 2026-09-22 nach Recherche: mensa.fb4.it `GET /legend`.
+Das System muss zu jedem Gericht Kategorie, Bezeichnung, Preis für Studierende, Mitarbeitende und Gäste sowie die Allergen- und Zusatzstoffhinweise anzeigen; Allergene und Zusatzstoffe müssen dabei als solche unterscheidbar sein. Herkunft: Alt: lib/areas/canteen/models/meal.dart (vormals MENSA-F-030), um die Unterscheidung von Allergenen und Zusatzstoffen ergänzt 2026-09-22 nach Recherche: mensa.fb4.it (Endpunkt und Felder: siehe integrations/spec.md).
 
 #### Scenario: Vollständige Gerichtsangaben
 - **WHEN** ein Gericht angezeigt wird
@@ -118,7 +118,7 @@ Das System muss zu jedem Gericht Kategorie, Bezeichnung, Preis für Studierende,
 
 ### Requirement: Anzeige von Gericht-Kennzeichnungen
 
-Sofern die Quelle zu einem Gericht Kennzeichnungen liefert (z. B. vegan, vegetarisch, Klimateller, artgerecht), muss das System sie am Gericht anzeigen. Herkunft: Recherche: mensa.fb4.it `GET /legend`, 2026-09-22 (vormals MENSA-F-035, Quellbezug von INT-015 auf die neue Mensa-Schnittstelle umgestellt). Die Quelle führt ein festes Vokabular von zehn Kennzeichnungen, darunter „artgerecht", das die abgelöste Quelle nicht kannte.
+Sofern die Quelle zu einem Gericht Kennzeichnungen liefert (z. B. vegan, vegetarisch, Klimateller, artgerecht), muss das System sie am Gericht anzeigen. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (vormals MENSA-F-035, Quellbezug von INT-015 auf die neue Mensa-Schnittstelle umgestellt; Endpunkt und Felder: siehe integrations/spec.md). Die Quelle führt ein festes Vokabular von zehn Kennzeichnungen, darunter „artgerecht", das die abgelöste Quelle nicht kannte.
 
 #### Scenario: Gericht mit Kennzeichnung
 - **WHEN** die Quelle zu einem Gericht mindestens eine Kennzeichnung liefert
@@ -166,7 +166,7 @@ Wenn die Nutzerin waagerecht über die Gerichtsliste wischt, muss das System zum
 
 ### Requirement: Öffnungszeiten je Mensa und Wochentag
 
-Das System muss zu jeder gewählten Mensa deren Öffnungszeiten für den angezeigten Wochentag ausweisen, bezogen aus der Mensa-Schnittstelle. Herkunft: Recherche: mensa.fb4.it `GET /canteens/{id}/hours`, 2026-09-22 (vormals MENSA-F-047, Datengrundlage von den gepflegten Stammdaten auf die Schnittstelle umgestellt 2026-09-22). Die Umstellung revidiert die Entscheidung vom 2026-09-03 zugunsten der gepflegten Stammdaten; deren Grund — die Öffnungszeiten der damaligen Quelle waren nicht abrufbar — ist entfallen. Die gepflegte Angabe war zum Zeitpunkt der Umstellung nachweislich veraltet: für die Hauptmensa war freitags `11:30 - 14:00` hinterlegt, während die Schnittstelle `11:30 - 14:15` führte.
+Das System muss zu jeder gewählten Mensa deren Öffnungszeiten für den angezeigten Wochentag ausweisen, bezogen aus der Mensa-Schnittstelle. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (vormals MENSA-F-047, Datengrundlage von den gepflegten Stammdaten auf die Schnittstelle umgestellt 2026-09-22; Endpunkt: siehe integrations/spec.md). Die Umstellung revidiert die Entscheidung vom 2026-09-03 zugunsten der gepflegten Stammdaten; deren Grund — die Öffnungszeiten der damaligen Quelle waren nicht abrufbar — ist entfallen. Die gepflegte Angabe war zum Zeitpunkt der Umstellung nachweislich veraltet: für die Hauptmensa war freitags `11:30 - 14:00` hinterlegt, während die Schnittstelle `11:30 - 14:15` führte.
 
 #### Scenario: Öffnungszeit einer Mensa
 - **WHEN** eine gewählte Mensa am angezeigten Wochentag geöffnet ist
@@ -202,7 +202,7 @@ Das System muss Gerichtskategorien und Zusatzstoffhinweise in der gewählten Obe
 
 ### Requirement: Wiedereröffnungshinweis an der geschlossenen Mensa
 
-Falls eine gewählte Mensa am angezeigten Tag geschlossen ist, muss das System zusammen mit dem Geschlossen-Hinweis den nächsten Tag nennen, für den die Mensa-Schnittstelle diese Mensa als geöffnet führt; gesucht wird ab dem Tag nach dem angezeigten Tag über den gesamten von der Schnittstelle gelieferten Vorausblick — Öffnungsvorschau und Schließtage gemeinsam. Der Hinweis muss als Aussage über die Öffnung formuliert sein, nicht als Aussage über ein bestimmtes Gericht, weil ein künftiges Angebot bis zum jeweiligen Tag noch geändert werden kann. Reicht der Vorausblick nicht bis zu einem Öffnungstag, entfällt der Zusatz und es bleibt beim Geschlossen-Hinweis. Herkunft: Recherche: mensa.fb4.it, Felder `forecast[]` und `closures[]`, 2026-09-22 (Datengrundlage am 2026-09-07 von den gepflegten Öffnungszeiten auf den Speiseplan-Zwischenspeicher umgestellt, am 2026-09-22 auf die Öffnungsangaben der Schnittstelle). Der Speiseplan trug diese Aussage nicht verlässlich: sein Horizont schwankte am 2026-09-22 je Mensa zwischen 4 und 11 Tagen, und für die drei Standorte ohne Speiseplan existierte er gar nicht. Die Schließtagsangaben stimmten dagegen taggenau mit dem Speiseplanbeginn überein — die Betriebsferien der Mensa Süd endeten am 04.10., ihr Speiseplan begann am 05.10.
+Falls eine gewählte Mensa am angezeigten Tag geschlossen ist, muss das System zusammen mit dem Geschlossen-Hinweis den nächsten Tag nennen, für den die Mensa-Schnittstelle diese Mensa als geöffnet führt; gesucht wird ab dem Tag nach dem angezeigten Tag über den gesamten von der Schnittstelle gelieferten Vorausblick — Öffnungsvorschau und Schließtage gemeinsam. Der Hinweis muss als Aussage über die Öffnung formuliert sein, nicht als Aussage über ein bestimmtes Gericht, weil ein künftiges Angebot bis zum jeweiligen Tag noch geändert werden kann. Reicht der Vorausblick nicht bis zu einem Öffnungstag, entfällt der Zusatz und es bleibt beim Geschlossen-Hinweis. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Datengrundlage am 2026-09-07 von den gepflegten Öffnungszeiten auf den Speiseplan-Zwischenspeicher umgestellt, am 2026-09-22 auf die Öffnungsangaben der Schnittstelle; Felder: siehe integrations/spec.md). Der Speiseplan trug diese Aussage nicht verlässlich: sein Horizont schwankte am 2026-09-22 je Mensa zwischen 4 und 11 Tagen, und für die drei Standorte ohne Speiseplan existierte er gar nicht. Die Schließtagsangaben stimmten dagegen taggenau mit dem Speiseplanbeginn überein — die Betriebsferien der Mensa Süd endeten am 04.10., ihr Speiseplan begann am 05.10.
 
 #### Scenario: Geschlossene Mensa mit späterem Öffnungstag
 - **WHEN** eine gewählte Mensa am angezeigten Tag geschlossen ist und die Schnittstelle sie für einen späteren Tag ihres Vorausblicks als geöffnet führt
@@ -674,7 +674,7 @@ Beim Öffnen der Hauptansicht muss das System den aktuellen Tag als gewählten T
 
 ### Requirement: Ausweis der Ausgabezeit bei abweichender Öffnungszeit
 
-Falls die Quelle zu einer Mensa für den angezeigten Wochentag eine Essensausgabezeit führt, die von deren Öffnungszeit abweicht, muss das System beide ausweisen und dabei erkennbar machen, welche die Ausgabezeit ist. Stimmen beide überein, weist das System allein die Öffnungszeit aus. Herkunft: Recherche: mensa.fb4.it `GET /canteens/{id}/hours`, 2026-09-22. Die Felder `servingOpen`/`servingClose` stehen laut Quelle nur dort, wo sie von `open`/`close` abweichen; am Max-Ophüls-Platz öffnet das Haus um 08:00, die Essensausgabe beginnt um 11:30.
+Falls die Quelle zu einer Mensa für den angezeigten Wochentag eine Essensausgabezeit führt, die von deren Öffnungszeit abweicht, muss das System beide ausweisen und dabei erkennbar machen, welche die Ausgabezeit ist. Stimmen beide überein, weist das System allein die Öffnungszeit aus. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Endpunkt und Felder: siehe integrations/spec.md). Die abweichende Ausgabezeit steht laut Quelle nur dort, wo sie von der Öffnungszeit abweicht; am Max-Ophüls-Platz öffnet das Haus um 08:00, die Essensausgabe beginnt um 11:30.
 
 #### Scenario: Ausgabezeit weicht ab
 - **WHEN** die Quelle zu einer Mensa für den angezeigten Wochentag eine von der Öffnungszeit abweichende Ausgabezeit führt
@@ -698,7 +698,7 @@ Falls eine gewählte Mensa am angezeigten Tag geöffnet ist, aber kein Gericht f
 
 ### Requirement: Grund und Zeitraum einer Schließung
 
-Falls die Quelle zu einer am angezeigten Tag geschlossenen Mensa einen Schließungsgrund führt, muss das System ihn zusammen mit dem Geschlossen-Hinweis wiedergeben; führt die Quelle zu dieser Schließung zusätzlich ein Enddatum, muss das System auch dieses nennen. Der Grund wird wiedergegeben, wie die Quelle ihn liefert, und nicht in eine eigene Formulierung übersetzt. Herkunft: Recherche: mensa.fb4.it `GET /canteens/{id}/hours`, Felder `today.reason` und `closures[]`, 2026-09-22. Die Quelle liefert Klartext wie „Restaurant-Schließtag: Betriebsferien" und dazu den Zeitraum `from`/`to`.
+Falls die Quelle zu einer am angezeigten Tag geschlossenen Mensa einen Schließungsgrund führt, muss das System ihn zusammen mit dem Geschlossen-Hinweis wiedergeben; führt die Quelle zu dieser Schließung zusätzlich ein Enddatum, muss das System auch dieses nennen. Der Grund wird wiedergegeben, wie die Quelle ihn liefert, und nicht in eine eigene Formulierung übersetzt. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Endpunkt und Felder: siehe integrations/spec.md). Die Quelle liefert Klartext wie „Restaurant-Schließtag: Betriebsferien" und dazu Beginn und Ende des Zeitraums.
 
 #### Scenario: Schließung mit Grund und Enddatum
 - **WHEN** eine gewählte Mensa am angezeigten Tag geschlossen ist und die Quelle dazu einen Grund und ein Enddatum führt
@@ -710,7 +710,7 @@ Falls die Quelle zu einer am angezeigten Tag geschlossenen Mensa einen Schließu
 
 ### Requirement: Anzeige der CO₂-Klasse am Gericht
 
-Sofern die Quelle zu einem Gericht eine CO₂-Klasse führt, muss das System sie am Gericht anzeigen. Ein Gericht der besten Klasse muss das System zusätzlich als Klimateller kennzeichnen. Herkunft: Recherche: mensa.fb4.it, Felder `co2Class` und Tag `climate-plate`, Legende unter `GET /legend`, 2026-09-22. Die Quelle führt die Klassen A, B, C und E; nur A gilt als Klimateller.
+Sofern die Quelle zu einem Gericht eine CO₂-Klasse führt, muss das System sie am Gericht anzeigen. Ein Gericht der besten Klasse muss das System zusätzlich als Klimateller kennzeichnen. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Feld und Legende: siehe integrations/spec.md). Die Quelle führt die Klassen A, B, C und E; nur A gilt als Klimateller.
 
 #### Scenario: Gericht mit CO₂-Klasse
 - **WHEN** die Quelle zu einem Gericht eine CO₂-Klasse führt
@@ -722,7 +722,7 @@ Sofern die Quelle zu einem Gericht eine CO₂-Klasse führt, muss das System sie
 
 ### Requirement: Gerichtsbezeichnung nach Komponenten gegliedert
 
-Das System muss die Bezeichnung eines Gerichts nach dessen Komponenten gegliedert anzeigen: die erste Komponente hervorgehoben als Name des Gerichts, die weiteren darunter als dessen Beiwerk. Es darf die Komponenten nicht zu einer Zeile mit Trennzeichen zusammenziehen. Herkunft: Recherche: mensa.fb4.it, Feld `lines[]`, 2026-09-22. Die Quelle liefert die Bezeichnung bereits zerlegt — „Gebackener Kabeljau", „Dillsauce oder", „Dip", „Salzkartoffeln", „Salat", „Vinaigrette" —, wo die abgelöste Quelle eine einzelne Zeichenkette mit ` | `-Trennern lieferte.
+Das System muss die Bezeichnung eines Gerichts nach dessen Komponenten gegliedert anzeigen: die erste Komponente hervorgehoben als Name des Gerichts, die weiteren darunter als dessen Beiwerk. Es darf die Komponenten nicht zu einer Zeile mit Trennzeichen zusammenziehen. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Feld: siehe integrations/spec.md). Die Quelle liefert die Bezeichnung bereits zerlegt — „Gebackener Kabeljau", „Dillsauce oder", „Dip", „Salzkartoffeln", „Salat", „Vinaigrette" —, wo die abgelöste Quelle eine einzelne Zeichenkette mit ` | `-Trennern lieferte.
 
 #### Scenario: Gericht mit mehreren Komponenten
 - **WHEN** die Quelle zu einem Gericht mehrere Komponenten liefert
@@ -734,7 +734,7 @@ Das System muss die Bezeichnung eines Gerichts nach dessen Komponenten geglieder
 
 ### Requirement: Standortangaben der Mensa
 
-Das System muss zu jeder Mensa, zu der die Quelle sie führt, deren Anschrift, deren Beschreibung und einen Verweis auf ihre Lage in einem Kartendienst anbieten. Fehlt eine dieser Angaben, entfällt sie ersatzlos, ohne dass die übrigen ausbleiben. Herkunft: Recherche: mensa.fb4.it `GET /canteens`, Felder `address`, `description`, `mapsUrl`, 2026-09-22. Die abgelöste Quelle führte keine dieser Angaben; vier der 15 Standorte liegen außerhalb Dortmunds.
+Das System muss zu jeder Mensa, zu der die Quelle sie führt, deren Anschrift, deren Beschreibung und einen Verweis auf ihre Lage in einem Kartendienst anbieten. Fehlt eine dieser Angaben, entfällt sie ersatzlos, ohne dass die übrigen ausbleiben. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Endpunkt und Felder: siehe integrations/spec.md). Die abgelöste Quelle führte keine dieser Angaben; vier der 15 Standorte liegen außerhalb Dortmunds.
 
 #### Scenario: Mensa mit vollständigen Standortangaben
 - **WHEN** die Quelle zu einer Mensa Anschrift, Beschreibung und Kartenverweis führt
@@ -746,7 +746,7 @@ Das System muss zu jeder Mensa, zu der die Quelle sie führt, deren Anschrift, d
 
 ### Requirement: Getrennte Abschnitte für Allergene und Zusatzstoffe im Filtermenü
 
-Das System muss die auswählbaren Kennzeichnungen im Filtermenü in zwei getrennten Abschnitten anbieten — Allergene und Zusatzstoffe —, entsprechend der Einordnung durch die Quelle. Eine bereits bestehende Auswahl der Nutzerin muss dabei unverändert gültig bleiben und im jeweils zugehörigen Abschnitt erscheinen. Herkunft: Recherche: mensa.fb4.it `GET /legend`, 2026-09-22. Die Quelle trennt 27 Allergene von 11 Zusatzstoffen; die abgelöste Quelle lieferte beide als eine Liste. Die Schlüssel sind in beiden Quellen dieselben, weshalb eine bestehende Auswahl ohne Umschreibung gültig bleibt.
+Das System muss die auswählbaren Kennzeichnungen im Filtermenü in zwei getrennten Abschnitten anbieten — Allergene und Zusatzstoffe —, entsprechend der Einordnung durch die Quelle. Eine bereits bestehende Auswahl der Nutzerin muss dabei unverändert gültig bleiben und im jeweils zugehörigen Abschnitt erscheinen. Herkunft: Recherche: mensa.fb4.it, 2026-09-22 (Endpunkt: siehe integrations/spec.md). Die Quelle trennt 27 Allergene von 11 Zusatzstoffen; die abgelöste Quelle lieferte beide als eine Liste. Die Schlüssel sind in beiden Quellen dieselben, weshalb eine bestehende Auswahl ohne Umschreibung gültig bleibt.
 
 #### Scenario: Filtermenü mit beiden Abschnitten
 - **WHEN** die Nutzerin das Filtermenü öffnet
