@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { logError } from '@/errors/AppError';
 import { useTheme } from '@/theme';
 import { AppButton } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
@@ -33,7 +34,7 @@ export function CanteenSelectionScreen() {
       {gewaehlt.length > 0 ? (
         <Abschnitt titel={t('mensa.gewaehlteMensen')}>
           {gewaehlt.map((m, i) => (
-            <Zeile key={m.id} name={m.name}>
+            <Zeile key={m.id} mensa={m}>
               <Ordnen
                 labelHoch={t('mensa.nachOben')}
                 labelRunter={t('mensa.nachUnten')}
@@ -54,7 +55,7 @@ export function CanteenSelectionScreen() {
 
       <Abschnitt titel={t('mensa.weitereMensen')}>
         {uebrige.map((m) => (
-          <Zeile key={m.id} name={m.name}>
+          <Zeile key={m.id} mensa={m}>
             <Switch value={false} onValueChange={() => toggle(m.id)} accessibilityLabel={m.name} />
           </Zeile>
         ))}
@@ -90,12 +91,51 @@ function Abschnitt({ titel, children }: { titel: string; children: ReactNode }) 
   );
 }
 
-function Zeile({ name, children }: { name: string; children: ReactNode }) {
+function Zeile({ mensa, children }: { mensa: Mensa; children: ReactNode }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.zeile, { borderBottomColor: colors.border }]}>
-      <Text style={[styles.name, { color: colors.text }]}>{name}</Text>
+      <View style={styles.nameSpalte}>
+        <Text style={[styles.name, { color: colors.text }]}>{mensa.name}</Text>
+        <Standort mensa={mensa} />
+      </View>
       <View style={styles.aktionen}>{children}</View>
+    </View>
+  );
+}
+
+/**
+ * Standortangaben der Mensa (Requirement „Standortangaben der Mensa"): Anschrift,
+ * Beschreibung und ein Kartenverweis, aus INT-020 durchgereicht. Fehlt eine
+ * dieser Angaben, entfällt sie ersatzlos, ohne dass die übrigen ausbleiben.
+ */
+function Standort({ mensa }: { mensa: Mensa }) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const { anschrift, beschreibung, kartenUrl } = mensa;
+
+  if (!anschrift && !beschreibung && !kartenUrl) return null;
+
+  return (
+    <View style={styles.standort}>
+      {beschreibung ? (
+        <Text style={[styles.standortText, { color: colors.textMuted }]}>{beschreibung}</Text>
+      ) : null}
+      {anschrift ? (
+        <Text style={[styles.standortText, { color: colors.textMuted }]}>{anschrift}</Text>
+      ) : null}
+      {kartenUrl ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() =>
+            Linking.openURL(kartenUrl).catch((e) => logError('canteen.openMaps', e))
+          }
+        >
+          <Text style={[styles.standortLink, { color: colors.accent }]}>
+            {t('mensa.kartenLink')}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -159,9 +199,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 48,
+    paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  name: { fontSize: 16, flex: 1 },
+  nameSpalte: { flex: 1, gap: 2 },
+  name: { fontSize: 16 },
+  standort: { gap: 1 },
+  standortText: { fontSize: 12 },
+  standortLink: { fontSize: 12, fontWeight: '600' },
   aktionen: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ordnenKnopf: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   hinweis: { padding: 10, borderRadius: 8 },

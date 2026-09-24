@@ -62,6 +62,46 @@ describe('MENSA-F-075 Hinweis auf den Ausgangsbestand', () => {
   });
 });
 
+describe('Standortangaben der Mensa', () => {
+  it('bietet Anschrift, Beschreibung und Kartenverweis an, wenn die Quelle alle drei führt', () => {
+    mockMensen = {
+      ...mockMensen,
+      mensen: [
+        {
+          ...mensa('Mensa', 'Hauptmensa', 10),
+          anschrift: 'Emil-Figge-Straße 42, 44227 Dortmund',
+          beschreibung: 'Größte Mensa am Campus',
+          kartenUrl: 'https://example.org/karte/hauptmensa',
+        },
+        mensa('Sued', 'Mensa Süd', 20),
+        mensa('Kostbar', 'Kostbar', 30),
+      ],
+    };
+    renderScreen();
+    expect(screen.getByText('Größte Mensa am Campus')).toBeTruthy();
+    expect(screen.getByText('Emil-Figge-Straße 42, 44227 Dortmund')).toBeTruthy();
+    expect(screen.getByText('Karte öffnen')).toBeTruthy();
+  });
+
+  it('lässt bei fehlender Anschrift allein diese entfallen und zeigt die übrigen Angaben weiterhin', () => {
+    mockMensen = {
+      ...mockMensen,
+      mensen: [
+        {
+          ...mensa('Mensa', 'Hauptmensa', 10),
+          beschreibung: 'Größte Mensa am Campus',
+          kartenUrl: 'https://example.org/karte/hauptmensa',
+        },
+        mensa('Sued', 'Mensa Süd', 20),
+        mensa('Kostbar', 'Kostbar', 30),
+      ],
+    };
+    renderScreen();
+    expect(screen.getByText('Größte Mensa am Campus')).toBeTruthy();
+    expect(screen.getByText('Karte öffnen')).toBeTruthy();
+  });
+});
+
 describe('MENSA-F-020 Rückkehr zum Speiseplan nach der Auswahl', () => {
   it('zeigt bei mindestens einer gewählten Mensa eine „Fertig"-Schaltfläche zurück zum Plan', () => {
     renderScreen();

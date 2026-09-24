@@ -41,11 +41,11 @@
 
 ## 6. App — Gerichtsdarstellung
 
-- [ ] 6.1 Gerichtsbezeichnung nach Komponenten gegliedert darstellen, erste Komponente hervorgehoben. Verifikation: Test `Gerichtsbezeichnung nach Komponenten gegliedert`.
-- [ ] 6.2 Allergene und Zusatzstoffe am Gericht unterscheidbar ausweisen. Verifikation: Test `Gerichtsangaben — Kategorie, Bezeichnung, Preise, Zusatzstoffe`.
-- [ ] 6.3 Kennzeichnungen aus dem festen Vokabular der Quelle anzeigen, einschließlich „artgerecht". Verifikation: Test `Anzeige von Gericht-Kennzeichnungen`.
-- [ ] 6.4 CO₂-Klasse und Klimateller-Abzeichen anzeigen. Verifikation: Test `Anzeige der CO₂-Klasse am Gericht`.
-- [ ] 6.5 Standortangaben je Mensa anbieten (Anschrift, Beschreibung, Kartenverweis), mit Auslassen einzelner fehlender Angaben. Verifikation: Test `Standortangaben der Mensa`.
+- [x] 6.1 Gerichtsbezeichnung nach Komponenten gegliedert darstellen, erste Komponente hervorgehoben. Verifikation: Test `Gerichtsbezeichnung nach Komponenten gegliedert`.
+- [x] 6.2 Allergene und Zusatzstoffe am Gericht unterscheidbar ausweisen. Verifikation: Test `Gerichtsangaben — Kategorie, Bezeichnung, Preise, Zusatzstoffe`.
+- [x] 6.3 Kennzeichnungen aus dem festen Vokabular der Quelle anzeigen, einschließlich „artgerecht". Verifikation: Test `Anzeige von Gericht-Kennzeichnungen`.
+- [x] 6.4 CO₂-Klasse und Klimateller-Abzeichen anzeigen. Verifikation: Test `Anzeige der CO₂-Klasse am Gericht`.
+- [x] 6.5 Standortangaben je Mensa anbieten (Anschrift, Beschreibung, Kartenverweis), mit Auslassen einzelner fehlender Angaben. Verifikation: Test `Standortangaben der Mensa`.
 
 ## 7. App — Filter, Sortierung, Gruppierung
 

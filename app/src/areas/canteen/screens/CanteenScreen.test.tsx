@@ -262,6 +262,84 @@ describe('MENSA-F-010 / MENSA-F-030 / MENSA-F-220 Gerichte des Tages mit dem Pre
   });
 });
 
+describe('Gerichtsbezeichnung nach Komponenten gegliedert', () => {
+  it('zeigt bei mehreren Komponenten die erste hervorgehoben und die weiteren darunter, nicht als eine Zeile mit Trennzeichen', async () => {
+    mockPlaene = {
+      Mensa: qr([
+        gericht({
+          bezeichnung: 'Gebackener Kabeljau | Dillsauce | Salzkartoffeln',
+          komponenten: ['Gebackener Kabeljau', 'Dillsauce', 'Salzkartoffeln'],
+        }),
+      ]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Gebackener Kabeljau')).toBeTruthy());
+    expect(screen.getByText('Dillsauce, Salzkartoffeln')).toBeTruthy();
+    expect(screen.queryByText('Gebackener Kabeljau | Dillsauce | Salzkartoffeln')).toBeNull();
+  });
+
+  it('zeigt bei genau einer Komponente allein diese als Namen', async () => {
+    mockPlaene = {
+      Mensa: qr([gericht({ bezeichnung: 'Linsensuppe', komponenten: ['Linsensuppe'] })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Linsensuppe')).toBeTruthy());
+  });
+});
+
+describe('Gerichtsangaben — Kategorie, Bezeichnung, Preise, Zusatzstoffe', () => {
+  it('zeigt Kategorie, Bezeichnung, alle drei Preise sowie Allergen- und Zusatzstoffhinweise', async () => {
+    mockGroup = 'guest';
+    mockPlaene = {
+      Mensa: qr([
+        gericht({ zusatzstoffe: ['Weizen', 'Farbstoff'], allergene: ['Weizen'] }),
+      ]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Gäste 6,50 €')).toBeTruthy();
+    expect(screen.getByText(/Allergene: Weizen/)).toBeTruthy();
+    expect(screen.getByText(/Zusatzstoffe: Farbstoff/)).toBeTruthy();
+  });
+
+  it('macht Allergene und Zusatzstoffe als solche unterscheidbar, statt sie doppelt zu nennen', async () => {
+    mockPlaene = {
+      Mensa: qr([gericht({ zusatzstoffe: ['Weizen', 'Farbstoff'], allergene: ['Weizen'] })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText(/Allergene: Weizen/)).toBeTruthy());
+    // Weizen steht als Allergen, nicht zusätzlich in der Zusatzstoff-Zeile.
+    expect(screen.queryByText(/Zusatzstoffe: Weizen/)).toBeNull();
+    expect(screen.getByText(/Zusatzstoffe: Farbstoff/)).toBeTruthy();
+  });
+});
+
+describe('Anzeige von Gericht-Kennzeichnungen', () => {
+  it('zeigt jede von der Quelle gelieferte Kennzeichnung am Gericht, einschließlich „artgerecht"', async () => {
+    mockPlaene = {
+      Mensa: qr([gericht({ kennzeichnungen: ['vegan', 'artgerecht'] })]),
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('vegan · artgerecht')).toBeTruthy());
+  });
+});
+
+describe('Anzeige der CO₂-Klasse am Gericht', () => {
+  it('zeigt die CO₂-Klasse eines Gerichts an', async () => {
+    mockPlaene = { Mensa: qr([gericht({ co2Klasse: 'B' })]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('CO₂-Klasse B')).toBeTruthy());
+    expect(screen.queryByText('Klimateller')).toBeNull();
+  });
+
+  it('kennzeichnet ein Gericht der besten CO₂-Klasse zusätzlich als Klimateller', async () => {
+    mockPlaene = { Mensa: qr([gericht({ co2Klasse: 'A' })]) };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('CO₂-Klasse A')).toBeTruthy());
+    expect(screen.getByText('Klimateller')).toBeTruthy();
+  });
+});
+
 describe('MENSA-F-012 / MENSA-F-014 zusammengefasste Liste über die gewählten Mensen', () => {
   it('führt ein an beiden Mensen angebotenes Gericht einmal und nennt beide Mensen', async () => {
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
