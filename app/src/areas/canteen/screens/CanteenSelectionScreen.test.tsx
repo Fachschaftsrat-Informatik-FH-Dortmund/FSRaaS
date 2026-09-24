@@ -39,7 +39,7 @@ describe('MENSA-F-020 Auswahl der angezeigten Mensen aus der Backend-Liste', () 
     expect(screen.getByText('Weitere Mensen')).toBeTruthy();
     expect(screen.getByText('Kostbar')).toBeTruthy();
 
-    fireEvent(screen.getAllByLabelText('Kostbar')[0], 'valueChange', true);
+    fireEvent(screen.getAllByLabelText('Kostbar')[0]!, 'valueChange', true);
     expect(toggle).toHaveBeenCalledWith('Kostbar');
   });
 });
@@ -49,7 +49,7 @@ describe('MENSA-F-025 Reihenfolge der gewählten Mensen', () => {
     renderScreen();
     // Zweite gewählte Mensa (Hauptmensa) nach oben — die erste Schaltfläche ist
     // für die oberste Mensa deaktiviert.
-    fireEvent.press(screen.getAllByLabelText('Nach oben')[1]);
+    fireEvent.press(screen.getAllByLabelText('Nach oben')[1]!);
     expect(move).toHaveBeenCalledWith('Mensa', -1);
   });
 });

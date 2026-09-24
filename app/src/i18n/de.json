@@ -141,14 +141,16 @@
     "gruppierung": {
       "keine": "keine Gruppierung",
       "mensa": "nach Mensa",
-      "kategorie": "nach Kategorie"
+      "kategorie": "nach Kategorie",
+      "co2": "nach CO₂-Klasse"
     },
     "sortierkriterium": {
       "quelle": "Reihenfolge der Mensa",
       "bezeichnung": "Bezeichnung",
       "preis": "Preis",
       "eigeneBewertung": "eigene Bewertungsstufe",
-      "community": "Community-Gesamtbewertung"
+      "community": "Community-Gesamtbewertung",
+      "co2": "CO₂-Klasse"
     },
     "gruppenkriterium": {
       "reihenfolgeMensa": "Meine Mensa-Reihenfolge",
@@ -167,7 +169,15 @@
       "4": "Donnerstag",
       "5": "Freitag",
       "6": "Samstag"
-    }
+    },
+    "allergeneTitel": "Allergene",
+    "zusatzstoffeTitel": "Zusatzstoffe",
+    "allergenGruppe": {
+      "20": "Alle Glutenarten",
+      "27": "Alle Nussarten"
+    },
+    "allergenGruppeAllgemein": "Alle Untergruppen von {{stamm}}",
+    "co2AusschliessenTitel": "CO₂-Klassen ausschließen"
   },
   "schedule": {
     "einrichtungTitel": "Einrichtung",
@@ -414,7 +424,8 @@
     "minutesAgo": "vor {{count}} Min.",
     "hoursAgo": "vor {{count}} Std.",
     "daysAgo": "vor {{count}} Tg.",
-    "offlineHint": "Offline – zuletzt geladener Stand"
+    "offlineHint": "Offline – zuletzt geladener Stand",
+    "quelleHinweis": "Die Mensa-Schnittstelle meldet einen veralteten Stand"
   },
   "consent": {
     "title": "Datenschutz",

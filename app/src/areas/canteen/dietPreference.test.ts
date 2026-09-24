@@ -19,7 +19,11 @@ describe('MENSA-F-250 / F-260 Lebensstil-Vorgabe und Ausschluss', () => {
     act(() => result.current.toggleAusschluss('schwein'));
     await waitFor(() => expect(result.current.prefs.nurZeigen).toEqual(['vegan']));
     expect(result.current.prefs.ausschluss).toEqual(['schwein']);
-    expect(await readDietPreference()).toEqual({ nurZeigen: ['vegan'], ausschluss: ['schwein'] });
+    expect(await readDietPreference()).toEqual({
+      nurZeigen: ['vegan'],
+      ausschluss: ['schwein'],
+      co2Ausschluss: [],
+    });
   });
 
   it('verschiebt eine Kennzeichnung von der Vorgabe in den Ausschluss statt sie doppelt zu führen', async () => {
@@ -32,7 +36,47 @@ describe('MENSA-F-250 / F-260 Lebensstil-Vorgabe und Ausschluss', () => {
     expect(result.current.prefs.nurZeigen).toEqual([]);
 
     act(() => result.current.clear());
-    await waitFor(() => expect(result.current.prefs).toEqual({ nurZeigen: [], ausschluss: [] }));
+    await waitFor(() =>
+      expect(result.current.prefs).toEqual({ nurZeigen: [], ausschluss: [], co2Ausschluss: [] }),
+    );
+  });
+});
+
+describe('Ausschluss nach Kennzeichnung — CO₂-Klassen', () => {
+  it('nimmt CO₂-Klassen als eigene Ausschlussliste auf und persistiert sie', async () => {
+    const { result } = renderHook(() => useDietPreference());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.toggleCo2Ausschluss('E'));
+    await waitFor(() => expect(result.current.prefs.co2Ausschluss).toEqual(['E']));
+    expect((await readDietPreference()).co2Ausschluss).toEqual(['E']);
+
+    act(() => result.current.toggleCo2Ausschluss('E'));
+    await waitFor(() => expect(result.current.prefs.co2Ausschluss).toEqual([]));
+  });
+
+  it('lässt Lebensstil-Vorgabe und Kennzeichnungs-Ausschluss unberührt', async () => {
+    const { result } = renderHook(() => useDietPreference());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    act(() => result.current.toggleNurZeigen('vegan'));
+    act(() => result.current.toggleCo2Ausschluss('E'));
+    await waitFor(() => expect(result.current.prefs.co2Ausschluss).toEqual(['E']));
+    expect(result.current.prefs.nurZeigen).toEqual(['vegan']);
+  });
+
+  it('übernimmt einen vor der Aufnahme der CO₂-Klassen gespeicherten Stand unverändert', async () => {
+    await AsyncStorage.setItem(
+      'fb4:dishDietPreference',
+      JSON.stringify({ nurZeigen: ['vegan'], ausschluss: ['schwein'] }),
+    );
+    const { result } = renderHook(() => useDietPreference());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.prefs).toEqual({
+      nurZeigen: ['vegan'],
+      ausschluss: ['schwein'],
+      co2Ausschluss: [],
+    });
   });
 });
 

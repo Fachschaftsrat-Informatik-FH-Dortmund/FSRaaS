@@ -174,6 +174,15 @@ paths:
                     type: array
                     description: Ernährungs-/Herkunftsmerkmale (INT-020 `legend.tags`), erfüllt MENSA-F-035.
                     items: { $ref: "#/components/schemas/Schluesselwert" }
+                  co2Klassen:
+                    type: array
+                    description: >-
+                      CO₂-Klassen mit ihren Klartexten (INT-020 `legend.climate`). `id`
+                      ist der Schlüssel, den `Gericht.co2Klasse` führt. Grundlage des
+                      Ausschlusses nach CO₂-Klasse im Filtermenü (Capability `canteen`,
+                      Requirement „Ausschluss nach Kennzeichnung"); die App zählt die
+                      Klassen deshalb nicht selbst auf.
+                    items: { $ref: "#/components/schemas/Schluesselwert" }
         default: { $ref: "#/components/responses/Fehler" }
 
   /mensen/{mensaId}/oeffnungszeiten:

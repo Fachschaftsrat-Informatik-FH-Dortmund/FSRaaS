@@ -26,7 +26,13 @@ function bereinige(v: unknown): DietPrefs {
   const roh = (v ?? {}) as Partial<Record<keyof DietPrefs, unknown>>;
   const liste = (x: unknown): string[] =>
     Array.isArray(x) ? x.filter((e): e is string => typeof e === 'string') : [];
-  return { nurZeigen: liste(roh.nurZeigen), ausschluss: liste(roh.ausschluss) };
+  return {
+    nurZeigen: liste(roh.nurZeigen),
+    ausschluss: liste(roh.ausschluss),
+    // Fehlt bei einem vor der Aufnahme der CO₂-Klassen gespeicherten Stand; die
+    // übrige Auswahl bleibt dabei unverändert gültig.
+    co2Ausschluss: liste(roh.co2Ausschluss),
+  };
 }
 
 function subscribe(cb: () => void): () => void {
@@ -55,13 +61,13 @@ function schreiben(next: DietPrefs) {
   writeJson(KEY, next).catch((error) => logError('dietPreference.save', error));
 }
 
-function umschalten(feld: keyof DietPrefs, code: string): DietPrefs {
+function umschalten(feld: 'nurZeigen' | 'ausschluss', code: string): DietPrefs {
   const aktuell = snapshot[feld];
   const neu = aktuell.includes(code)
     ? aktuell.filter((c) => c !== code)
     : [...aktuell, code];
   // Eine Kennzeichnung ist entweder Lebensstil-Vorgabe oder Ausschluss, nie beides.
-  const anderes: keyof DietPrefs = feld === 'nurZeigen' ? 'ausschluss' : 'nurZeigen';
+  const anderes = feld === 'nurZeigen' ? 'ausschluss' : 'nurZeigen';
   return {
     ...snapshot,
     [feld]: neu,
@@ -90,7 +96,18 @@ export function useDietPreference() {
     (code: string) => schreiben(umschalten('ausschluss', code)),
     [],
   );
+  // CO₂-Klassen stehen in einem eigenen Feld des Gerichts und kennen keine
+  // Lebensstil-Vorgabe — deshalb ein eigener Umschalter ohne Gegenstück.
+  const toggleCo2Ausschluss = useCallback((klasse: string) => {
+    const aktuell = snapshot.co2Ausschluss;
+    schreiben({
+      ...snapshot,
+      co2Ausschluss: aktuell.includes(klasse)
+        ? aktuell.filter((k) => k !== klasse)
+        : [...aktuell, klasse],
+    });
+  }, []);
   const clear = useCallback(() => schreiben(LEERE_DIET_PREFS), []);
 
-  return { prefs, loaded, toggleNurZeigen, toggleAusschluss, clear };
+  return { prefs, loaded, toggleNurZeigen, toggleAusschluss, toggleCo2Ausschluss, clear };
 }

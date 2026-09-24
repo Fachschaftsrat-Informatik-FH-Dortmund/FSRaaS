@@ -26,7 +26,7 @@ import {
 // Alle Hooks stehen vor jedem bedingten Return; Dependency-Arrays enthalten nur
 // volle Referenzen (siehe design.md „Risks", eslint-plugin-react-hooks).
 
-const GRUPPIERUNGEN: Gruppierung[] = ['keine', 'mensa', 'kategorie'];
+const GRUPPIERUNGEN: Gruppierung[] = ['keine', 'mensa', 'kategorie', 'co2'];
 const GRUPPEN_KRITERIEN: GruppenKriterium[] = ['reihenfolge', 'alphabetisch'];
 const SORTIER_KRITERIEN: Sortierkriterium[] = [
   'quelle',
@@ -34,6 +34,7 @@ const SORTIER_KRITERIEN: Sortierkriterium[] = [
   'preis',
   'eigeneBewertung',
   'community',
+  'co2',
 ];
 const RICHTUNGEN: Richtung[] = ['auf', 'ab'];
 

@@ -49,17 +49,17 @@
 
 ## 7. App — Filter, Sortierung, Gruppierung
 
-- [ ] 7.1 Filtermenü in Allergene und Zusatzstoffe trennen, bestehende Auswahl unverändert übernehmen. Verifikation: Test `Getrennte Abschnitte für Allergene und Zusatzstoffe im Filtermenü`, der eine vor der Trennung gespeicherte Auswahl lädt.
-- [ ] 7.2 Sammelschalter für Gluten (`20a`–`20f`) und Nüsse (`27a`–`27h`). Verifikation: Test `Sammelschalter für zusammengehörige Allergengruppen`.
-- [ ] 7.3 Unverträglichkeitsauswahl auf die getrennte Führung nachziehen, ohne den bestehenden Übertragungsausschluss zu berühren. Verifikation: Test `Festlegen eigener Unverträglichkeiten`; der bestehende Test zum Übertragungsverbot bleibt grün.
-- [ ] 7.4 CO₂-Klassen in den Ausschlussfilter aufnehmen. Verifikation: Test `Ausschluss nach Kennzeichnung`.
-- [ ] 7.5 CO₂-Klasse als Sortierkriterium und als Gruppierungs-Baustein aufnehmen. Verifikation: Tests `Sortierkriterien für Gerichte` und `Wahl der Gruppierung`.
-- [ ] 7.6 Beschriftung der Quellreihenfolge auf INT-020 beziehen. Verifikation: Test `Gruppenreihenfolge-Kriterien bei Kategorie-Gruppierung`.
+- [x] 7.1 Filtermenü in Allergene und Zusatzstoffe trennen, bestehende Auswahl unverändert übernehmen. Verifikation: Test `Getrennte Abschnitte für Allergene und Zusatzstoffe im Filtermenü`, der eine vor der Trennung gespeicherte Auswahl lädt.
+- [x] 7.2 Sammelschalter für Gluten (`20a`–`20f`) und Nüsse (`27a`–`27h`). Verifikation: Test `Sammelschalter für zusammengehörige Allergengruppen`. Erledigt: `app/src/areas/canteen/allergenGruppen.ts` leitet die Gruppen aus dem Verzeichnis ab (Schlüssel `<Ziffern><Kleinbuchstabe>` gehören zum Stamm `<Ziffern>`), statt sie im Code aufzuzählen. Der Stamm `20` bleibt dabei ein eigener, einzeln wählbarer Eintrag — die Quelle führt ihn als „Gluten (nicht näher bezeichnet)“, während sie zu den Nüssen gar keinen Stamm-Eintrag kennt.
+- [x] 7.3 Unverträglichkeitsauswahl auf die getrennte Führung nachziehen, ohne den bestehenden Übertragungsausschluss zu berühren. Verifikation: Test `Festlegen eigener Unverträglichkeiten`; der bestehende Test zum Übertragungsverbot bleibt grün.
+- [x] 7.4 CO₂-Klassen in den Ausschlussfilter aufnehmen. Verifikation: Test `Ausschluss nach Kennzeichnung`. Nachtrag 2026-09-24: Damit das Filtermenü die Klassen anbieten kann, ohne sie im Code aufzuzählen (INT-020-Feldwerte gehören nicht in den App-Code), wurde `/mensen/verzeichnisse` additiv um `co2Klassen` erweitert — durchgereicht aus `legend.climate`, wie zuvor `allergene` aus `legend.allergens` (1.1/1.2). Die Auswahl liegt im gerätelokalen `dishDietPreference` als eigenes Feld `co2Ausschluss`; ein vor der Aufnahme gespeicherter Stand bleibt unverändert gültig.
+- [x] 7.5 CO₂-Klasse als Sortierkriterium und als Gruppierungs-Baustein aufnehmen. Verifikation: Tests `Sortierkriterien für Gerichte` und `Wahl der Gruppierung`.
+- [x] 7.6 Beschriftung der Quellreihenfolge auf INT-020 beziehen. Verifikation: Test `Gruppenreihenfolge-Kriterien bei Kategorie-Gruppierung`. Erledigt: Die Anzeigebeschriftung „Reihenfolge der Mensa“ bleibt — sie benennt bereits die Reihenfolge der Ausgabestellen (design.md D7); nachgezogen wurde der Quellbezug in `sortierung.ts` sowie in `dietFilter.ts` und `intolerances.ts`, die noch auf INT-015-Endpunkte verwiesen.
 
 ## 8. App — Datenalter
 
-- [ ] 8.1 Altershinweis auch bei bestehender Netzverbindung zeigen, wenn die Quelle einen überalterten Stand meldet. Verifikation: Test `Altershinweis bei veralteten Daten der Mensa-Schnittstelle`.
-- [ ] 8.2 Belegen, dass die App die Mensa-Schnittstelle nie unmittelbar anspricht. Verifikation: Test `News und Mensa-Speisepläne über das Backend`.
+- [x] 8.1 Altershinweis auch bei bestehender Netzverbindung zeigen, wenn die Quelle einen überalterten Stand meldet. Verifikation: Test `Altershinweis bei veralteten Daten der Mensa-Schnittstelle`. Erledigt: `quelleVeraltet` in `dataAge.ts` prüft allein den gemeldeten Stand, ohne Netzbedingung; `AsyncStates` nimmt ihn als optionales `quelleStand` entgegen und zeigt den Hinweis mit eigenem Grundtext — der Offline-Hinweis (DATA-F-090) geht vor, weil er zugleich nennt, warum gerade nicht nachgeladen werden kann. Offene Frage aus design.md entschieden: das Höchstalter ist `quelleMaxAlter('speiseplan')` = `max(staleTime, 1 Tag)` — der tagesgebundene `staleTime` ginge am Abend gegen null, während fachlich ein Stand von gestern den heutigen Plan nicht mehr trägt. Maßgeblich ist der älteste Stand über die gewählten Mensen.
+- [x] 8.2 Belegen, dass die App die Mensa-Schnittstelle nie unmittelbar anspricht. Verifikation: Test `News und Mensa-Speisepläne über das Backend`. Erledigt: `app/src/areas/canteen/keinDirektaufruf.test.ts` liest den App-Quelltext und belegt, dass weder INT-020 (`mensa.fb4.it`) noch die abgelöste INT-015 noch die News-Quelle INT-008 dort adressiert werden, und dass `api.ts` allein über den erzeugten Backend-Client geht. Quelltextprüfung statt Verhaltenstest, weil ein **unterbliebener** Aufruf sich nicht beobachten lässt — dasselbe Vorgehen wie beim bestehenden Übertragungsverbot MENSA-F-215.
 
 ## 9. Entscheidungen und Register
 
@@ -71,6 +71,6 @@
 
 ## 10. Abschluss
 
-- [ ] 10.1 Gesamte Testsuite in App und Backend grün, `tsc` und Lint fehlerfrei. Verifikation: die Läufe enden ohne Fehler.
+- [x] 10.1 Gesamte Testsuite in App und Backend grün, `tsc` und Lint fehlerfrei. Verifikation: die Läufe enden ohne Fehler. Erledigt 2026-09-24: App 1427 Tests in 98 Suiten grün, Backend 98 Tests grün, Backend-Build ohne Warnung, `node tools/spec-check/src/cli.js` grün, `openspec validate` grün, `contract-codegen --check` ohne Abweichung. `tsc` läuft fehlerfrei — dabei wurden zwei schon vor diesem Change bestehende Fehler in `CanteenSelectionScreen.test.tsx` behoben (fehlende `!`-Zusicherung bei `getAllByLabelText(...)[n]` unter `noUncheckedIndexedAccess`). Lint: 0 Fehler, 37 Warnungen — unverändert dieselben wie auf `main`, keine aus diesem Change.
 - [ ] 10.2 Gerätetest des Mensaplans gegen die Live-Schnittstelle: Tagwechsel, geschlossene Mensa, geöffnete Mensa ohne Speiseplan, Filtermenü, Sortierung. Verifikation: datiertes Prüfprotokoll unter `specs/pruefprotokolle/` (Capability `quality-and-testing` lässt das für Gestaltung und Bedienung zu).
 - [ ] 10.3 Change archivieren. Verifikation: `openspec archive mensa-api-abloesung` läuft durch, und die Spec-Deltas sind in `openspec/specs/` übernommen (DoD-Punkt 4).
