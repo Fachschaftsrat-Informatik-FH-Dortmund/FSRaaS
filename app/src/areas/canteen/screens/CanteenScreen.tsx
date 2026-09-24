@@ -659,6 +659,26 @@ function GerichtKarte({
   const { colors } = useTheme();
   const g = eintrag.massgeblich;
 
+  // Gerichtsbezeichnung nach Komponenten gegliedert (Requirement
+  // „Gerichtsbezeichnung nach Komponenten gegliedert"): die erste Komponente ist
+  // der Name, die weiteren sind Beiwerk. `komponenten` fehlt bei älteren Ständen
+  // nicht — die Quelle liefert sie immer —, ein Fallback auf `bezeichnung` hält
+  // die Anzeige aber auch dann aufrecht, wenn sie doch einmal ausbleibt.
+  const komponenten = g.komponenten && g.komponenten.length > 0 ? g.komponenten : [g.bezeichnung];
+  const [name, ...beiwerk] = komponenten;
+
+  // Allergene und Zusatzstoffe unterscheidbar ausweisen (Requirement
+  // „Gerichtsangaben — Kategorie, Bezeichnung, Preise, Zusatzstoffe"):
+  // `zusatzstoffe` behält seine bisherige, umfassende Bedeutung (ADR 0016), also
+  // werden die Allergene für die eigene Zeile herausgerechnet, statt sie doppelt
+  // zu zeigen.
+  const allergene = g.allergene ?? [];
+  const nurZusatzstoffe = (g.zusatzstoffe ?? []).filter((z) => !allergene.includes(z));
+
+  // CO₂-Klasse und Klimateller-Abzeichen (Requirement „Anzeige der CO₂-Klasse am
+  // Gericht"): allein die Klasse `A` gilt als Klimateller (design.md, api-contract).
+  const KLIMATELLER_KLASSE = 'A';
+
   return (
     <View
       style={[
@@ -668,7 +688,12 @@ function GerichtKarte({
       ]}
     >
       <View style={styles.kartekopf}>
-        <Text style={[styles.bezeichnung, { color: colors.text }]}>{g.bezeichnung}</Text>
+        <View style={styles.bezeichnungSpalte}>
+          <Text style={[styles.bezeichnung, { color: colors.text }]}>{name}</Text>
+          {beiwerk.length > 0 ? (
+            <Text style={[styles.beiwerk, { color: colors.textMuted }]}>{beiwerk.join(', ')}</Text>
+          ) : null}
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: favorit }}
@@ -694,6 +719,21 @@ function GerichtKarte({
         </Text>
       ) : null}
 
+      {g.co2Klasse ? (
+        <View style={styles.co2Zeile}>
+          <Text style={[styles.co2, { color: colors.textMuted }]}>
+            {t('mensa.co2Klasse', { klasse: g.co2Klasse })}
+          </Text>
+          {g.co2Klasse === KLIMATELLER_KLASSE ? (
+            <Text
+              style={[styles.klimateller, { color: colors.text, backgroundColor: colors.surface }]}
+            >
+              {t('mensa.klimateller')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <Text style={[styles.preise, { color: colors.text }]}>
         {t('mensa.preisEinzeln', {
           gruppe: t(`priceGroup.${group}`),
@@ -701,9 +741,15 @@ function GerichtKarte({
         })}
       </Text>
 
-      {g.zusatzstoffe && g.zusatzstoffe.length > 0 ? (
+      {allergene.length > 0 ? (
+        <Text style={[styles.allergene, { color: colors.textMuted }]}>
+          {t('mensa.allergene', { liste: allergene.join(', ') })}
+        </Text>
+      ) : null}
+
+      {nurZusatzstoffe.length > 0 ? (
         <Text style={[styles.zusatzstoffe, { color: colors.textMuted }]}>
-          {t('mensa.zusatzstoffe', { liste: g.zusatzstoffe.join(', ') })}
+          {t('mensa.zusatzstoffe', { liste: nurZusatzstoffe.join(', ') })}
         </Text>
       ) : null}
     </View>
@@ -791,11 +837,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  bezeichnung: { fontSize: 15, fontWeight: '600', flex: 1 },
+  bezeichnungSpalte: { flex: 1, gap: 2 },
+  bezeichnung: { fontSize: 15, fontWeight: '600' },
+  beiwerk: { fontSize: 13 },
   stern: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   anbieter: { fontSize: 13 },
   kennzeichnungen: { fontSize: 13 },
+  co2Zeile: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  co2: { fontSize: 12 },
+  klimateller: {
+    fontSize: 11,
+    fontWeight: '600',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
   preise: { fontSize: 14 },
+  allergene: { fontSize: 12 },
   zusatzstoffe: { fontSize: 12 },
   fuss: { gap: 6, paddingTop: 4 },
   fussZeile: { fontSize: 13 },
