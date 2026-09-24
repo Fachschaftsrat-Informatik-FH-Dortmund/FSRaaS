@@ -23,7 +23,11 @@ const g = (over: Partial<Gericht> = {}): Gericht => ({
   ...over,
 });
 
-const plan = (mensaId: string, gerichte: Gericht[]): MensaTagesplan => ({ mensaId, gerichte });
+const plan = (
+  mensaId: string,
+  gerichte: Gericht[],
+  geoeffnet?: boolean,
+): MensaTagesplan => ({ mensaId, gerichte, geoeffnet });
 
 const kontext = (over: Partial<SortierKontext> = {}): SortierKontext => ({
   preisGruppe: 'student',
@@ -104,7 +108,7 @@ describe('Gliederung nach Mensa-Auswahlreihenfolge bei aktiver Mensa-Gruppierung
   it('führt für eine gewählte Mensa ohne Angebot einen eigenen Abschnitt an der Stelle der Gruppenreihenfolge', () => {
     const k = konsolidiere([
       plan('Mensa', [g()]),
-      plan('Sued', []), // kein Angebot am Tag
+      plan('Sued', [], false), // laut Schnittstelle geschlossen
       plan('Nord', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
     ]);
     const s = wendeAn(
@@ -118,8 +122,24 @@ describe('Gliederung nach Mensa-Auswahlreihenfolge bei aktiver Mensa-Gruppierung
     expect(sued.gerichte).toEqual([]);
   });
 
+  it('führt eine geöffnete Mensa ohne Speiseplan als eigenen Abschnitt dieses Zustands', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g()], true),
+      plan('Sued', [], true), // geöffnet, führt aber keinen Speiseplan
+      plan('Nord', [], false), // geschlossen
+    ]);
+    const s = wendeAn(
+      kombi({ gruppierung: 'mensa', gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
+      k,
+      ctx,
+    );
+    expect(s.abschnitte.map((a) => a.titel)).toEqual(['Hauptmensa', 'Mensa Süd', 'Mensa Nord']);
+    expect(s.abschnitte.find((a) => a.titel === 'Mensa Süd')!.zustand).toBe('ohneSpeiseplan');
+    expect(s.abschnitte.find((a) => a.titel === 'Mensa Nord')!.zustand).toBe('geschlossen');
+  });
+
   it('erzeugt bei Gruppierung „keine" und „nach Kategorie" keinen geschlossenen Abschnitt', () => {
-    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [])]);
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [], false)]);
     for (const gruppierung of ['keine', 'kategorie'] as const) {
       const s = wendeAn(
         kombi({ gruppierung, gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' } }),
@@ -133,7 +153,7 @@ describe('Gliederung nach Mensa-Auswahlreihenfolge bei aktiver Mensa-Gruppierung
   it('ordnet den geschlossenen Abschnitt wie einen offenen — beide Kriterien, beide Richtungen', () => {
     const k = konsolidiere([
       plan('Mensa', [g()]),
-      plan('Sued', []),
+      plan('Sued', [], false),
       plan('Nord', [g({ schluessel: 'curry', bezeichnung: 'Curry' })]),
     ]);
     const titel = (kr: 'reihenfolge' | 'alphabetisch', ri: 'auf' | 'ab') =>

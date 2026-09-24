@@ -12,26 +12,29 @@ jest.mock('expo-router', () => ({
 
 
 // Öffnungsangaben kommen seit der Ablösung von INT-015 aus der Schnittstelle
-// (Requirement „Öffnungszeiten je Mensa und Wochentag"), nicht mehr aus den
-// Stammdaten. Der Wochenplan führt alle sieben Tage mit derselben Zeit, damit die
-// Erwartungen unabhängig vom angezeigten Datum gelten.
-const wochenplanMit = (zeit: string) => {
+// (Requirement „Öffnungszeiten je Mensa und Wochentag") und entscheiden auch, ob
+// ein Wochenendtag beim Blättern erreichbar ist (Requirement „Überspringen
+// geschlossener Wochenendtage") — der Speiseplan kann das nicht: er führt
+// grundsätzlich keine Wochenendtage.
+//
+// `an` nennt die ISO-Wochentage, an denen die Mensa geöffnet ist; alle übrigen
+// führt der Wochenplan als geschlossen.
+const wochenplan = (zeit: string, an: number[]) => {
   const [oeffnet, schliesst] = zeit.split(' - ');
   return {
-    wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({
-      wochentag,
-      geoeffnet: true,
-      oeffnet,
-      schliesst,
-    })),
+    wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) =>
+      an.includes(wochentag)
+        ? { wochentag, geoeffnet: true, oeffnet, schliesst }
+        : { wochentag, geoeffnet: false },
+    ),
     vorausschau: [],
     schliesstage: [],
   };
 };
 
-const mockOeffnung: Record<string, any> = {
-  Mensa: wochenplanMit('11:30 - 14:45'),
-};
+const WERKTAGS = [1, 2, 3, 4, 5];
+
+let mockOeffnung: Record<string, any>;
 
 const mockMensen = [
   {
@@ -39,6 +42,12 @@ const mockMensen = [
     name: 'Hauptmensa',
     standardAuswahl: true,
     reihenfolge: 10,
+  },
+  {
+    id: 'Canape',
+    name: 'Canapé',
+    standardAuswahl: false,
+    reihenfolge: 20,
   },
 ];
 
@@ -136,8 +145,10 @@ afterAll(() => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockSelection = { ids: ['Mensa'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-  // Keine gewählte Mensa führt an diesem Wochenende ein Angebot.
+  // Keine gewählte Mensa ist an diesem Wochenende geöffnet, und keine führt einen
+  // Speiseplan — der Speiseplan führt Wochenendtage ohnehin nicht.
   mockPlaene = { Mensa: qr([]) };
+  mockOeffnung = { Mensa: wochenplan('11:30 - 14:45', WERKTAGS) };
   client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: Infinity } },
   });
@@ -160,7 +171,7 @@ function renderScreen() {
 }
 
 describe('Aktueller Tag als Ausgangspunkt der Tagesauswahl', () => {
-  it('zeigt an einem angebotsfreien Samstag den Samstag mit dem Leerzustand „kein Angebot"', async () => {
+  it('zeigt an einem geschlossenen Samstag den Samstag mit dem Leerzustand „kein Angebot"', async () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Heute kein Angebot')).toBeTruthy());
     expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy();
@@ -174,27 +185,27 @@ describe('Aktueller Tag als Ausgangspunkt der Tagesauswahl', () => {
 
 describe('Geschlossene Abschnitte nur, wenn überhaupt etwas angeboten wird', () => {
   it('bleibt bei mehreren gewählten, allesamt geschlossenen Mensen beim Leerzustand „kein Angebot" statt einer Liste aus Geschlossen-Abschnitten (design.md D4)', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([]), Sued: qr([]) };
+    mockSelection = { ids: ['Mensa', 'Canape'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([]), Canape: qr([]) };
+    mockOeffnung.Canape = wochenplan('11:00 - 14:00', WERKTAGS);
     renderScreen();
     // Der querschnittliche Leerzustand „Heute kein Angebot" bleibt der einzige
     // Titel — keine Liste aus Geschlossen-Abschnitten mit je eigener Überschrift.
     await waitFor(() => expect(screen.getByText('Heute kein Angebot')).toBeTruthy());
     expect(screen.queryByText('Mensa')).toBeNull();
-    expect(screen.queryByText('Sued')).toBeNull();
     // Der Fußbereich trägt trotzdem den vollen Kontext, unabhängig von der
     // Gruppierung — es gibt hier keine Abschnittsüberschriften, die ihn tragen könnten.
     expect(screen.getByText(/Hauptmensa hat an diesem Tag geschlossen\./)).toBeTruthy();
-    expect(screen.getByText(/Sued hat an diesem Tag geschlossen\./)).toBeTruthy();
+    expect(screen.getByText(/Canapé hat an diesem Tag geschlossen\./)).toBeTruthy();
   });
 });
 
-describe('Überspringen angebotsfreier Wochenendtage: der aktuelle Tag ist ausgenommen', () => {
-  it('blättert vom angebotsfreien Samstag auf den Montag und wieder zurück auf den Samstag', async () => {
+describe('Überspringen geschlossener Wochenendtage', () => {
+  it('blättert vom geschlossenen Samstag auf den Montag und wieder zurück auf den Samstag (der aktuelle Tag ist ausgenommen)', async () => {
     renderScreen();
     await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
 
-    // Vorwärts: der angebotsfreie Sonntag wird übersprungen.
+    // Vorwärts: der geschlossene Sonntag wird übersprungen.
     fireEvent.press(screen.getByLabelText('Nächster Tag'));
     await waitFor(() => expect(screen.getByText('Montag, 07.09.2026')).toBeTruthy());
 
@@ -203,5 +214,38 @@ describe('Überspringen angebotsfreier Wochenendtage: der aktuelle Tag ist ausge
     expect(zurueck.props.accessibilityState.disabled).toBe(false);
     fireEvent.press(zurueck);
     await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
+  });
+
+  it('macht einen Samstag erreichbar, an dem eine gewählte Mensa geöffnet ist, obwohl für ihn kein Speiseplan vorliegt', async () => {
+    // Canapé (Iserlohn) ist samstags geöffnet; der Speiseplan führt Wochenendtage
+    // grundsätzlich nicht und hätte diesen Tag unerreichbar gemacht.
+    mockSelection = { ids: ['Mensa', 'Canape'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([]), Canape: qr([]) };
+    mockOeffnung.Canape = wochenplan('11:00 - 14:00', [...WERKTAGS, 6]);
+    renderScreen();
+
+    // Vom aktuellen Samstag vorwärts auf den Montag …
+    await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
+    fireEvent.press(screen.getByLabelText('Nächster Tag'));
+    await waitFor(() => expect(screen.getByText('Montag, 07.09.2026')).toBeTruthy());
+
+    // … und weiter bis zum folgenden Samstag, der nun nicht übersprungen wird.
+    for (const tag of ['Dienstag, 08.09.2026', 'Mittwoch, 09.09.2026', 'Donnerstag, 10.09.2026',
+      'Freitag, 11.09.2026', 'Samstag, 12.09.2026']) {
+      fireEvent.press(screen.getByLabelText('Nächster Tag'));
+      await waitFor(() => expect(screen.getByText(tag)).toBeTruthy());
+    }
+  });
+
+  it('überspringt den Sonntag, an dem auch die samstags geöffnete Mensa geschlossen ist', async () => {
+    mockSelection = { ids: ['Mensa', 'Canape'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    mockPlaene = { Mensa: qr([]), Canape: qr([]) };
+    mockOeffnung.Canape = wochenplan('11:00 - 14:00', [...WERKTAGS, 6]);
+    renderScreen();
+
+    await waitFor(() => expect(screen.getByText('Samstag, 05.09.2026')).toBeTruthy());
+    fireEvent.press(screen.getByLabelText('Nächster Tag'));
+    // Der Sonntag (06.09.) entfällt, obwohl der Samstag erreichbar ist.
+    await waitFor(() => expect(screen.getByText('Montag, 07.09.2026')).toBeTruthy());
   });
 });

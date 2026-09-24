@@ -1,4 +1,4 @@
-import type { Oeffnungsangaben, Oeffnungstag } from './api';
+import type { Oeffnungsangaben, Oeffnungstag, Schliesstag } from './api';
 
 // MENSA: Auflösung der Öffnungszeit eines Tages aus den Öffnungsangaben der
 // Mensa-Schnittstelle (Capability `canteen`, Requirement „Öffnungszeiten je Mensa
@@ -73,4 +73,44 @@ export function istGeoeffnet(
   datum: string,
 ): boolean | undefined {
   return oeffnungstagFuer(angaben, datum)?.geoeffnet;
+}
+
+export interface Schliessung {
+  /** Klartextgrund, wie die Quelle ihn liefert; `null`, wenn sie keinen führt. */
+  grund: string | null;
+  /** Letzter Tag der Schließung als ISO-Datum, sofern die Quelle einen Zeitraum führt. */
+  bis: string | null;
+}
+
+/** Ob ein Schließtag oder -zeitraum den angezeigten Tag deckt. */
+function deckt(s: Schliesstag, datum: string): boolean {
+  if (s.datum === datum) return true;
+  return Boolean(s.von && s.bis && datum >= s.von && datum <= s.bis);
+}
+
+/**
+ * Grund und Zeitraum der Schließung am angezeigten Tag, oder `null` — sei es,
+ * weil die Mensa geöffnet ist, sei es, weil die Quelle zu der Schließung nichts
+ * weiter führt (Requirement „Grund und Zeitraum einer Schließung").
+ *
+ * Der Grund steht am Tag selbst (INT-020 `today.reason`, in der Vorausschau
+ * `forecast[].reason`); fehlt er dort, tritt die Bezeichnung des deckenden
+ * Schließtags ein — auch sie ist der Klartext der Quelle, nicht eine eigene
+ * Formulierung. Das Enddatum führt allein die Schließtagsliste. Ein Enddatum, das
+ * nicht über den angezeigten Tag hinausreicht, bleibt ungenannt: es sagt der
+ * Nutzerin nichts, was der Geschlossen-Hinweis nicht schon sagt.
+ *
+ * Der Geltungsbereich (`global` / `mensa`) unterscheidet nur, wie weit eine
+ * Schließung reicht — beide betreffen diese Mensa und werden gleich behandelt.
+ */
+export function schliessungFuer(
+  angaben: Oeffnungsangaben | undefined,
+  datum: string,
+): Schliessung | null {
+  const tag = oeffnungstagFuer(angaben, datum);
+  if (tag?.geoeffnet !== false) return null;
+  const deckend = angaben?.schliesstage?.find((s) => deckt(s, datum));
+  const grund = tag.grund ?? deckend?.bezeichnung ?? null;
+  const bis = deckend?.bis && deckend.bis > datum ? deckend.bis : null;
+  return grund === null && bis === null ? null : { grund, bis };
 }

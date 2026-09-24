@@ -22,7 +22,12 @@ export type Schliesstag = components['schemas']['Schliesstag'];
 export interface Speiseplan {
   gerichte: Gericht[];
   standAlter: StandAlter;
-  /** Nächster Tag mit Angebot dieser Mensa, wenn `gerichte` leer ist; sonst `null`. */
+  /**
+   * Nächster Tag nach dem abgerufenen, für den die Öffnungsangaben von INT-020
+   * diese Mensa als geöffnet führen — aus Öffnungsvorschau und Schließtagen, nicht
+   * aus einem Speiseplan-Bestand. Nur gesetzt, wenn `gerichte` leer ist; `null`,
+   * wenn der Vorausblick der Quelle keinen solchen Tag hergibt.
+   */
   naechsteOeffnung?: string | null;
 }
 export interface Verzeichnisse {
@@ -74,7 +79,7 @@ export function useSpeiseplan(mensaId: string | undefined, datum: string) {
   });
 }
 
-/** Query-Optionen für den Tagesplan einer Mensa — geteilt von Einzel-, Sammel- und Vorabruf. */
+/** Query-Optionen für den Tagesplan einer Mensa — geteilt von Einzel- und Sammelabruf. */
 export function speiseplanQueryOptions(mensaId: string, datum: string, sprache: 'de' | 'en') {
   return {
     queryKey: ['speiseplan', mensaId, datum, sprache] as const,

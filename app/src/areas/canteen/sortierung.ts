@@ -59,10 +59,12 @@ export interface Abschnitt {
   /** `null` = keine Überschrift (Gruppierung „keine" oder kategorielose Sammelgruppe). */
   titel: string | null;
   /**
-   * `'geschlossen'` = gewählte Mensa ohne Angebot am Tag, mit leerer Gerichtsliste;
-   * entsteht nur bei Gruppierung „nach Mensa" (design.md D2). Sonst `'gerichte'`.
+   * `'geschlossen'` = gewählte Mensa, die die Schnittstelle am Tag als geschlossen
+   * führt; `'ohneSpeiseplan'` = gewählte Mensa ohne Gericht, die die Schnittstelle
+   * nicht als geschlossen führt. Beide tragen eine leere Gerichtsliste und
+   * entstehen nur bei Gruppierung „nach Mensa" (design.md D2). Sonst `'gerichte'`.
    */
-  zustand: 'gerichte' | 'geschlossen';
+  zustand: 'gerichte' | 'geschlossen' | 'ohneSpeiseplan';
   gerichte: KonsolidiertesGericht[];
 }
 
@@ -206,13 +208,15 @@ export function wendeAn(
       proMensa.get(id)!.push(g);
     }
     // Zusätzlich zu den Mensen mit Angebot erhält jede gewählte Mensa ohne
-    // Angebot einen Abschnitt mit leerer Gerichtsliste (design.md D2). Beide
-    // Arten durchlaufen dieselbe Gruppenordnung — eine geschlossene Mensa steht
-    // an genau der Stelle, an der sie stünde, wenn sie geöffnet hätte.
+    // Gericht einen Abschnitt mit leerer Gerichtsliste (design.md D2) — als
+    // geschlossene oder als geöffnete ohne Speiseplan. Alle Arten durchlaufen
+    // dieselbe Gruppenordnung: eine Mensa steht an genau der Stelle, an der sie
+    // stünde, wenn sie ein Angebot geführt hätte.
     const geschlossen = new Set(konsolidierung.geschlossene);
+    const ohneSpeiseplan = new Set(konsolidierung.ohneSpeiseplan);
     const gruppen = [
       ...[...proMensa.entries()].map(([id, gs]) => ({ id, gerichte: gs })),
-      ...konsolidierung.geschlossene.map((id) => ({
+      ...[...konsolidierung.geschlossene, ...konsolidierung.ohneSpeiseplan].map((id) => ({
         id,
         gerichte: [] as KonsolidiertesGericht[],
       })),
@@ -229,7 +233,11 @@ export function wendeAn(
       abschnitte: geordnet.map((gr) => ({
         id: gr.id,
         titel: gr.titel,
-        zustand: geschlossen.has(gr.id) ? ('geschlossen' as const) : ('gerichte' as const),
+        zustand: geschlossen.has(gr.id)
+          ? ('geschlossen' as const)
+          : ohneSpeiseplan.has(gr.id)
+            ? ('ohneSpeiseplan' as const)
+            : ('gerichte' as const),
         gerichte: sortiert(gr.gerichte),
       })),
       gruppierungAktiv: true,

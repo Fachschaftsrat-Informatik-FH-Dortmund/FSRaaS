@@ -19,7 +19,16 @@ const g = (over: Partial<Gericht> = {}): Gericht => ({
   ...over,
 });
 
-const plan = (mensaId: string, gerichte: Gericht[]): MensaTagesplan => ({ mensaId, gerichte });
+/**
+ * Tagesplan einer Mensa. `geoeffnet` ist die Öffnungsangabe der Schnittstelle für
+ * den angezeigten Tag; ohne Angabe bleibt sie unbekannt — und unbekannt gilt nicht
+ * als geschlossen.
+ */
+const plan = (
+  mensaId: string,
+  gerichte: Gericht[],
+  geoeffnet?: boolean,
+): MensaTagesplan => ({ mensaId, gerichte, geoeffnet });
 
 const alleGerichte = (k: Konsolidierung): KonsolidiertesGericht[] =>
   k.sektionen.flatMap((s) => s.gruppen.flatMap((gr) => gr.gerichte));
@@ -93,11 +102,50 @@ describe('MENSA-F-018 Angaben der maßgeblichen (Abschnitts-)Mensa', () => {
   });
 });
 
-describe('MENSA-F-049 geschlossene Mensen ohne Angebot am Tag', () => {
-  it('listet gewählte Mensen ohne Gerichte als geschlossen und ohne Abschnitt', () => {
-    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', []), plan('Nord', [])]);
+describe('Geschlossen-Hinweis für geschlossene Mensa', () => {
+  it('führt eine von der Schnittstelle als geschlossen gemeldete Mensa als geschlossen und ohne Abschnitt', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g()], true),
+      plan('Sued', [], false),
+      plan('Nord', [], false),
+    ]);
     expect(k.geschlossene).toEqual(['Sued', 'Nord']);
+    expect(k.ohneSpeiseplan).toEqual([]);
     expect(k.sektionen.map((s) => s.mensaId)).toEqual(['Mensa']);
+  });
+
+  it('führt eine geöffnete Mensa ohne Gericht nicht als geschlossen', () => {
+    const k = konsolidiere([plan('Mensa', [g()], true), plan('Sued', [], true)]);
+    expect(k.geschlossene).toEqual([]);
+    expect(k.ohneSpeiseplan).toEqual(['Sued']);
+  });
+
+  it('behauptet ohne Öffnungsangabe keine Schließung', () => {
+    // Unbekannt (noch nicht geladen) ist keine Aussage der Schnittstelle.
+    const k = konsolidiere([plan('Mensa', [g()]), plan('Sued', [])]);
+    expect(k.geschlossene).toEqual([]);
+    expect(k.ohneSpeiseplan).toEqual(['Sued']);
+  });
+
+  it('führt die Gerichte einer als geschlossen gemeldeten Mensa dennoch', () => {
+    // Der vierte Fall der Tabelle in design.md: nie beobachtet, aber behandelt —
+    // eine verschwiegene Gerichtsliste wäre ein Fehler.
+    const k = konsolidiere([plan('Mensa', [g()], false)]);
+    expect(k.geschlossene).toEqual([]);
+    expect(k.ohneSpeiseplan).toEqual([]);
+    expect(k.sektionen.map((s) => s.mensaId)).toEqual(['Mensa']);
+  });
+});
+
+describe('Hinweis für geöffnete Mensa ohne Speiseplan', () => {
+  it('unterscheidet die geöffnete Mensa ohne Speiseplan von der geschlossenen', () => {
+    const k = konsolidiere([
+      plan('Mensa', [g()], true),
+      plan('Sued', [], false), // Betriebsferien
+      plan('Nord', [], true), // führt grundsätzlich keinen Speiseplan
+    ]);
+    expect(k.geschlossene).toEqual(['Sued']);
+    expect(k.ohneSpeiseplan).toEqual(['Nord']);
   });
 });
 

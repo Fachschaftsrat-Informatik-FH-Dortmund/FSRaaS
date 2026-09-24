@@ -24,9 +24,10 @@ const mockToggle = jest.fn();
 
 // Öffnungsangaben kommen seit der Ablösung von INT-015 aus der Schnittstelle
 // (Requirement „Öffnungszeiten je Mensa und Wochentag"), nicht mehr aus den
-// Stammdaten. Der Wochenplan führt alle sieben Tage mit derselben Zeit, damit die
-// Erwartungen unabhängig vom angezeigten Datum gelten.
-const wochenplanMit = (zeit: string) => {
+// Stammdaten. Sie entscheiden auch über „geöffnet oder geschlossen"; das Fehlen
+// von Gerichten tut es nicht mehr. Der Wochenplan führt alle sieben Tage gleich,
+// damit die Erwartungen unabhängig vom angezeigten Datum gelten.
+const wochenplanMit = (zeit: string, weiteres: Record<string, unknown> = {}) => {
   const [oeffnet, schliesst] = zeit.split(' - ');
   return {
     wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({
@@ -34,16 +35,28 @@ const wochenplanMit = (zeit: string) => {
       geoeffnet: true,
       oeffnet,
       schliesst,
+      ...weiteres,
     })),
     vorausschau: [],
     schliesstage: [],
   };
 };
 
-const mockOeffnung: Record<string, any> = {
-  Mensa: wochenplanMit('11:30 - 14:45'),
-  Sued: wochenplanMit('12:00 - 14:00'),
-};
+/** Mensa, die die Schnittstelle an jedem Tag als geschlossen führt. */
+const immerGeschlossen = (
+  tagesangaben: Record<string, unknown> = {},
+  schliesstage: unknown[] = [],
+) => ({
+  wochenplan: [1, 2, 3, 4, 5, 6, 7].map((wochentag) => ({
+    wochentag,
+    geoeffnet: false,
+    ...tagesangaben,
+  })),
+  vorausschau: [],
+  schliesstage,
+});
+
+let mockOeffnung: Record<string, any>;
 
 const mockMensen = [
   {
@@ -184,6 +197,10 @@ beforeEach(() => {
   mockHas = jest.fn(() => false);
   mockSelection = { ids: ['Mensa'], loaded: true, toggle: jest.fn(), move: jest.fn() };
   mockPlaene = { Mensa: qr([gericht()]) };
+  mockOeffnung = {
+    Mensa: wochenplanMit('11:30 - 14:45'),
+    Sued: wochenplanMit('12:00 - 14:00'),
+  };
   mockVerzeichnisse = { data: { kategorien: [], zusatzstoffe: [], kennzeichnungen: [] } };
   mockGroup = 'student';
   mockCodes = [];
@@ -328,10 +345,23 @@ describe('MENSA-F-045 Blättern zu benachbarten Tagen', () => {
   });
 });
 
-describe('Geschlossen-Hinweis für Mensa ohne Angebot', () => {
+const OHNE_GRUPPIERUNG = {
+  id: 'preis',
+  eigen: false,
+  gruppierung: 'keine',
+  gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
+};
+
+/** Zwei Mensen; die Hauptmensa führt ein Gericht, Mensa Süd keines. */
+function zweiMensenSuedOhneGericht() {
+  mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+  mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+}
+
+describe('Geschlossen-Hinweis für geschlossene Mensa', () => {
   it('zeigt den Geschlossen-Hinweis bei Mensa-Gruppierung in ihrem Abschnitt unter der Mensa-Überschrift', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     // Chip und Abschnittsüberschrift tragen beide den Namen.
@@ -340,33 +370,127 @@ describe('Geschlossen-Hinweis für Mensa ohne Angebot', () => {
   });
 
   it('zeigt sie ohne Mensa-Gruppierung am Ende der Gerichtsliste', async () => {
-    mockPreset = {
-      id: 'preis',
-      eigen: false,
-      gruppierung: 'keine',
-      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
-    };
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    mockPreset = OHNE_GRUPPIERUNG;
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText('Mensa Süd hat an diesem Tag geschlossen.')).toBeTruthy();
   });
+
+  it('zeigt für eine geöffnete Mensa ohne Gericht keinen Geschlossen-Hinweis', async () => {
+    // Maßgeblich ist die Öffnungsangabe, nicht das Fehlen von Gerichten: Mensa Süd
+    // ist laut Wochenplan geöffnet und führt dennoch keinen Speiseplan.
+    zweiMensenSuedOhneGericht();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.queryByText(/hat an diesem Tag geschlossen/)).toBeNull();
+  });
+});
+
+describe('Hinweis für geöffnete Mensa ohne Speiseplan', () => {
+  it('zeigt bei Mensa-Gruppierung in ihrem Abschnitt den Hinweis samt Öffnungszeit, nicht den Geschlossen-Hinweis', async () => {
+    zweiMensenSuedOhneGericht();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Für diesen Tag liegt kein Speiseplan vor.')).toBeTruthy();
+    expect(screen.getByText('Geöffnet 12:00 - 14:00')).toBeTruthy(); // Süd-Öffnungszeit
+    expect(screen.queryByText(/hat an diesem Tag geschlossen/)).toBeNull();
+  });
+
+  it('zeigt sie ohne Mensa-Gruppierung am Ende der Gerichtsliste, samt Öffnungszeit', async () => {
+    mockPreset = OHNE_GRUPPIERUNG;
+    zweiMensenSuedOhneGericht();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(
+      screen.getByText('Mensa Süd: für diesen Tag liegt kein Speiseplan vor.'),
+    ).toBeTruthy();
+    expect(screen.getByText('Mensa Süd: geöffnet 12:00 - 14:00')).toBeTruthy();
+  });
+});
+
+describe('Grund und Zeitraum einer Schließung', () => {
+  it('nennt Grund und Enddatum zusammen mit dem Geschlossen-Hinweis', async () => {
+    // Mensa Süd, Stand 2026-09-22: Betriebsferien bis zum 04.10.
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen(
+      { grund: 'Restaurant-Schließtag: Betriebsferien' },
+      [
+        {
+          bezeichnung: 'Betriebsferien',
+          von: '2026-09-01',
+          bis: '2026-10-04',
+          feiertag: false,
+          geltungsbereich: 'mensa',
+        },
+      ],
+    );
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(
+      screen.getByText(/Restaurant-Schließtag: Betriebsferien, bis 04\.10\./),
+    ).toBeTruthy();
+  });
+
+  it('zeigt ohne Grundangabe allein den Geschlossen-Hinweis', async () => {
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Mensa Süd hat an diesem Tag geschlossen.')).toBeTruthy();
+    expect(screen.queryByText(/bis \d{2}\.\d{2}\./)).toBeNull();
+  });
+});
+
+describe('Ausweis der Ausgabezeit bei abweichender Öffnungszeit', () => {
+  it('weist Öffnungszeit und Ausgabezeit getrennt aus, wo die Quelle eine abweichende Ausgabezeit führt', async () => {
+    // Max-Ophüls-Platz: offen ab 08:00, Essensausgabe ab 11:30.
+    mockOeffnung.Mensa = wochenplanMit('08:00 - 14:15', { ausgabeBeginn: '11:30' });
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 08:00 - 14:15')).toBeTruthy();
+    expect(screen.getByText('Ausgabe 11:30 - 14:15')).toBeTruthy();
+  });
+
+  it('weist ohne Abweichung allein die Öffnungszeit aus', async () => {
+    // Hauptmensa: die Quelle setzt die Ausgabezeit nur bei Abweichung.
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 11:30 - 14:45')).toBeTruthy();
+    expect(screen.queryByText(/^Ausgabe /)).toBeNull();
+  });
+
+  it('nennt die Ausgabezeit auch in der Öffnungszeit-Zeile am Listenende', async () => {
+    mockPreset = OHNE_GRUPPIERUNG;
+    mockOeffnung.Mensa = wochenplanMit('08:00 - 14:15', { ausgabeBeginn: '11:30' });
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(
+      screen.getByText('Hauptmensa: geöffnet 08:00 - 14:15, Ausgabe 11:30 - 14:15'),
+    ).toBeTruthy();
+  });
 });
 
 describe('Wiedereröffnungshinweis an der geschlossenen Mensa', () => {
-  it('zeigt den nächstgelegenen Tag mit Angebot im Zwischenspeicher (Geschlossene Mensa mit späterem Angebot im Zwischenspeicher)', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+  // Der Wiedereröffnungstag kommt aus Öffnungsvorschau und Schließtagen der
+  // Schnittstelle; das Backend ermittelt ihn daraus und liefert ihn mit dem
+  // Tages-Speiseplan (MensaQuelle.NaechsteOeffnung). Der Speiseplan-Bestand, aus
+  // dem er früher stammte, ist mit der Ablösung von INT-015 entfallen.
+  it('zeigt den nächstgelegenen Öffnungstag des Vorausblicks (Geschlossene Mensa mit späterem Öffnungstag)', async () => {
+    zweiMensenSuedOhneGericht();
     // MONTAG = 2026-09-07; 2026-09-09 ist Mittwoch, zwei Tage entfernt.
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, '2026-09-09') };
+    mockPlaene.Sued = qr([], {}, '2026-09-09');
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText(/Wieder geöffnet am Mittwoch\.$/)).toBeTruthy();
   });
 
-  it('zeigt keinen Wiedereröffnungshinweis ohne bekannten Tag mit Angebot (Kein bekannter Tag mit Angebot)', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, null) };
+  it('zeigt keinen Wiedereröffnungshinweis, wo der Vorausblick keinen Öffnungstag hergibt', async () => {
+    zweiMensenSuedOhneGericht();
+    mockPlaene.Sued = qr([], {}, null);
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText(/Mensa Süd hat an diesem Tag geschlossen\.$/)).toBeTruthy();
@@ -374,19 +498,35 @@ describe('Wiedereröffnungshinweis an der geschlossenen Mensa', () => {
   });
 
   it('ergänzt das Datum in Kurzform, wenn der Tag mehr als sechs Tage entfernt liegt', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
+    zweiMensenSuedOhneGericht();
     // MONTAG = 2026-09-07; 2026-09-20 (Sonntag) liegt 13 Tage entfernt.
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([], {}, '2026-09-20') };
+    mockPlaene.Sued = qr([], {}, '2026-09-20');
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText(/Wieder geöffnet am Sonntag\. \(20\.09\.\)$/)).toBeTruthy();
   });
+
+  it('nennt ihn auch für eine Mensa, für die grundsätzlich kein Speiseplan geführt wird', async () => {
+    // Drei Standorte führen nie einen Speiseplan; die Öffnungsangaben der
+    // Schnittstelle tragen die Aussage trotzdem.
+    zweiMensenSuedOhneGericht();
+    mockPlaene.Sued = qr([], {}, '2026-09-09');
+    mockOeffnung.Sued = immerGeschlossen({ grund: 'Restaurant-Schließtag: Betriebsferien' });
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(
+      screen.getByText(
+        /Mensa Süd hat an diesem Tag geschlossen\. Restaurant-Schließtag: Betriebsferien\. Wieder geöffnet am Mittwoch\.$/,
+      ),
+    ).toBeTruthy();
+  });
 });
 
-describe('Keine Öffnungszeit für Mensa ohne Angebot', () => {
+describe('Keine Öffnungszeit für geschlossene Mensa', () => {
   it('zeigt bei Mensa-Gruppierung an ihrer Abschnittsüberschrift keine Öffnungszeit', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.queryByText(/Geöffnet 12:00/)).toBeNull(); // Süd-Öffnungszeit
@@ -394,18 +534,20 @@ describe('Keine Öffnungszeit für Mensa ohne Angebot', () => {
   });
 
   it('zeigt ohne Mensa-Gruppierung keine Öffnungszeit-Zeile am Listenende', async () => {
-    mockPreset = {
-      id: 'preis',
-      eigen: false,
-      gruppierung: 'keine',
-      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
-    };
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    mockPreset = OHNE_GRUPPIERUNG;
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.queryByText(/Mensa Süd: geöffnet/)).toBeNull();
     expect(screen.getByText(/Hauptmensa: geöffnet/)).toBeTruthy();
+  });
+
+  it('zeigt die Öffnungszeit einer geöffneten Mensa ohne Speiseplan dagegen an', async () => {
+    zweiMensenSuedOhneGericht();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    expect(screen.getByText('Geöffnet 12:00 - 14:00')).toBeTruthy();
   });
 });
 
@@ -433,14 +575,24 @@ describe('Nicht auswählbare Chips ohne sichtbaren Abschnitt', () => {
   });
 
   it('lässt bei Mensa-Gruppierung den Chip einer geschlossenen Mensa auswählbar, er führt zu ihrem Abschnitt mit dem Geschlossen-Hinweis', async () => {
-    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn(), move: jest.fn() };
-    mockPlaene = { Mensa: qr([gericht()]), Sued: qr([]) };
+    zweiMensenSuedOhneGericht();
+    mockOeffnung.Sued = immerGeschlossen();
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     const chip = screen.getByLabelText('Mensa Süd');
     expect(chip.props.accessibilityState.disabled).toBe(false);
     fireEvent.press(chip);
     expect(screen.getByText(/Mensa Süd hat an diesem Tag geschlossen\./)).toBeTruthy();
+  });
+
+  it('lässt den Chip einer geöffneten Mensa ohne Speiseplan auswählbar, er führt zu ihrem Abschnitt mit dem Hinweis auf den fehlenden Speiseplan', async () => {
+    zweiMensenSuedOhneGericht();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    const chip = screen.getByLabelText('Mensa Süd');
+    expect(chip.props.accessibilityState.disabled).toBe(false);
+    fireEvent.press(chip);
+    expect(screen.getByText('Für diesen Tag liegt kein Speiseplan vor.')).toBeTruthy();
   });
 });
 
@@ -484,16 +636,22 @@ describe('Öffnungszeit an der Mensa-Abschnittsüberschrift', () => {
   });
 
   it('zeigt ohne Mensa-Gruppierung die Öffnungszeiten am Ende der Gerichtsliste', async () => {
-    mockPreset = {
-      id: 'preis',
-      eigen: false,
-      gruppierung: 'keine',
-      gerichteSortierung: { kriterium: 'preis', richtung: 'auf' },
-    };
+    mockPreset = OHNE_GRUPPIERUNG;
     renderScreen();
     await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
     expect(screen.getByText(/Hauptmensa: geöffnet/)).toBeTruthy();
     expect(screen.queryByText('Geöffnet 11:30 - 14:45')).toBeNull();
+  });
+
+  it('führt die Öffnungszeit an der Überschrift auch für eine geöffnete Mensa ohne Speiseplan', async () => {
+    zweiMensenSuedOhneGericht();
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Bolognese')).toBeTruthy());
+    // Überschrift der Süd-Mensa mit Öffnungszeit und dem Hinweis darunter.
+    expect(screen.getAllByText('Mensa Süd').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Geöffnet 12:00 - 14:00')).toBeTruthy();
+    expect(screen.getByText('Für diesen Tag liegt kein Speiseplan vor.')).toBeTruthy();
+    expect(screen.queryByText(/Mensa Süd: geöffnet/)).toBeNull();
   });
 });
 
