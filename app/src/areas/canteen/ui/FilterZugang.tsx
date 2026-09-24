@@ -21,7 +21,12 @@ export function FilterZugang() {
   const { prefs } = useDietPreference();
   const { limit } = usePriceLimit();
   const aktiv =
-    (limit != null ? 1 : 0) + codes.length + prefs.nurZeigen.length + prefs.ausschluss.length > 0;
+    (limit != null ? 1 : 0) +
+      codes.length +
+      prefs.nurZeigen.length +
+      prefs.ausschluss.length +
+      prefs.co2Ausschluss.length >
+    0;
 
   return (
     <Pressable

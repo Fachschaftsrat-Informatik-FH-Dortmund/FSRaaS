@@ -9,7 +9,7 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock('../intolerances', () => ({ useIntolerances: () => ({ codes: [] }) }));
 jest.mock('../dietPreference', () => ({
-  useDietPreference: () => ({ prefs: { nurZeigen: [], ausschluss: [] } }),
+  useDietPreference: () => ({ prefs: { nurZeigen: [], ausschluss: [], co2Ausschluss: [] } }),
 }));
 jest.mock('../priceLimit', () => ({ usePriceLimit: () => ({ limit: null }) }));
 

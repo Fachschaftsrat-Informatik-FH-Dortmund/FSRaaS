@@ -20,7 +20,8 @@ export function FilterResetAction() {
     (preis.limit != null ? 1 : 0) +
       intolerances.codes.length +
       diet.prefs.nurZeigen.length +
-      diet.prefs.ausschluss.length >
+      diet.prefs.ausschluss.length +
+      diet.prefs.co2Ausschluss.length >
     0;
 
   return (

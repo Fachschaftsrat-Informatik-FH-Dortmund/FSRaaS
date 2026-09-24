@@ -5,7 +5,7 @@ import { FilterZugang } from './FilterZugang';
 
 const mockPush = jest.fn();
 let mockCodes: string[];
-let mockPrefs: { nurZeigen: string[]; ausschluss: string[] };
+let mockPrefs: { nurZeigen: string[]; ausschluss: string[]; co2Ausschluss: string[] };
 let mockLimit: number | null;
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
@@ -16,7 +16,7 @@ jest.mock('../priceLimit', () => ({ usePriceLimit: () => ({ limit: mockLimit }) 
 beforeEach(() => {
   jest.clearAllMocks();
   mockCodes = [];
-  mockPrefs = { nurZeigen: [], ausschluss: [] };
+  mockPrefs = { nurZeigen: [], ausschluss: [], co2Ausschluss: [] };
   mockLimit = null;
 });
 afterEach(cleanup);
@@ -38,6 +38,12 @@ describe('MENSA-F-170 Zugang zum Filtermenü', () => {
 
   it('hebt sich hervor, sobald ein Filter aktiv ist (auch nur der Preis)', () => {
     mockLimit = 4;
+    renderZugang();
+    expect(screen.getByLabelText('Filter öffnen').props.accessibilityState.selected).toBe(true);
+  });
+
+  it('hebt sich auch bei einem alleinigen CO₂-Klassen-Ausschluss hervor', () => {
+    mockPrefs = { nurZeigen: [], ausschluss: [], co2Ausschluss: ['E'] };
     renderZugang();
     expect(screen.getByLabelText('Filter öffnen').props.accessibilityState.selected).toBe(true);
   });

@@ -135,6 +135,20 @@ describe('Beschriftung des Reihenfolge-Kriteriums nach seiner Bedeutung', () => 
     expect(screen.queryByLabelText('Reihenfolge der Quelle')).toBeNull();
     expect(screen.queryByText('Reihenfolge der Quelle')).toBeNull();
   });
+
+  it('beschriftet es bei CO₂-Gruppierung als „Reihenfolge der Mensa", nicht als Kategorie-Reihenfolge', async () => {
+    mockAktiv = {
+      id: 'entwurf',
+      eigen: false,
+      gruppierung: 'co2',
+      gruppenreihenfolge: { kriterium: 'reihenfolge', richtung: 'auf' },
+      gerichteSortierung: { kriterium: 'co2', richtung: 'auf' },
+    };
+    renderScreen();
+    const gruppe = await screen.findByLabelText('Reihenfolge der Gruppen');
+    expect(within(gruppe).getByLabelText('Reihenfolge der Mensa')).toBeTruthy();
+    expect(within(gruppe).queryByLabelText('Meine Mensa-Reihenfolge')).toBeNull();
+  });
 });
 
 describe('Wahl der Gruppierung', () => {
