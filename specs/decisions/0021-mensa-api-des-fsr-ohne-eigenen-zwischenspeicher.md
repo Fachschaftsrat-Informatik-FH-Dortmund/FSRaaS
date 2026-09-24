@@ -3,6 +3,7 @@ nummer: 0021
 titel: Mensa-Daten aus der FSR-eigenen Mensa-API, ohne eigenen Zwischenspeicher
 status: angenommen
 datum: 2026-09-22
+zuletzt_ergaenzt: 2026-09-24
 betrifft:
   - 0007-datenquellen-mensa-und-news.md
   - ../../openspec/specs/canteen/spec.md
@@ -30,7 +31,7 @@ Damit stellt sich zugleich die Frage nach dem eigenen Zwischenspeicher neu: `men
 
 ## Entscheidung
 
-Die Mensa-Daten kommen künftig aus der FSR-eigenen Mensa-API (`mensa.fb4.it`). Sie bekommt mit dem Change `mensa-api-abloesung` einen eigenen Eintrag im Schnittstellenregister; INT-015 wird abgelöst und bleibt dort als abgelöster Eintrag dokumentiert. Die Registerkennung wird hier nachgetragen, sobald der Eintrag im Bestand steht — ein Verweis darauf vor dem Archivieren des Changes würde die Verweisprüfung (`tools/spec-check`) brechen.
+Die Mensa-Daten kommen künftig aus der FSR-eigenen Mensa-API (`mensa.fb4.it`). Sie führt seit dem Archivieren des Changes `mensa-api-abloesung` am 2026-09-24 die Registerkennung **INT-020**; INT-015 ist abgelöst und bleibt dort als abgelöster Eintrag dokumentiert.
 
 Das eigene Backend bleibt in der Kette — die App spricht weiterhin kein Fremdsystem unmittelbar an —, **hält aber keinen eigenen Bestand der Mensa-Daten mehr vor**. Es reicht je Anfrage pro Tag und Mensa durch und darf dabei die von der Quelle gesetzte Gültigkeitsdauer beachten. Der serverseitige Speiseplan-Zwischenspeicher samt Tabelle, Hintergrund-Job und Abrufzeitplan entfällt ersatzlos. Der gerätelokale Zwischenspeicher der App bleibt unverändert; er trägt die Offline-Anzeige und den Altershinweis.
 
@@ -42,9 +43,9 @@ Diese Entscheidung **löst ADR 0007 in Bezug auf die Mensa ab**. Für die News g
 
 | Option | Aufwand | Nutzen | Nachteile |
 |---|---|---|---|
-| **`mensa.fb4.it` ohne eigenen Zwischenspeicher (gewählt)** | mittel | Öffnungszeiten, Schließtage und Standortangaben ohne Handpflege; ein Cache statt zwei; Quelle im eigenen Verantwortungsbereich | bei Ausfall der Quelle hat das Backend keinen letzten guten Stand mehr; mehr Last auf der Quelle als bei einem Hintergrund-Job |
-| `mensa.fb4.it` mit eigenem Zwischenspeicher beibehalten | mittel bis hoch | letzter guter Stand im Backend auch bei Ausfall der Quelle | dupliziert, was die Quelle bereits tut; zweite Stelle, an der ein veralteter Stand hängen bleibt; Hintergrund-Job und Abrufzeitplan bleiben zu pflegen |
-| App ruft `mensa.fb4.it` unmittelbar auf | gering | ein Netzsprung weniger; die Quelle erlaubt es technisch (`Access-Control-Allow-Origin: *`) | Bewertungen und Fotos müssten clientseitig an Gerichte geknüpft werden; die Kuration der Mensa-Auswahl bräuchte einen zweiten Ort; die Regel „App spricht kein Fremdsystem direkt an" bekäme eine Ausnahme |
+| **`mensa.fb4.it` (INT-020) ohne eigenen Zwischenspeicher (gewählt)** | mittel | Öffnungszeiten, Schließtage und Standortangaben ohne Handpflege; ein Cache statt zwei; Quelle im eigenen Verantwortungsbereich | bei Ausfall der Quelle hat das Backend keinen letzten guten Stand mehr; mehr Last auf der Quelle als bei einem Hintergrund-Job |
+| `mensa.fb4.it` (INT-020) mit eigenem Zwischenspeicher beibehalten | mittel bis hoch | letzter guter Stand im Backend auch bei Ausfall der Quelle | dupliziert, was die Quelle bereits tut; zweite Stelle, an der ein veralteter Stand hängen bleibt; Hintergrund-Job und Abrufzeitplan bleiben zu pflegen |
+| App ruft `mensa.fb4.it` (INT-020) unmittelbar auf | gering | ein Netzsprung weniger; die Quelle erlaubt es technisch (`Access-Control-Allow-Origin: *`) | Bewertungen und Fotos müssten clientseitig an Gerichte geknüpft werden; die Kuration der Mensa-Auswahl bräuchte einen zweiten Ort; die Regel „App spricht kein Fremdsystem direkt an" bekäme eine Ausnahme |
 | Bei INT-015 bleiben | keiner | kein Umsetzungsaufwand | Öffnungszeiten weiterhin von Hand, mit belegtem Verfall; keine Schließtage, keine Standortangaben, keine Trennung von Allergenen und Zusatzstoffen |
 | Unmittelbar gegen die Stwdo-API | hoch | keine Zwischenschicht | genau die Aufbereitung selbst bauen, die `mensa-api` bereits leistet; die Legende liegt dort nur als Webseite vor, nicht in der API |
 
