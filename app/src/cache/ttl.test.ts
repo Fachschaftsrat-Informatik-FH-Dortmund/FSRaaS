@@ -1,9 +1,17 @@
-import { staleTime, gcTime, untilEndOfDay, MAX_CACHE_BYTES } from './ttl';
+import { staleTime, gcTime, untilEndOfDay, MAX_CACHE_BYTES, RAUMPLAN_ABRUFTAKT } from './ttl';
 
 describe('DATA-F-080 Gültigkeitsdauer je Datenart', () => {
   it('News und Raumtermine gelten 15 Minuten (data-and-storage.md Abschnitt 4)', () => {
     expect(staleTime('news')).toBe(15 * 60_000);
     expect(staleTime('raumtermine')).toBe(15 * 60_000);
+  });
+
+  it('die Raumbelegung „jetzt" gilt eine Minute, weil sie mit der Uhr altert', () => {
+    expect(staleTime('raumbelegungJetzt')).toBe(60_000);
+  });
+
+  it('der Raumplan wird im Backend stündlich abgerufen', () => {
+    expect(RAUMPLAN_ABRUFTAKT).toBe(60 * 60_000);
   });
 
   it('Stammdaten, Verzeichnisse, Events und Wiki gelten einen Tag', () => {

@@ -1,0 +1,94 @@
+import { logDatenhinweis } from '@/errors/AppError';
+import type { Raum, Raumgroesse, RaumStatus } from './api';
+import { schliesszeitAm } from './schliesszeit';
+
+// Freie-Raum-Suche (Requirement „Suche nach freien Räumen"), abgeleitet aus der
+// Raumübersicht zum Beginn des gewählten Zeitraums und der kuratierten
+// Raumliste (Change `raumsuche-app`, design.md). Die Übersicht kennt zu `von`
+// den laufenden Termin und den nächsten Beginn — mehr braucht die Entscheidung
+// „frei im Zeitraum [von, bis)" nicht, sie ist damit exakt.
+
+export type Groessenfilter = Raumgroesse | 'alle';
+
+export interface Suchfilter {
+  groesse: Groessenfilter;
+  nurEkey: boolean;
+}
+
+export const OHNE_FILTER: Suchfilter = { groesse: 'alle', nurEkey: false };
+
+export interface FreierRaum {
+  roomId: string;
+  groesse: Raumgroesse;
+  ekeyZugaenglich: boolean;
+  /**
+   * Bis wann der Raum frei ist (Requirement „Freizeitpunkt eines freien Raums
+   * anzeigen"): nächster Terminbeginn oder gepflegte Schließzeit, je nachdem,
+   * was früher liegt. `null`, wenn weder ein Folgetermin noch eine Schließzeit
+   * bekannt ist — dann nennt die App keinen Endzeitpunkt (Requirement
+   * „Gepflegte Gebäudeschließzeit statt fester Wert").
+   */
+  freiBis: Date | null;
+  /** `true`, wenn `freiBis` die Schließzeit ist und nicht ein Folgetermin. */
+  freiBisSchliesszeit: boolean;
+}
+
+/**
+ * Räume der kuratierten Liste, die im Zeitraum `[von, bis)` frei sind, nach
+ * Raumkennung sortiert. Ein kuratierter Raum, den die Übersicht nicht führt,
+ * gilt als unbekannt und erscheint nicht — „unbekannt" ist nicht „frei".
+ */
+export function freieRaeume(
+  uebersicht: RaumStatus[],
+  kuratiert: Raum[],
+  von: Date,
+  bis: Date,
+  filter: Suchfilter = OHNE_FILTER,
+): FreierRaum[] {
+  const status = new Map(uebersicht.map((r) => [r.roomId, r]));
+  const ergebnis: FreierRaum[] = [];
+  let unlesbar = 0;
+
+  for (const raum of kuratiert) {
+    if (filter.groesse !== 'alle' && raum.groesse !== filter.groesse) continue;
+    if (filter.nurEkey && !raum.ekeyZugaenglich) continue;
+
+    const s = status.get(raum.roomId);
+    if (!s || s.zustand !== 'frei') continue;
+
+    const schliesst = schliesszeitAm(raum.schliesszeit, von);
+    if (schliesst && von.getTime() >= schliesst.getTime()) continue;
+
+    let naechster: Date | null = null;
+    if (s.naechsterTermin) {
+      const beginn = Date.parse(s.naechsterTermin.beginn);
+      if (Number.isNaN(beginn)) {
+        // Ohne auswertbare Zeitangabe ist der Raum nicht sicher frei (room-finder, Fehlerfälle).
+        unlesbar += 1;
+        continue;
+      }
+      naechster = new Date(beginn);
+    }
+
+    const freiBisSchliesszeit =
+      schliesst !== null && (naechster === null || schliesst.getTime() < naechster.getTime());
+    const freiBis = freiBisSchliesszeit ? schliesst : naechster;
+    if (freiBis && freiBis.getTime() < bis.getTime()) continue;
+
+    ergebnis.push({
+      roomId: raum.roomId,
+      groesse: raum.groesse,
+      ekeyZugaenglich: raum.ekeyZugaenglich,
+      freiBis,
+      freiBisSchliesszeit,
+    });
+  }
+
+  if (unlesbar > 0) logDatenhinweis('raum.freieRaeume', 'Termin ohne auswertbare Zeitangabe', unlesbar);
+  return ergebnis.sort((a, b) => a.roomId.localeCompare(b.roomId));
+}
+
+/** Ob ein Filter gesetzt ist — für den Rückweg „Filter zurücksetzen" im Leerzustand. */
+export function filterGesetzt(filter: Suchfilter): boolean {
+  return filter.groesse !== 'alle' || filter.nurEkey;
+}

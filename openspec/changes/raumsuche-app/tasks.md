@@ -5,12 +5,12 @@
 
 ## 2. Datenzugriff und reine Logik der App
 
-- [ ] 2.1 `ttl.ts`: Datenart `raumbelegungJetzt` (1 Minute) und `RAUMPLAN_ABRUFTAKT` (1 Stunde); `ttl.test.ts` angepasst
-- [ ] 2.2 `room-finder/api.ts`: `useRaumuebersicht(zeitpunkt?)`, `useRaumStammdaten()`, `useRaumbelegung(roomId, datum)` über `openapi-fetch`, Typen nur aus `@/api/generated/schema`
-- [ ] 2.3 `schliesszeit.ts`: Schließzeit lesen (`HH:MM`, `HH.MM`, `HHMM`), Unlesbares protokollieren; Tests „Gepflegte Gebäudeschließzeit statt fester Wert"
-- [ ] 2.4 `freieRaeume.ts`: frei im Zeitraum, `freiBis`, Ausschluss ohne Raumplan-Eintrag, Filter Größenklasse und E-Key; Tests „Suche nach freien Räumen", „Raum als belegt kennzeichnen", „Raumsuche auf kuratierte Liste beschränken", „Größenklasse anzeigen und filtern", „Freizeitpunkt eines freien Raums anzeigen"
-- [ ] 2.5 `uebersicht.ts`: Filter nach Zustand, Suche nach Raumkennung, Gruppierung laufender Veranstaltungen; Tests „Übersicht nach Belegungszustand einschränken", „Suche nach Raumkennung in der Übersicht", „Ansicht laufender Veranstaltungen"
-- [ ] 2.6 `standAlter.ts`: veraltet gemessen beim Abruf, Höchstalter für `AsyncStates`; Tests „Alter eines veralteten Raumplan-Stands anzeigen"
+- [x] 2.1 `ttl.ts`: Datenart `raumbelegungJetzt` (1 Minute) und `RAUMPLAN_ABRUFTAKT` (1 Stunde); `ttl.test.ts` angepasst
+- [x] 2.2 `room-finder/api.ts`: `useRaumuebersicht(zeitpunkt?)`, `useRaumStammdaten()`, `useRaumbelegung(roomId, datum)` über `openapi-fetch`, Typen nur aus `@/api/generated/schema`
+- [x] 2.3 `schliesszeit.ts`: Schließzeit lesen (`HH:MM`, `HH.MM`, `HHMM`), Unlesbares protokollieren; Tests „Gepflegte Gebäudeschließzeit statt fester Wert"
+- [x] 2.4 `freieRaeume.ts`: frei im Zeitraum, `freiBis`, Ausschluss ohne Raumplan-Eintrag, Filter Größenklasse und E-Key; Tests „Suche nach freien Räumen", „Raum als belegt kennzeichnen", „Raumsuche auf kuratierte Liste beschränken", „Größenklasse anzeigen und filtern", „Freizeitpunkt eines freien Raums anzeigen"
+- [x] 2.5 `uebersicht.ts`: Filter nach Zustand, Suche nach Raumkennung, Gruppierung laufender Veranstaltungen; Tests „Übersicht nach Belegungszustand einschränken", „Suche nach Raumkennung in der Übersicht", „Ansicht laufender Veranstaltungen"
+- [x] 2.6 `standAlter.ts`: veraltet gemessen beim Abruf, Höchstalter für `AsyncStates`; Tests „Alter eines veralteten Raumplan-Stands anzeigen"
 
 ## 3. Oberfläche
 

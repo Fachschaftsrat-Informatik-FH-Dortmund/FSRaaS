@@ -19,6 +19,7 @@ export type CachedResource =
   | 'mensaVerzeichnisse'
   | 'news'
   | 'raumtermine'
+  | 'raumbelegungJetzt'
   | 'stammdaten'
   | 'events'
   | 'ekeyStatus'
@@ -33,6 +34,11 @@ const TTL: Record<CachedResource, Ttl> = {
   mensaVerzeichnisse: DAY,
   news: 15 * MINUTE,
   raumtermine: 15 * MINUTE,
+  // Belegung „jetzt" (Raumübersicht, laufende Veranstaltungen): Der Zustand
+  // altert mit der Uhr, nicht nur mit dem Bestand — eine vor 15 Minuten
+  // geholte Antwort verschweigt eine inzwischen begonnene Veranstaltung
+  // (Change `raumsuche-app`, design.md).
+  raumbelegungJetzt: MINUTE,
   stammdaten: DAY,
   events: DAY,
   ekeyStatus: 15 * MINUTE,
@@ -74,6 +80,13 @@ export function gcTime(resource: CachedResource): number {
 export function quelleMaxAlter(resource: CachedResource): number {
   return Math.max(staleTime(resource), DAY);
 }
+
+/**
+ * Abruftakt des Raumplan-Zwischenspeichers im Backend (Change
+ * `raumplan-zwischenspeicher`): die „vorgesehene Aktualisierungsfrequenz" des
+ * Requirements „Alter eines veralteten Raumplan-Stands anzeigen".
+ */
+export const RAUMPLAN_ABRUFTAKT = HOUR;
 
 /**
  * Arbeitsziel-Obergrenze für den gesamten persistierten Zwischenspeicher
