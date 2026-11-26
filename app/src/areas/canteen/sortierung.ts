@@ -275,66 +275,75 @@ export function wendeAn(
     };
   }
 
-  if (kombination.gruppierung === 'co2') {
-    // Ein Abschnitt je CO₂-Klasse über alle gewählten Mensen (Requirement „Wahl
-    // der Gruppierung"). Gerichte, zu denen die Quelle keine Klasse führt,
-    // sammeln sich ohne Überschrift am Ende — dieselbe Form wie die
-    // kategorielose Sammelgruppe, über `rang` von der Gruppenordnung ausgenommen.
-    const proKlasse = new Map<string, KonsolidiertesGericht[]>();
-    for (const g of alle) {
-      const klasse = g.massgeblich.co2Klasse ?? '';
-      if (!proKlasse.has(klasse)) proKlasse.set(klasse, []);
-      proKlasse.get(klasse)!.push(g);
-    }
-    const gruppen = [...proKlasse.entries()].map(([klasse, gs]) => ({
-      id: klasse === '' ? '__ohneCo2' : `co2:${klasse}`,
-      titel: klasse === '' ? null : (kontext.co2Name?.(klasse) ?? klasse),
-      rang: klasse === '' ? 1 : 0,
-      ersteQuelle: Math.min(...gs.map((x) => x.quellrang)),
-      gerichte: gs,
-    }));
-    const geordnet = ordneGruppen(gruppen, kombination.gruppenreihenfolge, kontext, true);
-    return {
-      abschnitte: geordnet.map((gr) => ({
-        id: gr.id,
-        titel: gr.titel,
-        zustand: 'gerichte' as const,
-        gerichte: sortiert(gr.gerichte),
-      })),
-      gruppierungAktiv: true,
-    };
-  }
-
-  // gruppierung === 'kategorie': ein Abschnitt je Kategorie über alle gewählten
-  // Mensen; kategorielose Sammelgruppe (ohne Überschrift) und Beilagen am Ende.
-  const proKategorie = new Map<string, KonsolidiertesGericht[]>();
-  for (const g of alle) {
-    const kategorie = g.massgeblich.kategorie?.trim() ?? '';
-    if (!proKategorie.has(kategorie)) proKategorie.set(kategorie, []);
-    proKategorie.get(kategorie)!.push(g);
-  }
-  const gruppen = [...proKategorie.entries()].map(([kategorie, gs]) => ({
-    id: kategorie === '' ? '__ohne' : `kat:${kategorie}`,
-    titel: kategorie === '' ? null : kategorie,
-    rang: kategorieRang(kategorie),
-    // Reihenfolge der Ausgabestellen, wie die Mensa-Schnittstelle sie für den
-    // angezeigten Tag liefert (INT-020; vor der Ablösung INT-015): erstes
-    // Auftreten der Kategorie. Der Wert selbst stammt aus `quellrang`, den die
-    // Konsolidierung aus der Antwortreihenfolge der Schnittstelle bildet.
-
-    ersteQuelle: Math.min(...gs.map((x) => x.quellrang)),
-    gerichte: gs,
-  }));
-  const geordnet = ordneGruppen(gruppen, kombination.gruppenreihenfolge, kontext, true);
-  return {
-    abschnitte: geordnet.map((gr) => ({
+  // Gruppierungen über alle gewählten Mensen: Gruppen ordnen, Sammel- und
+  // Beilagengruppe fest am Ende, Gerichte je Gruppe sortieren.
+  const alsAbschnitte = (gruppen: ReturnType<typeof gruppiereNach>): AngezeigteStruktur => ({
+    abschnitte: ordneGruppen(gruppen, kombination.gruppenreihenfolge, kontext, true).map((gr) => ({
       id: gr.id,
       titel: gr.titel,
       zustand: 'gerichte',
       gerichte: sortiert(gr.gerichte),
     })),
     gruppierungAktiv: true,
-  };
+  });
+
+  if (kombination.gruppierung === 'co2') {
+    // Ein Abschnitt je CO₂-Klasse über alle gewählten Mensen (Requirement „Wahl
+    // der Gruppierung"). Gerichte, zu denen die Quelle keine Klasse führt,
+    // sammeln sich ohne Überschrift am Ende — dieselbe Form wie die
+    // kategorielose Sammelgruppe, über `rang` von der Gruppenordnung ausgenommen.
+    return alsAbschnitte(
+      gruppiereNach(
+        alle,
+        (g) => g.massgeblich.co2Klasse ?? '',
+        (klasse) => ({
+          id: klasse === '' ? '__ohneCo2' : `co2:${klasse}`,
+          titel: klasse === '' ? null : (kontext.co2Name?.(klasse) ?? klasse),
+          rang: klasse === '' ? 1 : 0,
+        }),
+      ),
+    );
+  }
+
+  // gruppierung === 'kategorie': ein Abschnitt je Kategorie über alle gewählten
+  // Mensen; kategorielose Sammelgruppe (ohne Überschrift) und Beilagen am Ende.
+  return alsAbschnitte(
+    gruppiereNach(
+      alle,
+      (g) => g.massgeblich.kategorie?.trim() ?? '',
+      (kategorie) => ({
+        id: kategorie === '' ? '__ohne' : `kat:${kategorie}`,
+        titel: kategorie === '' ? null : kategorie,
+        rang: kategorieRang(kategorie),
+      }),
+    ),
+  );
+}
+
+/**
+ * Bündelt Gerichte nach einem Schlüssel zu Gruppen für `ordneGruppen` — der
+ * gemeinsame Kern der Gruppierungen „nach Kategorie" und „nach CO₂-Klasse".
+ * `ersteQuelle` ist das erste Auftreten der Gruppe in der Reihenfolge der
+ * Ausgabestellen, wie die Mensa-Schnittstelle sie für den angezeigten Tag
+ * liefert (INT-020; vor der Ablösung INT-015) — der Wert stammt aus
+ * `quellrang`, den die Konsolidierung aus der Antwortreihenfolge bildet.
+ */
+function gruppiereNach(
+  gerichte: KonsolidiertesGericht[],
+  schluesselVon: (g: KonsolidiertesGericht) => string,
+  gruppeZu: (schluessel: string) => { id: string; titel: string | null; rang: number },
+) {
+  const proSchluessel = new Map<string, KonsolidiertesGericht[]>();
+  for (const g of gerichte) {
+    const schluessel = schluesselVon(g);
+    if (!proSchluessel.has(schluessel)) proSchluessel.set(schluessel, []);
+    proSchluessel.get(schluessel)!.push(g);
+  }
+  return [...proSchluessel.entries()].map(([schluessel, gs]) => ({
+    ...gruppeZu(schluessel),
+    ersteQuelle: Math.min(...gs.map((x) => x.quellrang)),
+    gerichte: gs,
+  }));
 }
 
 function indexOderEnde(liste: string[], wert: string): number {

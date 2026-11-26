@@ -2,6 +2,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import { logError } from '@/errors/AppError';
 import { readJson, writeJson } from '@/storage/kv';
+import { umgeschaltet } from './umgeschaltet';
 
 // MENSA-F-180 / F-215: Selbst festgelegte Unverträglichkeiten (Allergen- und
 // Zusatzstoffkennzeichnungen aus dem Verzeichnis `/mensen/verzeichnisse`, das
@@ -68,11 +69,7 @@ export function useIntolerances() {
   const codes = useSyncExternalStore(subscribe, () => snapshot);
   const loaded = useSyncExternalStore(subscribe, () => geladen);
 
-  const toggle = useCallback(
-    (code: string) =>
-      schreiben(snapshot.includes(code) ? snapshot.filter((c) => c !== code) : [...snapshot, code]),
-    [],
-  );
+  const toggle = useCallback((code: string) => schreiben(umgeschaltet(snapshot, code)), []);
   // Sammelschalter einer Allergengruppe (Requirement „Sammelschalter für
   // zusammengehörige Allergengruppen"): setzt oder löscht alle Unterschlüssel
   // gemeinsam in einem Schreibvorgang, damit nicht je Unterschlüssel ein

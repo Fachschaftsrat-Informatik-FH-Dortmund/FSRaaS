@@ -1,5 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { quelldateienUnter } from '@/testing/quelldateien';
 
 // Capability `architecture`, Requirement „News und Mensa-Speisepläne über das
 // Backend": Die App bezieht beides ausschließlich über das eigene Backend und
@@ -25,21 +27,8 @@ const FREMDQUELLEN = [
   'app.fsrfb4.de',
 ];
 
-function dateienUnter(verzeichnis: string): string[] {
-  const treffer: string[] = [];
-  for (const eintrag of readdirSync(verzeichnis)) {
-    const pfad = join(verzeichnis, eintrag);
-    if (statSync(pfad).isDirectory()) {
-      treffer.push(...dateienUnter(pfad));
-    } else if (/\.tsx?$/.test(eintrag)) {
-      treffer.push(pfad);
-    }
-  }
-  return treffer;
-}
-
 describe('News und Mensa-Speisepläne über das Backend', () => {
-  const dateien = dateienUnter(APP_QUELLE).filter((p) => !/\.test\.tsx?$/.test(p));
+  const dateien = quelldateienUnter(APP_QUELLE, /\.tsx?$/).filter((p) => !/\.test\.tsx?$/.test(p));
 
   it.each(FREMDQUELLEN)('nennt %s an keiner Stelle des App-Quelltexts', (adresse) => {
     const treffer = dateien.filter((pfad) => readFileSync(pfad, 'utf8').includes(adresse));

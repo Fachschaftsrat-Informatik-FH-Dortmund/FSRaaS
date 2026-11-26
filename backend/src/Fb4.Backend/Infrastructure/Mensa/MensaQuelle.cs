@@ -117,14 +117,17 @@ public sealed class MensaQuelle(Fb4DbContext db, FsrMensaClient quelle, TimeProv
     /// INT-020 fuehrt kein Kategorieverzeichnis — die Anzeigekategorie steht am
     /// Speiseplan selbst (<c>categories[].name</c>).
     /// </summary>
-    public async Task<(IReadOnlyList<Schluesselwert> kategorien,
-        IReadOnlyList<Schluesselwert> zusatzstoffe,
-        IReadOnlyList<Schluesselwert> allergene,
-        IReadOnlyList<Schluesselwert> kennzeichnungen,
-        IReadOnlyList<Schluesselwert> co2Klassen)> VerzeichnisseAsync(string sprache, CancellationToken ct)
+    public async Task<Verzeichnisse> VerzeichnisseAsync(string sprache, CancellationToken ct)
     {
         var legende = await LegendeAsync(sprache, ct);
-        return ([], legende.Zusatzstoffe, legende.Allergene, legende.Kennzeichnungen, legende.Co2Klassen);
+        return new Verzeichnisse
+        {
+            Kategorien = [],
+            Zusatzstoffe = legende.Zusatzstoffe,
+            Allergene = legende.Allergene,
+            Kennzeichnungen = legende.Kennzeichnungen,
+            Co2Klassen = legende.Co2Klassen,
+        };
     }
 
     // ------------------------------------------------------------------ Stand

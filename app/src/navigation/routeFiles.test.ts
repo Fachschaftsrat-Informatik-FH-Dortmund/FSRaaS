@@ -1,5 +1,7 @@
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { quelldateienUnter } from '@/testing/quelldateien';
 
 // SHELL-F-050: datei-basierte Navigation, wobei jede Routendatei nur auf eine
 // Bildschirmkomponente des zugehörigen areas/<bereich>-Moduls verweist und keine
@@ -7,15 +9,7 @@ import { join } from 'node:path';
 
 const ROUTES_DIR = join(__dirname, '..', '..', 'app');
 
-function collectFiles(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) return collectFiles(full);
-    return entry.name.endsWith('.tsx') ? [full] : [];
-  });
-}
-
-const files = collectFiles(ROUTES_DIR);
+const files = quelldateienUnter(ROUTES_DIR, /\.tsx$/);
 const screenRoutes = files.filter((f) => !f.endsWith('_layout.tsx'));
 
 describe('SHELL-F-050 Routendateien verweisen nur auf areas/<bereich>-Screens', () => {

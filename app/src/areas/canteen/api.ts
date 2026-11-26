@@ -18,6 +18,10 @@ export type StandAlter = components['schemas']['StandAlter'];
 export type Oeffnungsangaben = components['schemas']['Oeffnungsangaben'];
 export type Oeffnungstag = components['schemas']['Oeffnungstag'];
 export type Schliesstag = components['schemas']['Schliesstag'];
+// `allergene` und `co2Klassen` fehlen bei einem Backend-Stand vor ihrer Aufnahme;
+// das Filtermenü fällt dann auf einen gemeinsamen Unverträglichkeiten-Abschnitt
+// bzw. einen leeren CO₂-Abschnitt zurück, statt etwas zu unterstellen.
+export type Verzeichnisse = components['schemas']['Verzeichnisse'];
 
 export interface Speiseplan {
   gerichte: Gericht[];
@@ -29,28 +33,6 @@ export interface Speiseplan {
    * wenn der Vorausblick der Quelle keinen solchen Tag hergibt.
    */
   naechsteOeffnung?: string | null;
-}
-export interface Verzeichnisse {
-  kategorien: Schluesselwert[];
-  /**
-   * Zusatzstoffe **und** Allergene gemeinsam, mit der Bedeutung, die das Feld vor
-   * der Ablösung von INT-015 hatte (ADR 0016). Für die getrennte Führung im
-   * Filtermenü dient `allergene` als Teilmenge.
-   */
-  zusatzstoffe: Schluesselwert[];
-  /**
-   * Allein die Allergene. Fehlt bei einem Backend-Stand vor der Trennung; das
-   * Filtermenü führt dann weiter einen gemeinsamen Abschnitt, statt Allergene
-   * stillschweigend als Zusatzstoffe auszuweisen.
-   */
-  allergene?: Schluesselwert[];
-  kennzeichnungen: Schluesselwert[];
-  /**
-   * CO₂-Klassen der Quelle mit ihren Klartexten (INT-020 `legend.climate`).
-   * Grundlage des Ausschlusses nach CO₂-Klasse (Requirement „Ausschluss nach
-   * Kennzeichnung"). Fehlt bei einem Backend-Stand vor deren Aufnahme.
-   */
-  co2Klassen?: Schluesselwert[];
 }
 
 const FALLBACK_MENSEN = ausgangsbestand.mensen as unknown as Mensa[];
