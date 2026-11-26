@@ -225,4 +225,30 @@ describe('Ausschluss nach Kennzeichnung — CO₂-Klassen im Filtermenü', () =>
     await waitFor(() => expect(screen.getByText('Ausschließen')).toBeTruthy());
     expect(screen.queryByText('CO₂-Klassen ausschließen')).toBeNull();
   });
+
+  it('bietet die CO₂-Klassen auch an, wenn das Verzeichnis keine Kennzeichnungen und Zusatzstoffe führt', async () => {
+    mockVerzeichnisse.data = {
+      ...mockVerzeichnisse.data,
+      zusatzstoffe: [],
+      allergene: [],
+      kennzeichnungen: [],
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('CO₂-Klassen ausschließen')).toBeTruthy());
+    expect(screen.queryByText('Keine Kennzeichnungen verfügbar')).toBeNull();
+    fireEvent(screen.getByLabelText('CO₂-Klasse E'), 'valueChange', true);
+    expect(mockToggleCo2).toHaveBeenCalledWith('E');
+  });
+
+  it('zeigt den Leerzustand erst, wenn auch keine CO₂-Klassen geliefert werden', async () => {
+    mockVerzeichnisse.data = {
+      kategorien: [],
+      zusatzstoffe: [],
+      allergene: [],
+      kennzeichnungen: [],
+      co2Klassen: [],
+    };
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Keine Kennzeichnungen verfügbar')).toBeTruthy());
+  });
 });
