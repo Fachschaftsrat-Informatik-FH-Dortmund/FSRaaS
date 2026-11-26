@@ -3,6 +3,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { logError } from '@/errors/AppError';
 import { readJson, writeJson } from '@/storage/kv';
 import { LEERE_DIET_PREFS, type DietPrefs } from './dietFilter';
+import { umgeschaltet } from './umgeschaltet';
 
 // MENSA-F-250 / F-260 / F-275: Lebensstil-Vorgabe (`nurZeigen`) und Ausschluss
 // (`ausschluss`) über die Gericht-Kennzeichnungen. Gewöhnliche Ernährungs-
@@ -62,10 +63,7 @@ function schreiben(next: DietPrefs) {
 }
 
 function umschalten(feld: 'nurZeigen' | 'ausschluss', code: string): DietPrefs {
-  const aktuell = snapshot[feld];
-  const neu = aktuell.includes(code)
-    ? aktuell.filter((c) => c !== code)
-    : [...aktuell, code];
+  const neu = umgeschaltet(snapshot[feld], code);
   // Eine Kennzeichnung ist entweder Lebensstil-Vorgabe oder Ausschluss, nie beides.
   const anderes = feld === 'nurZeigen' ? 'ausschluss' : 'nurZeigen';
   return {
@@ -98,15 +96,11 @@ export function useDietPreference() {
   );
   // CO₂-Klassen stehen in einem eigenen Feld des Gerichts und kennen keine
   // Lebensstil-Vorgabe — deshalb ein eigener Umschalter ohne Gegenstück.
-  const toggleCo2Ausschluss = useCallback((klasse: string) => {
-    const aktuell = snapshot.co2Ausschluss;
-    schreiben({
-      ...snapshot,
-      co2Ausschluss: aktuell.includes(klasse)
-        ? aktuell.filter((k) => k !== klasse)
-        : [...aktuell, klasse],
-    });
-  }, []);
+  const toggleCo2Ausschluss = useCallback(
+    (klasse: string) =>
+      schreiben({ ...snapshot, co2Ausschluss: umgeschaltet(snapshot.co2Ausschluss, klasse) }),
+    [],
+  );
   const clear = useCallback(() => schreiben(LEERE_DIET_PREFS), []);
 
   return { prefs, loaded, toggleNurZeigen, toggleAusschluss, toggleCo2Ausschluss, clear };
