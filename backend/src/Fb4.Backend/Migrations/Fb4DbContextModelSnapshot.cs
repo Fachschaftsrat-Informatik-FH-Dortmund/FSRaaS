@@ -116,6 +116,103 @@ namespace Fb4.Backend.Migrations
                     b.ToTable("Raeume");
                 });
 
+            modelBuilder.Entity("Fb4.Backend.Domain.RaumplanRaum", b =>
+                {
+                    b.Property<string>("RoomId")
+                        .HasColumnType("text");
+
+                    b.HasKey("RoomId");
+
+                    b.ToTable("RaumplanRaeume", (string)null);
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.RaumplanStand", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("AbgerufenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("Bis")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LetzterVersuchAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("LetzterVersuchErfolgreich")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("Von")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RaumplanStand", (string)null);
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.RaumplanTerminEintrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Beginn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CourseOfStudy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Ende")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LecturerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("text");
+
+                    b.Property<string>("QuellId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoomId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoomIdQuelle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StudentSet")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TimeBegin")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TimeEnd")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Weekday")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId", "Beginn");
+
+                    b.ToTable("RaumplanTermine", (string)null);
+                });
+
             modelBuilder.Entity("Fb4.Backend.Domain.SammlungsRevision", b =>
                 {
                     b.Property<string>("Bereich")
