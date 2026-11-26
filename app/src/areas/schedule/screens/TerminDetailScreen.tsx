@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove, type NavigationAction } from 'expo-router/react-navigation';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { Screen } from '@/ui/Screen';
 import { anzeigeFarbe, farbeFuerVeranstaltung, textfarbeFuerHintergrund } from '../farbe';
 import { ermittleKonflikte } from '../konflikt';
 import { useAnsichtEinstellungen } from '../ansichtEinstellungen';
+import { MODULNAME_MAX_LAENGE, eigenerNameVon, modulSchluesselVon, useModulnamen } from '../modulnamen';
 import { useScheduleEntries, wiederkehrendAusZeitraum } from '../planStore';
 import { istAktiv } from '../time';
 import type { PlanEntry } from '../typen';
@@ -80,6 +81,8 @@ export function TerminDetailScreen() {
     aktualisieren,
   } = useScheduleEntries();
   const { einstellungen: ansichtEinstellungen } = useAnsichtEinstellungen();
+  const { namen: modulnamen, loaded: modulnamenGeladen, setzen: modulnameSetzen, entfernen: modulnameEntfernen } =
+    useModulnamen();
   const [loeschenBestaetigen, setLoeschenBestaetigen] = useState(false);
   const jetztSek = Math.floor(Date.now() / 1000);
 
@@ -109,7 +112,7 @@ export function TerminDetailScreen() {
     setFarbeGeaendert(false);
   }
 
-  if (!loaded) {
+  if (!loaded || !modulnamenGeladen) {
     return (
       <Screen center>
         <MessageView busy title={t('states.loading')} />
@@ -164,6 +167,15 @@ export function TerminDetailScreen() {
           <>
             <Angabe label={t('schedule.detailArt')} wert={entry.courseType} />
             <Angabe label={t('schedule.detailBezeichnung')} wert={entry.name} />
+            {/* Requirement „Geltungsbereich des eigenen Namens", Szenario
+                „Bedienweg im Termindetail": unterhalb der offiziellen
+                Bezeichnung, die hier unverändert stehen bleibt. */}
+            <EigenerNameAbschnitt
+              key={eigenerNameVon(entry, modulnamen) ?? ''}
+              eigenerName={eigenerNameVon(entry, modulnamen)}
+              onSetzen={(name) => modulnameSetzen(modulSchluesselVon(entry)!, name)}
+              onEntfernen={() => modulnameEntfernen(modulSchluesselVon(entry)!)}
+            />
             <Angabe
               label={t('schedule.detailGruppe')}
               wert={entry.studentSet === '*' ? t('schedule.kurseGruppeAlle') : entry.studentSet}
@@ -502,6 +514,82 @@ function DeaktivierenAbschnitt({
   );
 }
 
+/**
+ * Requirement „Eigener Name je Modul" (design.md, Entscheidung 5): Setzen über
+ * Textfeld und „Übernehmen", Entfernen erst nach Rückfrage über
+ * `ConfirmDialog` — ein eigener Name ist gerätelokaler Nutzerinhalt und geht
+ * nie ohne Rückfrage verloren (DATA-F-020). Der Name gilt sofort und immer
+ * für das ganze Modul; eine Rückfrage nach dem Geltungsbereich wie bei der
+ * Farbe gibt es deshalb nicht.
+ */
+function EigenerNameAbschnitt({
+  eigenerName,
+  onSetzen,
+  onEntfernen,
+}: {
+  eigenerName: string | null;
+  onSetzen: (name: string) => void;
+  onEntfernen: () => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const [eingabe, setEingabe] = useState(eigenerName ?? '');
+  const [entfernenBestaetigen, setEntfernenBestaetigen] = useState(false);
+  const bereinigt = eingabe.trim();
+  const uebernehmbar = bereinigt !== '' && bereinigt !== eigenerName;
+
+  return (
+    <View style={styles.angabe}>
+      <Text style={{ color: colors.textMuted, fontSize: 13 }}>{t('schedule.eigenerNameTitel')}</Text>
+      <Text style={{ color: colors.textMuted, fontSize: 13 }}>{t('schedule.eigenerNameHinweis')}</Text>
+      <View style={styles.eigenerNameZeile}>
+        <TextInput
+          accessibilityLabel={t('schedule.eigenerNameLabel')}
+          placeholder={t('schedule.eigenerNameLabel')}
+          placeholderTextColor={colors.textMuted}
+          value={eingabe}
+          onChangeText={setEingabe}
+          maxLength={MODULNAME_MAX_LAENGE}
+          returnKeyType="done"
+          onSubmitEditing={() => {
+            if (uebernehmbar) onSetzen(bereinigt);
+          }}
+          style={[styles.eingabe, styles.eigenerNameEingabe, { borderColor: colors.border, color: colors.text }]}
+        />
+        <AppButton
+          variant="secondary"
+          label={t('schedule.eigenerNameUebernehmen')}
+          disabled={!uebernehmbar}
+          onPress={() => onSetzen(bereinigt)}
+        />
+      </View>
+      {eigenerName !== null ? (
+        <AppButton
+          variant="secondary"
+          label={t('schedule.eigenerNameEntfernen')}
+          onPress={() => setEntfernenBestaetigen(true)}
+        />
+      ) : null}
+      <ConfirmDialog
+        visible={entfernenBestaetigen}
+        message={t('schedule.eigenerNameEntfernenFrage', { name: eigenerName ?? '' })}
+        actions={[
+          {
+            label: t('schedule.eigenerNameEntfernenBestaetigen'),
+            variant: 'destructive',
+            onPress: () => {
+              setEntfernenBestaetigen(false);
+              onEntfernen();
+            },
+          },
+          { label: t('common.cancel'), onPress: () => setEntfernenBestaetigen(false) },
+        ]}
+        onDismiss={() => setEntfernenBestaetigen(false)}
+      />
+    </View>
+  );
+}
+
 function Angabe({ label, wert }: { label: string; wert: string }) {
   const { colors } = useTheme();
   return (
@@ -519,6 +607,8 @@ const styles = StyleSheet.create({
   angabe: { gap: 2 },
   abschnitt: { fontSize: 15, fontWeight: '600', marginBottom: 8 },
   eingabe: { minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12 },
+  eigenerNameZeile: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+  eigenerNameEingabe: { flex: 1, minWidth: 160, fontSize: 16 },
   zeitraumZeile: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
   zeitraumWert: { flex: 1, minWidth: 120, justifyContent: 'center' },
   farben: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

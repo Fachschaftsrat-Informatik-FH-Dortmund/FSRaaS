@@ -26,6 +26,8 @@ import { wischRichtung } from '../../canteen/gesten';
 import { ermittleJetztStatus } from '../jetzt';
 import { ermittleKonflikte, type Konflikte } from '../konflikt';
 import { baueModulliste } from '../kursbaum';
+import { kachelTitel, useModulnamen } from '../modulnamen';
+import { teileEndzahl } from '../namenskuerzung';
 import { useScheduleEntries } from '../planStore';
 import { useSemesterstand } from '../semesterstand';
 import { erkenneSemesterwechsel } from '../semesterwechsel';
@@ -103,6 +105,10 @@ export function ScheduleScreen() {
   const { entries, loaded: planGeladen, mehrereUebernehmen } = useScheduleEntries();
   const { einstellungen, loaded: einstellungenGeladen } = useAnsichtEinstellungen();
   const { zuletztBetrachtet, loaded: standGeladen, merkeStand } = useAnsichtsstand();
+  // Requirement „Geltungsbereich des eigenen Namens": die Kacheln erscheinen
+  // erst mit geladenen eigenen Namen, damit sie nicht kurz die offizielle
+  // Bezeichnung zeigen und dann umspringen.
+  const { loaded: modulnamenGeladen } = useModulnamen();
   const vorlesungszeit = useVorlesungszeit();
   const { studiengaenge } = useStudiengaenge();
 
@@ -131,7 +137,8 @@ export function ScheduleScreen() {
   const laufendeWoche = wochenanfang(heuteDatum);
 
   const [stand, setStand] = useState<Ansichtsstand | null>(null);
-  const allesGeladen = einrichtungGeladen && planGeladen && einstellungenGeladen && standGeladen;
+  const allesGeladen =
+    einrichtungGeladen && planGeladen && einstellungenGeladen && standGeladen && modulnamenGeladen;
 
   // Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus", Szenario
   // „Bestehender Plan ohne Kennung" (design.md, Entscheidung 6.3): Termine im
@@ -883,6 +890,10 @@ export function TerminKachel({
   const farbe = anzeigeFarbe(entry, einstellungen.farbautomatik);
   const textfarbe = textfarbeFuerHintergrund(farbe);
   const deaktiviert = !istAktiv(entry, jetztSek);
+  // Requirement „Geltungsbereich des eigenen Namens": allein die Kachel zeigt
+  // den eigenen Namen des Moduls (`modulnamen.ts`, design.md Entscheidung 4).
+  const { namen } = useModulnamen();
+  const titel = kachelTitel(entry, namen);
 
   const kennzeichen: string[] = [];
   // Requirement „Hinweis auf gesetzlichen Feiertag": steht voran, damit er bei
@@ -904,7 +915,7 @@ export function TerminKachel({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[zeitraum, titelVon(entry), ...kennzeichen].join(' · ')}
+      accessibilityLabel={[zeitraum, titel, ...kennzeichen].join(' · ')}
       onPress={() => onOeffne(entry.id)}
       style={[
         styles.kachel,
@@ -920,9 +931,7 @@ export function TerminKachel({
       <Text style={[styles.kachelZeit, { color: textfarbe }]} numberOfLines={1}>
         {zeitraum}
       </Text>
-      <Text style={[styles.kachelTitel, { color: textfarbe }]} numberOfLines={2}>
-        {titelVon(entry)}
-      </Text>
+      <KachelTitel titel={titel} farbe={textfarbe} />
       {entry.kind === 'offiziell' ? (
         <Text style={[styles.kachelZeile, { color: textfarbe }]} numberOfLines={1}>
           {`${entry.courseType} · ${entry.roomId}`}
@@ -934,6 +943,41 @@ export function TerminKachel({
         </Text>
       ) : null}
     </Pressable>
+  );
+}
+
+/**
+ * Requirement „Kürzung langer Veranstaltungsnamen unter Erhalt einer
+ * Endzahl" (design.md, Entscheidung 3): Endet der Name auf eine Zahl, stehen
+ * Stamm und Zahl nebeneinander — der Stamm schrumpft und wird vom Textlayout
+ * am Ende mit „…" gekürzt, die Zahl schrumpft nie. Ohne Endzahl kürzt ein
+ * einzelner Text am Ende. Keine Messung der verfügbaren Breite. Der
+ * Vorleser bekommt den ungekürzten Namen über das `accessibilityLabel` der
+ * Kachel.
+ */
+function KachelTitel({ titel, farbe }: { titel: string; farbe: string }) {
+  const { stamm, endzahl } = teileEndzahl(titel);
+  if (endzahl === null) {
+    return (
+      <Text testID="kachelTitel" style={[styles.kachelTitel, { color: farbe }]} numberOfLines={2} ellipsizeMode="tail">
+        {titel}
+      </Text>
+    );
+  }
+  return (
+    <View testID="kachelTitel" style={styles.kachelTitelZeile}>
+      <Text
+        testID="kachelTitelStamm"
+        style={[styles.kachelTitel, styles.kachelTitelStamm, { color: farbe }]}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+      >
+        {stamm}
+      </Text>
+      <Text testID="kachelTitelEndzahl" style={[styles.kachelTitel, styles.kachelTitelEndzahl, { color: farbe }]} numberOfLines={1}>
+        {endzahl}
+      </Text>
+    </View>
   );
 }
 
@@ -973,5 +1017,8 @@ const styles = StyleSheet.create({
   kachelAlternative: { borderWidth: 2, borderStyle: 'dashed' },
   kachelZeit: { fontSize: 12, fontWeight: '600' },
   kachelTitel: { fontSize: 14, fontWeight: '700' },
+  kachelTitelZeile: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
+  kachelTitelStamm: { flexShrink: 1 },
+  kachelTitelEndzahl: { flexShrink: 0 },
   kachelZeile: { fontSize: 12 },
 });
