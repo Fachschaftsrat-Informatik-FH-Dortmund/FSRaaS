@@ -1,6 +1,6 @@
 ## 1. Vertrag
 
-- [ ] 1.1 `api-contract.yaml` auf Fassung 0.8.0:
+- [x] 1.1 `api-contract.yaml` auf Fassung 0.8.0:
   - `GET /meldungen` mit `zurueckgezogen`-Kennungen, 400-Codes `cursor_ungueltig` und `limit_ungueltig`
   - `GET /meldungen/entwuerfe/{entwurfId}` neu
   - `If-Match` beim Veröffentlichen, 404/409/412 je Pfad
@@ -11,8 +11,8 @@
 
 ## 2. Backend
 
-- [ ] 2.1 Domänenobjekt `Meldungseintrag`, `DbSet` und Modellkonfiguration (Concurrency-Token `Version`, Index auf Zustand und Zeitpunkt), Migration `NewsRedaktion`. Prüfen: `dotnet build` grün, die Migration legt nur die Tabelle `Meldungen` an.
-- [ ] 2.2 `MeldungenStore`: Seite lesen mit Cursor, zurückgezogene Kennungen, Entwürfe lesen, anlegen, ändern, veröffentlichen, zurückziehen nach D2 inklusive Pflichtangaben und `If-Match`. Endpunkte in `MeldungenEndpoints.cs` (Lesepfad kontofrei, Redaktion hinter `fsr-redaktion`, Protokolleintrag je Handlung), Registrierung in `Program.cs` und `TestAppFactory`. Prüfen mit Tests in `MeldungenTests.cs`:
+- [x] 2.1 Domänenobjekt `Meldungseintrag`, `DbSet` und Modellkonfiguration (Concurrency-Token `Version`, Index auf Zustand und Zeitpunkt), Migration `NewsRedaktion`. Prüfen: `dotnet build` grün, die Migration legt nur die Tabelle `Meldungen` an.
+- [x] 2.2 `MeldungenStore`: Seite lesen mit Cursor, zurückgezogene Kennungen, Entwürfe lesen, anlegen, ändern, veröffentlichen, zurückziehen nach D2 inklusive Pflichtangaben und `If-Match`. Endpunkte in `MeldungenEndpoints.cs` (Lesepfad kontofrei, Redaktion hinter `fsr-redaktion`, Protokolleintrag je Handlung), Registrierung in `Program.cs` und `TestAppFactory`. Prüfen mit Tests in `MeldungenTests.cs`:
   - „Laden und Anzeige aktueller Meldungen"
   - „Nachladen älterer Meldungen"
   - „Meldungsredaktion für FSR-News"

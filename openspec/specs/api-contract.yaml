@@ -18,7 +18,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.7.2
+  version: 0.8.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -366,10 +366,16 @@ paths:
   /meldungen:
     get:
       tags: [news]
-      summary: Meldungen, absteigend nach Veröffentlichungszeitpunkt
+      summary: Veröffentlichte Meldungen, absteigend nach Veröffentlichungszeitpunkt
       description: |
-        Erfüllt NEWS-F-010 und NEWS-F-140. Zwischenspeicher von INT-003 (FSR-News) und
-        INT-010 (FB-Aktuelles); Event-Erinnerungen werden serverseitig abgeleitet.
+        Erfüllt NEWS-F-010 und NEWS-F-140 (Capability `news`, Requirements „Laden und
+        Anzeige aktueller Meldungen", „Nachladen älterer Meldungen"). Liefert nur
+        veröffentlichte Meldungen; Entwürfe und zurückgezogene Meldungen erscheinen nie.
+        Seit Fassung 0.8.0 stammen FSR-News aus der eigenen Redaktion (ADMIN-F-040);
+        FB-Aktuelles (INT-010) und Event-Erinnerungen folgen mit der zweiten
+        Ausbaustufe. Blättern über einen opaken Cursor: Gleichstand im Zeitpunkt wird
+        über die Kennung aufgelöst, eine zwischen zwei Seiten neu veröffentlichte
+        Meldung verschiebt keine Seite (Change `news-redaktion`, design.md D3).
       security: []
       parameters:
         - name: klassifizierung
@@ -384,27 +390,27 @@ paths:
           description: Seite von Meldungen
           content:
             application/json:
-              schema:
-                type: object
-                required: [meldungen, standAlter]
-                properties:
-                  meldungen:
-                    type: array
-                    items: { $ref: "#/components/schemas/Meldung" }
-                  naechsterCursor:
-                    type: [string, "null"]
-                    description: Null, wenn keine älteren Meldungen mehr vorliegen.
-                  standAlter: { $ref: "#/components/schemas/StandAlter" }
+              schema: { $ref: "#/components/schemas/Meldungsseite" }
+        "400":
+          description: |
+            Unlesbarer Cursor (`cursor_ungueltig`) oder Seitengröße außerhalb 1–100
+            (`limit_ungueltig`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         default: { $ref: "#/components/responses/Fehler" }
 
   /meldungen/entwuerfe:
     get:
       tags: [news]
-      summary: Meldungsentwürfe der Redaktion
-      description: Erfüllt ADMIN-F-040. Erfordert die Rolle FSR-Redaktion (ADMIN-F-010).
+      summary: Alle Meldungen der Redaktion in jedem Zustand
+      description: |
+        Erfüllt ADMIN-F-040. Erfordert die Rolle FSR-Redaktion (ADMIN-F-010).
+        Enthält Entwürfe, veröffentlichte und zurückgezogene Meldungen, zuletzt
+        geänderte zuerst.
       responses:
         "200":
-          description: Entwürfe
+          description: Meldungen der Redaktion
           content:
             application/json:
               schema:
@@ -416,7 +422,10 @@ paths:
     post:
       tags: [news]
       summary: Meldungsentwurf anlegen
-      description: Erfüllt ADMIN-F-040 und API-F-090.
+      description: |
+        Erfüllt ADMIN-F-040 und API-F-090. Der Entwurf erscheint nicht in
+        `GET /meldungen`, bis er veröffentlicht wird. Der Kopf `ETag` der Antwort
+        trägt denselben Wert wie das Feld `etag`.
       requestBody:
         required: true
         content:
@@ -428,23 +437,43 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Meldungsentwurf" }
+        "400": { $ref: "#/components/responses/MeldungUngueltig" }
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
         default: { $ref: "#/components/responses/Fehler" }
 
   /meldungen/entwuerfe/{entwurfId}:
-    put:
+    get:
       tags: [news]
-      summary: Meldungsentwurf ändern
+      summary: Eine Meldung der Redaktion
       description: |
-        Erfüllt ADMIN-F-040. Der Kopf `If-Match` schützt vor dem Überschreiben
-        einer zwischenzeitlichen Änderung durch eine andere Person (ADMIN, Abschnitt 9).
+        Erfüllt ADMIN-F-040. Liefert den aktuellen Stand samt `etag`, etwa um nach
+        einer abgelehnten Änderung den neueren Stand anzubieten (Requirement
+        „Ablehnung bei gleichzeitiger Änderung einer Meldung").
       parameters:
         - $ref: "#/components/parameters/EntwurfId"
-        - name: If-Match
-          in: header
-          required: true
-          schema: { type: string }
+      responses:
+        "200":
+          description: Meldung
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Meldungsentwurf" }
+        "401": { $ref: "#/components/responses/Unauthentifiziert" }
+        "403": { $ref: "#/components/responses/Verboten" }
+        "404": { $ref: "#/components/responses/MeldungUnbekannt" }
+        default: { $ref: "#/components/responses/Fehler" }
+    put:
+      tags: [news]
+      summary: Meldung ändern
+      description: |
+        Erfüllt ADMIN-F-040. In jedem Zustand zulässig; bei einer veröffentlichten
+        Meldung ist die Änderung sofort in `GET /meldungen` sichtbar, ihr
+        Veröffentlichungszeitpunkt bleibt unverändert. Der Kopf `If-Match` schützt
+        vor dem Überschreiben einer zwischenzeitlichen Änderung durch eine andere
+        Person (Requirement „Ablehnung bei gleichzeitiger Änderung einer Meldung").
+      parameters:
+        - $ref: "#/components/parameters/EntwurfId"
+        - $ref: "#/components/parameters/MeldungIfMatch"
       requestBody:
         required: true
         content:
@@ -452,41 +481,49 @@ paths:
             schema: { $ref: "#/components/schemas/MeldungsentwurfEingabe" }
       responses:
         "200":
-          description: Entwurf geändert
+          description: Meldung geändert
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Meldungsentwurf" }
+        "400": { $ref: "#/components/responses/MeldungUngueltig" }
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
-        "412":
-          description: Zwischenzeitlich geändert; neuerer Stand im Rumpf
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/Fehler" }
+        "404": { $ref: "#/components/responses/MeldungUnbekannt" }
+        "412": { $ref: "#/components/responses/MeldungVeraltet" }
         default: { $ref: "#/components/responses/Fehler" }
 
   /meldungen/entwuerfe/{entwurfId}/veroeffentlichung:
     put:
       tags: [news]
       summary: Meldung veröffentlichen
-      description: Erfüllt ADMIN-F-040.
+      description: |
+        Erfüllt ADMIN-F-040. Aus den Zuständen `entwurf` und `zurueckgezogen`;
+        setzt den Veröffentlichungszeitpunkt auf jetzt. Für eine bereits
+        veröffentlichte Meldung ohne Wirkung. `If-Match` stellt sicher, dass genau
+        der Stand veröffentlicht wird, den die Person in der Vorschau gesehen hat
+        (ADMIN-F-060).
       parameters:
         - $ref: "#/components/parameters/EntwurfId"
+        - $ref: "#/components/parameters/MeldungIfMatch"
       responses:
         "200":
           description: Veröffentlicht
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Meldung" }
+              schema: { $ref: "#/components/schemas/Meldungsentwurf" }
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
+        "404": { $ref: "#/components/responses/MeldungUnbekannt" }
+        "412": { $ref: "#/components/responses/MeldungVeraltet" }
         default: { $ref: "#/components/responses/Fehler" }
     delete:
       tags: [news]
       summary: Meldung zurückziehen
       description: |
-        Erfüllt ADMIN-F-050. Die Meldung verschwindet aus der Liste; angepinnte
-        Verweise darauf werden als zurückgezogen gekennzeichnet.
+        Erfüllt ADMIN-F-050. Die Meldung verschwindet aus `GET /meldungen`, ihre
+        Kennung erscheint dort unter `zurueckgezogen`; die App kennzeichnet einen
+        angepinnten Verweis darauf als zurückgezogen. Für eine bereits
+        zurückgezogene Meldung ohne Wirkung.
       parameters:
         - $ref: "#/components/parameters/EntwurfId"
       responses:
@@ -494,6 +531,12 @@ paths:
           description: Zurückgezogen
         "401": { $ref: "#/components/responses/Unauthentifiziert" }
         "403": { $ref: "#/components/responses/Verboten" }
+        "404": { $ref: "#/components/responses/MeldungUnbekannt" }
+        "409":
+          description: Ein nie veröffentlichter Entwurf kann nicht zurückgezogen werden (`nicht_veroeffentlicht`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
         default: { $ref: "#/components/responses/Fehler" }
 
   # -------------------------------------------------------------- Stundenplan
@@ -862,6 +905,12 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    MeldungIfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Der `etag` des zuletzt geladenen Stands der Meldung.
+      schema: { type: string }
     IdempotenzSchluessel:
       name: Idempotency-Key
       in: header
@@ -903,6 +952,26 @@ components:
       headers:
         Retry-After:
           schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Fehler" }
+
+    MeldungUngueltig:
+      description: |
+        Pflichtangabe fehlt oder ist zu lang (`titel_leer`, `titel_zu_lang`,
+        `text_leer`, `text_zu_lang`); Requirement „Meldungsredaktion für FSR-News".
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Fehler" }
+    MeldungUnbekannt:
+      description: Keine Meldung mit dieser Kennung (`meldung_unbekannt`).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Fehler" }
+    MeldungVeraltet:
+      description: |
+        Zwischenzeitlich geändert (`stand_veraltet`); neueren Stand über
+        `GET /meldungen/entwuerfe/{entwurfId}` abrufen.
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Fehler" }
@@ -1312,35 +1381,56 @@ components:
           format: date-time
           description: Null, wenn der Zeitstempel unlesbar war (NEWS, Abschnitt 9).
         klassifizierung: { $ref: "#/components/schemas/Klassifizierung" }
-        quelle: { type: string }
+        quelle: { type: string, description: Quelle/Verteiler der Meldung }
+
+    Meldungsseite:
+      type: object
+      required: [meldungen, zurueckgezogen, standAlter]
+      properties:
+        meldungen:
+          type: array
+          items: { $ref: "#/components/schemas/Meldung" }
+        naechsterCursor:
+          type: [string, "null"]
+          description: Null, wenn keine älteren Meldungen mehr vorliegen.
         zurueckgezogen:
-          type: boolean
-          default: false
-          description: Erfüllt ADMIN-F-050.
+          type: array
+          description: |
+            Kennungen aller zurückgezogenen Meldungen (ADMIN-F-050). Die App gleicht
+            ihre lokal angepinnten Meldungen damit ab, ohne dem Server mitzuteilen,
+            welche sie angepinnt hat (DATA-F-060).
+          items: { type: string, format: uuid }
+        standAlter: { $ref: "#/components/schemas/StandAlter" }
 
     MeldungsentwurfEingabe:
       type: object
       required: [titel, text]
       properties:
-        titel: { type: string }
-        text: { type: string }
-        geplanteVeroeffentlichung:
-          type: [string, "null"]
-          format: date-time
+        titel: { type: string, maxLength: 200, description: Nicht leer }
+        text: { type: string, maxLength: 20000, description: Nicht leer }
+
+    Meldungszustand:
+      type: string
+      enum: [entwurf, veroeffentlicht, zurueckgezogen]
 
     Meldungsentwurf:
-      allOf:
-        - $ref: "#/components/schemas/MeldungsentwurfEingabe"
-        - type: object
-          required: [id, zustand, etag]
-          properties:
-            id: { type: string, format: uuid }
-            zustand:
-              type: string
-              enum: [entwurf, veroeffentlicht, zurueckgezogen]
-            etag:
-              type: string
-              description: Für If-Match beim Ändern (ADMIN, Abschnitt 9).
+      type: object
+      required: [id, titel, text, zustand, klassifizierung, etag, geaendertAm]
+      properties:
+        id: { type: string, format: uuid }
+        titel: { type: string }
+        text: { type: string }
+        zustand: { $ref: "#/components/schemas/Meldungszustand" }
+        klassifizierung: { $ref: "#/components/schemas/Klassifizierung" }
+        quelle: { type: string }
+        veroeffentlichtAm:
+          type: [string, "null"]
+          format: date-time
+          description: Zeitpunkt der (letzten) Veröffentlichung; null, solange nie veröffentlicht.
+        geaendertAm: { type: string, format: date-time }
+        etag:
+          type: string
+          description: Für If-Match beim Ändern und Veröffentlichen (ADMIN, Abschnitt 9).
 
     Studiengang:
       type: object

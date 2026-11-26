@@ -58,6 +58,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 {
     builder.Services.AddDbContext<Fb4DbContext>(o => o.UseNpgsql(connectionString));
     builder.Services.AddScoped<StammdatenStore>();
+    builder.Services.AddScoped<MeldungenStore>();
     builder.Services.AddScoped<AuditLog>();
     builder.Services.AddScoped<MensaQuelle>();
     builder.Services.AddScoped<RaumplanAbruf>();
@@ -117,6 +118,7 @@ var v1 = app.MapGroup("/v1");
 v1.MapStammdatenEndpoints();
 v1.MapMensaEndpoints();
 v1.MapRaumplanEndpoints();
+v1.MapMeldungenEndpoints();
 v1.MapVerwaltungEndpoints();
 
 // Web-Export der Verwaltungsoberfläche unter /admin (ADR 0018).
