@@ -93,6 +93,7 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
             // Feature-Dienste hängen produktiv an der Verbindungszeichenfolge
             // (Program.cs); im Test kommt die Datenbank von hier.
             services.AddScoped<StammdatenStore>();
+            services.AddScoped<MeldungenStore>();
             services.AddScoped<AuditLog>();
             services.AddScoped<MensaQuelle>();
             services.AddScoped<RaumplanAbruf>();

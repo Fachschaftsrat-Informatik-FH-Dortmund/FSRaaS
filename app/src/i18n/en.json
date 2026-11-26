@@ -33,6 +33,37 @@
     "comingSoonTitle": "Coming soon",
     "comingSoonBody": "This area will be filled in a later development step. The way to get here already works."
   },
+  "news": {
+    "leerTitel": "No current news",
+    "leerHinweis": "As soon as the student council publishes something, it appears here. Pull down to refresh.",
+    "klassifizierung": {
+      "fsr-news": "Council news",
+      "fb-aktuelles": "Department news",
+      "event-erinnerung": "Event reminder"
+    },
+    "zeitUnbekannt": "Time unknown",
+    "anpinnen": "Pin",
+    "loesen": "Unpin",
+    "anpinnenA11y": "Pin news item “{{titel}}”",
+    "loesenA11y": "Unpin news item “{{titel}}”",
+    "oeffnenHinweis": "Opens the full news item",
+    "angepinnt": "Pinned",
+    "aktuell": "Latest",
+    "zurueckgezogen": "Withdrawn",
+    "zurueckgezogenHinweis": "The student council has withdrawn this news item.",
+    "quelle": "Source: {{quelle}}",
+    "aeltereLaden": "Load older news",
+    "laedtAeltere": "Loading older news",
+    "alleGeladen": "No older news",
+    "nachladenFehler": "Older news could not be loaded.",
+    "aktualisierenFehler": "Refreshing failed. Showing the last loaded state.",
+    "detail": {
+      "titel": "News item",
+      "nichtVerfuegbarTitel": "News item not available",
+      "nichtVerfuegbarHinweis": "This news item is not loaded. Open it from the list.",
+      "zurListe": "Back to the list"
+    }
+  },
   "settings": {
     "title": "Settings",
     "appearanceLabel": "Appearance",
@@ -572,6 +603,7 @@
     "stale": "Changed in the meantime. Please load the newer state and save again.",
     "staleReloaded": "Changed by someone else in the meantime. The newer state has been loaded — please re-apply your changes.",
     "sections": {
+      "meldungen": "News",
       "rollen": "Roles",
       "stammdaten": "Master data",
       "laufwege": "Walking routes"
@@ -632,6 +664,47 @@
       "ticketRechts": "Right",
       "ticketUnten": "Bottom",
       "dateError": "Please fill all date fields as YYYY-MM-DD or leave them empty."
+    },
+    "meldungen": {
+      "neu": "New news item",
+      "leerTitel": "No news items yet",
+      "leerHinweis": "No drafts yet — create the first one with “New news item”.",
+      "gruppe": {
+        "entwurf": "Drafts",
+        "veroeffentlicht": "Published",
+        "zurueckgezogen": "Withdrawn"
+      },
+      "geaendert": "Changed {{zeit}}",
+      "titelNeu": "New news item",
+      "titelBearbeiten": "Edit news item",
+      "titel": "Title",
+      "text": "Text",
+      "zustandHinweis": {
+        "entwurf": "Draft — not yet visible in the app.",
+        "veroeffentlicht": "Published — changes only take effect through the preview.",
+        "zurueckgezogen": "Withdrawn — no longer visible in the app."
+      },
+      "alsEntwurfSpeichern": "Save as draft",
+      "vorschau": "Preview",
+      "vorschauHinweis": "This is how the news item appears in the app.",
+      "vorschauListe": "In the list",
+      "vorschauDetail": "In the detail view",
+      "zurueckZurBearbeitung": "Back to editing",
+      "veroeffentlichen": "Publish",
+      "aenderungenVeroeffentlichen": "Publish changes",
+      "erneutVeroeffentlichen": "Publish again",
+      "veroeffentlicht": "Published.",
+      "zurueckziehen": "Withdraw",
+      "zurueckziehenFrage": "Withdraw “{{titel}}”? It disappears from the app; anyone who pinned it sees it as withdrawn.",
+      "zurueckgezogen": "Withdrawn.",
+      "veraltet": "Someone else changed this news item in the meantime. Your input is kept until you load the newer version.",
+      "neuerenStandLaden": "Load newer version",
+      "titelLeer": "Please enter a title.",
+      "textLeer": "Please enter a text.",
+      "titelZuLang": "The title is too long (at most 200 characters).",
+      "textZuLang": "The text is too long (at most 20,000 characters).",
+      "offline": "Saving is not possible without a connection. Your input is kept.",
+      "unbekannt": "This news item does not exist (anymore)."
     }
   },
   "raum": {

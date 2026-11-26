@@ -24,6 +24,8 @@ export default function AdminLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: t('admin.title') }} />
+      <Stack.Screen name="meldungen/index" options={{ title: t('admin.sections.meldungen') }} />
+      <Stack.Screen name="meldungen/[entwurfId]" options={{ title: t('admin.meldungen.titelBearbeiten') }} />
       <Stack.Screen name="rollen" options={{ title: t('admin.sections.rollen') }} />
       <Stack.Screen name="stammdaten" options={{ title: t('admin.sections.stammdaten') }} />
       <Stack.Screen name="laufwege" options={{ title: t('admin.sections.laufwege') }} />

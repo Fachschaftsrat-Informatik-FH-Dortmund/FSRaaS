@@ -1,3 +1,4 @@
+using Fb4.Backend.Endpoints;
 using Fb4.Backend.Domain;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,7 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
     public DbSet<RaumplanTerminEintrag> RaumplanTermine => Set<RaumplanTerminEintrag>();
     public DbSet<RaumplanRaum> RaumplanRaeume => Set<RaumplanRaum>();
     public DbSet<RaumplanStand> RaumplanStand => Set<RaumplanStand>();
+    public DbSet<Meldungseintrag> Meldungen => Set<Meldungseintrag>();
     public DbSet<PruefungsterminEintrag> Pruefungstermine => Set<PruefungsterminEintrag>();
     public DbSet<PruefungsbestandStand> PruefungsbestandStand => Set<PruefungsbestandStand>();
     public DbSet<BesetztMeldung> BesetztMeldungen => Set<BesetztMeldung>();
@@ -73,6 +75,24 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
             e.ToTable("RaumplanStand");
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedNever();
+        });
+
+        // Meldungen (Capability `news`, Redaktion ADMIN-F-040): Entwurf bis Rückzug
+        // in einem Datensatz. `Version` sichert die Bearbeitung gegen gleichzeitige
+        // Änderung ab (Requirement „Ablehnung bei gleichzeitiger Änderung einer
+        // Meldung"), wie `SammlungsRevision` bei den Stammdaten.
+        b.Entity<Meldungseintrag>(e =>
+        {
+            e.ToTable("Meldungen");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.Titel).HasMaxLength(MeldungsRegeln.TitelMaxLaenge);
+            e.Property(x => x.Text).HasMaxLength(MeldungsRegeln.TextMaxLaenge);
+            e.Property(x => x.Zustand).HasMaxLength(20);
+            e.Property(x => x.Klassifizierung).HasMaxLength(20);
+            e.Property(x => x.Quelle).HasMaxLength(100);
+            e.Property(x => x.Version).IsConcurrencyToken();
+            e.HasIndex(x => new { x.Zustand, x.VeroeffentlichtAm });
         });
 
         // Prüfungsbestand, aus dem Raumplan abgeleitet: wird je Abruf vollständig ersetzt.

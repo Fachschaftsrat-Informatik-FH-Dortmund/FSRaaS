@@ -92,6 +92,56 @@ namespace Fb4.Backend.Migrations
                     b.ToTable("Links");
                 });
 
+            modelBuilder.Entity("Fb4.Backend.Domain.Meldungseintrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("AngelegtAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Klassifizierung")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Quelle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("character varying(20000)");
+
+                    b.Property<string>("Titel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("VeroeffentlichtAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Zustand")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Zustand", "VeroeffentlichtAm");
+
+                    b.ToTable("Meldungen", (string)null);
+                });
+
             modelBuilder.Entity("Fb4.Backend.Domain.MensaEintrag", b =>
                 {
                     b.Property<string>("Id")

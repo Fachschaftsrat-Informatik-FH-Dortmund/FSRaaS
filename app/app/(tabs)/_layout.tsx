@@ -51,7 +51,12 @@ export default function TabsLayout() {
         name="canteen"
         options={{ title: t('nav.canteen'), headerShown: false, tabBarIcon: tabIcon('canteen') }}
       />
-      <Tabs.Screen name="news" options={{ title: t('nav.news'), tabBarIcon: tabIcon('news') }} />
+      {/* News ist ein verschachtelter Stack (Liste + Detailansicht) und zeigt
+          seine eigenen Kopfzeilen. */}
+      <Tabs.Screen
+        name="news"
+        options={{ title: t('nav.news'), headerShown: false, tabBarIcon: tabIcon('news') }}
+      />
       {/* Raum-Bereich ist ein verschachtelter Stack (drei Sichten + Tagesbelegung)
           und zeigt seine eigenen Kopfzeilen. */}
       <Tabs.Screen

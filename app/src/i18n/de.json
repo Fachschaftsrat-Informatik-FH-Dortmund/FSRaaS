@@ -33,6 +33,37 @@
     "comingSoonTitle": "Folgt in Kürze",
     "comingSoonBody": "Dieser Bereich wird in einem späteren Entwicklungsschritt gefüllt. Der Weg dorthin steht bereits."
   },
+  "news": {
+    "leerTitel": "Keine aktuellen Meldungen",
+    "leerHinweis": "Sobald der FSR etwas veröffentlicht, erscheint es hier. Zum Aktualisieren nach unten ziehen.",
+    "klassifizierung": {
+      "fsr-news": "FSR-News",
+      "fb-aktuelles": "FB-Aktuelles",
+      "event-erinnerung": "Event-Erinnerung"
+    },
+    "zeitUnbekannt": "Zeitpunkt unbekannt",
+    "anpinnen": "Anpinnen",
+    "loesen": "Lösen",
+    "anpinnenA11y": "Meldung „{{titel}}“ anpinnen",
+    "loesenA11y": "Angepinnte Meldung „{{titel}}“ lösen",
+    "oeffnenHinweis": "Öffnet die vollständige Meldung",
+    "angepinnt": "Angepinnt",
+    "aktuell": "Aktuell",
+    "zurueckgezogen": "Zurückgezogen",
+    "zurueckgezogenHinweis": "Diese Meldung wurde vom FSR zurückgezogen.",
+    "quelle": "Quelle: {{quelle}}",
+    "aeltereLaden": "Ältere Meldungen laden",
+    "laedtAeltere": "Ältere Meldungen werden geladen",
+    "alleGeladen": "Keine älteren Meldungen",
+    "nachladenFehler": "Ältere Meldungen konnten nicht geladen werden.",
+    "aktualisierenFehler": "Aktualisieren fehlgeschlagen. Angezeigt wird der zuletzt geladene Stand.",
+    "detail": {
+      "titel": "Meldung",
+      "nichtVerfuegbarTitel": "Meldung nicht verfügbar",
+      "nichtVerfuegbarHinweis": "Diese Meldung ist nicht geladen. Öffne sie aus der Liste heraus.",
+      "zurListe": "Zur Übersicht"
+    }
+  },
   "settings": {
     "title": "Einstellungen",
     "appearanceLabel": "Erscheinungsbild",
@@ -572,6 +603,7 @@
     "stale": "Zwischenzeitlich geändert. Bitte den neueren Stand laden und erneut speichern.",
     "staleReloaded": "Zwischenzeitlich von jemand anderem geändert. Der neuere Stand wurde geladen — bitte die Änderungen erneut vornehmen.",
     "sections": {
+      "meldungen": "Meldungen",
       "rollen": "Rollen",
       "stammdaten": "Stammdaten",
       "laufwege": "Laufwege"
@@ -632,6 +664,47 @@
       "ticketRechts": "Rechts",
       "ticketUnten": "Unten",
       "dateError": "Bitte alle Datumsfelder im Format JJJJ-MM-TT ausfüllen oder leer lassen."
+    },
+    "meldungen": {
+      "neu": "Neue Meldung",
+      "leerTitel": "Noch keine Meldungen",
+      "leerHinweis": "Noch keine Entwürfe — über „Neue Meldung“ die erste anlegen.",
+      "gruppe": {
+        "entwurf": "Entwürfe",
+        "veroeffentlicht": "Veröffentlicht",
+        "zurueckgezogen": "Zurückgezogen"
+      },
+      "geaendert": "Geändert {{zeit}}",
+      "titelNeu": "Neue Meldung",
+      "titelBearbeiten": "Meldung bearbeiten",
+      "titel": "Titel",
+      "text": "Text",
+      "zustandHinweis": {
+        "entwurf": "Entwurf — in der App noch nicht sichtbar.",
+        "veroeffentlicht": "Veröffentlicht — Änderungen werden erst über die Vorschau übernommen.",
+        "zurueckgezogen": "Zurückgezogen — in der App nicht mehr sichtbar."
+      },
+      "alsEntwurfSpeichern": "Als Entwurf speichern",
+      "vorschau": "Vorschau",
+      "vorschauHinweis": "So erscheint die Meldung in der App.",
+      "vorschauListe": "In der Liste",
+      "vorschauDetail": "In der Detailansicht",
+      "zurueckZurBearbeitung": "Zurück zur Bearbeitung",
+      "veroeffentlichen": "Veröffentlichen",
+      "aenderungenVeroeffentlichen": "Änderungen veröffentlichen",
+      "erneutVeroeffentlichen": "Erneut veröffentlichen",
+      "veroeffentlicht": "Veröffentlicht.",
+      "zurueckziehen": "Zurückziehen",
+      "zurueckziehenFrage": "Meldung „{{titel}}“ zurückziehen? Die Meldung verschwindet aus der App; wer sie angepinnt hat, sieht sie als zurückgezogen.",
+      "zurueckgezogen": "Zurückgezogen.",
+      "veraltet": "Diese Meldung wurde zwischenzeitlich von jemand anderem geändert. Deine Eingabe bleibt erhalten, bis du den neueren Stand lädst.",
+      "neuerenStandLaden": "Neueren Stand laden",
+      "titelLeer": "Bitte einen Titel eingeben.",
+      "textLeer": "Bitte einen Text eingeben.",
+      "titelZuLang": "Der Titel ist zu lang (höchstens 200 Zeichen).",
+      "textZuLang": "Der Text ist zu lang (höchstens 20 000 Zeichen).",
+      "offline": "Ohne Verbindung kann nicht gespeichert werden. Deine Eingabe bleibt erhalten.",
+      "unbekannt": "Diese Meldung gibt es nicht (mehr)."
     }
   },
   "raum": {
