@@ -25,13 +25,13 @@
 
 ## 3. App: News-Tab
 
-- [ ] 3.1 `news/api.ts` (`useMeldungen` als Infinite Query, Typen aus dem Vertrag). `news/zeitstempel.ts` mit Tests „24-Stunden-Zeitformat für Zeitstempel".
-- [ ] 3.2 `news/angepinnt.ts`: Ablage, Abgleich und Ordnung nach D4. Tests:
+- [x] 3.1 `news/api.ts` (`useMeldungen` als Infinite Query, Typen aus dem Vertrag). `news/zeitstempel.ts` mit Tests „24-Stunden-Zeitformat für Zeitstempel".
+- [x] 3.2 `news/angepinnt.ts`: Ablage, Abgleich und Ordnung nach D4. Tests:
   - „Anpinnen und Ablösen einzelner Meldungen"
   - „Dauerhafte Anzeige angepinnter Meldungen"
   - „Entfernen zurückgezogener Meldungen aus der Liste"
-- [ ] 3.3 Bausteine `ui/MeldungKarte.tsx` (Klassifizierung mit Symbol und Text) und `ui/MeldungInhalt.tsx`.
-- [ ] 3.4 Route `app/(tabs)/news/` als Stack (`_layout`, `index`, `[meldungId]`). `NewsScreen` mit Liste, Anpinnen, Nachladen, Aktualisieren und Fehlerhinweis. `NewsDetailScreen`. Komponententests:
+- [x] 3.3 Bausteine `MeldungKarte` (Klassifizierung mit Symbol und Text), `MeldungInhalt`, `ZurueckgezogeneKarte` und `PinSchalter` in `ui/MeldungBausteine.tsx`.
+- [x] 3.4 Route `app/(tabs)/news/` als Stack (`_layout`, `index`, `[meldungId]`). `NewsScreen` mit Liste, Anpinnen, Nachladen, Aktualisieren und Fehlerhinweis. `NewsDetailScreen`. Komponententests:
   - „Laden und Anzeige aktueller Meldungen"
   - „Fehlermeldung bei nicht erreichbarem News-Dienst"
   - „Klassifizierung jeder Meldung"

@@ -134,8 +134,10 @@ Die Ordnung leitet eine reine Funktion ab. Sie ist ohne Oberfläche testbar.
 
 ### D5 — Zeitstempel
 
-Das Backend liefert ISO-8601. Die App formatiert mit `Intl.DateTimeFormat`,
-`hourCycle: 'h23'`, Zeitzone des Geräts, in der gewählten Sprache. Ein
+Das Backend liefert ISO-8601. Die App formatiert als `TT.MM.JJJJ, HH:MM`
+mit 24-Stunden-Uhr in der Zeitzone des Geräts. Das Format folgt unabhängig von
+der Oberflächensprache der deutschen Konvention (NFR-F-120), wie die übrigen
+Zeitangaben der App. Ein
 `null` oder unlesbarer Wert wird als „unbekannt" angezeigt, die Meldung bleibt
 sichtbar (NEWS-F-020).
 
@@ -155,7 +157,7 @@ deshalb die 24-Stunden-Darstellung einer Nachmittagszeit und den Fall
   nur aus der Liste. Fehlt die Meldung trotzdem, erscheint der Hinweis „nicht
   verfügbar".
 - **Gemeinsame Bausteine.** `MeldungKarte` (Listeneintrag mit gekürztem Text)
-  und `MeldungInhalt` (Detail) liegen in `app/src/areas/news/ui/`. Die
+  und `MeldungInhalt` (Detail) liegen in `app/src/areas/news/ui/MeldungBausteine.tsx`. Die
   Verwaltungsvorschau bindet genau diese Bausteine ein (ADMIN-F-060), nicht
   eine Nachbildung.
 - **Klassifizierung.** Je Klassifizierung ein Symbol und ein Textlabel
