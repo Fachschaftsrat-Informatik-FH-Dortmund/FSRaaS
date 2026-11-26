@@ -62,7 +62,7 @@ Meldungen der Klassifizierung „FSR-News".
 - **Event-Erinnerungen** (NEWS-F-100). Zweite Ausbaustufe, hängt an EVENT.
 - **Filter, Suche und erweiterte Suche** (NEWS-F-110, F-120, F-130 und F-150
   bis F-220). Sie gehören laut Roadmap zur ersten Ausbaustufe und zu
-  Schritt 7, laufen aber als eigener Folge-Change. Grund: Der erweiterte
+  Schritt 7, laufen aber als eigener Folge-Change (Issue #156). Grund: Der erweiterte
   Suchmodus braucht eine eigene Entscheidung zu Ausdrucks-Engine und
   ReDoS-Schutz (offene Frage der Capability `news`). Der Schnitt teilt
   Schritt 7 deshalb wie vorgesehen in zwei Teile. Der Lese-Endpunkt nimmt den

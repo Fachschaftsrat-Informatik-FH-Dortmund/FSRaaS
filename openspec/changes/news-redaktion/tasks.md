@@ -50,8 +50,8 @@
 
 ## 5. Abschluss
 
-- [ ] 5.1 Tabelle „Umsetzungsstand" in `openspec/specs/admin/spec.md` nachführen. GitHub-Issue für den Folge-Change „Filter, Suche und erweiterte Suche" anlegen.
-- [ ] 5.2 Prüfungen grün:
+- [x] 5.1 Tabelle „Umsetzungsstand" in `openspec/specs/admin/spec.md` nachführen. GitHub-Issue für den Folge-Change „Filter, Suche und erweiterte Suche" anlegen (Issue #156).
+- [x] 5.2 Prüfungen grün:
   - `dotnet test`
   - `npx jest`
   - `npx tsc --noEmit` (nach Codegen)
