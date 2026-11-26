@@ -56,23 +56,14 @@ export function freieRaeume(
     const s = status.get(raum.roomId);
     if (!s || s.zustand !== 'frei') continue;
 
-    const schliesst = schliesszeitAm(raum.schliesszeit, von);
-    if (schliesst && von.getTime() >= schliesst.getTime()) continue;
-
-    let naechster: Date | null = null;
-    if (s.naechsterTermin) {
-      const beginn = Date.parse(s.naechsterTermin.beginn);
-      if (Number.isNaN(beginn)) {
-        // Ohne auswertbare Zeitangabe ist der Raum nicht sicher frei (room-finder, Fehlerfälle).
-        unlesbar += 1;
-        continue;
-      }
-      naechster = new Date(beginn);
+    const frei = freiBisFuer(s, raum.schliesszeit, von);
+    if (frei === 'unlesbar') {
+      // Ohne auswertbare Zeitangabe ist der Raum nicht sicher frei (room-finder, Fehlerfälle).
+      unlesbar += 1;
+      continue;
     }
-
-    const freiBisSchliesszeit =
-      schliesst !== null && (naechster === null || schliesst.getTime() < naechster.getTime());
-    const freiBis = freiBisSchliesszeit ? schliesst : naechster;
+    if (frei === 'geschlossen') continue;
+    const { freiBis, freiBisSchliesszeit } = frei;
     if (freiBis && freiBis.getTime() < bis.getTime()) continue;
 
     ergebnis.push({
@@ -86,6 +77,33 @@ export function freieRaeume(
 
   if (unlesbar > 0) logDatenhinweis('raum.freieRaeume', 'Termin ohne auswertbare Zeitangabe', unlesbar);
   return ergebnis.sort((a, b) => a.roomId.localeCompare(b.roomId));
+}
+
+/**
+ * Freizeitpunkt eines zu `bezug` freien Raums (Requirements „Freizeitpunkt
+ * eines freien Raums anzeigen" und „Gepflegte Gebäudeschließzeit statt fester
+ * Wert"): nächster Terminbeginn oder Schließzeit am Tag von `bezug`, je nachdem,
+ * was früher liegt. `geschlossen`, wenn `bezug` nicht vor der Schließzeit liegt;
+ * `unlesbar`, wenn der nächste Termin keine auswertbare Zeitangabe trägt.
+ */
+export function freiBisFuer(
+  status: RaumStatus,
+  schliesszeit: string | null | undefined,
+  bezug: Date,
+): { freiBis: Date | null; freiBisSchliesszeit: boolean } | 'geschlossen' | 'unlesbar' {
+  const schliesst = schliesszeitAm(schliesszeit, bezug);
+  if (schliesst && bezug.getTime() >= schliesst.getTime()) return 'geschlossen';
+
+  let naechster: Date | null = null;
+  if (status.naechsterTermin) {
+    const beginn = Date.parse(status.naechsterTermin.beginn);
+    if (Number.isNaN(beginn)) return 'unlesbar';
+    naechster = new Date(beginn);
+  }
+
+  const freiBisSchliesszeit =
+    schliesst !== null && (naechster === null || schliesst.getTime() < naechster.getTime());
+  return { freiBis: freiBisSchliesszeit ? schliesst : naechster, freiBisSchliesszeit };
 }
 
 /** Ob ein Filter gesetzt ist — für den Rückweg „Filter zurücksetzen" im Leerzustand. */

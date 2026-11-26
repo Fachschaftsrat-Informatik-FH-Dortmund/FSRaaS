@@ -55,7 +55,15 @@ export interface AsyncStatesProps<T> {
    * Daten der Mensa-Schnittstelle"). Der Offline-Fall (DATA-F-090) bleibt
    * unverändert und hat Vorrang, weil er die umfassendere Aussage trägt.
    */
-  quelleStand?: { zeitpunkt: string | null | undefined; maxAlterMs: number };
+  quelleStand?: {
+    zeitpunkt: string | null | undefined;
+    maxAlterMs: number;
+    /**
+     * i18n-Schlüssel des Hinweistexts. Ohne Angabe der bisherige Text zur
+     * Mensa-Schnittstelle; der Raum-Bereich nennt seinen Raumplan-Stand.
+     */
+    hinweis?: string;
+  };
 }
 
 export function AsyncStates<T>({
@@ -130,7 +138,11 @@ export function AsyncStates<T>({
     <View style={styles.fill}>
       {showAge ? <DataAgeBanner updatedAt={query.dataUpdatedAt} grund="offline" /> : null}
       {quelleAlt ? (
-        <DataAgeBanner updatedAt={Date.parse(quelleStand!.zeitpunkt!)} grund="quelle" />
+        <DataAgeBanner
+          updatedAt={Date.parse(quelleStand!.zeitpunkt!)}
+          grund="quelle"
+          hinweis={quelleStand!.hinweis}
+        />
       ) : null}
       {children(data)}
     </View>
@@ -140,10 +152,12 @@ export function AsyncStates<T>({
 function DataAgeBanner({
   updatedAt,
   grund,
+  hinweis,
 }: {
   updatedAt: number;
   /** `offline` = kein Netzzugriff, `quelle` = die Quelle meldet einen alten Stand. */
   grund: 'offline' | 'quelle';
+  hinweis?: string;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -155,7 +169,7 @@ function DataAgeBanner({
     >
       <Text style={[styles.ageText, { color: colors.onBanner }]}>
         {'⊘ '}
-        {grund === 'offline' ? t('dataAge.offlineHint') : t('dataAge.quelleHinweis')} ·{' '}
+        {grund === 'offline' ? t('dataAge.offlineHint') : t(hinweis ?? 'dataAge.quelleHinweis')} ·{' '}
         {t('dataAge.prefix')} {t(age.key, { count: age.count })}
       </Text>
     </View>

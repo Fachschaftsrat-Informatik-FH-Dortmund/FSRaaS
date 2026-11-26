@@ -3,7 +3,10 @@ import { raumplanQuelleStand, raumplanVeraltet } from './standAlter';
 
 const MIN = 60_000;
 const t0 = Date.parse('2026-11-26T10:00:00Z');
-const stand = (minutenVorher: number) => ({ abgerufenAm: new Date(t0 - minutenVorher * MIN).toISOString() });
+const stand = (minutenVorher: number) => ({
+  abgerufenAm: new Date(t0 - minutenVorher * MIN).toISOString(),
+  quelleErreichbar: true,
+});
 
 describe('Alter eines veralteten Raumplan-Stands anzeigen', () => {
   it('Veralteter Zwischenspeicher: beim Abruf älter als der stündliche Takt', () => {

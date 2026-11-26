@@ -52,7 +52,12 @@ export default function TabsLayout() {
         options={{ title: t('nav.canteen'), headerShown: false, tabBarIcon: tabIcon('canteen') }}
       />
       <Tabs.Screen name="news" options={{ title: t('nav.news'), tabBarIcon: tabIcon('news') }} />
-      <Tabs.Screen name="rooms" options={{ title: t('nav.rooms'), tabBarIcon: tabIcon('rooms') }} />
+      {/* Raum-Bereich ist ein verschachtelter Stack (drei Sichten + Tagesbelegung)
+          und zeigt seine eigenen Kopfzeilen. */}
+      <Tabs.Screen
+        name="rooms"
+        options={{ title: t('nav.rooms'), headerShown: false, tabBarIcon: tabIcon('rooms') }}
+      />
       <Tabs.Screen
         name="more"
         options={{ title: t('nav.more'), headerShown: false, tabBarIcon: tabIcon('more') }}

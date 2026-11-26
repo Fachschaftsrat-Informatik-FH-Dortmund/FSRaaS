@@ -1,5 +1,5 @@
 import type { Raum, RaumStatus } from './api';
-import { filterGesetzt, freieRaeume, OHNE_FILTER } from './freieRaeume';
+import { filterGesetzt, freieRaeume, OHNE_FILTER, type FreierRaum } from './freieRaeume';
 
 // 26.11.2026, Ortszeit des Testlaufs.
 const at = (h: number, m = 0) => new Date(2026, 10, 26, h, m);
@@ -29,6 +29,11 @@ const belegt = (roomId: string, art: 'lehrveranstaltung' | 'pruefung' = 'lehrver
   besetztMeldungen: 0,
   aktuellerTermin: { roomId, beginn: iso(9), ende: iso(11), bezeichnung: 'Läuft', art },
 });
+
+function erster(liste: FreierRaum[]): FreierRaum {
+  expect(liste).toHaveLength(1);
+  return liste[0] as FreierRaum;
+}
 
 describe('Suche nach freien Räumen', () => {
   it('Zeitraum ohne belegte Räume: liefert die freien Räume, eine leere Liste ist kein Fehler', () => {
@@ -119,7 +124,7 @@ describe('E-Key-Zugänglichkeit kennzeichnen', () => {
 
 describe('Freizeitpunkt eines freien Raums anzeigen', () => {
   it('frei bis zum Beginn des nächsten Termins', () => {
-    const [r] = freieRaeume([frei('A', 14)], [raum('A', { schliesszeit: '21:30' })], at(10), at(12));
+    const r = erster(freieRaeume([frei('A', 14)], [raum('A', { schliesszeit: '21:30' })], at(10), at(12)));
     expect(r.freiBis).toEqual(at(14));
     expect(r.freiBisSchliesszeit).toBe(false);
   });
@@ -127,18 +132,18 @@ describe('Freizeitpunkt eines freien Raums anzeigen', () => {
 
 describe('Gepflegte Gebäudeschließzeit statt fester Wert', () => {
   it('Kein nachfolgender Termin: frei bis zur gepflegten Schließzeit', () => {
-    const [r] = freieRaeume([frei('A')], [raum('A', { schliesszeit: '21:30' })], at(10), at(12));
+    const r = erster(freieRaeume([frei('A')], [raum('A', { schliesszeit: '21:30' })], at(10), at(12)));
     expect(r.freiBis).toEqual(at(21, 30));
     expect(r.freiBisSchliesszeit).toBe(true);
   });
 
   it('Schließzeit vor dem nächsten Termin geht vor', () => {
-    const [r] = freieRaeume([frei('A', 22)], [raum('A', { schliesszeit: '20:00' })], at(10), at(12));
+    const r = erster(freieRaeume([frei('A', 22)], [raum('A', { schliesszeit: '20:00' })], at(10), at(12)));
     expect(r.freiBis).toEqual(at(20));
   });
 
   it('Keine Schließzeit gepflegt: kein Endzeitpunkt', () => {
-    const [r] = freieRaeume([frei('A')], [raum('A')], at(10), at(12));
+    const r = erster(freieRaeume([frei('A')], [raum('A')], at(10), at(12)));
     expect(r.freiBis).toBeNull();
   });
 

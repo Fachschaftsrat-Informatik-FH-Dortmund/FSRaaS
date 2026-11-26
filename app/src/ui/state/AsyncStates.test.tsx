@@ -201,3 +201,25 @@ describe('Altershinweis bei veralteten Daten der Mensa-Schnittstelle', () => {
     expect(screen.queryByText(/Die Mensa-Schnittstelle meldet/)).toBeNull();
   });
 });
+
+describe('Alter eines veralteten Raumplan-Stands anzeigen', () => {
+  it('nennt mit eigenem Hinweisschlüssel den Raumplan statt der Mensa-Schnittstelle', () => {
+    mockOnline.mockReturnValue(true);
+    const q = query({ data: { x: 1 }, isStale: false });
+    render(
+      <AsyncStates
+        query={q}
+        emptyNextStep={NEXT_STEP}
+        quelleStand={{
+          zeitpunkt: new Date(Date.now() - 3 * 60 * 60_000).toISOString(),
+          maxAlterMs: 60 * 60_000,
+          hinweis: 'raum.standVeraltet',
+        }}
+      >
+        {() => <Text>Inhalt</Text>}
+      </AsyncStates>,
+    );
+    expect(screen.getByText(/Raumplan/)).toBeTruthy();
+    expect(screen.queryByText(/Mensa-Schnittstelle/)).toBeNull();
+  });
+});

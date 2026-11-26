@@ -526,5 +526,84 @@
       "ticketUnten": "Bottom",
       "dateError": "Please fill all date fields as YYYY-MM-DD or leave them empty."
     }
+  },
+  "raum": {
+    "sichtLabel": "View in the rooms section",
+    "sicht": {
+      "frei": "Free rooms",
+      "uebersicht": "Overview",
+      "laufend": "Happening now"
+    },
+    "offlineTitel": "Room finder unavailable offline",
+    "offlineHinweis": "Whether a room is free can only be told with an up-to-date room schedule. Connect to the internet and try again.",
+    "standVeraltet": "The room schedule is not up to date",
+    "frei": "free",
+    "belegt": "occupied",
+    "symbolFrei": "○",
+    "symbolBelegt": "●",
+    "groesse": {
+      "klein": "small",
+      "mittel": "medium",
+      "gross": "large"
+    },
+    "groesseLabel": "Size: {{groesse}}",
+    "ekey": "🔑 accessible with e-key",
+    "pruefung": "Exam",
+    "notiz": "Note: {{note}}",
+    "freiBis": "free until {{zeit}}",
+    "freiBisSchliesszeit": "free until {{zeit}} (building closes)",
+    "keinWeitererTermin": "free, no further booking known",
+    "belegtBis": "{{bezeichnung}} · until {{zeit}}",
+    "ohneBezeichnung": "Untitled event",
+    "datumZeit": "{{datum}} {{zeit}}",
+    "oeffnen": "Show bookings of {{roomId}}",
+    "freiSuche": {
+      "beginnLabel": "Start",
+      "beginn": "from {{zeit}}",
+      "frueher": "30 minutes earlier",
+      "frueherKurz": "−30 min",
+      "spaeter": "30 minutes later",
+      "spaeterKurz": "+30 min",
+      "jetzt": "Now",
+      "dauerLabel": "Duration",
+      "dauer": "{{count}} h",
+      "groesseFilterLabel": "Size",
+      "alleGroessen": "all",
+      "nurEkey": "Only rooms accessible with e-key",
+      "zeitraum": "Free rooms from {{von}} to {{bis}}",
+      "leerTitel": "No free rooms found",
+      "leerHinweis": "No room on the room list is free for the whole period. Try a later time slot or a shorter duration.",
+      "leerFilterHinweis": "With the filters set, no room is free in this period. Reset the filters or try a later time slot.",
+      "eineStundeSpaeter": "Search one hour later",
+      "filterZuruecksetzen": "Reset filters"
+    },
+    "uebersichtSicht": {
+      "sucheLabel": "Search room ID",
+      "suchePlatzhalter": "e.g. C.E.44",
+      "belegungAnzeigen": "Show bookings",
+      "zustandLabel": "Occupancy",
+      "alle": "all",
+      "leerTitel": "No rooms in the schedule",
+      "leerHinweis": "The room schedule currently lists no rooms. Please try again later.",
+      "keinTrefferTitel": "No room in the selected state",
+      "keinTrefferHinweis": "No room matches the state and search. Reset the filter to see all rooms.",
+      "filterZuruecksetzen": "Reset filter"
+    },
+    "laufendSicht": {
+      "leerTitel": "No recorded event is taking place right now",
+      "leerHinweis": "Under “Free rooms” you can find a room for your study group.",
+      "bis": "until {{zeit}}",
+      "raeume": "Rooms"
+    },
+    "tag": {
+      "titel": "Today's bookings",
+      "ueberschrift": "{{roomId}} today",
+      "leerTitel": "No bookings today",
+      "leerHinweis": "The room schedule lists no booking for this room today. Check in the overview that the ID is correct.",
+      "zeitspanne": "{{von}}–{{bis}}",
+      "laeuftGerade": "happening now",
+      "unbekanntTitel": "Unknown room",
+      "unbekanntHinweis": "Neither the room schedule nor the room list knows the ID {{roomId}}. Check the spelling, e.g. C.E.44."
+    }
   }
 }
