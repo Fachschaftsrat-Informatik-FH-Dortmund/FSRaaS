@@ -43,6 +43,17 @@ public static class RaumplanEndpoints
             var kuratiert = await db.Raeume.AsNoTracking().ToDictionaryAsync(r => r.RoomId, ct);
             var jeRaum = termine.ToLookup(x => x.RoomId, StringComparer.Ordinal);
 
+            // Gültige Besetzt-Meldungen zum Bezugszeitpunkt (Requirements „Anzahl
+            // der Besetzt-Meldungen anzeigen", „Gültigkeitsdauer einer
+            // Besetzt-Meldung"). Ergänzt den offiziellen Zustand, ändert ihn nicht.
+            var fensterBeginn = t - BesetztMeldung.Gueltigkeit;
+            var meldungen = (await db.BesetztMeldungen.AsNoTracking()
+                    .Where(m => m.ZurueckgezogenAm == null && m.GemeldetAm <= t && m.GemeldetAm > fensterBeginn)
+                    .Select(m => m.RoomId)
+                    .ToListAsync(ct))
+                .GroupBy(r => r, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+
             var status = raeume.Select(roomId =>
             {
                 var eigene = jeRaum[roomId];
@@ -60,7 +71,7 @@ public static class RaumplanEndpoints
                     EkeyZugaenglich = k?.EkeyZugaenglich,
                     AktuellerTermin = laufend is null ? null : Raumtermin(laufend),
                     NaechsterTermin = naechster is null ? null : Raumtermin(naechster),
-                    BesetztMeldungen = 0,
+                    BesetztMeldungen = meldungen.GetValueOrDefault(roomId),
                 };
             }).ToList();
 
@@ -78,13 +89,7 @@ public static class RaumplanEndpoints
 
             var standAlter = await StandAlterAsync(db, ct);
 
-            var bekannt = roomId != RaumAufloesung.Pseudoraum && (
-                await db.RaumplanRaeume.AsNoTracking().AnyAsync(r => r.RoomId == roomId, ct)
-                || await db.RaumplanTermine.AsNoTracking().AnyAsync(x => x.RoomId == roomId, ct)
-                || await db.Raeume.AsNoTracking().AnyAsync(r => r.RoomId == roomId, ct));
-            if (!bekannt)
-                throw ApiException.NotFound("raum_unbekannt",
-                    "Dieser Raum ist weder im Raumplan noch in der gepflegten Raumliste bekannt.");
+            await PruefeRaumBekanntAsync(db, roomId, ct);
 
             var (von, bis) = Ortstag(tag);
             var termine = (await db.RaumplanTermine.AsNoTracking()
@@ -132,11 +137,27 @@ public static class RaumplanEndpoints
     }
 
     /// <summary>
+    /// Bekannt ist ein Raum, wenn ihn der Raumplan-Zwischenspeicher oder die
+    /// kuratierte Raumliste führt; sonst 404 <c>raum_unbekannt</c>. Gemeinsam für
+    /// Tagesbelegung und Besetzt-Meldungen.
+    /// </summary>
+    internal static async Task PruefeRaumBekanntAsync(Fb4DbContext db, string roomId, CancellationToken ct)
+    {
+        var bekannt = roomId != RaumAufloesung.Pseudoraum && (
+            await db.RaumplanRaeume.AsNoTracking().AnyAsync(r => r.RoomId == roomId, ct)
+            || await db.RaumplanTermine.AsNoTracking().AnyAsync(x => x.RoomId == roomId, ct)
+            || await db.Raeume.AsNoTracking().AnyAsync(r => r.RoomId == roomId, ct));
+        if (!bekannt)
+            throw ApiException.NotFound("raum_unbekannt",
+                "Dieser Raum ist weder im Raumplan noch in der gepflegten Raumliste bekannt.");
+    }
+
+    /// <summary>
     /// Alter des Bestands. Vor dem ersten erfolgreichen Abruf gibt es keinen Bestand —
     /// dann 503 statt einer leeren Liste, die sich von „kein Raum bekannt" nicht
     /// unterscheiden ließe (SEC-F-060).
     /// </summary>
-    static async Task<StandAlter> StandAlterAsync(Fb4DbContext db, CancellationToken ct)
+    internal static async Task<StandAlter> StandAlterAsync(Fb4DbContext db, CancellationToken ct)
     {
         var stand = await db.RaumplanStand.AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == RaumplanStand.EinzigeId, ct);

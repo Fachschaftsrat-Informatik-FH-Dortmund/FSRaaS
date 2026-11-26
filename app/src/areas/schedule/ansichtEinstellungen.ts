@@ -14,6 +14,12 @@ import type { Weekday } from './typen';
 // Schalter entfallen ersatzlos. Der Gültigkeitszeitraum gilt seither
 // unbedingt (`wochenansicht.ts`), es gibt keine wirksamen Filter mehr, über
 // die diese Ansicht Buch führen müsste.
+//
+// Requirement „Einblendung nur für die laufende Sitzung": Die beiden
+// Einblendungsschalter liegen nicht hier, sondern im nicht gespeicherten
+// Sitzungsstand (`einblendungsStand.ts`). Gespeicherte Altwerte
+// `alternativenEinblenden` und `alleEinblenden` verwirft `bereinige` wie die
+// entfallenen Filterschalter.
 
 const KEY = 'scheduleViewSettings';
 
@@ -31,12 +37,6 @@ export interface AnsichtEinstellungen {
    */
   farbautomatik: boolean;
   /**
-   * Requirement „Einblenden aller Veranstaltungen gewählter Module": `false`
-   * (Vorgabe) — zusätzlich zu den eigenen Terminen auch die weiteren
-   * Termine der gewählten Module anzeigen (`alternativen.ts`).
-   */
-  alternativenEinblenden: boolean;
-  /**
    * Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus"
    * (Change `planungsmodus-anzeige`, design.md Entscheidung 4): drei einzeln
    * schaltbare Farbwirkungen. Abgeschaltet bleibt die Angabe als Text oder
@@ -53,7 +53,6 @@ const STANDARD: AnsichtEinstellungen = {
   zeitachse: true,
   sprungZuHeute: true,
   farbautomatik: true,
-  alternativenEinblenden: false,
   hervorhebungEigeneGruppe: true,
   hervorhebungKonflikte: false,
   hervorhebungEingeplant: false,
@@ -82,7 +81,6 @@ function bereinige(v: unknown): AnsichtEinstellungen {
     zeitachse: alsBoolean(roh.zeitachse, STANDARD.zeitachse),
     sprungZuHeute: alsBoolean(roh.sprungZuHeute, STANDARD.sprungZuHeute),
     farbautomatik: alsBoolean(roh.farbautomatik, STANDARD.farbautomatik),
-    alternativenEinblenden: alsBoolean(roh.alternativenEinblenden, STANDARD.alternativenEinblenden),
     hervorhebungEigeneGruppe: alsBoolean(roh.hervorhebungEigeneGruppe, STANDARD.hervorhebungEigeneGruppe),
     hervorhebungKonflikte: alsBoolean(roh.hervorhebungKonflikte, STANDARD.hervorhebungKonflikte),
     hervorhebungEingeplant: alsBoolean(roh.hervorhebungEingeplant, STANDARD.hervorhebungEingeplant),
@@ -142,11 +140,6 @@ export function useAnsichtEinstellungen() {
     () => schreiben({ ...snapshot, farbautomatik: !snapshot.farbautomatik }),
     [],
   );
-  /** Requirement „Einblenden aller Veranstaltungen gewählter Module". */
-  const toggleAlternativenEinblenden = useCallback(
-    () => schreiben({ ...snapshot, alternativenEinblenden: !snapshot.alternativenEinblenden }),
-    [],
-  );
   /** Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus". */
   const toggleHervorhebung = useCallback(
     (welche: Hervorhebung) => schreiben({ ...snapshot, [welche]: !snapshot[welche] }),
@@ -160,7 +153,6 @@ export function useAnsichtEinstellungen() {
     toggleZeitachse,
     toggleSprungZuHeute,
     toggleFarbautomatik,
-    toggleAlternativenEinblenden,
   };
 }
 

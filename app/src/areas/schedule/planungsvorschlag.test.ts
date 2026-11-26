@@ -271,3 +271,30 @@ describe('Ausgangszustand ohne Optimierung', () => {
     expect(schluessel(uebung.nachher)).toEqual(schluessel([matheUeMo]));
   });
 });
+
+describe('Kandidat als Pflicht markieren', () => {
+  // Zwei Module mit je einem Montags- und einem Dienstagsslot zur selben Zeit;
+  // der Nebenjob am Montag macht Montag nach „Uni-Tage" zum besseren Tag.
+  const job = eigener('Mon', 420, 470);
+  const slot = (courseId: string, name: string, studentSet: string, weekday: OfficialTermin['weekday']) =>
+    termin({ courseId, name, courseType: 'Ü', studentSet, weekday, timeBeginMin: 600, timeEndMin: 690 });
+  const physik = modul('PH|2', [slot('PH', 'Physik', 'A', 'Mon'), slot('PH', 'Physik', 'B', 'Tue')]);
+  const chemie = modul('CH|2', [slot('CH', 'Chemie', 'A', 'Mon'), slot('CH', 'Chemie', 'B', 'Tue')]);
+
+  it('ohne Markierung entscheidet die Eingabereihenfolge, wer den besseren Slot bekommt', () => {
+    const ergebnis = erzeugeVorschlag(eingabe([physik, chemie], [], { umgebung: [job] }));
+    expect(ergebnis.find((r) => r.reihe.modulKey === 'PH|2')!.nachher[0]!.weekday).toBe('Mon');
+    expect(ergebnis.find((r) => r.reihe.modulKey === 'CH|2')!.nachher[0]!.weekday).toBe('Tue');
+  });
+
+  it('Pflicht-Veranstaltung bleibt enthalten: sie hat Vorrang und steht im Vorschlag, gegebenenfalls mit anderem Termin', () => {
+    const ergebnis = erzeugeVorschlag(
+      eingabe([physik, chemie], [eintrag(chemie.termine[1]!)], { umgebung: [job], pflichtModule: new Set(['CH|2']) }),
+    );
+    const chemieErgebnis = ergebnis.find((r) => r.reihe.modulKey === 'CH|2')!;
+    expect(chemieErgebnis.nachher[0]!.weekday).toBe('Mon');
+    expect(chemieErgebnis.geaendert).toBe(true);
+    expect(ergebnis.find((r) => r.reihe.modulKey === 'PH|2')!.nachher[0]!.weekday).toBe('Tue');
+    expect(ergebnis.every((r) => r.nachher.length > 0)).toBe(true);
+  });
+});

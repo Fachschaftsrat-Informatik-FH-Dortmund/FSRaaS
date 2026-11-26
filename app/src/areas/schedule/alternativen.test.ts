@@ -1,4 +1,4 @@
-import { alternativenDesTages, gewaehlteModule } from './alternativen';
+import { alternativenDesTages, gewaehlteModule, nichtGewaehlteDesTages } from './alternativen';
 import type { Modul } from './kursbaum';
 import type { OfficialPlanEntry, OfficialTermin } from './typen';
 
@@ -83,7 +83,7 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
     const alternativen = alternativenDesTages([MODUL], entries, 'Tue', 'C8');
 
     expect(alternativen).toHaveLength(2);
-    expect(alternativen.every((a) => a.istAlternative)).toBe(true);
+    expect(alternativen.every((a) => a.einblendung?.art === 'alternative' && a.einblendung.modulKey === 'INF999|')).toBe(true);
     expect(alternativen.map((a) => a.studentSet)).toEqual(['A-B', 'C5-E']);
   });
 
@@ -150,5 +150,51 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
 
     expect(alternativen.map((a) => a.name)).toEqual([ersteHaelfte.name, zweiteHaelfte.name]);
     expect(new Set(alternativen.map((a) => a.id)).size).toBe(2);
+  });
+});
+
+describe('Einblenden nicht gewählter Veranstaltungen', () => {
+  const RN_MI = termin({ courseId: 'INF111', name: 'Rechnernetze', weekday: 'Wed', timeBeginMin: 600, timeEndMin: 690 });
+  const RN_DO = termin({ courseId: 'INF111', name: 'Rechnernetze', weekday: 'Thu' });
+  const RECHNERNETZE: Modul = { key: 'INF111|', courseId: 'INF111', name: 'Rechnernetze', termine: [RN_MI, RN_DO] };
+
+  it('zeigt die Termine der Module ohne Planeintrag am Wochentag, gekennzeichnet mit ihrem Modul', () => {
+    const entries = [eintrag({ id: 'v', courseId: 'INF999' })];
+    const eingeblendet = nichtGewaehlteDesTages([MODUL, RECHNERNETZE], entries, 'Wed', 'C8');
+
+    expect(eingeblendet).toHaveLength(1);
+    expect(eingeblendet[0]!.name).toBe('Rechnernetze');
+    expect(eingeblendet[0]!.einblendung).toEqual({ art: 'nichtGewaehlt', modulKey: 'INF111|' });
+  });
+
+  it('zeigt keinen Termin eines gewählten Moduls', () => {
+    const entries = [eintrag({ id: 'v', courseId: 'INF999' })];
+    expect(nichtGewaehlteDesTages([MODUL, RECHNERNETZE], entries, 'Tue', 'C8')).toEqual([]);
+  });
+
+  it('zeigt bei leerem Plan jedes Modul des Auswahlbestands', () => {
+    const eingeblendet = nichtGewaehlteDesTages([MODUL, RECHNERNETZE], [], 'Mon', 'C8');
+    expect(eingeblendet.map((e) => e.courseId)).toEqual(['INF999']);
+  });
+
+  it('zeigt einen Rohtermin, der zugleich in einem gewählten Modul steht, nie als nicht gewählt', () => {
+    // Derselbe Rohtermin in zwei Modulen (Wahlpflicht-Sammelkategorie und Fachsemester).
+    const geteilt = termin({ courseId: 'INF999', weekday: 'Fri' });
+    const sammel: Modul = { key: 'INF999|6', courseId: 'INF999', name: V.name, termine: [geteilt] };
+    const gewaehlt: Modul = { ...MODUL, termine: [...MODUL.termine, geteilt] };
+    const entries = [eintrag({ id: 'v', courseId: 'INF999' })];
+
+    expect(nichtGewaehlteDesTages([gewaehlt, sammel], entries, 'Fri', 'C8')).toEqual([]);
+  });
+
+  it('blendet einen Rohtermin mehrerer nicht gewählter Module nur einmal ein', () => {
+    const zweitesModul: Modul = { ...RECHNERNETZE, key: 'INF111|4' };
+    const eingeblendet = nichtGewaehlteDesTages([RECHNERNETZE, zweitesModul], [], 'Thu', 'C8');
+    expect(eingeblendet).toHaveLength(1);
+  });
+
+  it('vergibt Kennungen, die sich von denen der Alternativen unterscheiden', () => {
+    const eingeblendet = nichtGewaehlteDesTages([RECHNERNETZE], [], 'Wed', 'C8');
+    expect(eingeblendet[0]!.id.startsWith('nichtgewaehlt-')).toBe(true);
   });
 });

@@ -70,6 +70,14 @@ export interface PlanungsEingabe {
 export interface VorschlagsEingabe extends PlanungsEingabe {
   rangfolge: readonly Kriterium[];
   parameter: KriterienParameter;
+  /**
+   * Requirement „Kandidat als Pflicht markieren": Schlüssel der als Pflicht
+   * markierten Module. Ihre Reihen kommen in der Bearbeitungsreihenfolge
+   * zuerst und erhalten so den Vorrang (Change
+   * `planungsmodus-voreinstellungen-anpinnen`, design.md Entscheidung 8).
+   * Entfernt wird ohnehin keine Veranstaltung.
+   */
+  pflichtModule?: ReadonlySet<string>;
 }
 
 /** ADDED-Requirement „Gemeinsames Umlegen der Termine eines Gruppen-Slots": Gruppenmenge und Name. */
@@ -197,8 +205,8 @@ function istBisherGewaehlt(slot: GruppenSlot, vorher: readonly OfficialTermin[])
 
 /**
  * Requirement „Automatischer Planungsvorschlag": geht die neu zu belegenden
- * Reihen in fester Reihenfolge durch — wenigste Gruppen-Slots zuerst, dann
- * Eingabereihenfolge — und wählt je Reihe den nach der Rangfolge besten
+ * Reihen in fester Reihenfolge durch — Pflicht-Module zuerst, dann wenigste
+ * Gruppen-Slots, dann Eingabereihenfolge — und wählt je Reihe den nach der Rangfolge besten
  * Gruppen-Slot, der gegen den bis dahin aufgebauten Entwurf konfliktfrei ist.
  * Angepinnte Reihen und bewusste Mehrfachwahlen bleiben stehen und bilden mit
  * den übrigen Planeinträgen die feste Umgebung. Keine Reihe verliert ihre
@@ -231,9 +239,14 @@ export function erzeugeVorschlag(eingabe: VorschlagsEingabe): ReihenErgebnis[] {
     }
   }
 
+  const pflicht = eingabe.pflichtModule ?? new Set<string>();
+  const istPflicht = (e: Einordnung) => (pflicht.has(e.reihe.modulKey) ? 0 : 1);
   const offen = einordnung
     .filter((e) => e.behandlung === 'neu')
-    .sort((a, b) => a.reihe.slots.length - b.reihe.slots.length || a.index - b.index);
+    .sort(
+      (a, b) =>
+        istPflicht(a) - istPflicht(b) || a.reihe.slots.length - b.reihe.slots.length || a.index - b.index,
+    );
 
   for (const e of offen) {
     const bewertet = e.reihe.slots.map((slot, slotIndex) => {

@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Fb4.Backend.Migrations
 {
     [DbContext(typeof(Fb4DbContext))]
-    [Migration("20261126171010_NewsRedaktion")]
+    [Migration("20261126211039_NewsRedaktion")]
     partial class NewsRedaktion
     {
         /// <inheritdoc />
@@ -25,6 +25,28 @@ namespace Fb4.Backend.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("Fb4.Backend.Domain.BesetztMeldung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("GemeldetAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RoomId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("ZurueckgezogenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId", "GemeldetAm");
+
+                    b.ToTable("BesetztMeldungen", (string)null);
+                });
 
             modelBuilder.Entity("Fb4.Backend.Domain.LaufwegEintrag", b =>
                 {
@@ -147,6 +169,68 @@ namespace Fb4.Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Mensen");
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.PruefungsbestandStand", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("AbgerufenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("Bis")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LetzterVersuchAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("LetzterVersuchErfolgreich")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("Von")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PruefungsbestandStand", (string)null);
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.PruefungsterminEintrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Beginn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Ende")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Modulnummer")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("Raeume")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Beginn");
+
+                    b.ToTable("Pruefungstermine", (string)null);
                 });
 
             modelBuilder.Entity("Fb4.Backend.Domain.RaumEintrag", b =>

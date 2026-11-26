@@ -2,9 +2,9 @@
 id: roadmap
 titel: Ausbaustufen und Umsetzungsreihenfolge
 status: accepted
-version: 0.4.1
+version: 0.4.2
 owner: FSR FB4
-last_reviewed: 2026-09-07
+last_reviewed: 2026-11-26
 related:
   - ../decisions/0012-zuschnitt-der-ersten-ausbaustufe.md
   - ../decisions/0011-monorepo-und-openapi-vertrag.md
@@ -101,7 +101,7 @@ Diese Punkte sind nicht Teil der Umsetzungsreihenfolge, sondern laufen unabhäng
 | Freigabe-URL des FSR-Kalenders | FSR FB4 | Eigene Konfiguration | EVENT, HELFER |
 | Auswertung der Fachbereichsseite `aktuelles-ni` | Technische Leitung | Aktueller Seitenaufbau | NEWS-F-090 |
 | AVV mit Hetzner (Hosting) und ggf. Google (iOS-Push-Bridge) abschließen | FSR FB4 | Vertragsabschluss vor Produktivbetrieb mit personenbezogenen Daten | Rechtssicherer Betrieb ab Schritt 3 |
-| ~~Trägt INT-009 kurzfristige Raumänderungen sowie den Prüfungsbestand vollständig und rechtzeitig?~~ | Technische Leitung | ~~Live-Beobachtung des Raumplans über mehrere Wochen~~ | **Beantwortet am 2026-09-07** (Change `int-009-spike-befund`, Issue #28): Kalendarisch feststehende Ausfälle **nein**, kurzfristige Einzelabsagen **ja** (stilles Entfernen der Instanz), Raumwechsel derselben Sitzung unbelegt; Prüfungstermine rechtzeitig (Median 55 Tage Vorlauf), aber nur zu 70 % vollständig. Zwei Folgeentscheidungen offen — Zuschnitt des Raumabgleichs und Umgang mit der Prüfungslücke |
+| ~~Trägt INT-009 kurzfristige Raumänderungen sowie den Prüfungsbestand vollständig und rechtzeitig?~~ | Technische Leitung | ~~Live-Beobachtung des Raumplans über mehrere Wochen~~ | **Beantwortet am 2026-09-07** (Change `int-009-spike-befund`, Issue #28): Kalendarisch feststehende Ausfälle **nein**, kurzfristige Einzelabsagen **ja** (stilles Entfernen der Instanz), Raumwechsel derselben Sitzung unbelegt; Prüfungstermine rechtzeitig (Median 55 Tage Vorlauf), aber nur zu 70 % vollständig. Zwei Folgeentscheidungen: Zuschnitt des Raumabgleichs offen; Umgang mit der Prüfungslücke **entschieden 2026-09-10** — hinnehmen und ausweisen, keine Excel-Reaktivierung (Capability `backend-and-api`, „Ableitung des Prüfungsbestands aus dem Raumplan"), umgesetzt im Change `pruefungsbestand-aus-raumplan` (Issue #29) |
 
 Zwei der verbliebenen offenen Punkte liegen vollständig im eigenen Einflussbereich (BookStack, Kalender-URL) und können jederzeit erledigt werden. Vier hängen von Dritten ab und werden früh angestoßen, damit die Wartezeit parallel zur ersten Ausbaustufe verstreicht statt danach. Der INT-009-Punkt ist erledigt; er brauchte keine wochenlange Beobachtung, sondern einen Abruf mit den richtigen Zeitraum-Parametern gegen einen zurückreichenden Bestand.
 

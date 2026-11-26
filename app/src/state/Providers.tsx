@@ -8,6 +8,8 @@ import { ConsentProvider } from '@/consent/ConsentProvider';
 import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { ThemeProvider } from '@/theme';
 import { createQueryClient, queryPersister, persistMaxAge } from './queryClient';
+import { SCHREIBVORGAENGE } from './schreibvorgaenge';
+import { registriereSchreibvorgaenge, setzeWarteschlangeFort, sollEintragPersistieren } from './schreibwarteschlange';
 
 // Ein einziger Anbieter-Baum für die gesamte App. Kein app-weiter UI-Zustand
 // (ARCH-N-030) — Server-Zustand (TanStack Query), Erscheinungsbild, Sprache und
@@ -15,7 +17,13 @@ import { createQueryClient, queryPersister, persistMaxAge } from './queryClient'
 // gerätebezogene Einstellung, keinen Bildschirmzustand.
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(createQueryClient);
+  const [queryClient] = useState(() => {
+    const client = createQueryClient();
+    // Vor der Wiederherstellung: Ein wiederhergestellter Warteschlangen-Eintrag
+    // findet seine Funktion nur über die registrierten Vorgaben.
+    registriereSchreibvorgaenge(client, SCHREIBVORGAENGE);
+    return client;
+  });
 
   return (
     <SafeAreaProvider>
@@ -29,8 +37,13 @@ export function Providers({ children }: { children: ReactNode }) {
           dehydrateOptions: {
             shouldDehydrateQuery: (query) =>
               defaultShouldDehydrateQuery(query) && query.queryKey[0] !== 'verwaltung',
+            // Offline-Schreib-Warteschlange (ARCH-F-120/DATA-F-100): wartende,
+            // laufende und fehlgeschlagene Einträge überdauern den Neustart.
+            // Alle übrigen Mutationen (Verwaltung) bleiben flüchtig (ARCH-F-125).
+            shouldDehydrateMutation: sollEintragPersistieren,
           },
         }}
+        onSuccess={() => setzeWarteschlangeFort(queryClient)}
       >
         <ThemeProvider>
           <LanguageProvider>

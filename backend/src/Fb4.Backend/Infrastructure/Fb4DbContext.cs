@@ -24,6 +24,9 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
     public DbSet<RaumplanRaum> RaumplanRaeume => Set<RaumplanRaum>();
     public DbSet<RaumplanStand> RaumplanStand => Set<RaumplanStand>();
     public DbSet<Meldungseintrag> Meldungen => Set<Meldungseintrag>();
+    public DbSet<PruefungsterminEintrag> Pruefungstermine => Set<PruefungsterminEintrag>();
+    public DbSet<PruefungsbestandStand> PruefungsbestandStand => Set<PruefungsbestandStand>();
+    public DbSet<BesetztMeldung> BesetztMeldungen => Set<BesetztMeldung>();
 
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -90,6 +93,32 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
             e.Property(x => x.Quelle).HasMaxLength(100);
             e.Property(x => x.Version).IsConcurrencyToken();
             e.HasIndex(x => new { x.Zustand, x.VeroeffentlichtAm });
+        });
+
+        // Prüfungsbestand, aus dem Raumplan abgeleitet: wird je Abruf vollständig ersetzt.
+        b.Entity<PruefungsterminEintrag>(e =>
+        {
+            e.ToTable("Pruefungstermine");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Beginn);
+        });
+        b.Entity<PruefungsbestandStand>(e =>
+        {
+            e.ToTable("PruefungsbestandStand");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+        });
+
+        // Besetzt-Meldungen (Change `besetzt-meldungen`): Schlüssel ist der
+        // Idempotenz-Schlüssel der Meldung, kein Quellenbezug.
+        b.Entity<BesetztMeldung>(e =>
+        {
+            e.ToTable("BesetztMeldungen");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.RoomId).IsRequired();
+            e.Ignore(x => x.GueltigBis);
+            e.HasIndex(x => new { x.RoomId, x.GemeldetAm });
         });
     }
 }

@@ -1,5 +1,8 @@
+import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { SCHREIBVORGAENGE } from '@/state/schreibvorgaenge';
+import { leseWarteschlange, registriereSchreibvorgaenge } from '@/state/schreibwarteschlange';
 import { ThemeProvider } from '@/theme';
 import type { Raum, RaumStatus } from '../api';
 import { uhrzeit } from '../zeitraum';
@@ -69,8 +72,14 @@ const freiKuratiert: RaumStatus = {
 };
 const freiNichtKuratiert: RaumStatus = { roomId: 'Z.9.99', zustand: 'frei', besetztMeldungen: 0 };
 
+let client: QueryClient;
+
 beforeEach(() => {
   jest.clearAllMocks();
+  onlineManager.setOnline(true);
+  client = new QueryClient();
+  registriereSchreibvorgaenge(client, SCHREIBVORGAENGE);
+  client.mount();
   mockUebersichtAufrufe.length = 0;
   mockOnline.mockReturnValue(true);
   mockRaeume = [datenbanken, freiKuratiert, freiNichtKuratiert];
@@ -80,13 +89,20 @@ beforeEach(() => {
   ];
   mockAbgerufenAm = new Date(jetzt - 10 * 60_000).toISOString();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  client.unmount();
+  client.clear();
+  onlineManager.setOnline(true);
+});
 
 function renderScreen() {
   return render(
-    <ThemeProvider>
-      <RoomFinderScreen />
-    </ThemeProvider>,
+    <QueryClientProvider client={client}>
+      <ThemeProvider>
+        <RoomFinderScreen />
+      </ThemeProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -275,5 +291,49 @@ describe('Alter eines veralteten Raumplan-Stands anzeigen', () => {
   it('Aktueller Zwischenspeicher: kein Hinweis', () => {
     renderScreen();
     expect(screen.queryByText(/nicht auf dem aktuellen Stand/)).toBeNull();
+  });
+});
+
+describe('Besetzt-Meldung zusätzlich in der Übersicht anzeigen', () => {
+  it('Gültige Besetzt-Meldung in der Übersicht: zusätzlich zum offiziellen Zustand', () => {
+    mockRaeume = [datenbanken, { ...freiKuratiert, besetztMeldungen: 2 }, freiNichtKuratiert];
+    renderScreen();
+    fireEvent.press(screen.getByRole('radio', { name: 'Übersicht' }));
+
+    expect(screen.getByText('⚑ 2× als besetzt gemeldet (letzte 90 Minuten)')).toBeTruthy();
+    // Der offizielle Zustand bleibt „frei"; die Meldung ersetzt ihn nicht.
+    expect(screen.getAllByText('○ frei')).toHaveLength(2);
+  });
+
+  it('ohne gültige Meldung keine Zusatzzeile', () => {
+    renderScreen();
+    fireEvent.press(screen.getByRole('radio', { name: 'Übersicht' }));
+    expect(screen.queryByText(/als besetzt gemeldet/)).toBeNull();
+  });
+});
+
+describe('Anzahl der Besetzt-Meldungen anzeigen', () => {
+  it('auch in der Freie-Raum-Suche je Raum', () => {
+    mockRaeume = [datenbanken, { ...freiKuratiert, besetztMeldungen: 1 }, freiNichtKuratiert];
+    renderScreen();
+    expect(screen.getByText('C.E.40')).toBeTruthy();
+    expect(screen.getByText('⚑ 1× als besetzt gemeldet (letzte 90 Minuten)')).toBeTruthy();
+  });
+});
+
+describe('Raum als besetzt melden', () => {
+  it('Besetzt-Meldung offline: per Raumkennung in die Warteschlange, obwohl die Raumsuche nicht verfügbar ist', async () => {
+    mockOnline.mockReturnValue(false);
+    onlineManager.setOnline(false);
+    renderScreen();
+    expect(screen.getByText('Raumsuche offline nicht verfügbar')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Raumkennung für die Besetzt-Meldung'), 'c.e.40');
+    fireEvent.press(screen.getByRole('button', { name: 'Als besetzt melden' }));
+
+    expect(await screen.findByText('⏸ Besetzt-Meldung für C.E.40 · wartet auf Verbindung')).toBeTruthy();
+    expect(leseWarteschlange(client)).toEqual([
+      expect.objectContaining({ art: 'besetztMeldung', auftrag: expect.objectContaining({ nutzdaten: { roomId: 'C.E.40' } }) }),
+    ]);
   });
 });

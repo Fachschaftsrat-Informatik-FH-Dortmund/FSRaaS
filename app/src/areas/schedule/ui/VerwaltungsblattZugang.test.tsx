@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import { __resetAnsichtEinstellungenForTest, readAnsichtEinstellungen } from '../ansichtEinstellungen';
+import { __resetEinblendungsStandForTest } from '../einblendungsStand';
 import { __resetEinrichtungForTest, readEinrichtung } from '../einrichtung';
 import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import type { CustomPlanEntry, OfficialPlanEntry } from '../typen';
@@ -62,6 +63,7 @@ async function seed() {
   __resetScheduleEntriesForTest();
   __resetEinrichtungForTest();
   __resetAnsichtEinstellungenForTest();
+  __resetEinblendungsStandForTest();
 }
 
 async function oeffnen() {
@@ -100,6 +102,29 @@ describe('Ansichts- und Verwaltungsblatt in der Kopfzeile', () => {
 
     fireEvent(screen.getByLabelText('Beim Öffnen zum aktuellen Wochentag springen'), 'valueChange', false);
     await waitFor(async () => expect((await readAnsichtEinstellungen()).sprungZuHeute).toBe(false));
+  });
+});
+
+describe('Einblenden nicht gewählter Veranstaltungen', () => {
+  it('Schalter angeschaltet: der Schalter „Alle Veranstaltungen zeigen" steht im Ansichts-Blatt, voreingestellt aus', async () => {
+    await oeffnen();
+
+    const schalter = screen.getByLabelText('Alle Veranstaltungen zeigen');
+    expect(schalter.props.value).toBe(false);
+    fireEvent(schalter, 'valueChange', true);
+    await waitFor(() => expect(screen.getByLabelText('Alle Veranstaltungen zeigen').props.value).toBe(true));
+  });
+});
+
+describe('Einblendung nur für die laufende Sitzung', () => {
+  it('führt beide Einblendungsschalter, voreingestellt aus, ohne sie im Gerätespeicher abzulegen', async () => {
+    await oeffnen();
+
+    const alternativen = screen.getByLabelText('Alternativtermine einblenden');
+    expect(alternativen.props.value).toBe(false);
+    fireEvent(alternativen, 'valueChange', true);
+    await waitFor(() => expect(screen.getByLabelText('Alternativtermine einblenden').props.value).toBe(true));
+    expect(await readAnsichtEinstellungen()).not.toHaveProperty('alternativenEinblenden');
   });
 });
 
