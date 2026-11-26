@@ -10,7 +10,7 @@
 
 ## 3. Termindetail
 
-- [ ] 3.1 Abschnitt „Eigener Name in der Wochenansicht" unter der Angabe „Bezeichnung" eines offiziellen Termins: Textfeld, „Übernehmen", „Eigenen Namen entfernen" mit Rückfrage über `ConfirmDialog`; Kopf und Angabe bleiben bei der offiziellen Bezeichnung; i18n de/en (design.md, Entscheidung 5). Verifikation: `TerminDetailScreen.test.tsx` mit `describe('Geltungsbereich des eigenen Namens', …)` und `describe('Eigener Name je Modul', …)` belegt Bedienweg, offizielle Bezeichnung trotz eigenem Namen, Entfernen erst nach Bestätigung, Abbruch lässt den Namen stehen, kein Abschnitt bei eigenen Terminen; i18n-Paritätstest grün.
+- [x] 3.1 Abschnitt „Eigener Name in der Wochenansicht" unter der Angabe „Bezeichnung" eines offiziellen Termins: Textfeld, „Übernehmen", „Eigenen Namen entfernen" mit Rückfrage über `ConfirmDialog`; Kopf und Angabe bleiben bei der offiziellen Bezeichnung; i18n de/en (design.md, Entscheidung 5). Verifikation: `TerminDetailScreen.test.tsx` mit `describe('Geltungsbereich des eigenen Namens', …)` und `describe('Eigener Name je Modul', …)` belegt Bedienweg, offizielle Bezeichnung trotz eigenem Namen, Entfernen erst nach Bestätigung, Abbruch lässt den Namen stehen, kein Abschnitt bei eigenen Terminen; i18n-Paritätstest grün.
 
 ## 4. Abschluss
 

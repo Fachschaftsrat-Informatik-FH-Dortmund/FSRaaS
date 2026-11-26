@@ -5,6 +5,7 @@ import { Modal } from 'react-native';
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import type { Modul } from '../kursbaum';
+import { __resetModulnamenForTest, readModulnamen } from '../modulnamen';
 import { farbeFuerVeranstaltung, kontrastZuHintergrund, textfarbeFuerHintergrund } from '../farbe';
 import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import { ermittlePlanungsstand } from '../planungsstand';
@@ -79,6 +80,7 @@ async function seed(entries: PlanEntry[], id: string) {
   await AsyncStorage.clear();
   await writeJson('scheduleEntries', entries);
   __resetScheduleEntriesForTest();
+  __resetModulnamenForTest();
   mockParams = { id };
 }
 
@@ -510,5 +512,89 @@ describe('Bestätigungsdialoge als Pop-up', () => {
     const dialog = offenerDialog();
     expect(within(dialog).getByText('Diesen Termin wirklich aus deinem Plan löschen?')).toBeTruthy();
     expect(within(dialog).getByLabelText('Endgültig löschen')).toBeTruthy();
+  });
+});
+
+describe('Geltungsbereich des eigenen Namens', () => {
+  it('Bedienweg im Termindetail: nennt die offizielle Bezeichnung und bietet darunter den Weg zum eigenen Namen', async () => {
+    await seed([offiziell({ id: 'aud', courseId: 'AUD', name: 'Algorithmen und Datenstrukturen' })], 'aud');
+    await zeige();
+
+    const bezeichnung = screen.getByText('Bezeichnung');
+    const eingabe = screen.getByLabelText('Eigener Name');
+    expect(screen.getAllByText('Algorithmen und Datenstrukturen').length).toBeGreaterThan(0);
+    expect(screen.getByText('Eigener Name in der Wochenansicht')).toBeTruthy();
+    expect(screen.getByLabelText('Übernehmen')).toBeTruthy();
+    // „unterhalb der offiziellen Bezeichnung": in der Reihenfolge des Baums nach der Angabe.
+    const alle = screen.root.findAll(() => true);
+    expect(alle.indexOf(eingabe)).toBeGreaterThan(alle.indexOf(bezeichnung));
+  });
+
+  it('führt trotz eigenem Namen im Termindetail die offizielle Bezeichnung', async () => {
+    await seed([offiziell({ id: 'aud', courseId: 'AUD', name: 'Algorithmen und Datenstrukturen' })], 'aud');
+    await writeJson('scheduleModuleNames', { AUD: 'AuD' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    // Kopf und Angabe „Bezeichnung" — beide offiziell; „AuD" steht nur im Eingabefeld.
+    expect(screen.getAllByText('Algorithmen und Datenstrukturen')).toHaveLength(2);
+    expect(screen.queryByText('AuD')).toBeNull();
+    expect(screen.getByLabelText('Eigener Name').props.value).toBe('AuD');
+  });
+
+  it('bietet bei einem eigenen Termin keinen eigenen Modulnamen an', async () => {
+    await seed([eigen({ id: 'lern' })], 'lern');
+    await zeige();
+
+    expect(screen.queryByLabelText('Eigener Name')).toBeNull();
+  });
+});
+
+describe('Eigener Name je Modul', () => {
+  it('Modul umbenennen: „Übernehmen" speichert den Namen für das Modul', async () => {
+    await seed([offiziell({ id: 'aud', courseId: 'AUD', name: 'Algorithmen und Datenstrukturen' })], 'aud');
+    await zeige();
+
+    expect(screen.getByLabelText('Übernehmen')).toBeDisabled();
+    fireEvent.changeText(screen.getByLabelText('Eigener Name'), '  AuD  ');
+    fireEvent.press(screen.getByLabelText('Übernehmen'));
+
+    await waitFor(async () => expect(await readModulnamen()).toEqual({ AUD: 'AuD' }));
+    expect(await screen.findByLabelText('Eigenen Namen entfernen')).toBeTruthy();
+  });
+
+  it('Eigenen Namen entfernen: erst nach Bestätigung im Pop-up', async () => {
+    await seed([offiziell({ id: 'aud', courseId: 'AUD', name: 'Algorithmen und Datenstrukturen' })], 'aud');
+    await writeJson('scheduleModuleNames', { AUD: 'AuD' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('Eigenen Namen entfernen'));
+    const dialog = screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible)[0]!;
+    expect(
+      within(dialog).getByText(
+        'Den eigenen Namen „AuD“ entfernen? In der Wochenansicht erscheint dann wieder die offizielle Bezeichnung.',
+      ),
+    ).toBeTruthy();
+    expect(await readModulnamen()).toEqual({ AUD: 'AuD' });
+
+    fireEvent.press(within(dialog).getByLabelText('Entfernen'));
+    await waitFor(async () => expect(await readModulnamen()).toEqual({}));
+    await waitFor(() => expect(screen.queryByLabelText('Eigenen Namen entfernen')).toBeNull());
+    expect(screen.getByLabelText('Eigener Name').props.value).toBe('');
+  });
+
+  it('Abbrechen der Rückfrage lässt den eigenen Namen stehen', async () => {
+    await seed([offiziell({ id: 'aud', courseId: 'AUD', name: 'Algorithmen und Datenstrukturen' })], 'aud');
+    await writeJson('scheduleModuleNames', { AUD: 'AuD' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('Eigenen Namen entfernen'));
+    const dialog = screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible)[0]!;
+    fireEvent.press(within(dialog).getByLabelText('Abbrechen'));
+
+    expect(screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible)).toHaveLength(0);
+    expect(await readModulnamen()).toEqual({ AUD: 'AuD' });
   });
 });
