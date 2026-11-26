@@ -103,6 +103,17 @@ describe('Ansichts- und Verwaltungsblatt in der Kopfzeile', () => {
   });
 });
 
+describe('Einblenden nicht gewählter Veranstaltungen', () => {
+  it('Schalter angeschaltet: der Schalter „Alle Veranstaltungen zeigen" steht im Ansichts-Blatt, voreingestellt aus', async () => {
+    await oeffnen();
+
+    const schalter = screen.getByLabelText('Alle Veranstaltungen zeigen');
+    expect(schalter.props.value).toBe(false);
+    fireEvent(schalter, 'valueChange', true);
+    await waitFor(async () => expect((await readAnsichtEinstellungen()).alleEinblenden).toBe(true));
+  });
+});
+
 // Requirement „Farbwahl je Termin": Farbautomatik im Ansichts-Blatt
 // abschaltbar, ohne bereits gesetzte Farben zu verlieren.
 describe('Farbautomatik im Ansichts-Blatt abschaltbar', () => {

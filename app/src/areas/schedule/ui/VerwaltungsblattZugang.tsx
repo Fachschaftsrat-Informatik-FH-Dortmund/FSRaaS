@@ -49,6 +49,7 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
     toggleSprungZuHeute,
     toggleFarbautomatik,
     toggleAlternativenEinblenden,
+    toggleAlleEinblenden,
   } = useAnsichtEinstellungen();
   const { clear: planLeeren } = useScheduleEntries();
   const { clear: einrichtungZuruecksetzen } = useEinrichtung();
@@ -94,6 +95,12 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
               label={t('schedule.verwaltungAlternativen')}
               wert={loaded ? einstellungen.alternativenEinblenden : false}
               onChange={toggleAlternativenEinblenden}
+            />
+            {/* Requirement „Einblenden nicht gewählter Veranstaltungen". */}
+            <SchalterZeile
+              label={t('schedule.verwaltungAlleEinblenden')}
+              wert={loaded ? einstellungen.alleEinblenden : false}
+              onChange={toggleAlleEinblenden}
             />
 
             <AppButton variant="secondary" label={t('schedule.planLeeren')} onPress={() => setAktion('leeren')} />

@@ -809,6 +809,107 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
   });
 });
 
+// Change `alle-veranstaltungen-einblenden`: Termine der Module ohne
+// Planeintrag, eingeblendet über den Schalter „Alle Veranstaltungen zeigen".
+const ANALYSIS_EIGEN = offiziell({ id: 'v', courseId: '43051', name: 'Analysis', timeBeginMin: 600, timeEndMin: 690 });
+const ANALYSIS_ROH = terminRoh({ courseId: '43051', name: 'Analysis', timeBeginMin: 600, timeEndMin: 690, roomId: 'A.2.02', lecturerName: 'Prof. Beispiel' });
+const RECHNERNETZE_ROH = terminRoh({ courseId: '44100', name: 'Rechnernetze', timeBeginMin: 600, timeEndMin: 690, roomId: 'B.1.10' });
+
+async function seedMitAllen(entries: PlanEntry[], einstellungen: Record<string, unknown> = { alleEinblenden: true }) {
+  await seed(entries, einstellungen);
+  mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
+  mockAuswahlbestand = {
+    termine: [ANALYSIS_ROH, RECHNERNETZE_ROH],
+    perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [ANALYSIS_ROH, RECHNERNETZE_ROH] }],
+    alleGeladen: true,
+    isPending: false,
+    isError: false,
+    isFetching: false,
+    refetch: jest.fn(),
+  };
+}
+
+describe('Einblenden nicht gewählter Veranstaltungen', () => {
+  it('Schalter angeschaltet: zeigt zusätzlich die Termine nicht gewählter Module, als „Nicht gewählt" abgesetzt', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    await zeige();
+
+    expect(screen.getByLabelText(/10:00–11:30 · Rechnernetze.*Nicht gewählt/)).toBeTruthy();
+    // Der eigene Termin trägt das Kennzeichen nicht.
+    expect(screen.getByLabelText(/10:00–11:30 · Analysis/).props.accessibilityLabel).not.toMatch(/Nicht gewählt/);
+  });
+
+  it('Eingeblendeter Termin zur selben Zeit: meldet keinen Konflikt', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    await zeige();
+
+    expect(screen.getByLabelText(/Rechnernetze/).props.accessibilityLabel).not.toMatch(/Konflikt/);
+    expect(screen.getByLabelText(/10:00–11:30 · Analysis/).props.accessibilityLabel).not.toMatch(/Konflikt/);
+  });
+
+  it('Schalter abgeschaltet: zeigt ausschließlich die Termine des eigenen Plans', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN], { alleEinblenden: false });
+    await zeige();
+
+    expect(screen.getByLabelText(/10:00–11:30 · Analysis/)).toBeTruthy();
+    expect(screen.queryByLabelText(/Rechnernetze/)).toBeNull();
+  });
+
+  it('zeigt einen eingeblendeten Termin nur in seinem Gültigkeitszeitraum', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    // Zeitraum endete vor der angezeigten Woche (Mittwoch, 9. September 2026).
+    const abgelaufen = { ...RECHNERNETZE_ROH, gueltigBis: Math.floor(new Date(2026, 7, 1).getTime() / 1000) };
+    mockAuswahlbestand = {
+      ...mockAuswahlbestand,
+      termine: [ANALYSIS_ROH, abgelaufen],
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [ANALYSIS_ROH, abgelaufen] }],
+    };
+    await zeige();
+
+    expect(screen.queryByLabelText(/Rechnernetze/)).toBeNull();
+  });
+});
+
+describe('Aufnehmen eines Moduls aus der Einblendung', () => {
+  it('Eingeblendeten Termin antippen: fragt nach der Aufnahme, vorbelegt auf „nein"', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText(/Rechnernetze.*Nicht gewählt/));
+
+    expect(screen.getByText('Nicht gewählte Veranstaltung')).toBeTruthy();
+    expect(
+      screen.getByText('„Rechnernetze“ gehört zu einem Modul, das du nicht gewählt hast. Soll das Modul in deine Auswahl aufgenommen werden?'),
+    ).toBeTruthy();
+    // Vorbelegung: „Nicht aufnehmen" steht als erste, hervorgehobene Aktion.
+    const buttons = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
+    expect(buttons.indexOf('Nicht aufnehmen')).toBeLessThan(buttons.indexOf('Modul aufnehmen'));
+    expect(mockPush).not.toHaveBeenCalledWith(expect.objectContaining({ pathname: '/detail' }));
+  });
+
+  it('Aufnahme bestätigt: führt in den Planungsmodus mit dem Modul als Kandidat', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText(/Rechnernetze.*Nicht gewählt/));
+    fireEvent.press(screen.getByText('Modul aufnehmen'));
+
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/planung', params: { module: '44100|' } });
+  });
+
+  it('Aufnahme abgelehnt: die eigene Auswahl bleibt unverändert', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText(/Rechnernetze.*Nicht gewählt/));
+    fireEvent.press(screen.getByText('Nicht aufnehmen'));
+
+    await waitFor(() => expect(screen.queryByText('Nicht gewählte Veranstaltung')).toBeNull());
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(await readScheduleEntries()).toEqual([ANALYSIS_EIGEN]);
+  });
+});
+
 describe('Hinweis auf gesetzlichen Feiertag', () => {
   // Donnerstag, 4. Juni 2026 — Fronleichnam, Referenzwert aus dem INT-009-Spike.
   const FRONLEICHNAM = new Date(2026, 5, 4, 7, 0, 0);

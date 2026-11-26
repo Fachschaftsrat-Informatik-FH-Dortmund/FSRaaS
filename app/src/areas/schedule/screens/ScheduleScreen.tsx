@@ -7,10 +7,11 @@ import type { TFunction } from 'i18next';
 import { useTheme } from '@/theme';
 import { useOnlineStatus } from '@/state/useOnlineStatus';
 import { BlaetterSymbol } from '@/ui/BlaetterSymbol';
+import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
-import { alternativenDesTages, gewaehlteModule } from '../alternativen';
+import { alternativenDesTages, gewaehlteModule, nichtGewaehlteDesTages } from '../alternativen';
 import { useStudiengaenge, useTermineFuerEndpunkte, useVorlesungszeit } from '../api';
 import {
   anfangsAnsicht,
@@ -112,17 +113,19 @@ export function ScheduleScreen() {
   const vorlesungszeit = useVorlesungszeit();
   const { studiengaenge } = useStudiengaenge();
 
-  // Requirement „Einblenden aller Veranstaltungen gewählter Module": der
-  // Auswahlbestand kommt nur ins Spiel, wenn der Schalter aktiv ist — der
-  // persönliche Plan bleibt sonst wie gehabt rein gerätelokal (DATA-F-010).
+  // Requirements „Einblenden aller Veranstaltungen gewählter Module" und
+  // „Einblenden nicht gewählter Veranstaltungen": der Auswahlbestand kommt nur
+  // ins Spiel, wenn einer der beiden Schalter aktiv ist — der persönliche Plan
+  // bleibt sonst wie gehabt rein gerätelokal (DATA-F-010).
+  const einblendungAktiv = einstellungen.alternativenEinblenden || einstellungen.alleEinblenden;
   const gewaehlteEndpunkte = useMemo(
     () =>
-      einstellungen.alternativenEinblenden
+      einblendungAktiv
         ? studiengaenge
             .filter((s) => einrichtung.endpunkte.includes(s.sname))
             .map((s) => ({ sname: s.sname, name: s.name }))
         : [],
-    [einstellungen.alternativenEinblenden, studiengaenge, einrichtung.endpunkte],
+    [einblendungAktiv, studiengaenge, einrichtung.endpunkte],
   );
   const auswahlbestand = useTermineFuerEndpunkte(gewaehlteEndpunkte);
   const alleModule = useMemo(
@@ -210,27 +213,35 @@ export function ScheduleScreen() {
   // (Requirement „Gruppenkennung verpflichtend vor dem Planungsmodus"); dieser
   // Zustand führt ohnehin auf den Schritt zur Gruppenkennung, die Einblendung
   // ruht bis dahin.
-  const alternativenTermine = useMemo(
-    () =>
-      stand && einstellungen.alternativenEinblenden && auswahlbestand.alleGeladen && einrichtung.gruppenkennung
-        ? alternativenDesTages(alleModule, entries, stand.wochentag, einrichtung.gruppenkennung)
-        : [],
-    [
-      stand,
-      einstellungen.alternativenEinblenden,
-      auswahlbestand.alleGeladen,
-      alleModule,
-      entries,
-      einrichtung.gruppenkennung,
-    ],
-  );
-  // Requirement „Einblenden aller Veranstaltungen gewählter Module": die
-  // Alternativen fließen unverändert in Zeitachse und Stapelung ein
-  // (`dayLayout.ts`, `istAlternative`-Kennzeichen) — keine eigene
+  //
+  // Beide Einblendungen laufen durch `termineDesTages`, damit das Requirement
+  // „Anzeige nur im Gültigkeitszeitraum" auch für sie gilt (Change
+  // `alle-veranstaltungen-einblenden`, design.md Entscheidung 2).
+  const eingeblendeteTermine = useMemo(() => {
+    if (!stand || !auswahlbestand.alleGeladen || !einrichtung.gruppenkennung) return [];
+    const kennung = einrichtung.gruppenkennung;
+    const roh = [
+      ...(einstellungen.alternativenEinblenden
+        ? alternativenDesTages(alleModule, entries, stand.wochentag, kennung)
+        : []),
+      ...(einstellungen.alleEinblenden ? nichtGewaehlteDesTages(alleModule, entries, stand.wochentag, kennung) : []),
+    ];
+    return termineDesTages(roh, stand.wochenanfang, stand.wochentag);
+  }, [
+    stand,
+    einstellungen.alternativenEinblenden,
+    einstellungen.alleEinblenden,
+    auswahlbestand.alleGeladen,
+    alleModule,
+    entries,
+    einrichtung.gruppenkennung,
+  ]);
+  // Die eingeblendeten Termine fließen unverändert in Zeitachse und Stapelung
+  // ein (`dayLayout.ts`, Merkmal `einblendung`) — keine eigene
   // Darstellungslogik an dieser Stelle.
   const tagesTermineAnzeige = useMemo(
-    () => sortiereNachBeginnzeit([...tagesTermine, ...alternativenTermine]),
-    [tagesTermine, alternativenTermine],
+    () => sortiereNachBeginnzeit([...tagesTermine, ...eingeblendeteTermine]),
+    [tagesTermine, eingeblendeteTermine],
   );
   const spanne = useMemo(() => spanneDesTages(tagesTermineAnzeige), [tagesTermineAnzeige]);
 
@@ -275,17 +286,24 @@ export function ScheduleScreen() {
   // „Alternative übernehmen": ein Tipp auf eine eingeblendete Alternative
   // öffnet das Übernahme-Blatt statt des Termindetails.
   const [alternativeUebernehmen, setAlternativeUebernehmen] = useState<PlanEntry | null>(null);
+  // Requirement „Aufnehmen eines Moduls aus der Einblendung": der angetippte,
+  // nicht gewählte Termin, für den die Rückfrage offen ist.
+  const [nichtGewaehltAufnehmen, setNichtGewaehltAufnehmen] = useState<PlanEntry | null>(null);
   function oeffneTermin(id: string) {
     const eintrag = tagesTermineAnzeige.find((e) => e.id === id);
-    if (eintrag?.istAlternative) {
+    if (eintrag?.einblendung?.art === 'alternative') {
       setAlternativeUebernehmen(eintrag);
+      return;
+    }
+    if (eintrag?.einblendung?.art === 'nichtGewaehlt') {
+      setNichtGewaehltAufnehmen(eintrag);
       return;
     }
     router.push({ pathname: '/detail', params: { id } });
   }
   function alternativeUebernehmenAls(anstelle: boolean) {
     if (!alternativeUebernehmen) return;
-    const { istAlternative: _istAlternative, id: _id, ...rest } = alternativeUebernehmen;
+    const { einblendung: _einblendung, id: _id, ...rest } = alternativeUebernehmen;
     const neu: PlanEntry = { ...rest, id: neueAlternativeId() } as PlanEntry;
     const zuEntfernen =
       anstelle && alternativeUebernehmen.kind === 'offiziell'
@@ -301,6 +319,18 @@ export function ScheduleScreen() {
         : [];
     mehrereUebernehmen([neu], zuEntfernen);
     setAlternativeUebernehmen(null);
+  }
+  /**
+   * Requirement „Aufnehmen eines Moduls aus der Einblendung", Szenario
+   * „Aufnahme bestätigt": der Planungsmodus führt das Modul aus dem
+   * Routenparameter als Kandidaten (design.md, Entscheidung 5). In den Plan
+   * kommt erst, was dort gewählt und gesichert wird.
+   */
+  function modulAufnehmen() {
+    const modulKey = nichtGewaehltAufnehmen?.einblendung?.modulKey;
+    setNichtGewaehltAufnehmen(null);
+    if (!modulKey) return;
+    router.push({ pathname: '/planung', params: { module: modulKey } });
   }
 
   return (
@@ -353,11 +383,15 @@ export function ScheduleScreen() {
                 showsVerticalScrollIndicator={false}
                 {...swipe.panHandlers}
               >
-                {einstellungen.alternativenEinblenden ? (
+                {einblendungAktiv ? (
                   <AlternativenStatus
                     alleGeladen={auswahlbestand.alleGeladen}
                     isError={auswahlbestand.isError}
-                    keineGewaehltenModule={gewaehlteModule(alleModule, entries).length === 0}
+                    keineGewaehltenModule={
+                      einstellungen.alternativenEinblenden &&
+                      !einstellungen.alleEinblenden &&
+                      gewaehlteModule(alleModule, entries).length === 0
+                    }
                   />
                 ) : null}
                 {wocheAusserhalbVorlesungszeit(
@@ -407,6 +441,22 @@ export function ScheduleScreen() {
         onSchliessen={() => setAlternativeUebernehmen(null)}
         onAnstelle={() => alternativeUebernehmenAls(true)}
         onZusaetzlich={() => alternativeUebernehmenAls(false)}
+      />
+
+      {/* Requirement „Aufnehmen eines Moduls aus der Einblendung": vorbelegt auf
+          „nein" — die erste, hervorgehobene Aktion lässt die Auswahl unverändert,
+          ebenso Zurück-Taste und Escape. */}
+      <ConfirmDialog
+        visible={nichtGewaehltAufnehmen !== null}
+        title={t('schedule.nichtGewaehltTitel')}
+        message={t('schedule.nichtGewaehltFrage', {
+          titel: nichtGewaehltAufnehmen ? titelVon(nichtGewaehltAufnehmen) : '',
+        })}
+        actions={[
+          { label: t('schedule.nichtGewaehltAblehnen'), variant: 'primary', onPress: () => setNichtGewaehltAufnehmen(null) },
+          { label: t('schedule.nichtGewaehltAufnehmen'), onPress: modulAufnehmen },
+        ]}
+        onDismiss={() => setNichtGewaehltAufnehmen(null)}
       />
     </Screen>
   );
@@ -902,7 +952,8 @@ export function TerminKachel({
   if (feiertag !== null) {
     kennzeichen.push(t('schedule.feiertagHinweis', { feiertag: t(`schedule.feiertage.${feiertag}`) }));
   }
-  if (entry.istAlternative) kennzeichen.push(t('schedule.kennzeichenAlternative'));
+  if (entry.einblendung?.art === 'alternative') kennzeichen.push(t('schedule.kennzeichenAlternative'));
+  if (entry.einblendung?.art === 'nichtGewaehlt') kennzeichen.push(t('schedule.kennzeichenNichtGewaehlt'));
   if (entry.kind === 'eigen') kennzeichen.push(t('schedule.kennzeichenEigen'));
   if (deaktiviert) kennzeichen.push(t('schedule.kennzeichenDeaktiviert'));
   if (!entry.gruppenzugehoerig) kennzeichen.push(t('schedule.kennzeichenGruppenfremd'));
@@ -922,10 +973,11 @@ export function TerminKachel({
         { backgroundColor: farbe },
         laeuft && { borderColor: colors.text, borderWidth: 3 },
         deaktiviert && styles.kachelDeaktiviert,
-        // Requirement „Einblenden aller Veranstaltungen gewählter Module":
-        // eine Alternative steht abgesetzt von den eigenen Terminen — der
-        // gestrichelte Rahmen kommt zur Textkennzeichnung hinzu, ersetzt sie nie.
-        entry.istAlternative && styles.kachelAlternative,
+        // Requirements „Einblenden aller Veranstaltungen gewählter Module" und
+        // „Einblenden nicht gewählter Veranstaltungen": ein eingeblendeter
+        // Termin steht abgesetzt von den eigenen — der gestrichelte Rahmen kommt
+        // zur Textkennzeichnung hinzu, ersetzt sie nie.
+        entry.einblendung !== undefined && styles.kachelAlternative,
       ]}
     >
       <Text style={[styles.kachelZeit, { color: textfarbe }]} numberOfLines={1}>

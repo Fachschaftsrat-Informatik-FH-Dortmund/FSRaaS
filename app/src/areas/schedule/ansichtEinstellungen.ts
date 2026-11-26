@@ -37,6 +37,12 @@ export interface AnsichtEinstellungen {
    */
   alternativenEinblenden: boolean;
   /**
+   * Requirement „Einblenden nicht gewählter Veranstaltungen": `false`
+   * (Vorgabe) — zusätzlich die Termine der Module ohne Planeintrag anzeigen
+   * (`alternativen.ts`, `nichtGewaehlteDesTages`).
+   */
+  alleEinblenden: boolean;
+  /**
    * Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus"
    * (Change `planungsmodus-anzeige`, design.md Entscheidung 4): drei einzeln
    * schaltbare Farbwirkungen. Abgeschaltet bleibt die Angabe als Text oder
@@ -54,6 +60,7 @@ const STANDARD: AnsichtEinstellungen = {
   sprungZuHeute: true,
   farbautomatik: true,
   alternativenEinblenden: false,
+  alleEinblenden: false,
   hervorhebungEigeneGruppe: true,
   hervorhebungKonflikte: false,
   hervorhebungEingeplant: false,
@@ -83,6 +90,7 @@ function bereinige(v: unknown): AnsichtEinstellungen {
     sprungZuHeute: alsBoolean(roh.sprungZuHeute, STANDARD.sprungZuHeute),
     farbautomatik: alsBoolean(roh.farbautomatik, STANDARD.farbautomatik),
     alternativenEinblenden: alsBoolean(roh.alternativenEinblenden, STANDARD.alternativenEinblenden),
+    alleEinblenden: alsBoolean(roh.alleEinblenden, STANDARD.alleEinblenden),
     hervorhebungEigeneGruppe: alsBoolean(roh.hervorhebungEigeneGruppe, STANDARD.hervorhebungEigeneGruppe),
     hervorhebungKonflikte: alsBoolean(roh.hervorhebungKonflikte, STANDARD.hervorhebungKonflikte),
     hervorhebungEingeplant: alsBoolean(roh.hervorhebungEingeplant, STANDARD.hervorhebungEingeplant),
@@ -147,6 +155,11 @@ export function useAnsichtEinstellungen() {
     () => schreiben({ ...snapshot, alternativenEinblenden: !snapshot.alternativenEinblenden }),
     [],
   );
+  /** Requirement „Einblenden nicht gewählter Veranstaltungen". */
+  const toggleAlleEinblenden = useCallback(
+    () => schreiben({ ...snapshot, alleEinblenden: !snapshot.alleEinblenden }),
+    [],
+  );
   /** Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus". */
   const toggleHervorhebung = useCallback(
     (welche: Hervorhebung) => schreiben({ ...snapshot, [welche]: !snapshot[welche] }),
@@ -161,6 +174,7 @@ export function useAnsichtEinstellungen() {
     toggleSprungZuHeute,
     toggleFarbautomatik,
     toggleAlternativenEinblenden,
+    toggleAlleEinblenden,
   };
 }
 

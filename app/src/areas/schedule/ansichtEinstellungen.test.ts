@@ -73,6 +73,20 @@ describe('Einblenden aller Veranstaltungen gewählter Module: Schalter im Ansich
   });
 });
 
+describe('Einblenden nicht gewählter Veranstaltungen: Schalter im Ansichts-Blatt', () => {
+  it('ist voreingestellt abgeschaltet und lässt sich ein- und wieder ausschalten', async () => {
+    const { result } = renderHook(() => useAnsichtEinstellungen());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.einstellungen.alleEinblenden).toBe(false);
+
+    act(() => result.current.toggleAlleEinblenden());
+    await waitFor(() => expect(result.current.einstellungen.alleEinblenden).toBe(true));
+
+    act(() => result.current.toggleAlleEinblenden());
+    await waitFor(() => expect(result.current.einstellungen.alleEinblenden).toBe(false));
+  });
+});
+
 describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten aller Filter entfallen', () => {
   it('verwirft gespeicherte Altwerte beider Schalter beim Laden', async () => {
     await AsyncStorage.setItem(
@@ -86,6 +100,7 @@ describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten alle
       sprungZuHeute: true,
       farbautomatik: true,
       alternativenEinblenden: false,
+      alleEinblenden: false,
       hervorhebungEigeneGruppe: true,
       hervorhebungKonflikte: false,
       hervorhebungEingeplant: false,
