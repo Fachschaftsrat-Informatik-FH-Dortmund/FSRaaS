@@ -37,6 +37,13 @@ erzeugen lassen, ansehen, einzeln nachbessern, sichern.
   Planungsmodus. Er enthält die Voreinstellung, die allgemeine
   Vorbereitungszeit, abweichende Werte je Veranstaltungsart und den
   Mindestabstand Vorlesung–Übung. Alles wird nur auf dem Gerät gespeichert.
+- **„Pflicht"-Markierung** (Requirement „Kandidat als Pflicht markieren"),
+  nachgezogen 2026-11-26. Da der Vorschlag nie eine Veranstaltung entfernt,
+  bleibt ihr der Vorrang in der Bearbeitungsreihenfolge: Reihen eines
+  Pflicht-Moduls belegt der Vorschlag zuerst. Markiert wird in den
+  Planungseinstellungen. Der Konflikthinweis des Vorschlags weist darauf hin
+  und führt dorthin (Requirement „Automatischer Planungsvorschlag", Szenario
+  „Keine konfliktfreie Konstellation").
 - **Gruppen-Slot im Vorschlag.** Neu ist ein kleines Requirement. Termine
   einer Veranstaltungsart, die dieselbe Gruppenmenge und denselben Namen
   tragen, bilden einen Gruppen-Slot, etwa die zwei Vorlesungstermine einer
@@ -50,12 +57,6 @@ Reine Gerätelogik: kein Backend, keine Vertragsänderung.
 
 - **Zweiter Zug aus Issue #27:** freie Sortierung der Kriterienrangfolge und
   Abschalten einzelner Kriterien.
-- **„Pflicht"-Markierung** (Requirement „Kandidat als Pflicht markieren").
-  Da der Vorschlag nie eine Veranstaltung entfernt, bliebe ihr allein der
-  Vorrang in der Bearbeitungsreihenfolge. Der Hinweis des Vorschlags auf die
-  Pflicht-Markierung (Requirement „Automatischer Planungsvorschlag",
-  Szenario „Keine konfliktfreie Konstellation") steht deshalb als offene
-  Aufgabe in `tasks.md`.
 - **Bevorzugtes Zeitfenster** (Requirements „Bevorzugtes Zeitfenster
   festlegen", „Kennzeichnung außerhalb des Zeitfensters"). Das Kriterium
   „Zeitfenster" ist berechenbar, gehört aber zu keiner Voreinstellung und
