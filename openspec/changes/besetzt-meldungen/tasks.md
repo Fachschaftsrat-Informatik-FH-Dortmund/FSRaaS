@@ -1,17 +1,17 @@
 ## 1. Vertrag
 
-- [ ] 1.1 `api-contract.yaml`: `POST /raeume/{roomId}/besetzt-meldungen` mit Rumpf `BesetztMeldungEingabe`, 202 `BesetztMeldungQuittung`, 400/404/409/503; neuer Pfad `DELETE /raeume/{roomId}/besetzt-meldungen/{meldungId}` (204, 429); Fassung 0.8.0
-- [ ] 1.2 `node tools/contract-codegen/src/generate.mjs`, erzeugte Typen (TS und C#) eingecheckt
+- [x] 1.1 `api-contract.yaml`: `POST /raeume/{roomId}/besetzt-meldungen` mit Rumpf `BesetztMeldungEingabe`, 202 `BesetztMeldungQuittung`, 400/404/409/503; neuer Pfad `DELETE /raeume/{roomId}/besetzt-meldungen/{meldungId}` (204, 429); Fassung 0.8.0
+- [x] 1.2 `node tools/contract-codegen/src/generate.mjs` erzeugt die Typen (TS und C#); sie sind nach `.gitignore` nicht eingecheckt und entstehen in Build und CI neu
 
 ## 2. Backend
 
-- [ ] 2.1 Entität `BesetztMeldung` (Id, RoomId, GemeldetAm, ZurueckgezogenAm) im `Fb4DbContext`, eigene Migration `BesetztMeldungen`
-- [ ] 2.2 Bekanntheitsprüfung eines Raums aus `RaumplanEndpoints` als gemeinsame Hilfsmethode
-- [ ] 2.3 `BesetztMeldungEndpoints`: `POST` (Idempotenz, `gemeldetAm` gekappt auf jetzt, abgelaufen ⇒ nicht gespeichert, 409 bei Fremdraum) und `DELETE` (immer 204, setzt `ZurueckgezogenAm`)
-- [ ] 2.4 Zählung gültiger Meldungen in `/raeume/uebersicht` (Fenster 90 min relativ zum Bezugszeitpunkt, ohne zurückgezogene)
-- [ ] 2.5 `BesetztMeldungAufraeumJob` alle 15 Minuten
-- [ ] 2.6 Ratenbegrenzung `kontofrei-schreiben` (Netzadresse, IPv6 /64, konfigurierbar, 429 mit Problem-Rumpf und `Retry-After`, Warnung ohne Adresse im Protokoll)
-- [ ] 2.7 Tests in `Fb4.Backend.Tests`: „Raum als besetzt melden", „Raumbesetzt-Meldungen ohne Personenbezug", „Anzahl der Besetzt-Meldungen anzeigen", „Besetzt-Meldung zurückziehen", „Gültigkeitsdauer einer Besetzt-Meldung", „Idempotente Besetzt-Meldung", „Ratenbegrenzung kontofreier Schreibpfade"; `dotnet test` grün
+- [x] 2.1 Entität `BesetztMeldung` (Id, RoomId, GemeldetAm, ZurueckgezogenAm) im `Fb4DbContext`, eigene Migration `BesetztMeldungen`
+- [x] 2.2 Bekanntheitsprüfung eines Raums aus `RaumplanEndpoints` als gemeinsame Hilfsmethode
+- [x] 2.3 `BesetztMeldungEndpoints`: `POST` (Idempotenz, `gemeldetAm` gekappt auf jetzt, abgelaufen ⇒ nicht gespeichert, 409 bei Fremdraum) und `DELETE` (immer 204, setzt `ZurueckgezogenAm`)
+- [x] 2.4 Zählung gültiger Meldungen in `/raeume/uebersicht` (Fenster 90 min relativ zum Bezugszeitpunkt, ohne zurückgezogene)
+- [x] 2.5 `BesetztMeldungAufraeumJob` alle 15 Minuten
+- [x] 2.6 Ratenbegrenzung `kontofrei-schreiben` (Netzadresse, IPv6 /64, konfigurierbar, 429 mit Problem-Rumpf und `Retry-After`, Warnung ohne Adresse im Protokoll)
+- [x] 2.7 Tests in `Fb4.Backend.Tests`: „Raum als besetzt melden", „Raumbesetzt-Meldungen ohne Personenbezug", „Anzahl der Besetzt-Meldungen anzeigen", „Besetzt-Meldung zurückziehen", „Gültigkeitsdauer einer Besetzt-Meldung", „Idempotente Besetzt-Meldung", „Ratenbegrenzung kontofreier Schreibpfade"; `dotnet test` grün
 
 ## 3. App: Offline-Schreib-Warteschlange
 

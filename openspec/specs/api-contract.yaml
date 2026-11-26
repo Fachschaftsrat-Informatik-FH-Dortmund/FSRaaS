@@ -18,7 +18,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.7.2
+  version: 0.8.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -284,8 +284,17 @@ paths:
       tags: [raum]
       summary: Raum als besetzt melden
       description: |
-        Erfüllt RAUM-F-070 und API-F-210. Kontofrei (IDENT); Missbrauchsschutz über
-        Ratenbegrenzung je Quelle (API-N-015) und Mustererkennung (IDENT-F-065).
+        Erfüllt RAUM-F-070 und API-F-210 sowie die Requirements „Gültigkeitsdauer
+        einer Besetzt-Meldung" und „Idempotente Besetzt-Meldung". Kontofrei (IDENT);
+        Missbrauchsschutz über Ratenbegrenzung je Quelle (API-N-015). Gespeichert
+        werden nur Meldungskennung (= Idempotenz-Schlüssel), Raum und
+        Auslösezeitpunkt, keine Netzadresse. `gemeldetAm` ist der Zeitpunkt der
+        Auslösung auf dem Gerät; ein Wert in der Zukunft gilt als Eingangszeitpunkt.
+        Eine Meldung zählt 90 Minuten ab `gemeldetAm`; ist sie beim Eingang schon
+        abgelaufen, wird sie nicht gespeichert, die Antwort bleibt 202. Eine
+        erneute Meldung mit demselben Schlüssel für denselben Raum liefert dieselbe
+        Quittung, ohne doppelt zu zählen oder eine zurückgezogene Meldung wieder
+        in Kraft zu setzen.
       security: []
       parameters:
         - name: roomId
@@ -293,9 +302,68 @@ paths:
           required: true
           schema: { type: string }
         - $ref: "#/components/parameters/IdempotenzSchluessel"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BesetztMeldungEingabe" }
       responses:
         "202":
-          description: Meldung entgegengenommen
+          description: Meldung entgegengenommen (auch bei Wiederholung mit demselben Schlüssel)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BesetztMeldungQuittung" }
+        "400":
+          description: >
+            Idempotenz-Schlüssel fehlt oder ist keine UUID (Code
+            `idempotenz_schluessel_ungueltig`), oder `gemeldetAm` fehlt (Code
+            `gemeldet_am_fehlt`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
+        "404":
+          description: >
+            Raum weder im Raumplan-Zwischenspeicher noch in der gepflegten Liste
+            (Code `raum_unbekannt`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
+        "409":
+          description: Schlüssel bereits für einen anderen Raum verwendet (Code `idempotenz_konflikt`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
+        "429": { $ref: "#/components/responses/ZuVieleAnfragen" }
+        "503":
+          description: Raumplan noch nicht abgerufen (Code `raumplan_nicht_verfuegbar`)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Fehler" }
+        default: { $ref: "#/components/responses/Fehler" }
+
+  /raeume/{roomId}/besetzt-meldungen/{meldungId}:
+    delete:
+      tags: [raum]
+      summary: Eigene Besetzt-Meldung zurückziehen
+      description: |
+        Erfüllt RAUM-F-140. `meldungId` ist der Idempotenz-Schlüssel, mit dem die
+        Meldung abgegeben wurde; nur das meldende Gerät kennt ihn. Antwortet
+        immer mit 204, auch wenn die Meldung unbekannt, abgelaufen oder einem
+        anderen Raum zugeordnet ist — der Zielzustand „nicht aktiv" ist erreicht,
+        und die Antwort verrät nicht, ob eine Kennung existiert.
+        Ratenbegrenzung wie beim Melden (API-N-015).
+      security: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: meldungId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Meldung ist nicht (mehr) aktiv }
         "429": { $ref: "#/components/responses/ZuVieleAnfragen" }
         default: { $ref: "#/components/responses/Fehler" }
 
@@ -1233,6 +1301,30 @@ components:
         note:
           type: [string, "null"]
           description: Freitext aus INT-009, sofern gesetzt (RAUM-F-220).
+
+    BesetztMeldungEingabe:
+      type: object
+      description: Rumpf einer Besetzt-Meldung (RAUM-F-070).
+      required: [gemeldetAm]
+      properties:
+        gemeldetAm:
+          type: string
+          format: date-time
+          description: Zeitpunkt der Auslösung auf dem Gerät; Bezug der Gültigkeitsdauer.
+
+    BesetztMeldungQuittung:
+      type: object
+      description: Quittung einer angenommenen Besetzt-Meldung.
+      required: [meldungId, gueltigBis]
+      properties:
+        meldungId:
+          type: string
+          format: uuid
+          description: Gleich dem Idempotenz-Schlüssel; Kennung zum Zurückziehen (RAUM-F-140).
+        gueltigBis:
+          type: string
+          format: date-time
+          description: Ende der Gültigkeit; liegt in der Vergangenheit, wenn die Meldung beim Eingang schon abgelaufen war.
 
     RaumStatus:
       type: object
