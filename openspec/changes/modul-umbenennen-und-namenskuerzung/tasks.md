@@ -14,6 +14,6 @@
 
 ## 4. Abschluss
 
-- [ ] 4.1 Gesamtprüfung: `npx jest src/areas/schedule`, `npx tsc --noEmit` (nach `node tools/contract-codegen/src/generate.mjs`), `npm run lint`, `node tools/spec-check/src/cli.js` und der i18n-Paritätstest laufen grün.
+- [x] 4.1 Gesamtprüfung: `npx jest src/areas/schedule`, `npx tsc --noEmit` (nach `node tools/contract-codegen/src/generate.mjs`), `npm run lint`, `node tools/spec-check/src/cli.js` und der i18n-Paritätstest laufen grün.
 - [ ] 4.2 Sichtprüfung am Gerät (Android): langer Name mit Endzahl in schmaler Zeitachsen-Spalte, eigener Name, Entfernen-Rückfrage, Vorleser auf der Kachel; Prüfprotokoll unter `specs/pruefprotokolle/` ablegen. Verifikation: datiertes Prüfprotokoll liegt vor.
 - [ ] 4.3 Change archivieren (`openspec archive modul-umbenennen-und-namenskuerzung`), sobald 4.2 vorliegt. Verifikation: die drei Requirements stehen in `openspec/specs/schedule/spec.md`.
