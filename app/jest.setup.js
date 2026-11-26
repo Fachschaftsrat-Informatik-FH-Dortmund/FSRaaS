@@ -11,6 +11,13 @@ jest.mock('@react-native-community/netinfo', () => ({
   },
 }));
 
+// expo-crypto erzeugt die Idempotenz-Schlüssel der Schreib-Warteschlange über
+// ein natives Modul; im Jest-Umfeld übernimmt das Node-Krypto.
+jest.mock('expo-crypto', () => ({
+  __esModule: true,
+  randomUUID: () => require('node:crypto').randomUUID(),
+}));
+
 jest.mock('expo-localization', () => ({
   getLocales: jest.fn(() => [{ languageCode: 'de', languageTag: 'de-DE' }]),
 }));

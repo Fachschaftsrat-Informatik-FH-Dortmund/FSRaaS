@@ -10,7 +10,7 @@ import { AppError } from '@/errors/AppError';
 // für den Neustart-Fall (ARCH-F-100) und NetInfo als Netzstatus-Quelle.
 
 // NetInfo speist den onlineManager — Grundlage für Offline-Erkennung
-// (ARCH-F-100, DATA-F-090) und, ab Schritt 6, die Schreib-Warteschlange.
+// (ARCH-F-100, DATA-F-090) und die Schreib-Warteschlange (state/schreibwarteschlange.ts).
 onlineManager.setEventListener((setOnline) => {
   const unsubscribe = NetInfo.addEventListener((state) => {
     setOnline(Boolean(state.isConnected && state.isInternetReachable !== false));
@@ -35,8 +35,8 @@ export function createQueryClient(): QueryClient {
       },
       mutations: {
         // ARCH-F-125-Ausnahme (Verwaltung/Moderation/Kontolöschung): sofort
-        // fehlschlagen statt warten. Regulärer Schreibpfad ab Schritt 6 setzt
-        // networkMode neu.
+        // fehlschlagen statt warten. Die Offline-Schreib-Warteschlange setzt
+        // ihre eigenen Vorgaben je Schreibvorgang (state/schreibwarteschlange.ts).
         networkMode: 'online',
       },
     },

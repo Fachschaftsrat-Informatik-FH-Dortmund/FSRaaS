@@ -256,8 +256,9 @@ und führt sie nicht doppelt.
   - Offline zeigt der Bildschirm wie bisher die Nicht-verfügbar-Kennzeichnung.
     Darunter bleibt der Melde-Baustein bedienbar. Das ist die Ausnahme aus dem
     Abschnitt „UI-Flows & Zustände" der Capability `room-finder`.
-- **Offline-Kennzeichnung des Bereichs (`RaumOffline`)** bekommt ein Feld für
-  die Raumkennung und die Schaltfläche „Als besetzt melden". So erfüllt sich
+- **Unter der Offline-Kennzeichnung des Bereichs (`RaumOffline`)** steht
+  `BesetztMeldenPerKennung`: ein Feld für die Raumkennung und die
+  Schaltfläche „Als besetzt melden". So erfüllt sich
   das Szenario „Besetzt-Meldung offline", ohne dass die Übersicht geladen sein
   muss.
 - **Übersicht und Freie-Raum-Suche**: Bei `besetztMeldungen > 0` erscheint die

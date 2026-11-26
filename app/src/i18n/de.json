@@ -661,6 +661,38 @@
       "laeuftGerade": "läuft gerade",
       "unbekanntTitel": "Raum unbekannt",
       "unbekanntHinweis": "Zur Kennung {{roomId}} führen weder der Raumplan noch die Raumliste Angaben. Prüf die Schreibweise, etwa C.E.44."
+    },
+    "besetzt": {
+      "symbol": "⚑",
+      "gemeldet_one": "{{count}}× als besetzt gemeldet (letzte 90 Minuten)",
+      "gemeldet_other": "{{count}}× als besetzt gemeldet (letzte 90 Minuten)",
+      "keine": "Keine Besetzt-Meldung in den letzten 90 Minuten",
+      "erklaerung": "Laut Raumplan frei, aber besetzt? Deine Meldung hilft anderen 90 Minuten lang. Gespeichert wird sie ohne Konto und ohne Bezug zu dir.",
+      "melden": "Als besetzt melden",
+      "zurueckziehen": "Meldung zurückziehen",
+      "eigeneGemeldet": "Du hast diesen Raum als besetzt gemeldet (gültig bis {{zeit}}).",
+      "eigeneAusstehend": "Deine Meldung wird übertragen, sobald eine Verbindung besteht.",
+      "eigeneFehlgeschlagen": "Deine Meldung konnte nicht übertragen werden. Entscheide oben, ob du es erneut versuchst oder sie verwirfst.",
+      "warteschlangeMelden": "Besetzt-Meldung für {{roomId}}",
+      "warteschlangeZurueckziehen": "Rücknahme der Besetzt-Meldung für {{roomId}}",
+      "offlineTitel": "Raum trotzdem als besetzt melden",
+      "kennungLabel": "Raumkennung für die Besetzt-Meldung"
     }
+  },
+  "warteschlange": {
+    "titel": "Noch nicht übertragen",
+    "symbol": {
+      "wartend": "⏸",
+      "laeuft": "↻",
+      "fehlgeschlagen": "⚠"
+    },
+    "zustand": {
+      "wartend": "wartet auf Verbindung",
+      "laeuft": "wird übertragen",
+      "fehlgeschlagen": "fehlgeschlagen"
+    },
+    "fehlgeschlagenHinweis": "Die Übertragung ist wiederholt gescheitert. Versuch es erneut oder verwirf den Vorgang.",
+    "erneutVersuchen": "Erneut versuchen",
+    "verwerfen": "Verwerfen"
   }
 }

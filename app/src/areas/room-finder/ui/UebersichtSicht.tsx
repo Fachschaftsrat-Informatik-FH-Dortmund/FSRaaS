@@ -11,13 +11,15 @@ import { freiBisFuer } from '../freieRaeume';
 import { raumplanQuelleStand } from '../standAlter';
 import { filtereUebersicht, normalisiereKennung, type Zustandsfilter } from '../uebersicht';
 import { FreiBisText, Karte, Kennung, Merkmale, Zeile, Zustand, useZeitText } from './bausteine';
+import { BesetztHinweis } from './BesetztMeldung';
 
 // Raumübersicht (Requirements „Übersicht aller Räume mit Belegungszustand",
 // „Laufende Veranstaltung bei belegtem Raum", „Freizeitpunkt bei freiem Raum in
 // der Übersicht", „Größenklasse und E-Key-Kennzeichen in der Übersicht",
 // „Freitextfeld eines Raumplan-Termins anzeigen", „Übersicht nach
 // Belegungszustand einschränken", „Suche nach Raumkennung in der Übersicht",
-// „Tagesbelegung aus Übersicht oder laufenden Veranstaltungen öffnen").
+// „Tagesbelegung aus Übersicht oder laufenden Veranstaltungen öffnen",
+// „Besetzt-Meldung zusätzlich in der Übersicht anzeigen").
 
 const ZUSTAENDE: Zustandsfilter[] = ['alle', 'frei', 'belegt'];
 
@@ -153,6 +155,7 @@ function RaumZeile({
       {frei && typeof frei === 'object' ? (
         <FreiBisText freiBis={frei.freiBis} schliesszeit={frei.freiBisSchliesszeit} bezug={jetzt} />
       ) : null}
+      <BesetztHinweis anzahl={raum.besetztMeldungen} />
       <Merkmale groesse={raum.groesse} ekey={raum.ekeyZugaenglich} />
     </Karte>
   );

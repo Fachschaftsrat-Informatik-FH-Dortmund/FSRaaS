@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useOnlineStatus } from '@/state/useOnlineStatus';
 import { SegmentedControl } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { RaumOffline } from '../ui/bausteine';
+import { BesetztMeldenPerKennung, BesetztWarteschlange } from '../ui/BesetztMeldung';
 import { FreieRaeumeSicht } from '../ui/FreieRaeumeSicht';
 import { LaufendSicht } from '../ui/LaufendSicht';
 import { UebersichtSicht } from '../ui/UebersichtSicht';
@@ -14,7 +15,9 @@ import { UebersichtSicht } from '../ui/UebersichtSicht';
 // denselben Raumplan-Zwischenspeicher, gewechselt innerhalb des Tabs
 // (Requirement „Wechsel zwischen den drei Sichten"). Ohne Netz ist der Bereich
 // als nicht verfügbar gekennzeichnet, auch mit Zwischenspeicher (Capability
-// `architecture`, Requirement „Raumsuche offline nicht verfügbar").
+// `architecture`, Requirement „Raumsuche offline nicht verfügbar"). Einzige
+// Ausnahme: Eine Besetzt-Meldung lässt sich auch offline abgeben und wartet in
+// der Offline-Schreib-Warteschlange (Change `besetzt-meldungen`).
 
 export type Sicht = 'frei' | 'uebersicht' | 'laufend';
 const SICHTEN: Sicht[] = ['frei', 'uebersicht', 'laufend'];
@@ -35,8 +38,12 @@ export function RoomFinderScreen() {
             onChange={setSicht}
           />
         </View>
+        <BesetztWarteschlange />
         {!online ? (
-          <RaumOffline />
+          <ScrollView>
+            <RaumOffline />
+            <BesetztMeldenPerKennung />
+          </ScrollView>
         ) : sicht === 'frei' ? (
           <FreieRaeumeSicht />
         ) : sicht === 'uebersicht' ? (
