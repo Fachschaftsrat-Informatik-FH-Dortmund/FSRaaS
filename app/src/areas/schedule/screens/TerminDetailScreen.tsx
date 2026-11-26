@@ -7,6 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useTheme } from '@/theme';
 import { SCHEDULE_PALETTE } from '@/theme/tokens';
+import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { anzeigeFarbe, farbeFuerVeranstaltung, textfarbeFuerHintergrund } from '../farbe';
@@ -283,42 +284,48 @@ export function TerminDetailScreen() {
             router.back();
           }}
         />
-      ) : loeschenBestaetigen ? (
-        <View style={[styles.loeschen, { borderColor: colors.danger }]}>
-          <Text style={{ color: colors.text }}>{t('schedule.terminLoeschenFrage')}</Text>
-          <View style={styles.loeschenAktionen}>
-            <AppButton
-              variant="secondary"
-              label={t('common.cancel')}
-              onPress={() => setLoeschenBestaetigen(false)}
-            />
-            <AppButton
-              variant="destructive"
-              label={t('schedule.terminLoeschenBestaetigen')}
-              onPress={() => {
-                entfernen(entry.id);
-                router.back();
-              }}
-            />
-          </View>
-        </View>
       ) : (
-        <AppButton
-          variant="destructive"
-          label={t('schedule.terminLoeschen')}
-          onPress={() => setLoeschenBestaetigen(true)}
-        />
+        <>
+          <AppButton
+            variant="destructive"
+            label={t('schedule.terminLoeschen')}
+            onPress={() => setLoeschenBestaetigen(true)}
+          />
+          {/* Requirement „Bestätigungsdialoge als Pop-up": Rückfrage über der Ansicht. */}
+          <ConfirmDialog
+            visible={loeschenBestaetigen}
+            message={t('schedule.terminLoeschenFrage')}
+            actions={[
+              {
+                label: t('schedule.terminLoeschenBestaetigen'),
+                variant: 'destructive',
+                onPress: () => {
+                  setLoeschenBestaetigen(false);
+                  entfernen(entry.id);
+                  router.back();
+                },
+              },
+              { label: t('common.cancel'), onPress: () => setLoeschenBestaetigen(false) },
+            ]}
+            onDismiss={() => setLoeschenBestaetigen(false)}
+          />
+        </>
       )}
 
-      {pendingAction ? (
-        <View style={[styles.geltungsbereich, { borderColor: colors.border, backgroundColor: colors.background }]}>
-          <Text style={{ color: colors.text }}>{t('schedule.farbeGeltungFrage')}</Text>
-          <View style={styles.loeschenAktionen}>
-            <AppButton label={t('schedule.farbeGeltungModul')} onPress={geltungsbereichModul} />
-            <AppButton variant="secondary" label={t('schedule.farbeGeltungEinzeln')} onPress={geltungsbereichEinzeln} />
-          </View>
-        </View>
-      ) : null}
+      {/*
+        Requirement „Bestätigungsdialoge als Pop-up" (Issue #68): Rückfrage nach
+        dem Geltungsbereich über der Ansicht. Schließen ohne Antwort bleibt auf
+        dem Termindetail; beim nächsten Verlassen wird erneut gefragt.
+      */}
+      <ConfirmDialog
+        visible={pendingAction !== null}
+        message={t('schedule.farbeGeltungFrage')}
+        actions={[
+          { label: t('schedule.farbeGeltungModul'), variant: 'primary', onPress: geltungsbereichModul },
+          { label: t('schedule.farbeGeltungEinzeln'), onPress: geltungsbereichEinzeln },
+        ]}
+        onDismiss={() => setPendingAction(null)}
+      />
     </Screen>
   );
 }
@@ -527,7 +534,4 @@ const styles = StyleSheet.create({
   deaktivierenAktionen: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   konflikte: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 8 },
   konfliktZeile: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  loeschen: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },
-  loeschenAktionen: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
-  geltungsbereich: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },
 });

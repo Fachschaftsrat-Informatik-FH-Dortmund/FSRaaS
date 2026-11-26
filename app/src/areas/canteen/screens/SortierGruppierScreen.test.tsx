@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { Modal } from 'react-native';
 
 import { ThemeProvider } from '@/theme';
 import { SortierGruppierScreen } from './SortierGruppierScreen';
@@ -192,5 +193,27 @@ describe('Umbenennen und Löschen eigener Presets', () => {
     fireEvent.changeText(screen.getByLabelText('Name des Presets'), 'Abendessen');
     fireEvent.press(screen.getByLabelText('Als eigenes Preset speichern'));
     expect(mockSpies.speichereEigenes).toHaveBeenCalledWith('Abendessen', expect.objectContaining({ gruppierung: 'mensa' }));
+  });
+});
+
+describe('Bestätigungsdialoge als Pop-up', () => {
+  it('Rückfrage vor einer zerstörenden Aktion: das Löschen eines eigenen Presets fragt im Pop-up und wirkt erst nach Bestätigung', async () => {
+    mockPresets = [
+      {
+        id: 'eigen-1',
+        name: 'Mein Preset',
+        kombination: { gruppierung: 'keine', gerichteSortierung: { kriterium: 'preis', richtung: 'auf' } },
+      },
+    ];
+    renderScreen();
+    await waitFor(() => expect(screen.getByText('Mein Preset')).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Löschen – Mein Preset'));
+    const offen = screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible);
+    expect(offen).toHaveLength(1);
+    expect(mockSpies.loesche).not.toHaveBeenCalled();
+
+    fireEvent.press(within(offen[0]!).getByRole('button', { name: 'Löschen' }));
+    expect(mockSpies.loesche).toHaveBeenCalledWith('eigen-1');
   });
 });

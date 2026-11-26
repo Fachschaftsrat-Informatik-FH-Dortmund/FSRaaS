@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AnkerListe } from '@/ui/AnkerListe';
 import { useTheme } from '@/theme';
+import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
@@ -181,6 +182,8 @@ export function CourseSelectionScreen() {
     setBestaetigungFuer(modul.key); // Requirement „Abwahl eines Moduls mit vorhandenen Planeinträgen", vorbelegt auf „nein"
   }
 
+  const abwahlModul = bestaetigungFuer === null ? undefined : alleModule.find((m) => m.key === bestaetigungFuer);
+
   function abwahlBestaetigen(modul: Modul, terminEntfernen: boolean) {
     setAuswahl((bisher) => bisher.filter((k) => k !== modul.key));
     if (terminEntfernen) {
@@ -225,9 +228,7 @@ export function CourseSelectionScreen() {
                       key={modul.key}
                       modul={modul}
                       gewaehlt={auswahl.includes(modul.key)}
-                      bestaetigungOffen={bestaetigungFuer === modul.key}
                       onUmschalten={() => modulUmschalten(modul)}
-                      onBestaetigen={(entfernenAuch) => abwahlBestaetigen(modul, entfernenAuch)}
                     />
                   ))}
                 </View>
@@ -238,33 +239,54 @@ export function CourseSelectionScreen() {
         )}
       </AsyncStates>
 
-      {verwerfenBestaetigen ? (
-        <View style={[styles.bestaetigung, styles.bestaetigungSchwebend, { borderColor: colors.border, backgroundColor: colors.background }]}>
-          <Text style={{ color: colors.text }}>{t('schedule.modulauswahlVerwerfenFrage')}</Text>
-          <View style={styles.bestaetigungAktionen}>
-            <AppButton
-              variant="destructive"
-              label={t('schedule.modulauswahlVerwerfenBestaetigen')}
-              onPress={verwerfenBestaetigt}
-            />
-            <AppButton variant="secondary" label={t('common.cancel')} onPress={() => setVerwerfenBestaetigen(false)} />
-          </View>
-        </View>
-      ) : null}
+      {/*
+        Requirement „Bestätigungsdialoge als Pop-up": alle drei Rückfragen
+        dieser Ansicht erscheinen über ihr — auch über dem Kopfzeilen-Bedienweg
+        „Verwerfen". Schließen ohne Antwort: Abwahl unterbleibt (Modul bleibt
+        angekreuzt), Verwerfen unterbleibt, und die zweite Stufe nach bereits
+        bestätigtem Verwerfen gilt als „behalten" (design.md, Entscheidung 3).
+      */}
+      <ConfirmDialog
+        visible={abwahlModul !== undefined}
+        message={t('schedule.modulAbwahlFrage')}
+        actions={[
+          {
+            label: t('schedule.modulAbwahlBehalten'),
+            variant: 'primary',
+            onPress: () => abwahlModul && abwahlBestaetigen(abwahlModul, false),
+          },
+          {
+            label: t('schedule.modulAbwahlEntfernen'),
+            variant: 'destructive',
+            onPress: () => abwahlModul && abwahlBestaetigen(abwahlModul, true),
+          },
+        ]}
+        onDismiss={() => setBestaetigungFuer(null)}
+      />
 
-      {verwerfenEntscheidungOffen ? (
-        <View style={[styles.bestaetigung, styles.bestaetigungSchwebend, { borderColor: colors.border, backgroundColor: colors.background }]}>
-          <Text style={{ color: colors.text }}>{t('schedule.modulAbwahlFrage')}</Text>
-          <View style={styles.bestaetigungAktionen}>
-            <AppButton label={t('schedule.modulAbwahlBehalten')} onPress={() => verwerfenEntscheidungGetroffen(false)} />
-            <AppButton
-              variant="destructive"
-              label={t('schedule.modulAbwahlEntfernen')}
-              onPress={() => verwerfenEntscheidungGetroffen(true)}
-            />
-          </View>
-        </View>
-      ) : null}
+      <ConfirmDialog
+        visible={verwerfenBestaetigen}
+        message={t('schedule.modulauswahlVerwerfenFrage')}
+        actions={[
+          { label: t('schedule.modulauswahlVerwerfenBestaetigen'), variant: 'destructive', onPress: verwerfenBestaetigt },
+          { label: t('common.cancel'), onPress: () => setVerwerfenBestaetigen(false) },
+        ]}
+        onDismiss={() => setVerwerfenBestaetigen(false)}
+      />
+
+      <ConfirmDialog
+        visible={verwerfenEntscheidungOffen}
+        message={t('schedule.modulAbwahlFrage')}
+        actions={[
+          { label: t('schedule.modulAbwahlBehalten'), variant: 'primary', onPress: () => verwerfenEntscheidungGetroffen(false) },
+          {
+            label: t('schedule.modulAbwahlEntfernen'),
+            variant: 'destructive',
+            onPress: () => verwerfenEntscheidungGetroffen(true),
+          },
+        ]}
+        onDismiss={() => verwerfenEntscheidungGetroffen(false)}
+      />
     </Screen>
   );
 }
@@ -272,15 +294,11 @@ export function CourseSelectionScreen() {
 function ModulZeile({
   modul,
   gewaehlt,
-  bestaetigungOffen,
   onUmschalten,
-  onBestaetigen,
 }: {
   modul: Modul;
   gewaehlt: boolean;
-  bestaetigungOffen: boolean;
   onUmschalten: () => void;
-  onBestaetigen: (terminEntfernen: boolean) => void;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -305,19 +323,6 @@ function ModulZeile({
         </View>
       </Pressable>
 
-      {bestaetigungOffen ? (
-        <View style={[styles.bestaetigung, { borderColor: colors.border }]}>
-          <Text style={{ color: colors.text }}>{t('schedule.modulAbwahlFrage')}</Text>
-          <View style={styles.bestaetigungAktionen}>
-            <AppButton label={t('schedule.modulAbwahlBehalten')} onPress={() => onBestaetigen(false)} />
-            <AppButton
-              variant="destructive"
-              label={t('schedule.modulAbwahlEntfernen')}
-              onPress={() => onBestaetigen(true)}
-            />
-          </View>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -336,7 +341,4 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   zeileText: { flex: 1 },
-  bestaetigung: { borderWidth: 1, borderRadius: 10, padding: 12, gap: 10, marginVertical: 6 },
-  bestaetigungSchwebend: { position: 'absolute', left: 12, right: 12, bottom: 12 },
-  bestaetigungAktionen: { flexDirection: 'row', gap: 10 },
 });

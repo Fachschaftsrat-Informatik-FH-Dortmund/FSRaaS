@@ -17,6 +17,7 @@ import { quelleMaxAlter } from '@/cache/ttl';
 import { useConsent } from '@/consent/ConsentProvider';
 import { useTheme } from '@/theme';
 import { BlaetterSymbol } from '@/ui/BlaetterSymbol';
+import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
@@ -302,6 +303,9 @@ function GerichtListe({
   const { colors } = useTheme();
   const favorites = useFavorites();
   const consent = useConsent();
+  // Requirement „Bestätigungsdialoge als Pop-up": Rückfrage bei fehlender
+  // Zustimmung als ConfirmDialog statt `Alert.alert` (im Web-Export wirkungslos).
+  const [zustimmungFehlt, setZustimmungFehlt] = useState(false);
   const { group } = usePriceGroup();
   const { betroffen } = useGerichtFilter();
   const { aktiv: preset } = useSortierGruppierung();
@@ -545,10 +549,7 @@ function GerichtListe({
 
   async function markiere(gericht: KonsolidiertesGericht) {
     if (!consent.personalDataAllowed) {
-      Alert.alert(t('consent.requiredTitle'), t('consent.requiredBody'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('consent.reviewNow'), onPress: () => void consent.accept() },
-      ]);
+      setZustimmungFehlt(true);
       return;
     }
 
@@ -571,97 +572,116 @@ function GerichtListe({
   }
 
   return (
-    <AnkerListe
-      chips={chips}
-      contentContainerStyle={styles.liste}
-      scrollProps={{
-        refreshControl,
-        showsVerticalScrollIndicator: false,
-        ...swipe.panHandlers,
-      }}
-      fuss={fuss}
-      abschnitte={angezeigte.map((abschnitt) => {
-        // Öffnungszeit an der Überschrift nur bei Mensa-Gruppierung und nur für
-        // eine Mensa, die die Schnittstelle nicht als geschlossen führt — also
-        // auch für eine geöffnete ohne Speiseplan und für eine vollständig
-        // gefilterte, nie für eine geschlossene (design.md D5, Requirements
-        // „Keine Öffnungszeit für geschlossene Mensa" / „Öffnungszeit an der
-        // Mensa-Abschnittsüberschrift"). Die Abschnitts-Kennung ist bei
-        // Mensa-Gruppierung die Mensa-Kennung.
-        const zeit =
-          mensaGruppierung && abschnitt.art !== 'geschlossen'
-            ? oeffnungszeitFuer(oeffnungVon.get(abschnitt.id), datum)
-            : null;
-        // Ausgabezeit nur, wo die Quelle eine von der Öffnungszeit abweichende
-        // führt (Requirement „Ausweis der Ausgabezeit bei abweichender
-        // Öffnungszeit").
-        const ausgabe = zeit ? ausgabezeitFuer(oeffnungVon.get(abschnitt.id), datum) : null;
-        // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
-        // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.
-        const zeigeKopf = mensaGruppierung
-          ? true
-          : struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel != null;
-        const kopfName = mensaGruppierung ? nameVon(abschnitt.id) : abschnitt.titel;
-        return {
-          id: abschnitt.id,
-          inhalt: (
-            <View style={styles.sektion}>
-              {zeigeKopf && kopfName != null ? (
-                <View style={styles.sektionKopf}>
-                  <Text style={[styles.sektionTitel, { color: colors.text }]}>{kopfName}</Text>
-                  {zeit ? (
-                    <Text
-                      style={[
-                        styles.oeffnungPille,
-                        { color: colors.text, backgroundColor: colors.surface },
-                      ]}
-                    >
-                      {t('mensa.oeffnungszeit', { zeit })}
-                    </Text>
-                  ) : null}
-                  {ausgabe ? (
-                    <Text
-                      style={[
-                        styles.oeffnungPille,
-                        { color: colors.text, backgroundColor: colors.surface },
-                      ]}
-                    >
-                      {t('mensa.ausgabezeit', { zeit: ausgabe })}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
-              {abschnitt.art === 'geschlossen' ? (
-                <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
-                  {geschlossenText(abschnitt.id)}
-                </Text>
-              ) : null}
-              {abschnitt.art === 'ohneSpeiseplan' ? (
-                <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
-                  {t('mensa.keinSpeiseplan')}
-                </Text>
-              ) : null}
-              {abschnitt.art === 'gefiltert' ? (
-                <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
-                  {t('mensa.mensaGefiltert')}
-                </Text>
-              ) : null}
-              {abschnitt.gerichte.map((g) => (
-                <GerichtKarte
-                  key={g.schluessel}
-                  eintrag={g}
-                  zeigeAnbieter={mensaGruppierung ? g.anbieter.length > 1 : !nurEineMensa}
-                  nameVon={nameVon}
-                  group={group}
-                  favorit={favorites.has(g.schluessel)}
-                  onStern={() => void markiere(g)}
-                />
-              ))}
-            </View>
-          ),
-        };
-      })}
-    />
+    <>
+      <AnkerListe
+        chips={chips}
+        contentContainerStyle={styles.liste}
+        scrollProps={{
+          refreshControl,
+          showsVerticalScrollIndicator: false,
+          ...swipe.panHandlers,
+        }}
+        fuss={fuss}
+        abschnitte={angezeigte.map((abschnitt) => {
+          // Öffnungszeit an der Überschrift nur bei Mensa-Gruppierung und nur für
+          // eine Mensa, die die Schnittstelle nicht als geschlossen führt — also
+          // auch für eine geöffnete ohne Speiseplan und für eine vollständig
+          // gefilterte, nie für eine geschlossene (design.md D5, Requirements
+          // „Keine Öffnungszeit für geschlossene Mensa" / „Öffnungszeit an der
+          // Mensa-Abschnittsüberschrift"). Die Abschnitts-Kennung ist bei
+          // Mensa-Gruppierung die Mensa-Kennung.
+          const zeit =
+            mensaGruppierung && abschnitt.art !== 'geschlossen'
+              ? oeffnungszeitFuer(oeffnungVon.get(abschnitt.id), datum)
+              : null;
+          // Ausgabezeit nur, wo die Quelle eine von der Öffnungszeit abweichende
+          // führt (Requirement „Ausweis der Ausgabezeit bei abweichender
+          // Öffnungszeit").
+          const ausgabe = zeit ? ausgabezeitFuer(oeffnungVon.get(abschnitt.id), datum) : null;
+          // Überschrift: bei Mensa-Gruppierung immer (auch bei nur einem Abschnitt,
+          // D6); sonst wie bisher nur bei mehreren Abschnitten mit Titel.
+          const zeigeKopf = mensaGruppierung
+            ? true
+            : struktur.gruppierungAktiv && mehrereAbschnitte && abschnitt.titel != null;
+          const kopfName = mensaGruppierung ? nameVon(abschnitt.id) : abschnitt.titel;
+          return {
+            id: abschnitt.id,
+            inhalt: (
+              <View style={styles.sektion}>
+                {zeigeKopf && kopfName != null ? (
+                  <View style={styles.sektionKopf}>
+                    <Text style={[styles.sektionTitel, { color: colors.text }]}>{kopfName}</Text>
+                    {zeit ? (
+                      <Text
+                        style={[
+                          styles.oeffnungPille,
+                          { color: colors.text, backgroundColor: colors.surface },
+                        ]}
+                      >
+                        {t('mensa.oeffnungszeit', { zeit })}
+                      </Text>
+                    ) : null}
+                    {ausgabe ? (
+                      <Text
+                        style={[
+                          styles.oeffnungPille,
+                          { color: colors.text, backgroundColor: colors.surface },
+                        ]}
+                      >
+                        {t('mensa.ausgabezeit', { zeit: ausgabe })}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+                {abschnitt.art === 'geschlossen' ? (
+                  <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
+                    {geschlossenText(abschnitt.id)}
+                  </Text>
+                ) : null}
+                {abschnitt.art === 'ohneSpeiseplan' ? (
+                  <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
+                    {t('mensa.keinSpeiseplan')}
+                  </Text>
+                ) : null}
+                {abschnitt.art === 'gefiltert' ? (
+                  <Text style={[styles.hinweisZeile, { color: colors.textMuted }]}>
+                    {t('mensa.mensaGefiltert')}
+                  </Text>
+                ) : null}
+                {abschnitt.gerichte.map((g) => (
+                  <GerichtKarte
+                    key={g.schluessel}
+                    eintrag={g}
+                    zeigeAnbieter={mensaGruppierung ? g.anbieter.length > 1 : !nurEineMensa}
+                    nameVon={nameVon}
+                    group={group}
+                    favorit={favorites.has(g.schluessel)}
+                    onStern={() => void markiere(g)}
+                  />
+                ))}
+              </View>
+            ),
+          };
+        })}
+      />
+      <ConfirmDialog
+        visible={zustimmungFehlt}
+        title={t('consent.requiredTitle')}
+        message={t('consent.requiredBody')}
+        actions={[
+          {
+            label: t('consent.reviewNow'),
+            variant: 'primary',
+            onPress: () => {
+              setZustimmungFehlt(false);
+              void consent.accept();
+            },
+          },
+          { label: t('common.cancel'), onPress: () => setZustimmungFehlt(false) },
+        ]}
+        onDismiss={() => setZustimmungFehlt(false)}
+      />
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { Modal } from 'react-native';
 
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
@@ -470,5 +471,44 @@ describe('Bewusste Übernahme trotz Konflikt', () => {
 describe('Routendatei der Termindetails', () => {
   it('ist ein reines Re-Export des Bildschirms (SHELL-F-050)', () => {
     expect(RouteDetail).toBe(TerminDetailScreen);
+  });
+});
+
+describe('Bestätigungsdialoge als Pop-up', () => {
+  function offenerDialog() {
+    const offen = screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible);
+    expect(offen).toHaveLength(1);
+    return offen[0]!;
+  }
+
+  it('Rückfrage ohne zerstörende Wirkung: der Geltungsbereich der Farbwahl erscheint als Pop-up, Schließen bleibt auf dem Termindetail', async () => {
+    await seed([offiziell({ id: 'v', courseId: 'INF999', name: 'Mathematik 3' })], 'v');
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('Farbe #8E24AA wählen'));
+    act(() => letztePreventRemove!.callback({ data: { action: { type: 'POP' } } }));
+
+    const dialog = offenerDialog();
+    expect(
+      within(dialog).getByText(
+        'Soll die neue Farbe für alle Veranstaltungen dieses Moduls gelten oder nur für diesen Termin?',
+      ),
+    ).toBeTruthy();
+
+    act(() => dialog.props.onRequestClose());
+    expect(screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible)).toHaveLength(0);
+    expect(mockDispatch).not.toHaveBeenCalled();
+    // Die Farbwahl bleibt offen: beim nächsten Verlassen wird erneut gefragt.
+    expect(letztePreventRemove!.verhindern).toBe(true);
+  });
+
+  it('Rückfrage vor einer zerstörenden Aktion: das Löschen eines eigenen Termins fragt im Pop-up', async () => {
+    await seed([eigen({ id: 'lern' })], 'lern');
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText('Termin löschen'));
+    const dialog = offenerDialog();
+    expect(within(dialog).getByText('Diesen Termin wirklich aus deinem Plan löschen?')).toBeTruthy();
+    expect(within(dialog).getByLabelText('Endgültig löschen')).toBeTruthy();
   });
 });
