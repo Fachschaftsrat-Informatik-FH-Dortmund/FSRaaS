@@ -86,8 +86,9 @@ Nützliche Nachfragen, wenn die Antwort unsicher ist:
   lauten „Entscheidung FSR FB4, <Datum>" und behaupten damit ein
   Rückfrageverfahren, das es nicht gab: die Festlegungen stammen vom einzigen
   Entwickler des Projekts, der zugleich FSR-Mitglied ist. Das Datum trägt die
-  Information, die ein Nachfolger braucht, der Beschlussweg nicht. In den drei
-  Mensa-Capabilities ist das umgestellt, im übrigen Bestand steht es aus.
+  Information, die ein Nachfolger braucht, der Beschlussweg nicht. Im gesamten
+  Bestand unter `openspec/specs/` ist das umgestellt (Mensa 2026-09-05, übrige
+  Capabilities 2026-11-26, Issue #21).
 - **Fällt weg** → als `REMOVED`-Delta über einen OpenSpec-Change führen, **nie
   löschen**. Die ID bleibt für immer vergeben; `spec-check` liest den Abschnitt
   `## Entfallene Anforderungen` und hält Verweise darauf weiterhin für gültig.

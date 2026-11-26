@@ -66,7 +66,7 @@ Wenn eine Push-Benachrichtigung zu einer Meldung angetippt wird, muss das System
 
 ### Requirement: Klassifizierung jeder Meldung
 
-Das System muss jede Meldung genau einer der drei Klassifizierungen FB-Aktuelles, FSR-News oder Event-Erinnerung zuordnen und diese Klassifizierung in der Liste sichtbar kennzeichnen. Herkunft: NEU (vormals NEWS-F-080). Aus der Redaktionsweg-Entscheidung des FSR FB4 vom 2026-08-25.
+Das System muss jede Meldung genau einer der drei Klassifizierungen FB-Aktuelles, FSR-News oder Event-Erinnerung zuordnen und diese Klassifizierung in der Liste sichtbar kennzeichnen. Herkunft: NEU (vormals NEWS-F-080). Aus dem am 2026-08-25 entschiedenen Redaktionsweg.
 
 #### Scenario: Klassifizierung sichtbar
 - **WHEN** eine Meldung in der Liste angezeigt wird
@@ -90,7 +90,7 @@ Wenn ein Event aus Capability `events` innerhalb der konfigurierten Vorlaufzeit 
 
 ### Requirement: Kombinierbare Filterung der Meldungsliste
 
-Das System muss eine kombinierbare Filterung der Meldungsliste nach mindestens den Merkmalen Klassifizierung, Quelle/Verteiler und Veröffentlichungszeitraum anbieten. Herkunft: NEU (vormals NEWS-F-110). Anforderung FSR FB4, 2026-09-04; ersetzt eine vorige, nur auf Klassifizierung beschränkte „kann"-Fassung — Major-Änderung.
+Das System muss eine kombinierbare Filterung der Meldungsliste nach mindestens den Merkmalen Klassifizierung, Quelle/Verteiler und Veröffentlichungszeitraum anbieten. Herkunft: NEU (vormals NEWS-F-110). Entschieden 2026-09-04; ersetzt eine vorige, nur auf Klassifizierung beschränkte „kann"-Fassung — Major-Änderung.
 
 #### Scenario: Kombinierter Filter
 - **WHEN** die Nutzerin Klassifizierung, Verteiler und Zeitraum gleichzeitig einschränkt
@@ -154,7 +154,7 @@ Falls bei aktiver Suche oder aktivem Filter noch nicht alle Meldungen nachgelade
 
 ### Requirement: Erweiterter Suchmodus mit regulärem Ausdruck
 
-Sofern die Nutzerin den erweiterten Suchmodus aktiviert, muss das System den eingegebenen Suchbegriff als regulären Ausdruck über Titel, Text und Verteiler der geladenen Meldungen auswerten. Herkunft: NEU (vormals NEWS-F-190). Anforderung FSR FB4, 2026-09-04; die einfache Suche bleibt der voreingestellte Weg.
+Sofern die Nutzerin den erweiterten Suchmodus aktiviert, muss das System den eingegebenen Suchbegriff als regulären Ausdruck über Titel, Text und Verteiler der geladenen Meldungen auswerten. Herkunft: NEU (vormals NEWS-F-190). Entschieden 2026-09-04; die einfache Suche bleibt der voreingestellte Weg.
 
 #### Scenario: Suche mit regulärem Ausdruck
 - **WHEN** der erweiterte Suchmodus aktiv ist und ein gültiger regulärer Ausdruck eingegeben wird
@@ -194,7 +194,7 @@ Solange der erweiterte Suchmodus aktiv ist, muss das System der Nutzerin die Wah
 
 ### Requirement: Positiv- und Sperrliste für Benachrichtigungen
 
-Sofern Push-Benachrichtigungen für News aktiviert sind, muss das System der Nutzerin ermöglichen, eine Positivliste und eine Sperrliste aus Regeln zu pflegen, die bestimmen, welche neuen Meldungen eine Benachrichtigung auslösen. Herkunft: NEU (vormals NEWS-F-230). Anforderung FSR FB4, 2026-09-04.
+Sofern Push-Benachrichtigungen für News aktiviert sind, muss das System der Nutzerin ermöglichen, eine Positivliste und eine Sperrliste aus Regeln zu pflegen, die bestimmen, welche neuen Meldungen eine Benachrichtigung auslösen. Herkunft: NEU (vormals NEWS-F-230). Entschieden 2026-09-04.
 
 #### Scenario: Regellisten pflegen
 - **WHEN** Push-Benachrichtigungen für News aktiviert sind

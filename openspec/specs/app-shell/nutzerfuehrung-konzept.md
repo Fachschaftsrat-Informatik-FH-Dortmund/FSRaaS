@@ -231,7 +231,7 @@ Anmeldung fragen, nicht als Zugangshürde vor dem Bereich.
 - Fehlermeldungen: was ist passiert, was kann die Nutzerin tun. Keine
   Schuldzuweisung, kein Fachjargon, keine internen Codes.
 - Ton: sachlich, knapp, durchgängig per „du" (studentisches Umfeld,
-  konsistent mit der FSR-Außenkommunikation) — Festlegung FSR FB4,
+  konsistent mit der FSR-Außenkommunikation) — entschieden
   2026-09-02. Gilt für beide Sprachdateien (im Englischen ohnehin „you").
 
 ## 11. Bewusst nicht übernommen
