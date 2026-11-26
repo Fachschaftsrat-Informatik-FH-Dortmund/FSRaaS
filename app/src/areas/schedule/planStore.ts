@@ -48,7 +48,6 @@ function istGueltigeBasis(e: Record<string, unknown>): boolean {
     typeof e.gruppenzugehoerig === 'boolean' &&
     typeof e.abweichendeGruppe === 'boolean' &&
     istKennungsliste(e.akzeptierteKonflikte) &&
-    typeof e.istPruefung === 'boolean' &&
     (e.gueltigVon === null || typeof e.gueltigVon === 'number') &&
     (e.gueltigBis === null || typeof e.gueltigBis === 'number')
   );

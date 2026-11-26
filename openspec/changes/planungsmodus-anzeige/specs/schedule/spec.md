@@ -66,6 +66,18 @@ Wenn die Nutzerin die Planung gesichert hat und das System zur Wochenansicht zur
 
 ## MODIFIED Requirements
 
+### Requirement: Hervorhebung der eigenen Gruppe im Planungsmodus
+
+Das System muss im Planungsmodus die Termine, deren `studentSet` die eigene Gruppenkennung einschließt, gegenüber den übrigen farblich hervorheben, solange diese Hervorhebung nicht über das Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus" abgeschaltet ist, und diese Bedeutung zusätzlich zur Farbe über Text oder Symbol tragen — auch bei abgeschalteter Hervorhebung. Es darf dabei keinen Termin ausblenden. Das bestehende Requirement „Kennzeichnung fremder Gruppenzugehörigkeit zusätzlich zur Farbe" der Capability `ux-and-theming` gilt unverändert weiter und betrifft die Gegenrichtung: Auch die nicht zugehörigen Termine tragen ihre Bedeutung über Text oder Symbol. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/activities/timetable/AddEventsActivity.java:688-692, farbliche Ausführung bestätigt 2026-09-08 aus Issue #62, abschaltbar seit 2026-09-11 nach dem Gerätetest vom 2026-09-09 (Issue #68). Die Alt-App färbt passende Karten orange ein und blendet trotz des Klassennamens `LetterFilter` nichts aus; der Buchstabe musste dort über einen Menüdialog eingegeben werden, während er hier aus der Einrichtung stammt. Die bisherige Umsetzung trug die Zugehörigkeit allein als Text in der Kennzeichnungszeile.
+
+#### Scenario: Termin der eigenen Gruppe
+- **WHEN** ein Termin die eigene Gruppenkennung einschließt und die Hervorhebung der eigenen Gruppe aktiv ist
+- **THEN** hebt das System ihn farblich hervor und macht diese Bedeutung zusätzlich zur Farbe über Text oder Symbol erkennbar
+
+#### Scenario: Gruppenfremder Termin bleibt wählbar
+- **WHEN** ein Termin die eigene Gruppenkennung nicht einschließt
+- **THEN** zeigt das System ihn weiterhin und lässt seine Wahl zu
+
 ### Requirement: Anzeigename paralleler Termingruppen ohne bedeutungslose Endzahl
 
 Tragen die Termine eines Moduls im selben Fachsemester denselben Namensstamm, aber mehrere unterschiedliche angehängte Zahlen, ohne dass sich die Veranstaltungsart oder eine andere fachliche Eigenschaft unterscheidet, dann muss das System als Anzeigename **der Modulauswahl** den gemeinsamen Namensstamm ohne die Zahl verwenden. Tritt am Namensstamm eines Moduls durchgängig dieselbe Zahl auf, gilt sie als Teil des Modulnamens und bleibt unverändert. Außerhalb der Modulauswahl gilt diese Zusammenführung nicht; dort erscheinen die Namen unverändert. Herkunft: NEU, entschieden 2026-09-08, Bestandsaufnahme über eine Live-Abfrage von INT-002 am selben Tag (Issue #57), auf die Modulauswahl eingegrenzt 2026-09-11 nach dem Gerätetest vom 2026-09-09 (Issue #68). Belegt an `INPBTI/*`: Die Modulnummer `41102` liefert zwölf Termine „Technisches Englisch 1" bis „Technisches Englisch 12" — gleiches Fachsemester, gleiche Veranstaltungsart `SV`, nur unterschiedliche Wochentag/Uhrzeit-Slots ohne fachlichen Unterschied auf Modulebene; die angehängte Zahl ist dort ein Artefakt der Verarbeitungsreihenfolge, kein Namensbestandteil. Zur Abgrenzung: Die Modulnummer `44121` liefert „Softwaretechnik 2" durchgängig mit derselben Zahl — dort bleibt sie Teil des Namens, weil kein zweiter, abweichender Zahlenwert auftritt.

@@ -187,9 +187,6 @@ export function TerminDetailScreen() {
           </>
         )}
         <Angabe label={t('schedule.detailZeitraum')} wert={zeitraum} />
-        {entry.istPruefung ? (
-          <Angabe label={t('schedule.detailPruefung')} wert={t('schedule.kennzeichenPruefung')} />
-        ) : null}
         {!entry.gruppenzugehoerig ? (
           <Angabe label={t('schedule.detailGruppenzugehoerigkeit')} wert={t('schedule.kennzeichenGruppenfremd')} />
         ) : null}
@@ -243,7 +240,7 @@ export function TerminDetailScreen() {
           <Text style={[styles.abschnitt, { color: colors.text }]}>{t('schedule.detailKonflikte')}</Text>
           {angenommeneGegenparts.map((gegenpart) => (
             <Text key={gegenpart.id} style={{ color: colors.textMuted }}>
-              {t('schedule.konfliktAngenommenMit', { titel: titelVon(gegenpart) })}
+              {t('schedule.konfliktPaarMit', { titel: titelVon(gegenpart) })}
             </Text>
           ))}
           {offeneGegenparts.map((gegenpart) => (

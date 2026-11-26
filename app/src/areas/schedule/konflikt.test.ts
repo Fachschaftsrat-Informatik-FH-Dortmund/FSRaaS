@@ -14,7 +14,6 @@ function termin(überschreibung: Partial<PlanEntry> & { id: string }): PlanEntry
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     title: 'Termin',

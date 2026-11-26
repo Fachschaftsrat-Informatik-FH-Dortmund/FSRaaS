@@ -29,7 +29,6 @@ function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     title: 'Lerngruppe',
@@ -205,17 +204,14 @@ describe('Wiederkehrend oder einmalig bei eigenen Terminen', () => {
   });
 });
 
-describe('Eigenen Termin als Prüfung kennzeichnen', () => {
-  it('führt einen als Prüfung markierten Termin als Prüfung', async () => {
+// Requirement REMOVED „Eigenen Termin als Prüfung kennzeichnen" (Change
+// `planungsmodus-anzeige`): der Schalter entfällt ersatzlos.
+describe('Eigenen Termin als Prüfung kennzeichnen (entfallen)', () => {
+  it('bietet keinen Schalter mehr, einen eigenen Termin als Prüfung zu kennzeichnen', async () => {
     await seed([]);
     await zeige();
 
-    fuelle({ Titel: 'Klausur Analysis' });
-    fireEvent(screen.getByLabelText('Dieser Termin ist eine Prüfung'), 'valueChange', true);
-    fireEvent.press(screen.getByLabelText('Termin anlegen'));
-
-    await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(1));
-    expect((await readScheduleEntries())[0]!.istPruefung).toBe(true);
+    expect(screen.queryByLabelText(/Prüfung/)).toBeNull();
   });
 });
 

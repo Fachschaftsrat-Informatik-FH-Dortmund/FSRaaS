@@ -126,3 +126,22 @@ export function ermittlePlanungsstand(
   }
   return ergebnis;
 }
+
+/**
+ * Requirement „Kennzeichnung des Planungsstands je Veranstaltungsreihe"
+ * (Change `planungsmodus-anzeige`, design.md Entscheidung 1): Stand einer
+ * einzelnen Zeile des Planungsmodus. Die Reihe ist die Veranstaltungsart
+ * eines Moduls (`VeranstaltungsartStand`). Jede Zeile trägt genau einen der
+ * vier Stände — die Zeile verliert ihre Kennzeichnung nie (Issue #123).
+ */
+export type ZeilenStand =
+  | { art: 'eingeplant' }
+  | { art: 'mehrfach'; anzahl: number }
+  | { art: 'anderweitig'; anzahl: number }
+  | { art: 'offen' };
+
+export function zeilenStand(stand: VeranstaltungsartStand | undefined, gewaehlt: boolean): ZeilenStand {
+  const anzahl = stand?.gewaehlteSlots.length ?? (gewaehlt ? 1 : 0);
+  if (gewaehlt) return anzahl > 1 ? { art: 'mehrfach', anzahl } : { art: 'eingeplant' };
+  return anzahl > 0 ? { art: 'anderweitig', anzahl } : { art: 'offen' };
+}

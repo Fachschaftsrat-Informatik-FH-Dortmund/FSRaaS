@@ -55,7 +55,6 @@ interface PlanEntryBase {
    * der angenommene Gegenpart durch einen anderen Termin ersetzt wird
    * (design.md, Entscheidung 2). */
   akzeptierteKonflikte: string[];
-  istPruefung: boolean;
   gueltigVon: number | null;
   gueltigBis: number | null;
   /**

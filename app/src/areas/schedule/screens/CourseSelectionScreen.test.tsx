@@ -117,7 +117,6 @@ function offiziellerEintrag(over: Record<string, unknown>) {
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     courseId: '43051',

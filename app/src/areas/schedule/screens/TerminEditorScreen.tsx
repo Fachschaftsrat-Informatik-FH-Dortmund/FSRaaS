@@ -140,7 +140,6 @@ function Formular({
   const [datum, setDatum] = useState(
     bestand && !bestand.wiederkehrend && bestand.gueltigVon !== null ? unixZuDate(bestand.gueltigVon) : new Date(),
   );
-  const [istPruefung, setIstPruefung] = useState(bestand?.istPruefung ?? false);
   const [fehler, setFehler] = useState<string | null>(null);
   const [offenerPicker, setOffenerPicker] = useState<OffenerPicker>(null);
 
@@ -177,7 +176,6 @@ function Formular({
       gruppenzugehoerig: true,
       abweichendeGruppe: false,
       akzeptierteKonflikte: bestand?.akzeptierteKonflikte ?? [],
-      istPruefung,
       gueltigVon,
       gueltigBis,
       title: titel.trim(),
@@ -281,12 +279,6 @@ function Formular({
           ) : null}
         </>
       ) : null}
-
-      <SchalterZeile
-        label={t('schedule.terminPruefungLabel')}
-        wert={istPruefung}
-        onChange={setIstPruefung}
-      />
 
       {fehler ? (
         <Text accessibilityLiveRegion="polite" style={{ color: colors.danger }}>

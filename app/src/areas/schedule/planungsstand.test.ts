@@ -1,5 +1,5 @@
 import { pruefeKandidatGegenZwischenstand } from './konflikt';
-import { ermittlePlanungsstand, terminEntsprichtEintrag, vorbelegteSlots } from './planungsstand';
+import { ermittlePlanungsstand, terminEntsprichtEintrag, vorbelegteSlots, zeilenStand } from './planungsstand';
 import type { Modul } from './kursbaum';
 import type { OfficialPlanEntry, OfficialTermin } from './typen';
 
@@ -37,7 +37,6 @@ function planeintragFuer(t: OfficialTermin): OfficialPlanEntry {
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     courseId: t.courseId,
@@ -243,5 +242,29 @@ describe('Mehrere Gruppen-Slots übernehmen', () => {
     // stehen gleichrangig in der Liste, kein Feld unterscheidet sie.
     const [stand] = ermittlePlanungsstand([m], zwischenstand);
     expect(stand!.gewaehlteSlots).toEqual(expect.arrayContaining([a, b]));
+  });
+});
+
+describe('Kennzeichnung des Planungsstands je Veranstaltungsreihe', () => {
+  const a = rohtermin({ courseType: 'P', timeBeginMin: 480, timeEndMin: 570 });
+  const b = rohtermin({ courseType: 'P', timeBeginMin: 600, timeEndMin: 690 });
+  const m = modul('Mathe 3', [a, b]);
+  const standBei = (gewaehlt: OfficialTermin[]) =>
+    ermittlePlanungsstand([m], gewaehlt.map(planeintragFuer)).find((s) => s.art === 'P');
+
+  it('ein Termin der Reihe gewählt: eingeplant', () => {
+    expect(zeilenStand(standBei([a]), true)).toEqual({ art: 'eingeplant' });
+  });
+
+  it('mehrere Termine der Reihe gewählt: eingeplant mit Anzahl', () => {
+    expect(zeilenStand(standBei([a, b]), true)).toEqual({ art: 'mehrfach', anzahl: 2 });
+  });
+
+  it('anderer Termin derselben Reihe gewählt: anderweitig eingetragen', () => {
+    expect(zeilenStand(standBei([a]), false)).toEqual({ art: 'anderweitig', anzahl: 1 });
+  });
+
+  it('kein Termin der Reihe gewählt: noch einzuplanen', () => {
+    expect(zeilenStand(standBei([]), false)).toEqual({ art: 'offen' });
   });
 });

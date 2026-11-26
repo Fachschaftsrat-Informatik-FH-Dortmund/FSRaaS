@@ -23,7 +23,6 @@ function eigenerTermin(überschreibung: Partial<CustomPlanEntry> = {}): CustomPl
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     title: 'Lerngruppe',

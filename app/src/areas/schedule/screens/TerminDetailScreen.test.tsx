@@ -43,7 +43,6 @@ function offiziell(over: Partial<OfficialPlanEntry> & { id: string }): OfficialP
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     courseId: '43051',
@@ -67,7 +66,6 @@ function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     title: 'Lerngruppe',
@@ -463,7 +461,7 @@ describe('Bewusste Übernahme trotz Konflikt', () => {
     expect(screen.getByText('Überschneidung mit Sport')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Konflikt annehmen'));
 
-    await waitFor(() => expect(screen.getByText('Angenommene Überschneidung mit Sport')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Konflikt mit Sport')).toBeTruthy());
     const gespeichert = await readScheduleEntries();
     expect(gespeichert.map((e) => e.akzeptierteKonflikte)).toEqual([['b'], ['a']]);
   });
