@@ -17,7 +17,16 @@ const mockOnline = jest.fn(() => true);
 jest.mock('@/state/useOnlineStatus', () => ({ useOnlineStatus: () => mockOnline() }));
 
 const STUNDE = 60 * 60_000;
-const jetzt = Date.now();
+// Fester Bezugspunkt am Vormittag: Mit der echten Uhrzeit fiele „in fünf Stunden"
+// ab 19 Uhr auf den Folgetag, und die Ansicht zeigt dann zu Recht ein Datum vor
+// der Uhrzeit — die Tests wären tageszeitabhängig.
+const jetzt = new Date(2026, 10, 26, 10, 0).getTime();
+beforeAll(() => {
+  jest.useFakeTimers({ now: jetzt, advanceTimers: true });
+});
+afterAll(() => {
+  jest.useRealTimers();
+});
 const inStunden = (h: number) => new Date(jetzt + h * STUNDE).toISOString();
 
 function mockQ<T>(data: T, over: Record<string, unknown> = {}) {
