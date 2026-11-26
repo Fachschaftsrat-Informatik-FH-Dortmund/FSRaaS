@@ -5,6 +5,7 @@ import { removeKey, writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import { __resetAnsichtEinstellungenForTest, __resetAnsichtsstandForTest } from '../ansichtEinstellungen';
 import { __resetEinrichtungForTest } from '../einrichtung';
+import { __resetModulnamenForTest } from '../modulnamen';
 import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import { __resetSemesterstandForTest } from '../semesterstand';
 import type { CustomPlanEntry, OfficialPlanEntry, OfficialTermin, PlanEntry } from '../typen';
@@ -154,6 +155,7 @@ async function seed(entries: PlanEntry[], einstellungen: Record<string, unknown>
   __resetAnsichtEinstellungenForTest();
   __resetAnsichtsstandForTest();
   __resetSemesterstandForTest();
+  __resetModulnamenForTest();
 }
 
 async function zeige() {
@@ -846,3 +848,81 @@ describe('Hinweis auf gesetzlichen Feiertag', () => {
   });
 });
 
+describe('Geltungsbereich des eigenen Namens', () => {
+  it('Eigener Name in der Wochenansicht: die Kachel zeigt den eigenen Namen, auch im Vorlesetext', async () => {
+    await seed([DATENBANKEN]);
+    await writeJson('scheduleModuleNames', { '43051': 'DB' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    const kachel = screen.getByLabelText(/^10:00–11:30 · DB/);
+    expect(within(kachel).getByText('DB')).toBeTruthy();
+    expect(within(kachel).queryByText('Datenbanken')).toBeNull();
+  });
+
+  it('führt in der Jetzt-Anzeige über dem Plan weiter die offizielle Bezeichnung', async () => {
+    await seed([DATENBANKEN]); // 10:00–11:30, läuft um 10:30
+    await writeJson('scheduleModuleNames', { '43051': 'DB' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    expect(screen.getByText('Jetzt: Datenbanken — noch 1 Stunde')).toBeTruthy();
+  });
+
+  it('wirkt nicht auf eigene Termine', async () => {
+    await seed([eigen({ id: 'lern', title: '43051' })]);
+    await writeJson('scheduleModuleNames', { '43051': 'DB' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    expect(screen.getByLabelText(/^14:00–15:00 · 43051/)).toBeTruthy();
+    expect(screen.queryByText('DB')).toBeNull();
+  });
+});
+
+describe('Kürzung langer Veranstaltungsnamen unter Erhalt einer Endzahl', () => {
+  it('Name mit Endzahl: der Stamm wird am Ende gekürzt, die Zahl steht getrennt und schrumpft nicht', async () => {
+    await seed([offiziell({ id: 'mathe', name: 'Mathematik für Informatiker 1' })]);
+    await zeige();
+
+    const stamm = screen.getByTestId('kachelTitelStamm');
+    const endzahl = screen.getByTestId('kachelTitelEndzahl');
+    expect(stamm).toHaveTextContent('Mathematik für Informatiker');
+    expect(stamm.props.numberOfLines).toBe(2);
+    expect(stamm.props.ellipsizeMode).toBe('tail');
+    expect(endzahl).toHaveTextContent('1');
+    expect(endzahl).toHaveStyle({ flexShrink: 0 });
+    expect(stamm).toHaveStyle({ flexShrink: 1 });
+    // Der Vorleser bekommt den ungekürzten Namen.
+    expect(screen.getByLabelText('08:00–09:30 · Mathematik für Informatiker 1')).toBeTruthy();
+  });
+
+  it('gilt gleichermaßen für einen eigenen Namen', async () => {
+    await seed([ANALYSIS]);
+    await writeJson('scheduleModuleNames', { '43051': 'Ana 2' });
+    __resetModulnamenForTest();
+    await zeige();
+
+    expect(screen.getByTestId('kachelTitelStamm')).toHaveTextContent('Ana');
+    expect(screen.getByTestId('kachelTitelEndzahl')).toHaveTextContent('2');
+  });
+
+  it('Name ohne Endzahl: ein einzelner Text, am Ende gekürzt', async () => {
+    await seed([offiziell({ id: 'bs', name: 'Grundlagen der Betriebssysteme' })]);
+    await zeige();
+
+    const titel = screen.getByTestId('kachelTitel');
+    expect(titel).toHaveTextContent('Grundlagen der Betriebssysteme');
+    expect(titel.props.numberOfLines).toBe(2);
+    expect(titel.props.ellipsizeMode).toBe('tail');
+    expect(screen.queryByTestId('kachelTitelEndzahl')).toBeNull();
+  });
+
+  it('Name passt vollständig: alle Zeichen stehen unverändert in der Kachel', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    expect(screen.getByTestId('kachelTitel')).toHaveTextContent('Analysis');
+    expect(screen.getByText('Analysis')).toBeTruthy();
+  });
+});

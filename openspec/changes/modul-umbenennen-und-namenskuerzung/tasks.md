@@ -5,8 +5,8 @@
 
 ## 2. Wochenansicht
 
-- [ ] 2.1 `TerminKachel` in `ScheduleScreen.tsx` zeigt `kachelTitel` statt `titelVon`, ungekürzt im `accessibilityLabel`; Jetzt-Anzeige und Übernahme-Blatt bleiben bei der offiziellen Bezeichnung (design.md, Entscheidung 4). Verifikation: `ScheduleScreen.test.tsx` mit `describe('Geltungsbereich des eigenen Namens', …)` findet den eigenen Namen in der Kachel und die offizielle Bezeichnung in der Jetzt-Anzeige; läuft grün.
-- [ ] 2.2 Kachel stellt einen Namen mit Endzahl als Stamm (`flexShrink`, `numberOfLines={2}`, `ellipsizeMode="tail"`) und nicht schrumpfende Endzahl dar, sonst als einzelnen `Text` (design.md, Entscheidung 3). Verifikation: `ScheduleScreen.test.tsx` mit `describe('Kürzung langer Veranstaltungsnamen unter Erhalt einer Endzahl', …)` belegt die Aufteilung für offizielle Bezeichnung und eigenen Namen sowie den unveränderten Einzeltext ohne Endzahl; läuft grün.
+- [x] 2.1 `TerminKachel` in `ScheduleScreen.tsx` zeigt `kachelTitel` statt `titelVon`, ungekürzt im `accessibilityLabel`; Jetzt-Anzeige und Übernahme-Blatt bleiben bei der offiziellen Bezeichnung (design.md, Entscheidung 4). Verifikation: `ScheduleScreen.test.tsx` mit `describe('Geltungsbereich des eigenen Namens', …)` findet den eigenen Namen in der Kachel und die offizielle Bezeichnung in der Jetzt-Anzeige; läuft grün.
+- [x] 2.2 Kachel stellt einen Namen mit Endzahl als Stamm (`flexShrink`, `numberOfLines={2}`, `ellipsizeMode="tail"`) und nicht schrumpfende Endzahl dar, sonst als einzelnen `Text` (design.md, Entscheidung 3). Verifikation: `ScheduleScreen.test.tsx` mit `describe('Kürzung langer Veranstaltungsnamen unter Erhalt einer Endzahl', …)` belegt die Aufteilung für offizielle Bezeichnung und eigenen Namen sowie den unveränderten Einzeltext ohne Endzahl; läuft grün.
 
 ## 3. Termindetail
 
