@@ -22,12 +22,31 @@ public class RaumplanAbruf(
     static readonly TimeZoneInfo Ortszeit = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     /// <summary>Beginn des laufenden Tages in Ortszeit und 28 Tage danach.</summary>
-    public static (DateTimeOffset Von, DateTimeOffset Bis) ZeitraumAb(DateTimeOffset jetzt)
+    public static (DateTimeOffset Von, DateTimeOffset Bis) ZeitraumAb(DateTimeOffset jetzt) =>
+        ZeitraumAb(jetzt, Zeitraum);
+
+    /// <summary>Beginn des laufenden Tages in Ortszeit und <paramref name="dauer"/> danach.</summary>
+    public static (DateTimeOffset Von, DateTimeOffset Bis) ZeitraumAb(DateTimeOffset jetzt, TimeSpan dauer)
     {
         var ortsJetzt = TimeZoneInfo.ConvertTime(jetzt, Ortszeit);
         var tagesbeginn = ortsJetzt.Date;
         var von = new DateTimeOffset(tagesbeginn, Ortszeit.GetUtcOffset(tagesbeginn));
-        return (von, von + Zeitraum);
+        return (von, von + dauer);
+    }
+
+    /// <summary>
+    /// Erkennungsmerkmal eines ignorierten <c>From</c>/<c>To</c>: Alle Termine liegen
+    /// im Standardfenster (Folgetag bis sieben Tage danach), obwohl ein längerer,
+    /// heute beginnender Zeitraum angefordert war. Gibt die Meldung zurück, sonst null.
+    /// </summary>
+    public static string? NurStandardfenster(IReadOnlyCollection<DateTimeOffset> beginne, DateTimeOffset von, DateTimeOffset bis)
+    {
+        var folgetag = von.AddDays(1);
+        var standardEnde = folgetag + Standardfenster;
+        if (beginne.Count == 0 || bis <= standardEnde || !beginne.All(b => b >= folgetag && b < standardEnde))
+            return null;
+        return $"INT-009 lieferte nur Termine im Sieben-Tage-Standardfenster ({folgetag:yyyy-MM-dd} bis {standardEnde:yyyy-MM-dd}) " +
+               $"statt des angeforderten Zeitraums {von:yyyy-MM-dd} bis {bis:yyyy-MM-dd} — From/To vermutlich ignoriert; der bisherige Bestand bleibt.";
     }
 
     public async Task AusfuehrenAsync(CancellationToken ct)
@@ -140,12 +159,8 @@ public class RaumplanAbruf(
             return;
         }
 
-        var folgetag = von.AddDays(1);
-        var standardEnde = folgetag + Standardfenster;
-        if (bis > standardEnde && eintraege.All(e => e.Beginn >= folgetag && e.Beginn < standardEnde))
-            throw new InvalidDataException(
-                $"INT-009 lieferte nur Termine im Sieben-Tage-Standardfenster ({folgetag:yyyy-MM-dd} bis {standardEnde:yyyy-MM-dd}) " +
-                $"statt des angeforderten Zeitraums {von:yyyy-MM-dd} bis {bis:yyyy-MM-dd} — From/To vermutlich ignoriert; der bisherige Bestand bleibt.");
+        if (NurStandardfenster(eintraege.Select(e => e.Beginn).ToList(), von, bis) is { } meldung)
+            throw new InvalidDataException(meldung);
     }
 }
 

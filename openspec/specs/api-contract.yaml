@@ -18,7 +18,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.7.2
+  version: 0.8.0
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -526,19 +526,24 @@ paths:
         Kenntnis darüber, welche Prüfungen eine einzelne Nutzerin ausgewählt hat;
         die Auswahl bleibt ausschließlich auf dem Gerät (API-F-100). Ein manueller
         Import findet nicht mehr statt (ehemals INT-013, entfallen 2026-09-06).
+        Der Bestand ist nachweislich unvollständig; jede Antwort trägt deshalb
+        `vollstaendigkeit`, den die App ausweisen muss. Vor dem ersten
+        erfolgreichen Abruf antwortet der Endpunkt mit 503 und dem Code
+        `pruefungsbestand_nicht_verfuegbar` statt mit einer leeren Liste.
       security: []
       responses:
         "200":
-          description: Prüfungstermine mit Stand-Alter des zugrunde liegenden Raumplans
+          description: Prüfungstermine mit Vollständigkeitshinweis und Stand-Alter des Prüfungsabrufs
           content:
             application/json:
               schema:
                 type: object
-                required: [pruefungen, standAlter]
+                required: [pruefungen, vollstaendigkeit, standAlter]
                 properties:
                   pruefungen:
                     type: array
                     items: { $ref: "#/components/schemas/Pruefungstermin" }
+                  vollstaendigkeit: { $ref: "#/components/schemas/Pruefungsbestandsvollstaendigkeit" }
                   standAlter: { $ref: "#/components/schemas/StandAlter" }
         default: { $ref: "#/components/responses/Fehler" }
 
@@ -549,7 +554,9 @@ paths:
       description: |
         Erfüllt API-F-205. Liefert ausschließlich einen Zeitstempel — die App gleicht
         ihn gegen ihre ausschließlich lokal gespeicherte Auswahl ab (SCHED-F-220),
-        sodass API-F-100 ohne Ausnahme gewahrt bleibt.
+        sodass API-F-100 ohne Ausnahme gewahrt bleibt. `null`, solange noch kein
+        Prüfungsbestand abgeleitet wurde. Eine Prüfung, die nur wegfällt, weil
+        ihr Termin vorüber ist, schreibt den Zeitpunkt nicht fort.
       security: []
       responses:
         "200":
@@ -1276,12 +1283,14 @@ components:
     Pruefungstermin:
       type: object
       description: >
-        Ein aus dem Raumplan abgeleiteter Prüfungstermin: Eintrag mit
-        eventType „Event", dessen Name dem Muster „Prüfung <Modulnummer>
-        <Bezeichnung>" folgt (INT-009). Die App hält die Auswahl daraus
-        ausschließlich lokal (API-F-100); der Bestand selbst kennt keine
-        Zuordnung zu einer Nutzerin.
-      required: [bezeichnung, roomId, beginn, ende]
+        Ein aus dem Raumplan abgeleiteter Prüfungstermin: Eintrag, dessen Name
+        mit „Prüfung" oder „Prüfungen" beginnt (INT-009, im Raumplan durchweg
+        eventType „Event"); Modulnummer und Bezeichnung stammen aus dem Muster
+        „Prüfung <Modulnummer> <Bezeichnung>". Einträge derselben Prüfung in
+        mehreren Räumen sind zu einem Termin zusammengeführt. Die App hält die
+        Auswahl daraus ausschließlich lokal (API-F-100); der Bestand selbst
+        kennt keine Zuordnung zu einer Nutzerin.
+      required: [bezeichnung, raeume, beginn, ende]
       properties:
         modulnummer:
           type: [string, "null"]
@@ -1290,10 +1299,49 @@ components:
             sind courseId und courseOfStudy leer (INT-009). Null, wenn das
             Namensmuster nicht griff: Der Termin bleibt dann als Prüfung ohne
             Modulbezug im Bestand, der Vorfall wird protokolliert (SEC-F-060).
-        bezeichnung: { type: string }
-        roomId: { type: string }
+        bezeichnung:
+          type: string
+          description: >
+            Bei greifendem Muster der Text nach der Modulnummer, sonst der Text
+            nach dem Leitwort „Prüfung"/„Prüfungen" (enthält dann ggf. mehrere
+            Modulnummern, über die eine Suche den Termin findet).
+        raeume:
+          type: array
+          items: { type: string }
+          description: >
+            Alle Räume der Prüfung, Pseudoraum „*" über das Namensfeld aufgelöst.
+            Leer, wenn der Raumplan keinen Raum nennt — die Prüfung bleibt dann
+            trotzdem im Bestand.
         beginn: { type: string, format: date-time }
         ende: { type: string, format: date-time }
+
+    Pruefungsbestandsvollstaendigkeit:
+      type: object
+      description: >
+        Maschinenlesbarer Hinweis, dass der Prüfungsbestand aus dem Raumplan
+        abgeleitet und nicht vollständig ist (Requirement „Ableitung des
+        Prüfungsbestands aus dem Raumplan", Entscheidung 2026-09-10). Die App
+        formuliert daraus den Hinweis in der Oberflächensprache; das Backend
+        liefert bewusst keinen Fließtext.
+      required: [quelle, vollstaendig, abdeckungAnteil, abdeckungGemessenAm]
+      properties:
+        quelle:
+          type: string
+          enum: [raumplan]
+        vollstaendig:
+          type: boolean
+          description: Derzeit stets false.
+        abdeckungAnteil:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: >
+            Zuletzt gemessener Anteil der Module des offiziellen Prüfungsplans,
+            die der Raumplan führt (INT-009-Spike: 64 von 91, SoSe 2026).
+        abdeckungGemessenAm:
+          type: string
+          format: date
+          description: Datum der Messung, damit der Wert nicht für tagesaktuell gehalten wird.
 
     Klassifizierung:
       type: string
