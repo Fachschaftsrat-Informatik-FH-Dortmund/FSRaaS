@@ -1038,3 +1038,100 @@ describe('Rücknahme einer übernommenen Optimierung', () => {
     expect(screen.getByText(/entspricht bereits der Einteilung/)).toBeTruthy();
   });
 });
+
+// Change `planungsmodus-zeitachse`: Zeitachse im Planungsmodus (#67).
+describe('Zeitachse im Planungsmodus', () => {
+  beforeEach(() => __resetPlanungsEinstellungenForTest());
+
+  // Parallel zur fremden Übung (Dienstag 10:00) eine dritte Gruppe F-H.
+  const UEBUNG_PARALLEL = termin({
+    courseType: 'Ü',
+    studentSet: 'F-H',
+    weekday: 'Tue',
+    timeBeginMin: 600,
+    timeEndMin: 690,
+    roomId: 'B.2.02',
+  });
+  function mitTerminen(termine: ReturnType<typeof termin>[]) {
+    mockTermineQuery = {
+      ...mockTermineQuery,
+      termine,
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine }],
+    };
+  }
+  const platz = (studentSet: string, beginn: number) =>
+    StyleSheet.flatten(
+      screen.getByTestId(new RegExp(`^platz-INF999[|]Ü[|]Tue[|]${beginn}[|].*[|]${studentSet}[|]`)).props.style,
+    );
+  async function aufZeitachse() {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText('Zeitachse'));
+    await waitFor(() => expect(screen.getByTestId('planung-zeitachse')).toBeTruthy());
+  }
+
+  it('Auf die Zeitachse umschalten: zeigt die Termine des Tages auf einer proportionalen Achse', async () => {
+    await aufZeitachse();
+    expect(screen.getByLabelText('Zeitachse').props.accessibilityState).toMatchObject({ checked: true });
+    // 10:00–11:30 und 12:00–13:30: 1,5 dp je Minute, die 30 Minuten Pause dazwischen bleiben ungestaucht.
+    expect(platz('A-B', 600)).toMatchObject({ top: 0, height: 135 });
+    expect(platz('C5-E', 720)).toMatchObject({ top: 180, height: 135 });
+    expect(screen.getByText('30 Minuten frei')).toBeTruthy();
+  });
+
+  it('Parallele Termine: stehen nebeneinander und nennen ihre Überschneidung', async () => {
+    mitTerminen([MATHE3_V, MATHE3_UE_FREMD, UEBUNG_PARALLEL, MATHE3_UE_EIGEN]);
+    await aufZeitachse();
+    expect(platz('A-B', 600).left).not.toBe(platz('F-H', 600).left);
+    expect(platz('A-B', 600).top).toBe(platz('F-H', 600).top);
+    expect(screen.getAllByLabelText(/^10:00–11:30 Mathematik für Informatik 3 Ü, überschneidet sich mit 1 Termin/)).toHaveLength(2);
+  });
+
+  it('Aufeinanderfolgende Termine: stehen untereinander, nicht daneben', async () => {
+    await aufZeitachse();
+    expect(platz('C5-E', 720).left).toBe(platz('A-B', 600).left);
+    expect(platz('C5-E', 720).top).toBeGreaterThan(platz('A-B', 600).top);
+    expect(screen.getByLabelText(/^12:00–13:30 Mathematik für Informatik 3 Ü/).props.accessibilityLabel).not.toMatch(
+      /überschneidet/,
+    );
+  });
+
+  it('Wahl in der Zeitachse: Antippen wählt den Termin, die Wahl gilt auch in der Liste', async () => {
+    await aufZeitachse();
+    fireEvent.press(screen.getByLabelText(/^12:00–13:30 Mathematik für Informatik 3 Ü/));
+    expect(gewaehlt(screen.getByLabelText(/^12:00–13:30 Mathematik für Informatik 3 Ü/))).toBe(true);
+
+    fireEvent.press(screen.getByLabelText('Zeitachse'));
+    expect(screen.queryByTestId('planung-zeitachse')).toBeNull();
+    expect(gewaehlt(uebungZwoelf())).toBe(true);
+  });
+
+  it('Viele parallele Termine: die Achse wird breiter statt die Kacheln zu verbergen', async () => {
+    const gruppen = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'].map((g) =>
+      termin({ courseType: 'Ü', studentSet: g, weekday: 'Tue', timeBeginMin: 600, timeEndMin: 690, roomId: g }),
+    );
+    mitTerminen([MATHE3_V, ...gruppen]);
+    await aufZeitachse();
+    expect(screen.getAllByLabelText(/überschneidet sich mit 5 Terminen/)).toHaveLength(6);
+    // Ohne gemessene Breite: sechs Spalten zu je 120 dp.
+    expect(platz('G6', 600)).toMatchObject({ left: 600, width: 120 });
+  });
+
+  it('der Sprung aus der Leiste der ausstehenden Veranstaltungen hebt die Kachel in der Zeitachse kurzzeitig hervor', async () => {
+    await writeJson('schedulePlanungSettings', { zeitachse: true });
+    renderScreen();
+    await waitFor(() => expect(screen.getByTestId('planung-zeitachse')).toBeTruthy());
+    fireEvent.press(screen.getByLabelText('Mathematik für Informatik 3 Ü'));
+
+    expect(screen.getByLabelText('Dienstag').props.accessibilityState.selected).toBe(true);
+    const kachel = () =>
+      StyleSheet.flatten(screen.getByTestId(/^kachel-INF999[|]Ü[|]Tue[|]720[|].*[|]C5-E[|]/).props.style);
+    expect(kachel().borderWidth).toBe(3);
+  });
+
+  it('Darstellung bleibt erhalten: beim erneuten Öffnen erscheint wieder die Zeitachse', async () => {
+    await writeJson('schedulePlanungSettings', { zeitachse: true });
+    renderScreen();
+    await waitFor(() => expect(screen.getByTestId('planung-zeitachse')).toBeTruthy());
+  });
+});

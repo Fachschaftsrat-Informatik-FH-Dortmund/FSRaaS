@@ -101,6 +101,14 @@ kompakten Liste ab (Requirement „Abschalten der proportionalen Zeitachse")
 und gilt für einen anderen Bildschirm mit anderem Zweck; wer die Woche
 kompakt sehen will, kann beim Planen trotzdem die Achse brauchen.
 
+**Befund beim Umsetzen.** Der Speicher lädt beim ersten Abonnenten
+asynchron. Eine Änderung, die vor dem Ladeende geschrieben wurde — etwa ein
+schnelles Antippen des Umschalters direkt nach dem Öffnen —, wurde vom
+Laden mit dem älteren gespeicherten Stand überschrieben. Das Laden übernimmt
+den gespeicherten Stand deshalb nur noch, solange nichts geschrieben wurde;
+die neuere Änderung ist ohnehin schon auf dem Weg in den Speicher. Test
+`describe('Persistente Schlüssel-Wert-Ablage für Einstellungen')`.
+
 ### 6. Sprung aus der Leiste der ausstehenden Veranstaltungen
 
 Der Sprung (Requirement „Leiste der ausstehenden Veranstaltungen") meldet in

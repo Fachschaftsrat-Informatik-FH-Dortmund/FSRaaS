@@ -127,6 +127,7 @@ describe('Vorbereitungszeit je Veranstaltungsart', () => {
       abstandVorlesungUebungMin: 'x',
       zeitfenster: { vonMin: 900, bisMin: 600 },
       pflichtModule: 'M1',
+      zeitachse: 'ja',
     });
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     expect(await readPlanungsEinstellungen()).toEqual({
@@ -136,8 +137,32 @@ describe('Vorbereitungszeit je Veranstaltungsart', () => {
       abstandVorlesungUebungMin: STANDARD_PLANUNG.abstandVorlesungUebungMin,
       zeitfenster: null,
       pflichtModule: [],
+      zeitachse: false,
     });
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
+  });
+});
+
+describe('Zeitachse im Planungsmodus', () => {
+  it('Darstellung bleibt erhalten: die Wahl der Zeitachse wird gespeichert', async () => {
+    const { result } = renderHook(() => usePlanungsEinstellungen());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.einstellungen.zeitachse).toBe(false);
+    act(() => result.current.zeitachseUmschalten());
+    expect((await readPlanungsEinstellungen()).zeitachse).toBe(true);
+  });
+});
+
+describe('Persistente Schlüssel-Wert-Ablage für Einstellungen', () => {
+  it('eine vor dem Ladeende geschriebene Änderung wird vom Laden nicht überschrieben', async () => {
+    await writeJson('schedulePlanungSettings', { zeitachse: false });
+    const { result } = renderHook(() => usePlanungsEinstellungen());
+    act(() => result.current.zeitachseUmschalten());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(result.current.einstellungen.zeitachse).toBe(true);
   });
 });

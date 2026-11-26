@@ -487,7 +487,11 @@
     "planungZeileAusserhalbZeitfenster": "außerhalb des Zeitfensters",
     "planungPflichtTitel": "Pflicht-Veranstaltungen",
     "planungPflichtHinweis": "Eine Pflicht-Veranstaltung plant der Vorschlag zuerst ein und gibt ihr damit den Vorrang, wenn sich Termine überschneiden. Entfernt wird ohnehin keine Veranstaltung.",
-    "planungPflichtSchalter": "{{modul}} ist Pflicht"
+    "planungPflichtSchalter": "{{modul}} ist Pflicht",
+    "planungZeitachse": "Zeitachse",
+    "planungUeberschneidetSich_one": "überschneidet sich mit {{count}} Termin",
+    "planungUeberschneidetSich_other": "überschneidet sich mit {{count}} Terminen",
+    "planungAngepinnt": "angepinnt"
   },
   "appearance": {
     "system": "System",

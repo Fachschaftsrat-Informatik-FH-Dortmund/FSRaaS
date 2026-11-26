@@ -487,7 +487,11 @@
     "planungZeileAusserhalbZeitfenster": "outside time window",
     "planungPflichtTitel": "Required courses",
     "planungPflichtHinweis": "The suggestion schedules a required course first, giving it priority when sessions overlap. No course is ever removed.",
-    "planungPflichtSchalter": "{{modul}} is required"
+    "planungPflichtSchalter": "{{modul}} is required",
+    "planungZeitachse": "Timeline",
+    "planungUeberschneidetSich_one": "overlaps with {{count}} session",
+    "planungUeberschneidetSich_other": "overlaps with {{count}} sessions",
+    "planungAngepinnt": "pinned"
   },
   "appearance": {
     "system": "System",

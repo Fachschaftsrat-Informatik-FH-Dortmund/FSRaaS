@@ -4,6 +4,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove, type NavigationAction } from 'expo-router/react-navigation';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { useTheme } from '@/theme';
 import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
@@ -27,6 +28,7 @@ import {
   type Zeitfenster,
 } from '../planungseinstellungen';
 import { einteilungNachGruppe, erzeugeVorschlag, type ReihenErgebnis } from '../planungsvorschlag';
+import { groessteSpaltenzahl, legePlanungsTagAus } from '../planungZeitachse';
 import {
   ermittlePlanungsstand,
   planEintraegeFuerModul,
@@ -61,6 +63,10 @@ import { WochentagsLeiste } from '../ui/WochentagsLeiste';
 
 const WOCHENTAGE: readonly Weekday[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const HERVORHEBUNG_DAUER_MS = 1500;
+/** Change `planungsmodus-zeitachse`, design.md Entscheidung 2: Maßstab wie in der Wochenansicht. */
+const DP_JE_MINUTE = 1.5;
+/** Ebenda, Entscheidung 3: darunter wird die Achse breiter statt die Kachel schmaler. */
+const MIN_SPALTENBREITE = 120;
 
 function neueId(): string {
   return `plan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -106,6 +112,14 @@ function zeilenKennung(modulKey: string, termin: OfficialTermin): string {
   return `${terminSchluessel(termin)}#${modulKey}`;
 }
 
+function dauerText(minuten: number, t: TFunction): string {
+  const stunden = Math.floor(minuten / 60);
+  const rest = minuten % 60;
+  if (stunden === 0) return t('schedule.dauerMinuten', { count: rest });
+  if (rest === 0) return t('schedule.dauerStunden', { count: stunden });
+  return t('schedule.dauerStundenMinuten', { stunden, minuten: rest });
+}
+
 function formatZeit(minutenSeitMitternacht: number): string {
   const stunden = Math.floor(minutenSeitMitternacht / 60);
   const minuten = minutenSeitMitternacht % 60;
@@ -125,7 +139,7 @@ export function PlanungScreen() {
   const { einstellungen: ansichtEinstellungen, toggleHervorhebung } = useAnsichtEinstellungen();
   // Die Planungseinstellungen gehen erst beim Auslösen des Vorschlags ein;
   // bis sie geladen sind, gelten ihre Vorgaben — kein eigener Ladezustand.
-  const { einstellungen: planungsEinstellungen } = usePlanungsEinstellungen();
+  const { einstellungen: planungsEinstellungen, zeitachseUmschalten } = usePlanungsEinstellungen();
 
   const gewaehlteEndpunkte = useMemo(
     () =>
@@ -565,6 +579,26 @@ export function PlanungScreen() {
     .sort((a, b) => a.termin.timeBeginMin - b.termin.timeBeginMin);
 
   const ausstehend = planungsstand.filter((s) => s.stand !== 'gewaehlt');
+
+  // Gemeinsame Zustände einer Zeile für Liste und Zeitachse (Change
+  // `planungsmodus-zeitachse`, design.md Entscheidung 4: dieselben
+  // Kennzeichnungen in beiden Darstellungen).
+  function zeilenZustand(modul: Modul, termin: OfficialTermin): ZeilenZustand {
+    const kennung = zeilenKennung(modul.key, termin);
+    const gewaehlt = zwischenstand.some((e) => terminEntsprichtEintrag(termin, e));
+    return {
+      kennung,
+      gewaehlt,
+      angepinnt: zwischenstand.some((e) => terminEntsprichtEintrag(termin, e) && e.angepinnt === true),
+      eigeneGruppe: gruppenzugehoerig(gruppenkennung, termin.studentSet),
+      konfliktstufe: pruefeKandidatGegenZwischenstand(
+        termin,
+        zwischenstand.filter((e) => !terminEntsprichtEintrag(termin, e)),
+        jetztSek,
+      ),
+      hervorgehoben: hervorgehoben === kennung,
+    };
+  }
   // Change `planungsmodus-rangfolge-frei`, design.md Entscheidung 1: eine
   // eigene Rangfolge trägt keinen Voreinstellungsnamen.
   const voreinstellung = voreinstellungAus(planungsEinstellungen);
@@ -592,36 +626,47 @@ export function PlanungScreen() {
         onEinstellungen={einstellungenOeffnen}
         onVorschlag={vorschlagErzeugen}
         onNachGruppe={nachGruppeEinteilen}
+        zeitachse={planungsEinstellungen.zeitachse}
+        onZeitachse={zeitachseUmschalten}
       />
 
       <ScrollView ref={scrollRef} contentContainerStyle={styles.liste}>
         {zeilenDesTages.length === 0 ? (
           <MessageView symbol="—" title={t('schedule.planungTagLeerTitel')} style={styles.tagLeer} />
+        ) : planungsEinstellungen.zeitachse ? (
+          // Requirement „Zeitachse im Planungsmodus" (Change `planungsmodus-zeitachse`).
+          <PlanungsZeitachse
+            zeilen={zeilenDesTages}
+            zustand={zeilenZustand}
+            gruppenkennung={gruppenkennung}
+            einstellungen={ansichtEinstellungen}
+            onPosition={zeileGelayoutet}
+            onUmschalten={terminUmschalten}
+          />
         ) : (
-          zeilenDesTages.map(({ modul, termin }) => (
-            <TerminZeile
-              key={zeilenKennung(modul.key, termin)}
-              modul={modul}
-              termin={termin}
-              gewaehlt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e))}
-              angepinnt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e) && e.angepinnt === true)}
-              vomVorschlag={vorschlagMarken.has(terminSchluessel(termin))}
-              onPinUmschalten={() => pinUmschalten(termin)}
-              stand={planungsstand.find((s) => s.modulKey === modul.key && s.art === termin.courseType)}
-              gruppenkennung={gruppenkennung}
-              eigeneGruppe={gruppenzugehoerig(gruppenkennung, termin.studentSet)}
-              einstellungen={ansichtEinstellungen}
-              zeitfenster={planungsEinstellungen.zeitfenster}
-              konfliktstufe={pruefeKandidatGegenZwischenstand(
-                termin,
-                zwischenstand.filter((e) => !terminEntsprichtEintrag(termin, e)),
-                jetztSek,
-              )}
-              hervorgehoben={hervorgehoben === zeilenKennung(modul.key, termin)}
-              onLayout={(y) => zeileGelayoutet(zeilenKennung(modul.key, termin), y)}
-              onUmschalten={() => terminUmschalten(modul, termin)}
-            />
-          ))
+          zeilenDesTages.map(({ modul, termin }) => {
+            const zustand = zeilenZustand(modul, termin);
+            return (
+              <TerminZeile
+                key={zustand.kennung}
+                modul={modul}
+                termin={termin}
+                gewaehlt={zustand.gewaehlt}
+                angepinnt={zustand.angepinnt}
+                vomVorschlag={vorschlagMarken.has(terminSchluessel(termin))}
+                onPinUmschalten={() => pinUmschalten(termin)}
+                stand={planungsstand.find((s) => s.modulKey === modul.key && s.art === termin.courseType)}
+                gruppenkennung={gruppenkennung}
+                eigeneGruppe={zustand.eigeneGruppe}
+                einstellungen={ansichtEinstellungen}
+                zeitfenster={planungsEinstellungen.zeitfenster}
+                konfliktstufe={zustand.konfliktstufe}
+                hervorgehoben={zustand.hervorgehoben}
+                onLayout={(y) => zeileGelayoutet(zustand.kennung, y)}
+                onUmschalten={() => terminUmschalten(modul, termin)}
+              />
+            );
+          })
         )}
       </ScrollView>
 
@@ -795,11 +840,15 @@ function Werkzeugzeile({
   onEinstellungen,
   onVorschlag,
   onNachGruppe,
+  zeitachse,
+  onZeitachse,
 }: {
   voreinstellung: string;
   onEinstellungen: () => void;
   onVorschlag: () => void;
   onNachGruppe: () => void;
+  zeitachse: boolean;
+  onZeitachse: () => void;
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -826,6 +875,18 @@ function Werkzeugzeile({
       )}
       {knopf('sparkles-outline', t('schedule.planungVorschlag'), t('schedule.planungVorschlag'), onVorschlag)}
       {knopf('people-outline', t('schedule.planungNachGruppe'), t('schedule.planungNachGruppe'), onNachGruppe)}
+      {/* Requirement „Zeitachse im Planungsmodus": Umschalter am Ende der
+       * Zeile (Change `planungsmodus-zeitachse`, design.md Entscheidung 5).
+       * Das Symbol zeigt die jeweils andere Darstellung. */}
+      <Pressable
+        accessibilityRole="switch"
+        accessibilityState={{ checked: zeitachse }}
+        accessibilityLabel={t('schedule.planungZeitachse')}
+        onPress={onZeitachse}
+        style={[styles.zeitachseSchalter, { borderColor: zeitachse ? colors.accent : colors.border }]}
+      >
+        <Ionicons name={zeitachse ? 'list-outline' : 'time-outline'} size={20} color={colors.accent} />
+      </Pressable>
     </View>
   );
 }
@@ -1018,6 +1079,183 @@ function TerminZeile({
   );
 }
 
+interface ZeilenZustand {
+  kennung: string;
+  gewaehlt: boolean;
+  angepinnt: boolean;
+  eigeneGruppe: boolean;
+  konfliktstufe: 'konfliktfrei' | 'konflikt';
+  hervorgehoben: boolean;
+}
+
+/**
+ * Requirement „Zeitachse im Planungsmodus" (Change `planungsmodus-zeitachse`,
+ * design.md Entscheidungen 2 bis 4 und 6): die Zeilen des Tages auf einer
+ * proportionalen Achse, Überschneidungen nebeneinander. Reicht die Breite
+ * nicht für die größte Spaltenzahl, wird die Achse breiter und lässt sich
+ * seitlich verschieben, statt Kacheln zu stauchen oder zu verbergen.
+ */
+function PlanungsZeitachse({
+  zeilen,
+  zustand,
+  gruppenkennung,
+  einstellungen,
+  onPosition,
+  onUmschalten,
+}: {
+  zeilen: readonly { modul: Modul; termin: OfficialTermin }[];
+  zustand: (modul: Modul, termin: OfficialTermin) => ZeilenZustand;
+  gruppenkennung: string;
+  einstellungen: AnsichtEinstellungen;
+  onPosition: (kennung: string, y: number) => void;
+  onUmschalten: (modul: Modul, termin: OfficialTermin) => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const [breite, setBreite] = useState(0);
+
+  const abschnitte = legePlanungsTagAus(
+    zeilen.map((zeile) => ({ zeile, timeBeginMin: zeile.termin.timeBeginMin, timeEndMin: zeile.termin.timeEndMin })),
+  );
+  const inhaltBreite = Math.max(breite, groessteSpaltenzahl(abschnitte) * MIN_SPALTENBREITE);
+
+  const gelegt: { abschnitt: (typeof abschnitte)[number]; top: number }[] = [];
+  let cursor = 0;
+  for (const abschnitt of abschnitte) {
+    gelegt.push({ abschnitt, top: cursor });
+    cursor += abschnitt.hoeheMin * DP_JE_MINUTE;
+  }
+
+  return (
+    <View testID="planung-zeitachse" onLayout={(e) => setBreite(e.nativeEvent.layout.width)}>
+      <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{ width: inhaltBreite }}>
+        <View style={{ width: inhaltBreite, height: cursor }}>
+          {gelegt.map(({ abschnitt, top }, index) => {
+            if (abschnitt.art === 'luecke') {
+              if (abschnitt.kurz) return null;
+              const dauer = dauerText(abschnitt.echteDauerMin, t);
+              return (
+                <View
+                  key={`luecke-${index}`}
+                  accessibilityRole="text"
+                  accessibilityLabel={t('schedule.lueckeLabel', {
+                    dauer,
+                    von: formatZeit(abschnitt.vonMin),
+                    bis: formatZeit(abschnitt.bisMin),
+                  })}
+                  style={[styles.achsenLuecke, { top, height: abschnitt.hoeheMin * DP_JE_MINUTE }]}
+                >
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('schedule.luecke', { dauer })}</Text>
+                </View>
+              );
+            }
+            return abschnitt.elemente.map(({ element, spalte, spalten, ueberschneidungen }) => {
+              const { modul, termin } = element.zeile;
+              const z = zustand(modul, termin);
+              const kachelTop = top + (termin.timeBeginMin - abschnitt.vonMin) * DP_JE_MINUTE;
+              const spaltenBreite = inhaltBreite / spalten;
+              return (
+                <View
+                  key={z.kennung}
+                  testID={`platz-${z.kennung}`}
+                  onLayout={() => onPosition(z.kennung, kachelTop)}
+                  style={[
+                    styles.kachelPlatz,
+                    {
+                      top: kachelTop,
+                      height: (termin.timeEndMin - termin.timeBeginMin) * DP_JE_MINUTE,
+                      left: spalte * spaltenBreite,
+                      width: spaltenBreite,
+                    },
+                  ]}
+                >
+                  <PlanungsKachel
+                    termin={termin}
+                    zustand={z}
+                    ueberschneidungen={ueberschneidungen}
+                    gruppenkennung={gruppenkennung}
+                    einstellungen={einstellungen}
+                    onUmschalten={() => onUmschalten(modul, termin)}
+                  />
+                </View>
+              );
+            });
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function PlanungsKachel({
+  termin,
+  zustand,
+  ueberschneidungen,
+  gruppenkennung,
+  einstellungen,
+  onUmschalten,
+}: {
+  termin: OfficialTermin;
+  zustand: ZeilenZustand;
+  ueberschneidungen: number;
+  gruppenkennung: string;
+  einstellungen: AnsichtEinstellungen;
+  onUmschalten: () => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const zeitraum = `${formatZeit(termin.timeBeginMin)}–${formatZeit(termin.timeEndMin)}`;
+  const konflikt = !zustand.gewaehlt && zustand.konfliktstufe === 'konflikt';
+  const kennung = termin.studentSet === '*' ? t('schedule.planungAlleGruppen') : termin.studentSet;
+  const hintergrund =
+    konflikt && einstellungen.hervorhebungKonflikte
+      ? `${colors.danger}22`
+      : zustand.eigeneGruppe && einstellungen.hervorhebungEigeneGruppe
+        ? `${colors.accent}22`
+        : colors.surface;
+  // Design.md Entscheidung 4: dieselbe Beschriftung wie die Listenzeile,
+  // ergänzt um die Zahl der Überschneidungen und die Kennzeichnungen.
+  const label = [
+    `${zeitraum} ${termin.name} ${termin.courseType}`,
+    ueberschneidungen > 0 ? t('schedule.planungUeberschneidetSich', { count: ueberschneidungen }) : null,
+    konflikt ? t('schedule.planungZeileKonflikt') : null,
+    zustand.angepinnt ? t('schedule.planungAngepinnt') : null,
+    zustand.eigeneGruppe ? t('schedule.planungEigeneGruppeKennung', { kennung: gruppenkennung }) : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  return (
+    <Pressable
+      testID={`kachel-${zustand.kennung}`}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: zustand.gewaehlt }}
+      accessibilityLabel={label}
+      onPress={onUmschalten}
+      style={[
+        styles.kachel,
+        { borderColor: zustand.gewaehlt ? colors.accent : colors.border, backgroundColor: hintergrund },
+        zustand.hervorgehoben && { borderColor: colors.text, borderWidth: 3 },
+      ]}
+    >
+      <View style={styles.kachelKopf}>
+        <Text style={{ color: zustand.gewaehlt ? colors.accent : colors.border, fontSize: 14 }}>
+          {zustand.gewaehlt ? '☑' : '☐'}
+        </Text>
+        <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', flexShrink: 1 }}>{zeitraum}</Text>
+        {konflikt ? <Text style={{ color: colors.danger, fontSize: 12 }}>⚠</Text> : null}
+        {zustand.angepinnt ? <Ionicons name="pin" size={12} color={colors.accent} /> : null}
+      </View>
+      <Text numberOfLines={2} style={{ color: colors.text, fontSize: 12 }}>
+        {termin.name}
+      </Text>
+      <Text numberOfLines={1} style={{ color: colors.textMuted, fontSize: 11 }}>
+        {`${termin.courseType} · ${kennung}`}
+      </Text>
+    </Pressable>
+  );
+}
+
 function AusstehendLeiste({
   ausstehend,
   zwischenstand,
@@ -1129,6 +1367,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 6,
   },
+  zeitachseSchalter: {
+    width: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  achsenLuecke: { position: 'absolute', left: 0, right: 0, alignItems: 'center', justifyContent: 'center' },
+  kachelPlatz: { position: 'absolute', padding: 2 },
+  kachel: { flex: 1, borderWidth: 2, borderRadius: 8, padding: 4, gap: 2, overflow: 'hidden' },
+  kachelKopf: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   pinFlaeche: { width: 44, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
   pin: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   zeileInhalt: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },

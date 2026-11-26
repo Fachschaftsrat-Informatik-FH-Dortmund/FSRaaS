@@ -55,6 +55,8 @@ export interface PlanungsEinstellungen {
   zeitfenster: Zeitfenster | null;
   /** Requirement „Kandidat als Pflicht markieren": Modulschlüssel (`Modul.key`). */
   pflichtModule: string[];
+  /** Requirement „Zeitachse im Planungsmodus": Zeitachse statt Liste (Change `planungsmodus-zeitachse`, design.md Entscheidung 5). */
+  zeitachse: boolean;
 }
 
 export const STANDARD_PLANUNG: PlanungsEinstellungen = {
@@ -64,6 +66,7 @@ export const STANDARD_PLANUNG: PlanungsEinstellungen = {
   abstandVorlesungUebungMin: 0,
   zeitfenster: null,
   pflichtModule: [],
+  zeitachse: false,
 };
 
 function begrenzt(x: number, max: number): number {
@@ -140,6 +143,13 @@ function bereinigePflicht(roh: unknown): string[] {
   return keys;
 }
 
+function bereinigeSchalter(roh: unknown, standard: boolean, feld: string): boolean {
+  if (roh === undefined) return standard;
+  if (typeof roh === 'boolean') return roh;
+  ungueltig(feld);
+  return standard;
+}
+
 function bereinige(v: unknown): PlanungsEinstellungen {
   const roh = (v ?? {}) as Partial<Record<keyof PlanungsEinstellungen | 'voreinstellung', unknown>>;
 
@@ -173,6 +183,7 @@ function bereinige(v: unknown): PlanungsEinstellungen {
     ),
     zeitfenster: bereinigeZeitfenster(roh.zeitfenster),
     pflichtModule: bereinigePflicht(roh.pflichtModule),
+    zeitachse: bereinigeSchalter(roh.zeitachse, STANDARD_PLANUNG.zeitachse, 'zeitachse'),
   };
 }
 
@@ -240,7 +251,10 @@ function subscribe(cb: () => void): () => void {
     ladeGestartet = true;
     readJson<unknown>(KEY, STANDARD_PLANUNG)
       .then((v) => {
-        snapshot = bereinige(v);
+        // Eine Änderung, die vor dem Ladeende geschrieben wurde, gewinnt: Sie
+        // ist neuer als der gespeicherte Stand und schon auf dem Weg in den
+        // Speicher (DATA-F-020, keine Eingabe geht verloren).
+        if (!geladen) snapshot = bereinige(v);
       })
       .catch((error) => logError('planungseinstellungen.load', error))
       .finally(() => {
@@ -301,6 +315,10 @@ export function usePlanungsEinstellungen() {
     schreiben({ ...snapshot, pflichtModule });
   }, []);
 
+  const zeitachseUmschalten = useCallback(() => {
+    schreiben({ ...snapshot, zeitachse: !snapshot.zeitachse });
+  }, []);
+
   const vorbereitungAllgemeinSetzen = useCallback((minuten: number) => {
     schreiben({ ...snapshot, vorbereitungAllgemeinMin: begrenzt(minuten, VORBEREITUNG_MAX_MIN) });
   }, []);
@@ -325,6 +343,7 @@ export function usePlanungsEinstellungen() {
     kriteriumBewegen,
     zeitfensterSetzen,
     pflichtUmschalten,
+    zeitachseUmschalten,
     vorbereitungAllgemeinSetzen,
     vorbereitungFuerArtSetzen,
     abstandVorlesungUebungSetzen,
