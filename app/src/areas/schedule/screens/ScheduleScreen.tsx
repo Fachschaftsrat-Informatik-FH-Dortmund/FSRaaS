@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, PanResponder, ScrollView, StyleSheet, Pressable, Text, View } from 'react-native';
+import { PanResponder, ScrollView, StyleSheet, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -20,9 +20,10 @@ import {
   type Ansichtsstand,
 } from '../ansichtEinstellungen';
 import { layoutTag } from '../dayLayout';
+import { useEinblendungsStand } from '../einblendungsStand';
 import { useEinrichtung } from '../einrichtung';
 import { feiertagAm, type FeiertagSchluessel } from '../feiertage';
-import { anzeigeFarbe, textfarbeFuerHintergrund } from '../farbe';
+import { anzeigeFarbe, aufgehellteFlaeche, textfarbeFuerHintergrund } from '../farbe';
 import { wischRichtung } from '../../canteen/gesten';
 import { ermittleJetztStatus } from '../jetzt';
 import { ermittleKonflikte, type Konflikte } from '../konflikt';
@@ -90,6 +91,22 @@ function neueAlternativeId(): string {
   return `plan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * Requirement „Zurückgenommene Darstellung eingeblendeter Termine", Szenario
+ * „Alternativtermin antippen": Zeit, Veranstaltungsart, Raum und Gruppe eines
+ * eingeblendeten Termins als eine Zeile für die Rückfrage.
+ */
+function einblendungsAngaben(entry: PlanEntry, t: TFunction): string {
+  const zeit = `${t(`schedule.weekday.${entry.weekday}`)} ${formatZeit(entry.timeBeginMin)}–${formatZeit(entry.timeEndMin)}`;
+  if (entry.kind !== 'offiziell') return zeit;
+  return t('schedule.einblendungAngaben', {
+    zeit,
+    art: entry.courseType,
+    raum: entry.roomId,
+    gruppe: entry.studentSet,
+  });
+}
+
 function dauerText(minuten: number, t: TFunction): string {
   const stunden = Math.floor(minuten / MINUTEN_JE_STUNDE);
   const rest = minuten % MINUTEN_JE_STUNDE;
@@ -105,6 +122,8 @@ export function ScheduleScreen() {
   const { einrichtung, loaded: einrichtungGeladen } = useEinrichtung();
   const { entries, loaded: planGeladen, mehrereUebernehmen } = useScheduleEntries();
   const { einstellungen, loaded: einstellungenGeladen } = useAnsichtEinstellungen();
+  // Requirement „Einblendung nur für die laufende Sitzung": nicht gespeichert.
+  const { stand: einblendung, aktiv: einblendungAktiv } = useEinblendungsStand();
   const { zuletztBetrachtet, loaded: standGeladen, merkeStand } = useAnsichtsstand();
   // Requirement „Geltungsbereich des eigenen Namens": die Kacheln erscheinen
   // erst mit geladenen eigenen Namen, damit sie nicht kurz die offizielle
@@ -117,7 +136,6 @@ export function ScheduleScreen() {
   // „Einblenden nicht gewählter Veranstaltungen": der Auswahlbestand kommt nur
   // ins Spiel, wenn einer der beiden Schalter aktiv ist — der persönliche Plan
   // bleibt sonst wie gehabt rein gerätelokal (DATA-F-010).
-  const einblendungAktiv = einstellungen.alternativenEinblenden || einstellungen.alleEinblenden;
   const gewaehlteEndpunkte = useMemo(
     () =>
       einblendungAktiv
@@ -221,16 +239,16 @@ export function ScheduleScreen() {
     if (!stand || !auswahlbestand.alleGeladen || !einrichtung.gruppenkennung) return [];
     const kennung = einrichtung.gruppenkennung;
     const roh = [
-      ...(einstellungen.alternativenEinblenden
+      ...(einblendung.alternativen
         ? alternativenDesTages(alleModule, entries, stand.wochentag, kennung)
         : []),
-      ...(einstellungen.alleEinblenden ? nichtGewaehlteDesTages(alleModule, entries, stand.wochentag, kennung) : []),
+      ...(einblendung.alle ? nichtGewaehlteDesTages(alleModule, entries, stand.wochentag, kennung) : []),
     ];
     return termineDesTages(roh, stand.wochenanfang, stand.wochentag);
   }, [
     stand,
-    einstellungen.alternativenEinblenden,
-    einstellungen.alleEinblenden,
+    einblendung.alternativen,
+    einblendung.alle,
     auswahlbestand.alleGeladen,
     alleModule,
     entries,
@@ -388,8 +406,8 @@ export function ScheduleScreen() {
                     alleGeladen={auswahlbestand.alleGeladen}
                     isError={auswahlbestand.isError}
                     keineGewaehltenModule={
-                      einstellungen.alternativenEinblenden &&
-                      !einstellungen.alleEinblenden &&
+                      einblendung.alternativen &&
+                      !einblendung.alle &&
                       gewaehlteModule(alleModule, entries).length === 0
                     }
                   />
@@ -436,11 +454,30 @@ export function ScheduleScreen() {
         }
       </AsyncStates>
 
-      <AlternativeUebernehmenBlatt
-        alternative={alternativeUebernehmen}
-        onSchliessen={() => setAlternativeUebernehmen(null)}
-        onAnstelle={() => alternativeUebernehmenAls(true)}
-        onZusaetzlich={() => alternativeUebernehmenAls(false)}
+      {/* Requirements „Einblenden aller Veranstaltungen gewählter Module",
+          Szenario „Alternative übernehmen", und „Zurückgenommene Darstellung
+          eingeblendeter Termine", Szenario „Alternativtermin antippen": die
+          Rückfrage sagt zuerst, was der Termin ist, dann bietet sie die
+          Übernahme an (Change `alternativtermine-abgesetzt-und-sitzungsweise`,
+          design.md Entscheidung 4). */}
+      <ConfirmDialog
+        visible={alternativeUebernehmen !== null}
+        title={t('schedule.alternativeTitel')}
+        message={
+          alternativeUebernehmen
+            ? [
+                t('schedule.alternativeHinweis'),
+                einblendungsAngaben(alternativeUebernehmen, t),
+                t('schedule.alternativeUebernehmenFrage', { titel: titelVon(alternativeUebernehmen) }),
+              ].join('\n\n')
+            : ''
+        }
+        actions={[
+          { label: t('schedule.alternativeAnstelle'), variant: 'primary', onPress: () => alternativeUebernehmenAls(true) },
+          { label: t('schedule.alternativeZusaetzlich'), onPress: () => alternativeUebernehmenAls(false) },
+          { label: t('schedule.abbrechen'), onPress: () => setAlternativeUebernehmen(null) },
+        ]}
+        onDismiss={() => setAlternativeUebernehmen(null)}
       />
 
       {/* Requirement „Aufnehmen eines Moduls aus der Einblendung": vorbelegt auf
@@ -449,9 +486,15 @@ export function ScheduleScreen() {
       <ConfirmDialog
         visible={nichtGewaehltAufnehmen !== null}
         title={t('schedule.nichtGewaehltTitel')}
-        message={t('schedule.nichtGewaehltFrage', {
-          titel: nichtGewaehltAufnehmen ? titelVon(nichtGewaehltAufnehmen) : '',
-        })}
+        message={
+          nichtGewaehltAufnehmen
+            ? [
+                t('schedule.nichtGewaehltHinweis'),
+                einblendungsAngaben(nichtGewaehltAufnehmen, t),
+                t('schedule.nichtGewaehltFrage', { titel: titelVon(nichtGewaehltAufnehmen) }),
+              ].join('\n\n')
+            : ''
+        }
         actions={[
           { label: t('schedule.nichtGewaehltAblehnen'), variant: 'primary', onPress: () => setNichtGewaehltAufnehmen(null) },
           { label: t('schedule.nichtGewaehltAufnehmen'), onPress: modulAufnehmen },
@@ -713,44 +756,6 @@ function AlternativenStatus({
   return null;
 }
 
-/** Requirement „Einblenden aller Veranstaltungen gewählter Module", Szenario „Alternative übernehmen". */
-function AlternativeUebernehmenBlatt({
-  alternative,
-  onSchliessen,
-  onAnstelle,
-  onZusaetzlich,
-}: {
-  alternative: PlanEntry | null;
-  onSchliessen: () => void;
-  onAnstelle: () => void;
-  onZusaetzlich: () => void;
-}) {
-  const { t } = useTranslation();
-  const { colors } = useTheme();
-
-  return (
-    <Modal visible={alternative !== null} animationType="slide" transparent onRequestClose={onSchliessen}>
-      <Pressable
-        style={styles.hintergrund}
-        onPress={onSchliessen}
-        accessibilityLabel={t('schedule.verwaltungSchliessen')}
-      />
-      <View style={[styles.blatt, { backgroundColor: colors.background, borderColor: colors.border }]}>
-        {alternative ? (
-          <>
-            <Text style={[styles.blattTitel, { color: colors.text }]}>
-              {t('schedule.alternativeUebernehmenFrage', { titel: titelVon(alternative) })}
-            </Text>
-            <AppButton label={t('schedule.alternativeAnstelle')} onPress={onAnstelle} />
-            <AppButton variant="secondary" label={t('schedule.alternativeZusaetzlich')} onPress={onZusaetzlich} />
-            <AppButton variant="secondary" label={t('schedule.abbrechen')} onPress={onSchliessen} />
-          </>
-        ) : null}
-      </View>
-    </Modal>
-  );
-}
-
 /**
  * Requirements „Proportionale Zeitachse", „Nebeneinanderdarstellung
  * überschneidender Termine" und „Hervorhebung des laufenden Termins und der
@@ -938,7 +943,11 @@ export function TerminKachel({
   // Farbwahl bleibt sichtbar (`anzeigeFarbe`, `farbe.ts`).
   const { einstellungen } = useAnsichtEinstellungen();
   const farbe = anzeigeFarbe(entry, einstellungen.farbautomatik);
-  const textfarbe = textfarbeFuerHintergrund(farbe);
+  // Requirement „Zurückgenommene Darstellung eingeblendeter Termine": ein
+  // eingeblendeter Termin zeigt eine aufgehellte, deckende Fläche; die Schrift
+  // wird gegen genau diese Fläche gewählt und hält so 4,5:1 ein (`farbe.ts`).
+  const flaeche = entry.einblendung ? aufgehellteFlaeche(farbe, colors.background) : farbe;
+  const textfarbe = textfarbeFuerHintergrund(flaeche);
   const deaktiviert = !istAktiv(entry, jetztSek);
   // Requirement „Geltungsbereich des eigenen Namens": allein die Kachel zeigt
   // den eigenen Namen des Moduls (`modulnamen.ts`, design.md Entscheidung 4).
@@ -965,19 +974,20 @@ export function TerminKachel({
 
   return (
     <Pressable
+      testID={`kachel-${entry.id}`}
       accessibilityRole="button"
       accessibilityLabel={[zeitraum, titel, ...kennzeichen].join(' · ')}
       onPress={() => onOeffne(entry.id)}
       style={[
         styles.kachel,
-        { backgroundColor: farbe },
+        { backgroundColor: flaeche },
         laeuft && { borderColor: colors.text, borderWidth: 3 },
         deaktiviert && styles.kachelDeaktiviert,
-        // Requirements „Einblenden aller Veranstaltungen gewählter Module" und
-        // „Einblenden nicht gewählter Veranstaltungen": ein eingeblendeter
-        // Termin steht abgesetzt von den eigenen — der gestrichelte Rahmen kommt
-        // zur Textkennzeichnung hinzu, ersetzt sie nie.
-        entry.einblendung !== undefined && styles.kachelAlternative,
+        // Requirement „Zurückgenommene Darstellung eingeblendeter Termine": der
+        // gestrichelte Rahmen in voller Veranstaltungsfarbe hält die Zuordnung
+        // sichtbar, während die Fläche zurücktritt — beides kommt zur
+        // Textkennzeichnung hinzu, ersetzt sie nie.
+        entry.einblendung !== undefined && [styles.kachelEingeblendet, { borderColor: farbe }],
       ]}
     >
       <Text style={[styles.kachelZeit, { color: textfarbe }]} numberOfLines={1}>
@@ -1039,9 +1049,6 @@ const styles = StyleSheet.create({
   tagBereichInhalt: { flexGrow: 1 },
   banner: { padding: 12, borderRadius: 8, gap: 8 },
   bannerAktionen: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  hintergrund: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  blatt: { borderTopWidth: 1, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, gap: 12 },
-  blattTitel: { fontSize: 17, fontWeight: '700' },
   jetzt: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, padding: 10, gap: 12 },
   jetztSpalte: { flex: 1 },
   wochenkopf: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1066,7 +1073,7 @@ const styles = StyleSheet.create({
   // Requirement „Wirkung eines deaktivierten Termins": zurückgenommen dargestellt,
   // die Bedeutung trägt zusätzlich das Textkennzeichen (nie allein die Opazität).
   kachelDeaktiviert: { opacity: 0.55 },
-  kachelAlternative: { borderWidth: 2, borderStyle: 'dashed' },
+  kachelEingeblendet: { borderWidth: 2, borderStyle: 'dashed' },
   kachelZeit: { fontSize: 12, fontWeight: '600' },
   kachelTitel: { fontSize: 14, fontWeight: '700' },
   kachelTitelZeile: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },

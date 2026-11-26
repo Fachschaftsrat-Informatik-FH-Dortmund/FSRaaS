@@ -1,10 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 
+import { StyleSheet } from 'react-native';
+
 import { removeKey, writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
 import { __resetAnsichtEinstellungenForTest, __resetAnsichtsstandForTest } from '../ansichtEinstellungen';
+import { __resetEinblendungsStandForTest, __setzeEinblendungsStandForTest } from '../einblendungsStand';
 import { __resetEinrichtungForTest } from '../einrichtung';
+import { aufgehellteFlaeche } from '../farbe';
 import { __resetModulnamenForTest } from '../modulnamen';
 import { __resetScheduleEntriesForTest, readScheduleEntries } from '../planStore';
 import { __resetSemesterstandForTest } from '../semesterstand';
@@ -153,6 +157,7 @@ async function seed(entries: PlanEntry[], einstellungen: Record<string, unknown>
   __resetScheduleEntriesForTest();
   __resetEinrichtungForTest();
   __resetAnsichtEinstellungenForTest();
+  __resetEinblendungsStandForTest();
   __resetAnsichtsstandForTest();
   __resetSemesterstandForTest();
   __resetModulnamenForTest();
@@ -716,7 +721,8 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
   });
 
   async function seedMitAlternativen(entries: PlanEntry[]) {
-    await seed(entries, { alternativenEinblenden: true });
+    await seed(entries);
+    __setzeEinblendungsStandForTest({ alternativen: true });
     mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
     mockAuswahlbestand = {
       termine: [V_ROH, UE_ROH],
@@ -738,7 +744,8 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
   });
 
   it('lässt den Schalter ohne Auswahlbestand wirkungslos und sagt es, der eigene Plan bleibt vollständig', async () => {
-    await seed([V], { alternativenEinblenden: true });
+    await seed([V]);
+    __setzeEinblendungsStandForTest({ alternativen: true });
     mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
     mockAuswahlbestand = {
       termine: [],
@@ -774,9 +781,7 @@ describe('Einblenden aller Veranstaltungen gewählter Module', () => {
 
     fireEvent.press(screen.getByLabelText(/10:00–11:30 · Mathematik für Informatik 3.*Alternative/));
 
-    expect(
-      screen.getByText('„Mathematik für Informatik 3“ übernehmen — anstelle des eigenen Termins oder zusätzlich?'),
-    ).toBeTruthy();
+    expect(screen.getByText(/„Mathematik für Informatik 3“ übernehmen — anstelle des eigenen Termins oder zusätzlich\?/)).toBeTruthy();
     fireEvent.press(screen.getByText('Zusätzlich zum eigenen Termin'));
 
     await waitFor(async () => expect(await readScheduleEntries()).toHaveLength(2));
@@ -815,8 +820,9 @@ const ANALYSIS_EIGEN = offiziell({ id: 'v', courseId: '43051', name: 'Analysis',
 const ANALYSIS_ROH = terminRoh({ courseId: '43051', name: 'Analysis', timeBeginMin: 600, timeEndMin: 690, roomId: 'A.2.02', lecturerName: 'Prof. Beispiel' });
 const RECHNERNETZE_ROH = terminRoh({ courseId: '44100', name: 'Rechnernetze', timeBeginMin: 600, timeEndMin: 690, roomId: 'B.1.10' });
 
-async function seedMitAllen(entries: PlanEntry[], einstellungen: Record<string, unknown> = { alleEinblenden: true }) {
-  await seed(entries, einstellungen);
+async function seedMitAllen(entries: PlanEntry[], alle = true) {
+  await seed(entries);
+  __setzeEinblendungsStandForTest({ alle });
   mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
   mockAuswahlbestand = {
     termine: [ANALYSIS_ROH, RECHNERNETZE_ROH],
@@ -848,7 +854,7 @@ describe('Einblenden nicht gewählter Veranstaltungen', () => {
   });
 
   it('Schalter abgeschaltet: zeigt ausschließlich die Termine des eigenen Plans', async () => {
-    await seedMitAllen([ANALYSIS_EIGEN], { alleEinblenden: false });
+    await seedMitAllen([ANALYSIS_EIGEN], false);
     await zeige();
 
     expect(screen.getByLabelText(/10:00–11:30 · Analysis/)).toBeTruthy();
@@ -878,9 +884,8 @@ describe('Aufnehmen eines Moduls aus der Einblendung', () => {
     fireEvent.press(screen.getByLabelText(/Rechnernetze.*Nicht gewählt/));
 
     expect(screen.getByText('Nicht gewählte Veranstaltung')).toBeTruthy();
-    expect(
-      screen.getByText('„Rechnernetze“ gehört zu einem Modul, das du nicht gewählt hast. Soll das Modul in deine Auswahl aufgenommen werden?'),
-    ).toBeTruthy();
+    expect(screen.getByText(/Er gehört zu einem Modul, das du nicht gewählt hast\./)).toBeTruthy();
+    expect(screen.getByText(/Soll das Modul von „Rechnernetze“ in deine Auswahl aufgenommen werden\?/)).toBeTruthy();
     // Vorbelegung: „Nicht aufnehmen" steht als erste, hervorgehobene Aktion.
     const buttons = screen.getAllByRole('button').map((b) => b.props.accessibilityLabel);
     expect(buttons.indexOf('Nicht aufnehmen')).toBeLessThan(buttons.indexOf('Modul aufnehmen'));
@@ -907,6 +912,92 @@ describe('Aufnehmen eines Moduls aus der Einblendung', () => {
     await waitFor(() => expect(screen.queryByText('Nicht gewählte Veranstaltung')).toBeNull());
     expect(mockPush).not.toHaveBeenCalled();
     expect(await readScheduleEntries()).toEqual([ANALYSIS_EIGEN]);
+  });
+});
+
+// Change `alternativtermine-abgesetzt-und-sitzungsweise` (Issue #77).
+describe('Zurückgenommene Darstellung eingeblendeter Termine', () => {
+  const V = offiziell({ id: 'v', courseId: 'INF999', name: 'Mathematik für Informatik 3', courseType: 'V' });
+  const V_ROH = terminRoh({ courseId: 'INF999' });
+  const UE_ROH = terminRoh({
+    courseId: 'INF999',
+    courseType: 'Ü',
+    studentSet: 'A-B',
+    timeBeginMin: 600,
+    timeEndMin: 690,
+  });
+
+  async function seedMitAlternative() {
+    await seed([V]);
+    __setzeEinblendungsStandForTest({ alternativen: true });
+    mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
+    mockAuswahlbestand = {
+      termine: [V_ROH, UE_ROH],
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [V_ROH, UE_ROH] }],
+      alleGeladen: true,
+      isPending: false,
+      isError: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    };
+  }
+
+  it('Eingeblendeter Termin neben eigenem Termin: aufgehellte Fläche mit gestricheltem Rahmen, der eigene in voller Farbe', async () => {
+    await seedMitAlternative();
+    await zeige();
+
+    const eigen = StyleSheet.flatten(screen.getByTestId('kachel-v').props.style);
+    const alternative = StyleSheet.flatten(
+      screen.getByLabelText(/10:00–11:30 · Mathematik für Informatik 3.*Alternative/).props.style,
+    );
+
+    expect(eigen.backgroundColor).toBe('#1E88E5');
+    expect(eigen.borderStyle).toBeUndefined();
+    expect(alternative.borderStyle).toBe('dashed');
+    // Fläche: Veranstaltungsfarbe (Rahmen) aufgehellt gegen den hellen Hintergrund.
+    expect(alternative.backgroundColor).toBe(aufgehellteFlaeche(alternative.borderColor as string, '#FFFFFF'));
+    expect(alternative.backgroundColor).not.toBe(alternative.borderColor);
+  });
+
+  it('stellt nicht gewählte Veranstaltungen im selben Stil dar', async () => {
+    await seedMitAllen([ANALYSIS_EIGEN]);
+    await zeige();
+
+    const nichtGewaehlt = StyleSheet.flatten(screen.getByLabelText(/Rechnernetze.*Nicht gewählt/).props.style);
+    expect(nichtGewaehlt.borderStyle).toBe('dashed');
+    expect(nichtGewaehlt.backgroundColor).toBe(aufgehellteFlaeche(nichtGewaehlt.borderColor as string, '#FFFFFF'));
+  });
+
+  it('Alternativtermin antippen: nennt die Art, dass er nicht im Plan steht, und Zeit, Art, Raum und Gruppe', async () => {
+    await seedMitAlternative();
+    await zeige();
+
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 · Mathematik für Informatik 3.*Alternative/));
+
+    expect(screen.getByText('Alternativtermin')).toBeTruthy();
+    const nachricht = screen.getByText(/Dieser Termin steht nicht in deinem Plan\./);
+    expect(nachricht.props.children).toContain('Mi 10:00–11:30 · Ü · A.1.01 · Gruppe A-B');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
+describe('Einblendung nur für die laufende Sitzung', () => {
+  it('App-Start nach eingeschalteter Einblendung: ein gespeicherter Altwert blendet nichts ein', async () => {
+    await seed([ANALYSIS_EIGEN], { alternativenEinblenden: true, alleEinblenden: true });
+    mockStudiengaenge = [{ sname: 'INPBPI', name: 'Bachelor Informatik', grades: ['2'] }];
+    mockAuswahlbestand = {
+      termine: [ANALYSIS_ROH, RECHNERNETZE_ROH],
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [ANALYSIS_ROH, RECHNERNETZE_ROH] }],
+      alleGeladen: true,
+      isPending: false,
+      isError: false,
+      isFetching: false,
+      refetch: jest.fn(),
+    };
+    await zeige();
+
+    expect(screen.getByLabelText(/10:00–11:30 · Analysis/)).toBeTruthy();
+    expect(screen.queryByLabelText(/Rechnernetze/)).toBeNull();
   });
 });
 
