@@ -29,7 +29,6 @@ function eintrag(over: Partial<OfficialPlanEntry> & { id: string; courseId: stri
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     name: 'Mathematik für Informatik 3',

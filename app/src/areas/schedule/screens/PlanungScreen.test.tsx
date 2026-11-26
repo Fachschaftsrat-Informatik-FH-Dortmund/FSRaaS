@@ -11,7 +11,7 @@ import { __resetPlanungAktionForTest } from '../planungAktion';
 import { PlanungSpeichernZugang } from '../ui/PlanungSpeichernZugang';
 import { PlanungScreen } from './PlanungScreen';
 
-const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
+const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn(), dismissTo: jest.fn() };
 let mockParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -112,7 +112,6 @@ function offiziellerEintrag(over: Record<string, unknown>) {
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     courseId: 'INF999',
@@ -216,7 +215,7 @@ describe('Hervorhebung der eigenen Gruppe im Planungsmodus', () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Dienstag'));
 
-    expect(screen.getByText(/Eigene Gruppe/)).toBeTruthy();
+    expect(screen.getByLabelText('C8, eigene Gruppe')).toBeTruthy();
   });
 
   it('zeigt einen gruppenfremden Termin weiterhin und lässt seine Wahl zu', () => {
@@ -308,7 +307,7 @@ describe('Ausdrückliches Sichern der Planung', () => {
     // `planungsmodus-sichern-absturz` (design.md Entscheidung 2) einen Frame
     // später, damit die Kopfzeilen-Mutation vor der Fragment-Transaktion
     // abgeschlossen ist.
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalledWith('/'));
   });
 
   // Change `planungsmodus-sichern-absturz`, design.md Entscheidung 1: auf
@@ -332,7 +331,7 @@ describe('Ausdrückliches Sichern der Planung', () => {
     expect(screen.queryByLabelText('Planung sichern')).toBeNull();
 
     // Auch über den Frame-Versatz der Navigation hinaus bleibt es dabei.
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith('/'));
+    await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalledWith('/'));
     expect(mockRegistrierungen.every((aktion) => aktion === null)).toBe(true);
     expect(screen.queryByLabelText('Auswahl verwerfen')).toBeNull();
   });
@@ -531,11 +530,11 @@ describe('Kennzeichnung gewählter Termine im Planungsmodus', () => {
     };
     renderScreen();
 
-    const [zeile1, zeile10] = screen.getAllByLabelText(/14:15–15:50 Technisches Englisch SV/);
+    const [zeile1, zeile10] = screen.getAllByLabelText(/14:15–15:50 Technisches Englisch \d+ SV/);
     fireEvent.press(zeile1!);
 
-    expect(screen.getAllByLabelText(/14:15–15:50 Technisches Englisch SV/)[0]!.props.accessibilityState.checked).toBe(true);
-    expect(screen.getAllByLabelText(/14:15–15:50 Technisches Englisch SV/)[1]!.props.accessibilityState.checked).toBe(false);
+    expect(screen.getAllByLabelText(/14:15–15:50 Technisches Englisch \d+ SV/)[0]!.props.accessibilityState.checked).toBe(true);
+    expect(screen.getAllByLabelText(/14:15–15:50 Technisches Englisch \d+ SV/)[1]!.props.accessibilityState.checked).toBe(false);
     expect(zeile10).toBeTruthy();
   });
 
@@ -619,11 +618,129 @@ describe('Hinweis bei fehlender konfliktfreier Option', () => {
 });
 
 describe('Unterscheidung abgeleiteter Angaben von Quelldaten', () => {
-  it('führt die Schlüsse der App (noch nicht eingeplant, eigene Gruppe) in einer abgesetzten Zeile mit vorangestelltem Symbol', () => {
+  it('führt den Planungsstand als Schluss der App in einer eigenen Zeile getrennt von den Quelldaten', () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Dienstag'));
 
-    expect(screen.getByText(/^ⓘ .*Eigene Gruppe/)).toBeTruthy();
+    expect(screen.getAllByText('Noch einzuplanen')).toHaveLength(2);
+    expect(screen.getAllByText('Ü · A.1.01 · Prof. Beispiel')).toHaveLength(2);
+  });
+});
+
+// Change `planungsmodus-anzeige` (Gerätetest 2026-09-09, Issue #68).
+describe('Kennzeichnung des Planungsstands je Veranstaltungsreihe', () => {
+  it('kennzeichnet gewählte, anderweitig eingetragene und offene Termine; jede Zeile behält ihre Kennzeichnung (Issue #123)', () => {
+    renderScreen();
+    expect(screen.getByText('Eingeplant')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    expect(screen.getAllByText('Noch einzuplanen')).toHaveLength(2);
+
+    fireEvent.press(screen.getByLabelText(/12:00–13:30 Mathematik für Informatik 3 Ü/));
+    expect(screen.getByText('Eingeplant')).toBeTruthy();
+    expect(screen.getByText('Anderweitig eingetragen (1)')).toBeTruthy();
+    expect(screen.queryByText('Noch einzuplanen')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+    expect(screen.getAllByText('Eingeplant (2 Termine)')).toHaveLength(2);
+  });
+});
+
+describe('Anzeige der zugewiesenen Gruppenkennungen im Planungsmodus', () => {
+  it('zeigt die zugewiesenen Kennungen und hebt die eigene hervor', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    expect(screen.getByText('A-B')).toBeTruthy();
+    expect(screen.getByText('C5-E')).toBeTruthy();
+    const eigene = screen.getByLabelText('C8, eigene Gruppe');
+    expect(StyleSheet.flatten(eigene.props.style).fontWeight).toBe('700');
+    expect(StyleSheet.flatten(screen.getByText('A-B').props.style).fontWeight).toBeUndefined();
+  });
+
+  it('zeigt ohne eigene Gruppe die Kennungen ohne Hervorhebung', () => {
+    mockEinrichtung = { endpunkte: ['INPBPI'], gruppenkennung: 'Z1' };
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    expect(screen.getByText('C5-E')).toBeTruthy();
+    expect(screen.queryByLabelText(/eigene Gruppe/)).toBeNull();
+  });
+});
+
+describe('Unveränderte Modulnamen im Planungsmodus', () => {
+  it('zeigt parallele Termine mit ihrer Endzahl', () => {
+    const englisch3 = termin({ courseId: '41102', name: 'Technisches Englisch 3', courseType: 'SV', timeBeginMin: 855, timeEndMin: 950 });
+    const englisch7 = { ...englisch3, name: 'Technisches Englisch 7', timeBeginMin: 960, timeEndMin: 1050 };
+    mockParams = { module: '41102|2' };
+    mockTermineQuery = {
+      ...mockTermineQuery,
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [englisch3, englisch7] }],
+    };
+    renderScreen();
+
+    expect(screen.getByText('14:15–15:50 · Technisches Englisch 3')).toBeTruthy();
+    expect(screen.getByText('16:00–17:30 · Technisches Englisch 7')).toBeTruthy();
+  });
+});
+
+describe('Einstellbare farbliche Hervorhebung im Planungsmodus', () => {
+  const hintergrund = (muster: RegExp) =>
+    StyleSheet.flatten(screen.getByTestId(new RegExp(`^zeile-.*${muster.source}`)).props.style).backgroundColor;
+
+  it('ist beim ersten Öffnen allein für die eigene Gruppe aktiv', async () => {
+    renderScreen();
+    await act(async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    expect(screen.getByRole('switch', { name: 'Eigene Gruppe' }).props.accessibilityState.checked).toBe(true);
+    expect(screen.getByRole('switch', { name: 'Konflikte' }).props.accessibilityState.checked).toBe(false);
+    expect(screen.getByRole('switch', { name: 'Eingeplante' }).props.accessibilityState.checked).toBe(false);
+  });
+
+  it('nimmt beim Abschalten der eigenen Gruppe nur die Farbe, nicht die Kennzeichnung', async () => {
+    renderScreen();
+    await act(async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    expect(hintergrund(/C5-E/)).toBeDefined();
+
+    fireEvent.press(screen.getByRole('switch', { name: 'Eigene Gruppe' }));
+
+    expect(hintergrund(/C5-E/)).toBeUndefined();
+    expect(screen.getByLabelText('C8, eigene Gruppe')).toBeTruthy();
+  });
+
+  it('hebt bei angeschalteter Konflikt-Hervorhebung kollidierende Termine farblich hervor', async () => {
+    const kollision = termin({ courseId: 'INF777', name: 'Sport', courseType: 'V', studentSet: 'A-B', weekday: 'Mon', timeBeginMin: 500, timeEndMin: 560, grade: '2' });
+    mockParams = { module: `${MODUL_KEY},INF777|2` };
+    mockTermineQuery = {
+      ...mockTermineQuery,
+      perEndpunkt: [{ sname: 'INPBPI', name: 'Bachelor Informatik', termine: [MATHE3_V, MATHE3_UE_FREMD, MATHE3_UE_EIGEN, kollision, { ...kollision, weekday: 'Wed' }] }],
+    };
+    // Zwei Sport-Slots: keiner wird vorbelegt, der am Montag kollidiert.
+    mockEntries = [offiziellerEintrag({})];
+    renderScreen();
+    await act(async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+    expect(hintergrund(/Sport/)).toBeUndefined();
+
+    fireEvent.press(screen.getByRole('switch', { name: 'Konflikte' }));
+
+    expect(hintergrund(/Sport/)).toBeDefined();
+    expect(screen.getByText(/Zeitkonflikt/)).toBeTruthy();
+  });
+});
+
+describe('Kein Rückweg in den Planungsmodus nach dem Sichern', () => {
+  it('kehrt nach dem Sichern auf die vorhandene Wochenansicht zurück, statt eine neue aufzulegen', async () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+
+    await waitFor(() => expect(mockRouter.dismissTo).toHaveBeenCalledWith('/'));
+    expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 });
 
