@@ -901,6 +901,20 @@ describe('Automatischer Planungsvorschlag', () => {
     expect(screen.queryByText(/Nicht alles passt ohne Konflikt/)).toBeNull();
   });
 
+  it('Keine konfliktfreie Konstellation: weist auf die Pflicht-Markierung hin und führt zu ihr', () => {
+    mockEntries = [eigenerTerminAmDienstag(570, 900)];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Vorschlag'));
+
+    expect(screen.getByText(/in den Planungseinstellungen als Pflicht/)).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Zu den Planungseinstellungen'));
+    expect(screen.queryByText(/Nicht alles passt ohne Konflikt/)).toBeNull();
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/planung-einstellungen',
+      params: { kandidaten: JSON.stringify([[MODUL_KEY, 'Mathematik für Informatik 3']]) },
+    });
+  });
+
   it('meldet, wenn der Vorschlag nichts umlegt', () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Dienstag'));
@@ -912,7 +926,46 @@ describe('Automatischer Planungsvorschlag', () => {
   it('führt über die Werkzeugzeile zu den Planungseinstellungen und nennt die gewählte Voreinstellung', () => {
     renderScreen();
     fireEvent.press(screen.getByLabelText('Planungseinstellungen öffnen, Voreinstellung: Fahrten zur Uni'));
-    expect(mockRouter.push).toHaveBeenCalledWith('/planung-einstellungen');
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/planung-einstellungen',
+      params: { kandidaten: JSON.stringify([[MODUL_KEY, 'Mathematik für Informatik 3']]) },
+    });
+  });
+});
+
+// Change `planungsmodus-rangfolge-frei`: eigene Rangfolge und Zeitfenster im Planungsmodus.
+describe('Kriterienrangfolge für die Planung', () => {
+  beforeEach(() => __resetPlanungsEinstellungenForTest());
+
+  it('Rangfolge selbst ändern: eine eigene Rangfolge erscheint in der Werkzeugzeile als solche', async () => {
+    await writeJson('schedulePlanungSettings', { rangfolge: ['anwesenheitszeit', 'uniTage'] });
+    renderScreen();
+    await waitFor(() =>
+      expect(screen.getByLabelText('Planungseinstellungen öffnen, Voreinstellung: Eigene Rangfolge')).toBeTruthy(),
+    );
+  });
+});
+
+describe('Kennzeichnung außerhalb des Zeitfensters', () => {
+  beforeEach(() => __resetPlanungsEinstellungenForTest());
+
+  it('Termin außerhalb des Zeitfensters: wird gekennzeichnet, bleibt aber wählbar', async () => {
+    await writeJson('schedulePlanungSettings', { zeitfenster: { vonMin: 660, bisMin: 1080 } });
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    // 10:00 beginnt vor 11:00 — gekennzeichnet; 12:00 liegt innerhalb.
+    await waitFor(() => expect(screen.getAllByText('· ◷ außerhalb des Zeitfensters')).toHaveLength(1));
+    expect(
+      within(screen.getByTestId(/^zeile-INF999[|]Ü[|]Tue[|]600[|]690/)).getByText('· ◷ außerhalb des Zeitfensters'),
+    ).toBeTruthy();
+    fireEvent.press(uebungZehn());
+    expect(gewaehlt(uebungZehn())).toBe(true);
+  });
+
+  it('ohne Zeitfenster kennzeichnet das System nichts', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    expect(screen.queryByText('· ◷ außerhalb des Zeitfensters')).toBeNull();
   });
 });
 

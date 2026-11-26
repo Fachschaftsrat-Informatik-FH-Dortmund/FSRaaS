@@ -26,5 +26,5 @@
 ## 5. Prüfung und Abschluss
 
 - [x] 5.1 `npx jest src/areas/schedule`, `npx tsc --noEmit`, `npm run lint`, spec-check, i18n-Parität grün
-- [ ] 5.2 Hinweis des Vorschlags auf die „Pflicht"-Markierung (Requirement „Automatischer Planungsvorschlag", Szenario „Keine konfliktfreie Konstellation"). Hängt an der noch nicht umgesetzten Pflicht-Markierung und bleibt offen, bis sie kommt.
+- [x] 5.2 Hinweis des Vorschlags auf die „Pflicht"-Markierung (Requirement „Automatischer Planungsvorschlag", Szenario „Keine konfliktfreie Konstellation"), samt der Markierung selbst (design.md, Entscheidung 8); Tests `describe('Kandidat als Pflicht markieren')` in `planungsvorschlag.test.ts`, `planungseinstellungen.test.ts`, `PlanungEinstellungenScreen.test.tsx` und der Pflicht-Hinweis in `PlanungScreen.test.tsx`
 - [ ] 5.3 Geräteabnahme Android: Werkzeugzeile passt, Vorschlag und Rücknahme wirken, Pin übersteht Sichern und erneuten Aufruf. Prüfprotokoll unter `specs/pruefprotokolle/`

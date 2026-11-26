@@ -19,7 +19,13 @@ import { gruppenzugehoerig } from '../groupMatch';
 import { pruefeKandidatGegenZwischenstand } from '../konflikt';
 import { baueModulliste, type Modul } from '../kursbaum';
 import { registriereePlanungAktion } from '../planungAktion';
-import { parameterAus, rangfolgeAus, usePlanungsEinstellungen } from '../planungseinstellungen';
+import {
+  parameterAus,
+  rangfolgeAus,
+  usePlanungsEinstellungen,
+  voreinstellungAus,
+  type Zeitfenster,
+} from '../planungseinstellungen';
 import { einteilungNachGruppe, erzeugeVorschlag, type ReihenErgebnis } from '../planungsvorschlag';
 import {
   ermittlePlanungsstand,
@@ -165,7 +171,7 @@ export function PlanungScreen() {
   // Termin wird umgelegt": vom Vorschlag gesetzte Termine (`terminSchluessel`),
   // ausgewiesen bis zum Verlassen oder Verwerfen.
   const [vorschlagMarken, setVorschlagMarken] = useState<ReadonlySet<string>>(new Set());
-  const [vorschlagHinweis, setVorschlagHinweis] = useState<string | null>(null);
+  const [vorschlagHinweis, setVorschlagHinweis] = useState<{ text: string; zuEinstellungen: boolean } | null>(null);
   const [aktiverWochentag, setAktiverWochentag] = useState<Weekday>('Mon');
   const [hervorgehoben, setHervorgehoben] = useState<string | null>(null);
   const [gesichert, setGesichert] = useState(false);
@@ -442,25 +448,38 @@ export function PlanungScreen() {
       ...planungsEingabe(),
       rangfolge: rangfolgeAus(planungsEinstellungen),
       parameter: parameterAus(planungsEinstellungen),
+      pflichtModule: new Set(planungsEinstellungen.pflichtModule),
     });
     const geaendert = wendeErgebnisAn(ergebnisse, true);
     // Szenario „Keine konfliktfreie Konstellation": die beteiligten
-    // Veranstaltungen benennen. Der Hinweis auf die „Pflicht"-Markierung
-    // folgt mit dieser (tasks.md, 5.2).
+    // Veranstaltungen benennen und auf die „Pflicht"-Markierung als Weg zum
+    // Vorrang hinweisen (design.md, Entscheidung 8) — samt Bedienweg dorthin.
     const konflikte = ergebnisse.filter((r) => r.konfliktMit.length > 0);
     if (konflikte.length > 0) {
       const liste = konflikte
         .map((r) => `${r.reihe.modulName} ${r.reihe.art} ↔ ${r.konfliktMit.join(', ')}`)
         .join('\n');
-      setVorschlagHinweis(t('schedule.planungVorschlagKonflikt', { liste }));
+      setVorschlagHinweis({ text: t('schedule.planungVorschlagKonflikt', { liste }), zuEinstellungen: true });
     } else if (geaendert === 0) {
-      setVorschlagHinweis(t('schedule.planungVorschlagUnveraendert'));
+      setVorschlagHinweis({ text: t('schedule.planungVorschlagUnveraendert'), zuEinstellungen: false });
     }
   }
 
   function nachGruppeEinteilen() {
     const geaendert = wendeErgebnisAn(einteilungNachGruppe(planungsEingabe()), false);
-    if (geaendert === 0) setVorschlagHinweis(t('schedule.planungNachGruppeUnveraendert'));
+    if (geaendert === 0) {
+      setVorschlagHinweis({ text: t('schedule.planungNachGruppeUnveraendert'), zuEinstellungen: false });
+    }
+  }
+
+  // Requirement „Kandidat als Pflicht markieren": die Planungseinstellungen
+  // erhalten die Kandidaten der laufenden Planung, um sie als Pflicht
+  // markierbar zu machen (design.md, Entscheidung 8).
+  function einstellungenOeffnen() {
+    router.push({
+      pathname: '/planung-einstellungen',
+      params: { kandidaten: JSON.stringify(relevanteModule.map((m) => [m.key, m.name])) },
+    });
   }
 
   // Requirement „Leiste der ausstehenden Veranstaltungen": Sprung mit
@@ -546,6 +565,13 @@ export function PlanungScreen() {
     .sort((a, b) => a.termin.timeBeginMin - b.termin.timeBeginMin);
 
   const ausstehend = planungsstand.filter((s) => s.stand !== 'gewaehlt');
+  // Change `planungsmodus-rangfolge-frei`, design.md Entscheidung 1: eine
+  // eigene Rangfolge trägt keinen Voreinstellungsnamen.
+  const voreinstellung = voreinstellungAus(planungsEinstellungen);
+  const voreinstellungsName =
+    voreinstellung === null
+      ? t('schedule.planungVoreinstellungEigene')
+      : t(`schedule.planungVoreinstellung.${voreinstellung}`);
 
   return (
     <Screen tight>
@@ -562,8 +588,8 @@ export function PlanungScreen() {
       <HervorhebungsSchalter einstellungen={ansichtEinstellungen} onUmschalten={toggleHervorhebung} />
 
       <Werkzeugzeile
-        voreinstellung={t(`schedule.planungVoreinstellung.${planungsEinstellungen.voreinstellung}`)}
-        onEinstellungen={() => router.push('/planung-einstellungen')}
+        voreinstellung={voreinstellungsName}
+        onEinstellungen={einstellungenOeffnen}
         onVorschlag={vorschlagErzeugen}
         onNachGruppe={nachGruppeEinteilen}
       />
@@ -585,6 +611,7 @@ export function PlanungScreen() {
               gruppenkennung={gruppenkennung}
               eigeneGruppe={gruppenzugehoerig(gruppenkennung, termin.studentSet)}
               einstellungen={ansichtEinstellungen}
+              zeitfenster={planungsEinstellungen.zeitfenster}
               konfliktstufe={pruefeKandidatGegenZwischenstand(
                 termin,
                 zwischenstand.filter((e) => !terminEntsprichtEintrag(termin, e)),
@@ -622,8 +649,21 @@ export function PlanungScreen() {
       {vorschlagHinweis !== null ? (
         <ConfirmDialog
           visible
-          message={vorschlagHinweis}
-          actions={[{ label: t('schedule.planungHinweisVerstanden'), variant: 'primary', onPress: () => setVorschlagHinweis(null) }]}
+          message={vorschlagHinweis.text}
+          actions={[
+            { label: t('schedule.planungHinweisVerstanden'), variant: 'primary', onPress: () => setVorschlagHinweis(null) },
+            ...(vorschlagHinweis.zuEinstellungen
+              ? [
+                  {
+                    label: t('schedule.planungZuEinstellungen'),
+                    onPress: () => {
+                      setVorschlagHinweis(null);
+                      einstellungenOeffnen();
+                    },
+                  },
+                ]
+              : []),
+          ]}
           onDismiss={() => setVorschlagHinweis(null)}
         />
       ) : null}
@@ -824,6 +864,7 @@ function TerminZeile({
   gruppenkennung,
   eigeneGruppe,
   einstellungen,
+  zeitfenster,
   konfliktstufe,
   hervorgehoben,
   onLayout,
@@ -839,6 +880,7 @@ function TerminZeile({
   gruppenkennung: string;
   eigeneGruppe: boolean;
   einstellungen: AnsichtEinstellungen;
+  zeitfenster: Zeitfenster | null;
   konfliktstufe: 'konfliktfrei' | 'konflikt';
   hervorgehoben: boolean;
   onLayout: (y: number) => void;
@@ -856,6 +898,10 @@ function TerminZeile({
   const konflikt = !gewaehlt && konfliktstufe === 'konflikt';
   const standFarbe = gewaehlt ? colors.accent : colors.textMuted;
   const zeitraum = `${formatZeit(termin.timeBeginMin)}–${formatZeit(termin.timeEndMin)}`;
+  // Requirement „Kennzeichnung außerhalb des Zeitfensters": nur Kennzeichnung,
+  // die Zeile bleibt wählbar.
+  const ausserhalbZeitfenster =
+    zeitfenster !== null && (termin.timeBeginMin < zeitfenster.vonMin || termin.timeEndMin > zeitfenster.bisMin);
 
   // Requirement „Anzeige der zugewiesenen Gruppenkennungen im Planungsmodus"
   // (design.md Entscheidung 3).
@@ -941,6 +987,11 @@ function TerminZeile({
             ) : null}
             {/* Requirement „Automatischer Planungsvorschlag": umgelegte und neu
              * gesetzte Termine weist das System aus. */}
+            {ausserhalbZeitfenster ? (
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>
+                {`· ◷ ${t('schedule.planungZeileAusserhalbZeitfenster')}`}
+              </Text>
+            ) : null}
             {gewaehlt && vomVorschlag ? (
               <Text style={{ color: colors.textMuted, fontSize: 12 }}>{`· ${t('schedule.planungVomVorschlag')}`}</Text>
             ) : null}

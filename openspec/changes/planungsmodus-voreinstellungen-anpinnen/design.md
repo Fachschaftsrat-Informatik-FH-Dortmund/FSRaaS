@@ -14,8 +14,9 @@ wie im übrigen Bereich.
 greedy Vorschlag in den Zwischenstand, Anpinnen, Rücknahme,
 Vorbereitungszeiten je Veranstaltungsart.
 
-**Non-Goals:** freie Sortierung und Abschalten (zweiter Zug), Pflicht-Markierung,
-Zeitfenster-Einstellung, Vollkombinatorik.
+**Non-Goals:** freie Sortierung und Abschalten (zweiter Zug),
+Zeitfenster-Einstellung, Vollkombinatorik. Die Pflicht-Markierung war
+zunächst ausgenommen und ist am 2026-11-26 nachgezogen (Entscheidung 8).
 
 ## Decisions
 
@@ -97,8 +98,7 @@ einzeln ändern" ohne einen eigenen Vorschauzustand. Umgelegte und neu
 gesetzte Termine tragen bis zum Verlassen die Kennzeichnung „vom Vorschlag".
 Bei Konflikt erscheint ein Hinweis über `ConfirmDialog`. Er nennt die
 beteiligten Veranstaltungen und das Anpinnen als Weg, einen Termin
-festzuhalten. Der Hinweis auf die Pflicht-Markierung fehlt, solange es sie
-nicht gibt (offene Aufgabe).
+festzuhalten, und die Pflicht-Markierung als Weg zum Vorrang (Entscheidung 8).
 
 Der Vorschlag trägt keine `akzeptierteKonflikte` ein. Die Kollision hat das
 System gewählt, nicht die Nutzerin. Sie bleibt deshalb als offener Konflikt
@@ -147,6 +147,34 @@ Eine unbekannte Art erhält immer den allgemeinen Wert (Requirement
 Veranstaltungsart"). Erreichbar ist der Bildschirm über eine Werkzeugzeile
 im Planungsmodus. Sie zeigt auch die gewählte Voreinstellung, „Vorschlag
 erzeugen" und „Nach Gruppe einteilen".
+
+### 8. Pflicht-Markierung als Vorrang in der Bearbeitungsreihenfolge
+
+Nachgezogen am 2026-11-26 (tasks.md 5.2). Das Requirement „Kandidat als
+Pflicht markieren" verlangt, dass eine Pflicht-Veranstaltung im Plan bleibt.
+Das tut der Vorschlag ohnehin für jede Veranstaltung (Entscheidung 3). Wirksam
+wird die Markierung deshalb allein über die Reihenfolge: Reihen eines
+Pflicht-Moduls stehen in der Bearbeitungsreihenfolge vor allen anderen, erst
+danach gelten Zahl der Gruppen-Slots und Modulreihenfolge. So wählt der greedy
+Vorschlag für sie zuerst und damit aus allen noch freien Gruppen-Slots. Das
+ist der „Vorrang", auf den das Szenario „Keine konfliktfreie Konstellation"
+hinweist.
+
+- **Kandidat = Modul.** Markiert wird ein Modul der Planungsauswahl, nicht
+  eine einzelne Veranstaltungsart. Das entspricht dem Datenmodell der Spec
+  (`pflicht` je Eintrag der Planungsauswahl).
+- **Gespeichert** als Liste von Modulschlüsseln im Speicher der
+  Planungseinstellungen (`pflichtModule`). Ein eigener Speicher für die
+  Planungsauswahl hätte nur dieses eine Feld. Schlüssel abgewählter Module
+  bleiben liegen, wirken aber nicht, weil der Vorschlag nur gewählte Module
+  kennt.
+- **Bedienweg.** Ein Abschnitt „Pflicht-Veranstaltungen" in den
+  Planungseinstellungen, je Kandidat ein Schalter. Der Planungsmodus gibt die
+  Kandidaten beim Öffnen als Routenparameter mit (`kandidaten`, JSON aus
+  Schlüssel und Name). Eine weitere Zeile im Planungsmodus hätte Platz über
+  der Terminliste gekostet (Risiko „Werkzeugzeile kostet Platz"). Der
+  Konflikthinweis nennt die Pflicht-Markierung und bietet neben
+  „Verstanden" den Weg „Zu den Planungseinstellungen".
 
 ## Risks / Trade-offs
 
