@@ -96,6 +96,68 @@ namespace Fb4.Backend.Migrations
                     b.ToTable("Mensen");
                 });
 
+            modelBuilder.Entity("Fb4.Backend.Domain.PruefungsbestandStand", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("AbgerufenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("Bis")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("GeaendertAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LetzterVersuchAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("LetzterVersuchErfolgreich")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("Von")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PruefungsbestandStand", (string)null);
+                });
+
+            modelBuilder.Entity("Fb4.Backend.Domain.PruefungsterminEintrag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Beginn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Bezeichnung")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Ende")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Modulnummer")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.PrimitiveCollection<List<string>>("Raeume")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Beginn");
+
+                    b.ToTable("Pruefungstermine", (string)null);
+                });
+
             modelBuilder.Entity("Fb4.Backend.Domain.RaumEintrag", b =>
                 {
                     b.Property<string>("RoomId")

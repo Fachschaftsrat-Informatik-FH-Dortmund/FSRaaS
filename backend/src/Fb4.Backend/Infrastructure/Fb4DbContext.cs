@@ -22,6 +22,8 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
     public DbSet<RaumplanTerminEintrag> RaumplanTermine => Set<RaumplanTerminEintrag>();
     public DbSet<RaumplanRaum> RaumplanRaeume => Set<RaumplanRaum>();
     public DbSet<RaumplanStand> RaumplanStand => Set<RaumplanStand>();
+    public DbSet<PruefungsterminEintrag> Pruefungstermine => Set<PruefungsterminEintrag>();
+    public DbSet<PruefungsbestandStand> PruefungsbestandStand => Set<PruefungsbestandStand>();
 
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -68,6 +70,20 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
         b.Entity<RaumplanStand>(e =>
         {
             e.ToTable("RaumplanStand");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+        });
+
+        // Prüfungsbestand, aus dem Raumplan abgeleitet: wird je Abruf vollständig ersetzt.
+        b.Entity<PruefungsterminEintrag>(e =>
+        {
+            e.ToTable("Pruefungstermine");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Beginn);
+        });
+        b.Entity<PruefungsbestandStand>(e =>
+        {
+            e.ToTable("PruefungsbestandStand");
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedNever();
         });

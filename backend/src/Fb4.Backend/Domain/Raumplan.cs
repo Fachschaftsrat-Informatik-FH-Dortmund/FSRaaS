@@ -60,3 +60,48 @@ public class RaumplanStand
     public DateTimeOffset? LetzterVersuchAm { get; set; }
     public bool LetzterVersuchErfolgreich { get; set; }
 }
+
+/// <summary>
+/// Ein aus dem Raumplan abgeleiteter Prüfungstermin (Requirement „Ableitung des
+/// Prüfungsbestands aus dem Raumplan"). Einträge derselben Prüfung in mehreren
+/// Räumen sind zusammengeführt; <see cref="Raeume"/> ist leer, wenn der Raumplan
+/// keinen Raum nennt.
+/// </summary>
+public class PruefungsterminEintrag
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    /// <summary>Name, wie die Quelle ihn liefert (NFC, getrimmt); Schlüssel der Zusammenführung.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>Null, wenn das Namensmuster keine Modulnummer hergab.</summary>
+    public string? Modulnummer { get; set; }
+
+    public string Bezeichnung { get; set; } = "";
+    public DateTimeOffset Beginn { get; set; }
+    public DateTimeOffset Ende { get; set; }
+    public List<string> Raeume { get; set; } = [];
+}
+
+/// <summary>
+/// Stand des Prüfungsbestands (genau eine Zeile, <see cref="Id"/> = 1). Speist
+/// <c>standAlter</c> und den Änderungszeitpunkt.
+/// </summary>
+public class PruefungsbestandStand
+{
+    public const int EinzigeId = 1;
+
+    public int Id { get; set; } = EinzigeId;
+
+    /// <summary>Zeitpunkt des letzten erfolgreichen Abrufs — das Alter des Bestands.</summary>
+    public DateTimeOffset? AbgerufenAm { get; set; }
+
+    /// <summary>Zeitpunkt, zu dem der abgeleitete Bestand zuletzt vom vorigen abwich.</summary>
+    public DateTimeOffset? GeaendertAm { get; set; }
+
+    public DateTimeOffset? Von { get; set; }
+    public DateTimeOffset? Bis { get; set; }
+
+    public DateTimeOffset? LetzterVersuchAm { get; set; }
+    public bool LetzterVersuchErfolgreich { get; set; }
+}
