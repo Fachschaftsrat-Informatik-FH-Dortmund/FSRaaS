@@ -1,6 +1,6 @@
 ## 1. Vertrag
 
-- [x] 1.1 `api-contract.yaml`: `POST /raeume/{roomId}/besetzt-meldungen` mit Rumpf `BesetztMeldungEingabe`, 202 `BesetztMeldungQuittung`, 400/404/409/503; neuer Pfad `DELETE /raeume/{roomId}/besetzt-meldungen/{meldungId}` (204, 429); Fassung 0.8.0
+- [x] 1.1 `api-contract.yaml`: `POST /raeume/{roomId}/besetzt-meldungen` mit Rumpf `BesetztMeldungEingabe`, 202 `BesetztMeldungQuittung`, 400/404/409/503; neuer Pfad `DELETE /raeume/{roomId}/besetzt-meldungen/{meldungId}` (204, 429); Fassung 0.9.0
 - [x] 1.2 `node tools/contract-codegen/src/generate.mjs` erzeugt die Typen (TS und C#); sie sind nach `.gitignore` nicht eingecheckt und entstehen in Build und CI neu
 
 ## 2. Backend

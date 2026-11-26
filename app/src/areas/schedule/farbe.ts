@@ -94,3 +94,23 @@ export function textfarbeFuerHintergrund(hintergrundHex: string): string {
 export function kontrastZuHintergrund(textHex: string, hintergrundHex: string): number {
   return kontrastverhaeltnis(relativeLeuchtdichte(textHex), relativeLeuchtdichte(hintergrundHex));
 }
+
+/** Anteil der Veranstaltungsfarbe an der Fläche eines eingeblendeten Termins (Change `alternativtermine-abgesetzt-und-sitzungsweise`, design.md Entscheidung 1). */
+export const ANTEIL_EINGEBLENDET = 0.3;
+
+/**
+ * Requirement „Zurückgenommene Darstellung eingeblendeter Termine": mischt
+ * die Veranstaltungsfarbe linear in sRGB mit der Hintergrundfarbe des Themas.
+ * Das Ergebnis ist eine deckende Farbe, keine Transparenz, damit die Schrift
+ * über `textfarbeFuerHintergrund` gegen eine bekannte Fläche gewählt werden
+ * kann und den Mindestkontrast einhält.
+ */
+export function aufgehellteFlaeche(farbe: string, hintergrund: string, anteil: number = ANTEIL_EINGEBLENDET): string {
+  const f = hexZuRgb(farbe);
+  const h = hexZuRgb(hintergrund);
+  const mische = (a: number, b: number) =>
+    Math.round(a * anteil + b * (1 - anteil))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${mische(f.r, h.r)}${mische(f.g, h.g)}${mische(f.b, h.b)}`.toUpperCase();
+}

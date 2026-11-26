@@ -67,12 +67,14 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<AuditLog>();
     builder.Services.AddScoped<MensaQuelle>();
     builder.Services.AddScoped<RaumplanAbruf>();
+    builder.Services.AddScoped<PruefungsbestandAbruf>();
 
     // Reihenfolge zählt: der Host wartet StartAsync des DbInitializers vollständig
     // ab (Migration + Seed), bevor die periodischen Jobs ihren ersten Durchlauf beginnen.
     builder.Services.AddHostedService<DbInitializer>();
     builder.Services.AddHostedService<VerwaltungsprotokollAufraeumJob>();
     builder.Services.AddHostedService<RaumplanAbrufJob>();
+    builder.Services.AddHostedService<PruefungsbestandAbrufJob>();
     builder.Services.AddHostedService<BesetztMeldungAufraeumJob>();
 }
 else
@@ -125,6 +127,7 @@ var v1 = app.MapGroup("/v1");
 v1.MapStammdatenEndpoints();
 v1.MapMensaEndpoints();
 v1.MapRaumplanEndpoints();
+v1.MapPruefungsplanEndpoints();
 v1.MapBesetztMeldungEndpoints();
 v1.MapVerwaltungEndpoints();
 

@@ -163,7 +163,7 @@ kontofreie Schreibpfade, etwa Helfer-Anmeldungen, hängen sich mit
   - Fehler: 400 (`idempotenz_schluessel_fehlt`, `gemeldet_am_fehlt`),
     404 `raum_unbekannt`, 409 `idempotenz_konflikt`, 429, 503.
 - `DELETE /raeume/{roomId}/besetzt-meldungen/{meldungId}`: 204 und 429.
-- Die Vertragsfassung steigt auf 0.8.0, weil ein Pfad und Schemas neu
+- Die Vertragsfassung steigt auf 0.9.0 (0.8.0 vergab der Change `pruefungsbestand-aus-raumplan`), weil ein Pfad und Schemas neu
   hinzukommen. Das ist nicht brechend: Den `POST` nutzt noch kein Client.
 
 ### Generische Offline-Schreib-Warteschlange (`app/src/state/schreibwarteschlange.ts`)

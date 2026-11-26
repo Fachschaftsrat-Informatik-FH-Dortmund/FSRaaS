@@ -15,7 +15,7 @@ liefert dort bisher fest `0`.
   Anfragerumpf mit dem Auslösezeitpunkt `gemeldetAm` und eine Quittung als
   Antwort. Dazu kommen die Antworten 400, 404 und 409. Neu ist
   `DELETE /raeume/{roomId}/besetzt-meldungen/{meldungId}` zum Zurückziehen.
-  Die Vertragsfassung steigt von 0.7.2 auf 0.8.0. Die Typen werden danach neu
+  Die Vertragsfassung steigt auf 0.9.0 (nach 0.8.0 aus dem Change `pruefungsbestand-aus-raumplan`). Die Typen werden danach neu
   erzeugt.
 - **Backend**:
   - Besetzt-Meldungen werden gespeichert, ohne Konto- und Personenbezug und

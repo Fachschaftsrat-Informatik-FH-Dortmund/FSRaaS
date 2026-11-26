@@ -96,6 +96,7 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
             services.AddScoped<AuditLog>();
             services.AddScoped<MensaQuelle>();
             services.AddScoped<RaumplanAbruf>();
+            services.AddScoped<PruefungsbestandAbruf>();
 
             // Die Mensa-Schnittstelle wird durch den Stub ersetzt. Resilienz aus:
             // Wiederholungsversuche wuerden die Abrufzaehlung verfaelschen, an der

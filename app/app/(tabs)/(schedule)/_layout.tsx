@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { EinblendungChip } from '@/areas/schedule/ui/EinblendungChip';
 import { EinrichtungHeaderZugang } from '@/areas/schedule/ui/EinrichtungHeaderZugang';
 import { ModulauswahlVerwerfenZugang } from '@/areas/schedule/ui/ModulauswahlVerwerfenZugang';
 import { PlanungSpeichernZugang } from '@/areas/schedule/ui/PlanungSpeichernZugang';
@@ -12,10 +13,13 @@ import { useReducedMotion } from '@/ui/reducedMotion';
 
 // Requirements „Dauerhafter Zugang zur Einrichtung" und „Ansichts- und
 // Verwaltungsblatt in der Kopfzeile": zwei getrennte Kopfzeilen-Symbole der
-// Wochenansicht, nebeneinander wie bei `PlanungSpeichernZugang`.
+// Wochenansicht, nebeneinander wie bei `PlanungSpeichernZugang`. Davor steht,
+// solange eine Einblendung aktiv ist, der Chip aus dem Requirement „Hinweis
+// auf aktive Einblendung in der Kopfzeile".
 function WochenansichtKopfzeile() {
   return (
-    <View style={styles.kopfzeilenGruppe}>
+    <View style={[styles.kopfzeilenGruppe, styles.mitChip]}>
+      <EinblendungChip />
       <EinrichtungHeaderZugang />
       <VerwaltungsblattZugang />
     </View>
@@ -37,6 +41,7 @@ function ModulauswahlKopfzeile() {
 
 const styles = StyleSheet.create({
   kopfzeilenGruppe: { flexDirection: 'row' },
+  mitChip: { alignItems: 'center' },
 });
 
 // Verschachtelter Stack des Stundenplans (SHELL-F-050: Routendateien sind reine

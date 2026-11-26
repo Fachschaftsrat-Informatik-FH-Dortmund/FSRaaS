@@ -58,18 +58,17 @@ describe('Farbwahl je Termin: Farbautomatik im Ansichts-Blatt abschaltbar', () =
   });
 });
 
-describe('Einblenden aller Veranstaltungen gewählter Module: Schalter im Ansichts-Blatt', () => {
-  it('beginnt inaktiv und lässt sich einschalten und wieder ausschalten, persistiert das', async () => {
-    const { result } = renderHook(() => useAnsichtEinstellungen());
-    await waitFor(() => expect(result.current.loaded).toBe(true));
-    expect(result.current.einstellungen.alternativenEinblenden).toBe(false);
+describe('Einblendung nur für die laufende Sitzung', () => {
+  it('verwirft gespeicherte Altwerte der Einblendungsschalter beim Laden', async () => {
+    await AsyncStorage.setItem(
+      'fb4:scheduleViewSettings',
+      JSON.stringify({ zeitachse: false, alternativenEinblenden: true, alleEinblenden: true }),
+    );
 
-    act(() => result.current.toggleAlternativenEinblenden());
-    await waitFor(() => expect(result.current.einstellungen.alternativenEinblenden).toBe(true));
-    expect(await readAnsichtEinstellungen()).toMatchObject({ alternativenEinblenden: true });
-
-    act(() => result.current.toggleAlternativenEinblenden());
-    await waitFor(() => expect(result.current.einstellungen.alternativenEinblenden).toBe(false));
+    const gelesen = await readAnsichtEinstellungen();
+    expect(gelesen.zeitachse).toBe(false);
+    expect(gelesen).not.toHaveProperty('alternativenEinblenden');
+    expect(gelesen).not.toHaveProperty('alleEinblenden');
   });
 });
 
@@ -85,7 +84,6 @@ describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten alle
       zeitachse: true,
       sprungZuHeute: true,
       farbautomatik: true,
-      alternativenEinblenden: false,
       hervorhebungEigeneGruppe: true,
       hervorhebungKonflikte: false,
       hervorhebungEingeplant: false,

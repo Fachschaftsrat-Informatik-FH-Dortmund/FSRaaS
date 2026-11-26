@@ -1,5 +1,5 @@
-import { SCHEDULE_NEUTRAL, SCHEDULE_PALETTE } from '@/theme/tokens';
-import { anzeigeFarbe, farbeFuerVeranstaltung, kontrastZuHintergrund, textfarbeFuerHintergrund } from './farbe';
+import { darkColors, lightColors, SCHEDULE_NEUTRAL, SCHEDULE_PALETTE } from '@/theme/tokens';
+import { anzeigeFarbe, aufgehellteFlaeche, farbeFuerVeranstaltung, kontrastZuHintergrund, textfarbeFuerHintergrund } from './farbe';
 import type { CustomPlanEntry } from './typen';
 
 function eintrag(color: string, farbeVonNutzer?: boolean): CustomPlanEntry {
@@ -103,5 +103,29 @@ describe('UX-N-010 Mindestkontrast 4,5:1 zwischen Text- und Hintergrundfarbe', (
     const grenzfall = '#767676'; // nahe der WCAG-Kontrast-Kreuzung Schwarz/Weiß
     const text = textfarbeFuerHintergrund(grenzfall);
     expect(kontrastZuHintergrund(text, grenzfall)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('Zurückgenommene Darstellung eingeblendeter Termine', () => {
+  it('mischt die Veranstaltungsfarbe anteilig mit dem Hintergrund', () => {
+    expect(aufgehellteFlaeche('#000000', '#FFFFFF', 0.3)).toBe('#B3B3B3');
+    expect(aufgehellteFlaeche('#1E88E5', '#FFFFFF', 0)).toBe('#FFFFFF');
+    expect(aufgehellteFlaeche('#1E88E5', '#FFFFFF', 1)).toBe('#1E88E5');
+  });
+
+  it('nimmt die Fläche gegenüber der vollen Veranstaltungsfarbe zurück, im hellen wie im dunklen Thema', () => {
+    for (const farbe of SCHEDULE_PALETTE) {
+      expect(aufgehellteFlaeche(farbe, lightColors.background)).not.toBe(farbe.toUpperCase());
+      expect(aufgehellteFlaeche(farbe, darkColors.background)).not.toBe(farbe.toUpperCase());
+    }
+  });
+
+  it('Lesbarkeit der aufgehellten Fläche: Schrift hält auf jeder Palettenfarbe in beiden Themen 4,5:1 ein', () => {
+    for (const hintergrund of [lightColors.background, darkColors.background]) {
+      for (const farbe of [...SCHEDULE_PALETTE, SCHEDULE_NEUTRAL]) {
+        const flaeche = aufgehellteFlaeche(farbe, hintergrund);
+        expect(kontrastZuHintergrund(textfarbeFuerHintergrund(flaeche), flaeche)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 });

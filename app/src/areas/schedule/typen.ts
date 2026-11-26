@@ -33,6 +33,12 @@ export interface OfficialTermin {
   grade?: string;
 }
 
+/** Herkunft eines eingeblendeten Termins (`PlanEntryBase.einblendung`). */
+export interface Einblendung {
+  art: 'alternative' | 'nichtGewaehlt';
+  modulKey: string;
+}
+
 interface PlanEntryBase {
   id: string;
   /** null = aktiv; 'dauerhaft' = bis zur Rücknahme; Zahl = Unix-Sekunden, bis wann
@@ -58,16 +64,19 @@ interface PlanEntryBase {
   gueltigVon: number | null;
   gueltigBis: number | null;
   /**
-   * Requirement „Einblenden aller Veranstaltungen gewählter Module": `true`
-   * markiert einen eingeblendeten Termin des Auswahlbestands — kein
-   * Bestandteil des persönlichen Plans, nie über `planStore.ts` persistiert,
-   * nur zur Darstellung erzeugt (`alternativen.ts`). Fehlt das Feld (jeder
-   * gespeicherte Eintrag), gilt der Termin als eigener Planeintrag.
-   * `ordneSpaltenZu` (`dayLayout.ts`) nutzt es für die Reihenfolge „Eigene
-   * Termine zuerst" (Requirement „Nebeneinanderdarstellung überschneidender
-   * Termine").
+   * Requirements „Einblenden aller Veranstaltungen gewählter Module" und
+   * „Einblenden nicht gewählter Veranstaltungen": markiert einen
+   * eingeblendeten Termin des Auswahlbestands. Er gehört nicht zum
+   * persönlichen Plan, wird nie über `planStore.ts` gespeichert und nur zur
+   * Darstellung erzeugt (`alternativen.ts`). `art` nennt die Herkunft:
+   * `alternative` ist ein weiterer Termin eines gewählten Moduls,
+   * `nichtGewaehlt` ein Termin eines Moduls ohne Planeintrag. `modulKey` ist
+   * der Schlüssel des Moduls im Auswahlbestand (`kursbaum.ts`). Fehlt das Feld
+   * (wie bei jedem gespeicherten Eintrag), ist der Termin ein eigener
+   * Planeintrag (Change `alle-veranstaltungen-einblenden`, design.md
+   * Entscheidung 1).
    */
-  istAlternative?: boolean;
+  einblendung?: Einblendung;
   /**
    * Requirement „Farbwahl je Termin": Herkunft der in `color` stehenden Farbe.
    * `true` heißt, die Nutzerin hat sie selbst gewählt; fehlt das Feld oder ist
