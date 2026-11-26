@@ -6,6 +6,7 @@ import type { TFunction } from 'i18next';
 
 import { useTheme } from '@/theme';
 import { useOnlineStatus } from '@/state/useOnlineStatus';
+import { BlaetterSymbol } from '@/ui/BlaetterSymbol';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
@@ -525,7 +526,7 @@ function Wochenkopf({
         onPress={() => onWechsel({ ...stand, wochenanfang: verschiebeWoche(stand.wochenanfang, -1) })}
         style={styles.blaettern}
       >
-        <Text style={{ color: colors.accent, fontSize: 18 }}>‹</Text>
+        <BlaetterSymbol richtung="zurueck" />
       </Pressable>
 
       <Pressable
@@ -546,7 +547,7 @@ function Wochenkopf({
         onPress={() => onWechsel({ ...stand, wochenanfang: verschiebeWoche(stand.wochenanfang, 1) })}
         style={styles.blaettern}
       >
-        <Text style={{ color: colors.accent, fontSize: 18 }}>›</Text>
+        <BlaetterSymbol richtung="vor" />
       </Pressable>
     </View>
   );

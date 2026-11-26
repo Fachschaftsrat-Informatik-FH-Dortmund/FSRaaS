@@ -16,6 +16,7 @@ import type { TFunction } from 'i18next';
 import { quelleMaxAlter } from '@/cache/ttl';
 import { useConsent } from '@/consent/ConsentProvider';
 import { useTheme } from '@/theme';
+import { BlaetterSymbol } from '@/ui/BlaetterSymbol';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
@@ -153,7 +154,7 @@ export function CanteenScreen() {
           onPress={() => blaettern(-1)}
           style={styles.pfeil}
         >
-          <Text style={[styles.pfeilGlyph, { color: amAnfang ? colors.border : colors.text }]}>◀</Text>
+          <BlaetterSymbol richtung="zurueck" aus={amAnfang} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -174,7 +175,7 @@ export function CanteenScreen() {
           onPress={() => blaettern(1)}
           style={styles.pfeil}
         >
-          <Text style={[styles.pfeilGlyph, { color: colors.text }]}>▶</Text>
+          <BlaetterSymbol richtung="vor" />
         </Pressable>
       </View>
 
@@ -833,7 +834,6 @@ function tageDifferenz(von: string, bis: string): number {
 const styles = StyleSheet.create({
   kopf: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pfeil: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  pfeilGlyph: { fontSize: 18 },
   datumFeld: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   datum: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
   zuHeute: { fontSize: 12, fontWeight: '600', marginTop: 1 },

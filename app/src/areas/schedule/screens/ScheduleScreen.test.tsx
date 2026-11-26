@@ -269,6 +269,16 @@ describe('Blättern über Wochengrenzen', () => {
   });
 });
 
+describe('Einheitliche Blätter-Symbole', () => {
+  it('zeigt an den Wochen-Pfeilen das gemeinsame Symbolpaar', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    expect(within(screen.getByLabelText('Vorige Woche')).getByText('chevron-back')).toBeTruthy();
+    expect(within(screen.getByLabelText('Nächste Woche')).getByText('chevron-forward')).toBeTruthy();
+  });
+});
+
 describe('Rückkehr zur laufenden Woche über die Wochenangabe', () => {
   it('Andere Woche angezeigt', async () => {
     await seed([ANALYSIS]);
