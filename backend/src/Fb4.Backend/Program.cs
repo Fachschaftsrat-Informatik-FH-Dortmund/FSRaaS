@@ -5,7 +5,6 @@ using Fb4.Backend.Infrastructure.Audit;
 using Fb4.Backend.Infrastructure.Auth;
 using Fb4.Backend.Infrastructure.Mensa;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 
 var appVersion = Assembly.GetExecutingAssembly()
     .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -105,18 +104,8 @@ v1.MapStammdatenEndpoints();
 v1.MapMensaEndpoints();
 v1.MapVerwaltungEndpoints();
 
-// Web-Export der Verwaltungsoberfläche (ADR 0018, Entscheidung 2026-09-02):
-// vom Backend mitausgeliefert unter /admin. Der Expo-Web-Export wird von der CI
-// nach wwwroot/admin gelegt; fehlt er, bleibt der Pfad einfach unbelegt.
-var adminRoot = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "admin");
-if (Directory.Exists(adminRoot))
-{
-    var provider = new PhysicalFileProvider(adminRoot);
-    app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = provider, RequestPath = "/admin" });
-    app.UseStaticFiles(new StaticFileOptions { FileProvider = provider, RequestPath = "/admin" });
-    app.MapFallback("/admin/{*path}", () => Results.File(
-        Path.Combine(adminRoot, "index.html"), "text/html"));
-}
+// Web-Export der Verwaltungsoberfläche unter /admin (ADR 0018).
+app.MapVerwaltungsoberflaeche();
 
 app.Run();
 
