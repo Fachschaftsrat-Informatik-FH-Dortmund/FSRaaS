@@ -480,7 +480,7 @@ describe('Bestätigungsdialoge als Pop-up', () => {
   function offenerDialog() {
     const offen = screen.UNSAFE_getAllByType(Modal).filter((m) => m.props.visible);
     expect(offen).toHaveLength(1);
-    return offen[0];
+    return offen[0]!;
   }
 
   it('Rückfrage ohne zerstörende Wirkung: der Geltungsbereich der Farbwahl erscheint als Pop-up, Schließen bleibt auf dem Termindetail', async () => {

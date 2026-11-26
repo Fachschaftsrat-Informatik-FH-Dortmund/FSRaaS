@@ -685,7 +685,7 @@ describe('Bestätigungsdialoge als Pop-up', () => {
     fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
     fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
 
-    const [dialog] = offeneDialoge();
+    const dialog = offeneDialoge()[0]!;
     expect(offeneDialoge()).toHaveLength(1);
     expect(within(dialog).getByText('Verwerfen')).toBeTruthy();
   });
@@ -696,7 +696,7 @@ describe('Bestätigungsdialoge als Pop-up', () => {
     fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
     act(() => letztePreventRemove!.callback({ data: { action: { type: 'POP' } } }));
 
-    const [dialog] = offeneDialoge();
+    const dialog = offeneDialoge()[0]!;
     expect(within(dialog).getByText('Es gibt ungesicherte Änderungen. Was möchtest du tun?')).toBeTruthy();
 
     act(() => dialog.props.onRequestClose());

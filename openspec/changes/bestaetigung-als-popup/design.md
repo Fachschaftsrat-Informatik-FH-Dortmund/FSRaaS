@@ -20,7 +20,9 @@ Entscheidung verlangen, stehen heute an drei Arten von Orten:
 
 Bereits konform und unverändert: `VerwaltungsblattZugang.tsx` (Leeren/Zurücksetzen
 des Plans) zeigt seine Rückfrage im selben `Modal` wie das Verwaltungsblatt
-und damit schon über der Ansicht. Kein Fund im Sinne der Anforderung sind
+und damit schon über der Ansicht; ebenso die Rückfrage „anstelle oder
+zusätzlich" bei der Übernahme einer Alternative in `ScheduleScreen.tsx`
+(eigenes `Modal` als Blatt). Kein Fund im Sinne der Anforderung sind
 reine Meldungen ohne Entscheidung (`Alert.alert` mit nur einer Mitteilung im
 Verwaltungsbereich, z. B. „Gespeichert"), die Übernahme eines ermittelten
 Gruppenkennungs-Vorschlags in `GruppenkennungScreen.tsx` (ein Ergebnis mit

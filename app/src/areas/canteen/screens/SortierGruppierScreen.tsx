@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
+import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { Screen } from '@/ui/Screen';
 import { AppButton, MessageView, RadioList, SegmentedControl } from '@/ui/primitives';
 import { useSortierGruppierung } from '../sortierPreset';
@@ -57,6 +58,9 @@ export function SortierGruppierScreen() {
 
   const [name, setName] = useState('');
   const [umbenennen, setUmbenennen] = useState<{ id: string; text: string } | null>(null);
+  // Requirement „Bestätigungsdialoge als Pop-up": Löschen einer Kombination
+  // fragt im ConfirmDialog statt per `Alert.alert` (im Web-Export wirkungslos).
+  const [loeschenFuer, setLoeschenFuer] = useState<string | null>(null);
 
   const kombi: Kombination = useMemo(
     () => ({
@@ -164,12 +168,7 @@ export function SortierGruppierScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`${t('mensa.presetLoeschen')} – ${presetName(id)}`}
-                    onPress={() =>
-                      Alert.alert(t('mensa.presetLoeschen'), presetName(id), [
-                        { text: t('common.cancel'), style: 'cancel' },
-                        { text: t('mensa.presetLoeschen'), style: 'destructive', onPress: () => loesche(id) },
-                      ])
-                    }
+                    onPress={() => setLoeschenFuer(id)}
                     style={styles.miniKnopf}
                   >
                     <Text style={{ color: colors.danger }}>🗑</Text>
@@ -277,6 +276,24 @@ export function SortierGruppierScreen() {
           }}
         />
       </View>
+
+      <ConfirmDialog
+        visible={loeschenFuer !== null}
+        title={t('mensa.presetLoeschen')}
+        message={loeschenFuer !== null ? presetName(loeschenFuer) : ''}
+        actions={[
+          {
+            label: t('mensa.presetLoeschen'),
+            variant: 'destructive',
+            onPress: () => {
+              if (loeschenFuer !== null) loesche(loeschenFuer);
+              setLoeschenFuer(null);
+            },
+          },
+          { label: t('common.cancel'), onPress: () => setLoeschenFuer(null) },
+        ]}
+        onDismiss={() => setLoeschenFuer(null)}
+      />
     </Screen>
   );
 }

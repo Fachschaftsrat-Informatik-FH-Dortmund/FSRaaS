@@ -1,5 +1,6 @@
 import { useEffect as mockUseEffect } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { Modal } from 'react-native';
 
 import { ThemeProvider } from '@/theme';
 import { __resetModulauswahlAktionForTest } from '../modulauswahlAktion';
@@ -293,5 +294,50 @@ describe('Kein Bedienweg ohne gewählte Endpunkte', () => {
     expect(screen.getByText('Noch keine Einrichtung')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Einrichtung öffnen'));
     expect(mockRouter.push).toHaveBeenCalledWith('/einrichtung');
+  });
+});
+
+describe('Bestätigungsdialoge als Pop-up', () => {
+  function offeneDialoge() {
+    return screen.UNSAFE_queryAllByType(Modal).filter((m) => m.props.visible);
+  }
+
+  it('Rückfrage vor einer zerstörenden Aktion: die Abwahl eines Moduls mit Planeinträgen fragt im Pop-up statt unter der Modulzeile', () => {
+    mockEntries = [offiziellerEintrag({ id: 'bestehend-1' })];
+    renderScreen();
+
+    fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
+    const dialoge = offeneDialoge();
+    expect(dialoge).toHaveLength(1);
+    expect(within(dialoge[0]!).getByText(/stehen bereits Termine/)).toBeTruthy();
+  });
+
+  it('Auslösender Bedienweg während der Rückfrage: Zurück-Taste bricht die Abwahl ab, das Modul bleibt angekreuzt', () => {
+    mockEntries = [offiziellerEintrag({ id: 'bestehend-1' })];
+    renderScreen();
+
+    fireEvent.press(screen.getByLabelText('Softwaretechnik 1'));
+    act(() => offeneDialoge()[0]!.props.onRequestClose());
+
+    expect(offeneDialoge()).toHaveLength(0);
+    expect(mockEntfernen).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Softwaretechnik 1').props.accessibilityState.checked).toBe(true);
+  });
+
+  it('Verwerfen der Modulauswahl: beide Stufen fragen im Pop-up; Zurück auf der zweiten Stufe behält die Termine', () => {
+    mockEntries = [offiziellerEintrag({ id: 'bestehend-1' })];
+    renderScreen();
+
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+    expect(within(offeneDialoge()[0]!).getByText('Verwerfen')).toBeTruthy();
+    fireEvent.press(screen.getByText('Verwerfen'));
+
+    const zweiteStufe = offeneDialoge()[0]!;
+    expect(within(zweiteStufe).getByText(/stehen bereits Termine/)).toBeTruthy();
+    act(() => zweiteStufe.props.onRequestClose());
+
+    expect(offeneDialoge()).toHaveLength(0);
+    expect(mockEntfernen).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Softwaretechnik 1').props.accessibilityState.checked).toBe(false);
   });
 });
