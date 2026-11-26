@@ -3,6 +3,7 @@ using Fb4.Backend.Endpoints;
 using Fb4.Backend.Infrastructure;
 using Fb4.Backend.Infrastructure.Audit;
 using Fb4.Backend.Infrastructure.Auth;
+using Fb4.Backend.Infrastructure.BesetztMeldungen;
 using Fb4.Backend.Infrastructure.Mensa;
 using Fb4.Backend.Infrastructure.Raumplan;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<JobStatusRegistry>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddMemoryCache();
+
+// Ratenbegrenzung kontofreier Schreibpfade (API-N-015): je Netzadresse, nur im
+// Arbeitsspeicher. Hinter nginx liefert ASPNETCORE_FORWARDEDHEADERS_ENABLED die
+// Adresse der Person, nicht die des Proxys (deploy/fsrfb4aas.service).
+builder.Services.AddFb4Ratenbegrenzung(builder.Configuration);
 
 // Mensa-Schnittstelle INT-020 (mensa.fb4.it): Zielsystem ausschliesslich aus der
 // Konfiguration (MensaQuelleOptions), eigener User-Agent (Bot-Filter vorgelagerter
@@ -69,6 +75,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddHostedService<VerwaltungsprotokollAufraeumJob>();
     builder.Services.AddHostedService<RaumplanAbrufJob>();
     builder.Services.AddHostedService<PruefungsbestandAbrufJob>();
+    builder.Services.AddHostedService<BesetztMeldungAufraeumJob>();
 }
 else
 {
@@ -103,6 +110,7 @@ app.UseExceptionHandler();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 // Betriebszustand des Backends (API-N-090). Nennt je periodischem
 // Hintergrund-Job Zeitpunkt und Ergebnis des letzten Durchlaufs (API-F-260).
@@ -120,6 +128,7 @@ v1.MapStammdatenEndpoints();
 v1.MapMensaEndpoints();
 v1.MapRaumplanEndpoints();
 v1.MapPruefungsplanEndpoints();
+v1.MapBesetztMeldungEndpoints();
 v1.MapVerwaltungEndpoints();
 
 // Web-Export der Verwaltungsoberfläche unter /admin (ADR 0018).

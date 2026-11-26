@@ -31,6 +31,8 @@ export interface FreierRaum {
   freiBis: Date | null;
   /** `true`, wenn `freiBis` die Schließzeit ist und nicht ein Folgetermin. */
   freiBisSchliesszeit: boolean;
+  /** Gültige Besetzt-Meldungen zum Beginn (Requirement „Anzahl der Besetzt-Meldungen anzeigen"). */
+  besetztMeldungen: number;
 }
 
 /**
@@ -72,6 +74,7 @@ export function freieRaeume(
       ekeyZugaenglich: raum.ekeyZugaenglich,
       freiBis,
       freiBisSchliesszeit,
+      besetztMeldungen: s.besetztMeldungen,
     });
   }
 

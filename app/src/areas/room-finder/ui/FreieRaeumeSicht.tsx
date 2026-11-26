@@ -18,6 +18,7 @@ import {
   type DauerStunden,
 } from '../zeitraum';
 import { FreiBisText, Karte, Kennung, kombiniere, Merkmale, useZeitText } from './bausteine';
+import { BesetztHinweis } from './BesetztMeldung';
 
 // Freie-Raum-Suche (Requirements „Suche nach freien Räumen", „Größenklasse
 // anzeigen und filtern", „E-Key-Zugänglichkeit kennzeichnen", „Freizeitpunkt
@@ -114,6 +115,7 @@ export function FreieRaeumeSicht() {
               >
                 <Kennung roomId={r.roomId} />
                 <FreiBisText freiBis={r.freiBis} schliesszeit={r.freiBisSchliesszeit} bezug={start} />
+                <BesetztHinweis anzahl={r.besetztMeldungen} />
                 <Merkmale groesse={r.groesse} ekey={r.ekeyZugaenglich} />
               </Karte>
             ))}

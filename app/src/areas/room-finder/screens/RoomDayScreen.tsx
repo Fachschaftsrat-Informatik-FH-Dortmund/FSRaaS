@@ -8,16 +8,20 @@ import { useTheme } from '@/theme';
 import { MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates } from '@/ui/state/AsyncStates';
-import { useRaumbelegung } from '../api';
+import { useRaumbelegung, useRaumuebersicht } from '../api';
 import { raumplanQuelleStand } from '../standAlter';
 import { normalisiereKennung } from '../uebersicht';
 import { Karte, RaumOffline, Zeile } from '../ui/bausteine';
+import { BesetztMeldungBaustein, BesetztWarteschlange } from '../ui/BesetztMeldung';
 import { kalendertag, uhrzeit } from '../zeitraum';
 
 // Tagesbelegung eines Raums (Requirements „Belegung eines gewählten Raums
 // anzeigen", „Tagesbelegung aus Übersicht oder laufenden Veranstaltungen
 // öffnen", „Freitextfeld eines Raumplan-Termins anzeigen"). Eine unbekannte
 // Kennung ist kein technischer Ausfall, sondern der Hinweis „Raum unbekannt".
+// Dazu Melden und Zurückziehen einer Besetzt-Meldung samt Anzahl (Change
+// `besetzt-meldungen`) — auch offline, als einzige Ausnahme vom nicht
+// verfügbaren Raum-Bereich.
 
 export function RoomDayScreen() {
   const { t } = useTranslation();
@@ -27,8 +31,21 @@ export function RoomDayScreen() {
   const roomId = normalisiereKennung(params.roomId ?? '');
   const heute = new Date();
   const query = useRaumbelegung(roomId, kalendertag(heute));
+  // Anzahl gültiger Besetzt-Meldungen aus der minütlich aktualisierten Übersicht.
+  const uebersicht = useRaumuebersicht();
+  const anzahl = uebersicht.data?.raeume.find((r) => r.roomId === roomId)?.besetztMeldungen;
 
-  if (!online) return <Screen tight><RaumOffline /></Screen>;
+  if (!online) {
+    return (
+      <Screen tight>
+        <ScrollView contentContainerStyle={styles.liste}>
+          <RaumOffline />
+          <BesetztWarteschlange />
+          {roomId ? <BesetztMeldungBaustein roomId={roomId} /> : null}
+        </ScrollView>
+      </Screen>
+    );
+  }
 
   if (query.isError && query.data === undefined && AppError.from(query.error).code === 'raum_unbekannt') {
     return (
@@ -48,6 +65,8 @@ export function RoomDayScreen() {
       <Text style={[styles.ueberschrift, { color: colors.text }]} accessibilityRole="header">
         {t('raum.tag.ueberschrift', { roomId })}
       </Text>
+      <BesetztWarteschlange />
+      <BesetztMeldungBaustein roomId={roomId} anzahl={uebersicht.data ? (anzahl ?? 0) : undefined} />
       <View style={styles.fill}>
         <AsyncStates
           query={query}

@@ -711,6 +711,38 @@
       "laeuftGerade": "happening now",
       "unbekanntTitel": "Unknown room",
       "unbekanntHinweis": "Neither the room schedule nor the room list knows the ID {{roomId}}. Check the spelling, e.g. C.E.44."
+    },
+    "besetzt": {
+      "symbol": "⚑",
+      "gemeldet_one": "Reported as occupied {{count}} time (last 90 minutes)",
+      "gemeldet_other": "Reported as occupied {{count}} times (last 90 minutes)",
+      "keine": "No occupied reports in the last 90 minutes",
+      "erklaerung": "Free according to the timetable but occupied? Your report helps others for 90 minutes. It is stored without an account and without any link to you.",
+      "melden": "Report as occupied",
+      "zurueckziehen": "Withdraw report",
+      "eigeneGemeldet": "You reported this room as occupied (valid until {{zeit}}).",
+      "eigeneAusstehend": "Your report will be sent as soon as you are online.",
+      "eigeneFehlgeschlagen": "Your report could not be sent. Decide above whether to retry or discard it.",
+      "warteschlangeMelden": "Occupied report for {{roomId}}",
+      "warteschlangeZurueckziehen": "Withdrawal of the occupied report for {{roomId}}",
+      "offlineTitel": "Report a room as occupied anyway",
+      "kennungLabel": "Room ID for the occupied report"
     }
+  },
+  "warteschlange": {
+    "titel": "Not sent yet",
+    "symbol": {
+      "wartend": "⏸",
+      "laeuft": "↻",
+      "fehlgeschlagen": "⚠"
+    },
+    "zustand": {
+      "wartend": "waiting for connection",
+      "laeuft": "sending",
+      "fehlgeschlagen": "failed"
+    },
+    "fehlgeschlagenHinweis": "Sending failed repeatedly. Retry or discard it.",
+    "erneutVersuchen": "Retry",
+    "verwerfen": "Discard"
   }
 }

@@ -23,6 +23,28 @@ namespace Fb4.Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Fb4.Backend.Domain.BesetztMeldung", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("GemeldetAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RoomId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("ZurueckgezogenAm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId", "GemeldetAm");
+
+                    b.ToTable("BesetztMeldungen", (string)null);
+                });
+
             modelBuilder.Entity("Fb4.Backend.Domain.LaufwegEintrag", b =>
                 {
                     b.Property<Guid>("Id")
