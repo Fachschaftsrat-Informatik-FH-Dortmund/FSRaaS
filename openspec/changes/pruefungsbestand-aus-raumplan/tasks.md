@@ -1,7 +1,7 @@
 ## 1. Vertrag
 
-- [ ] 1.1 `api-contract.yaml` auf 0.8.0: `Pruefungstermin.raeume` statt `roomId`, Schema `Pruefungsbestandsvollstaendigkeit`, Pflichtfeld `vollstaendigkeit` in der Antwort von `/stundenplan/pruefungsplan`, Beschreibung der Erkennung am Namen; Nachweis: `node tools/spec-check/src/cli.js` grün
-- [ ] 1.2 Typen erzeugen (`npm run generate` in `tools/contract-codegen`); Nachweis: `npm run check` grün, `Contract.cs` und `schema.ts` führen `Raeume`/`raeume` und `Vollstaendigkeit`
+- [x] 1.1 `api-contract.yaml` auf 0.8.0: `Pruefungstermin.raeume` statt `roomId`, Schema `Pruefungsbestandsvollstaendigkeit`, Pflichtfeld `vollstaendigkeit` in der Antwort von `/stundenplan/pruefungsplan`, Beschreibung der Erkennung am Namen; Nachweis: `node tools/spec-check/src/cli.js` grün
+- [x] 1.2 Typen erzeugen (`npm run generate` in `tools/contract-codegen`); Nachweis: `npm run check` grün, `Contract.cs` und `schema.ts` führen `Raeume`/`raeume` und `Vollstaendigkeit`
 
 ## 2. Erkennung
 
