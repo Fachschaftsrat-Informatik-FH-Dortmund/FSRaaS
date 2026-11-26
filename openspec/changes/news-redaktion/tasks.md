@@ -41,12 +41,12 @@
 
 ## 4. Verwaltung
 
-- [ ] 4.1 `admin/api.ts`: Meldungs-Abfrage und Mutationen (anlegen, ändern, veröffentlichen, zurückziehen) mit Invalidierung von `['verwaltung','meldungen']` und `['meldungen']`.
-- [ ] 4.2 `MeldungenScreen` (nach Zustand gruppiert, Leerzustand, „Neue Meldung") und `MeldungEditorScreen` (Editor, Vorschau mit den App-Bausteinen, Zurückziehen mit Bestätigung, 412 mit „Neueren Stand laden", offline gesperrt). Routen unter `more/admin/meldungen/`, Eintrag im Verwaltungs-Einstieg. Komponententests:
+- [x] 4.1 `admin/api.ts`: Meldungs-Abfrage und Mutationen (anlegen, ändern, veröffentlichen, zurückziehen) mit Invalidierung von `['verwaltung','meldungen']` und `['meldungen']`.
+- [x] 4.2 `MeldungenScreen` (nach Zustand gruppiert, Leerzustand, „Neue Meldung") und `MeldungEditorScreen` (Editor, Vorschau mit den App-Bausteinen, Zurückziehen mit Bestätigung, 412 mit „Neueren Stand laden", offline gesperrt). Routen unter `more/admin/meldungen/`, Eintrag im Verwaltungs-Einstieg. Komponententests:
   - „Meldungsredaktion für FSR-News"
   - „Vorschau vor Veröffentlichung"
   - „Ablehnung bei gleichzeitiger Änderung einer Meldung"
-- [ ] 4.3 Texte de/en, `parity.test.ts` grün.
+- [x] 4.3 Texte de/en, `parity.test.ts` grün.
 
 ## 5. Abschluss
 

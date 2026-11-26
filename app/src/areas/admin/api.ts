@@ -8,7 +8,7 @@ import {
   useMutation, useQuery, useQueryClient, type UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { paths } from '@/api/generated/schema';
+import type { components, paths } from '@/api/generated/schema';
 import { useAuth } from '@/auth/AuthProvider';
 import { config } from '@/config';
 import { AppError } from '@/errors/AppError';
@@ -22,6 +22,9 @@ type Laufweg = NonNullable<
 type Rollenzuweisung = NonNullable<
   paths['/verwaltung/rollen']['get']['responses']['200']['content']['application/json']
 >[number];
+
+type Meldungsentwurf = components['schemas']['Meldungsentwurf'];
+type MeldungsentwurfEingabe = components['schemas']['MeldungsentwurfEingabe'];
 
 export interface StammdatenMitStand {
   daten: Stammdaten;
@@ -49,10 +52,14 @@ function fehler(status: number, error: unknown): AppError {
   return problemToAppError(status, error);
 }
 
-export function useAdminApi() {
+function useAdminClient() {
   const { getAccessToken, status } = useAuth();
-  const angemeldet = status === 'signed-in';
   const client = useMemo(() => adminClient(getAccessToken), [getAccessToken]);
+  return { client, angemeldet: status === 'signed-in' };
+}
+
+export function useAdminApi() {
+  const { client, angemeldet } = useAdminClient();
   const qc = useQueryClient();
 
   const stammdaten: UseQueryResult<StammdatenMitStand> = useQuery({
@@ -138,4 +145,101 @@ export function useAdminApi() {
   return { stammdaten, stammdatenSpeichern, laufwege, laufwegeSpeichern, rollen, rollenSpeichern };
 }
 
-export type { Stammdaten, Laufweg, Rollenzuweisung };
+// ---------------------------------------------------------------- Meldungen
+// Redaktion der FSR-News (Requirements „Meldungsredaktion für FSR-News",
+// „Vorschau vor Veröffentlichung", „Ablehnung bei gleichzeitiger Änderung einer
+// Meldung"). Nach jeder erfolgreichen Handlung werden die Redaktionsliste und die
+// öffentliche Meldungsliste invalidiert, damit die App auf demselben Gerät die
+// Änderung sofort zeigt (Change `news-redaktion`, design.md D8).
+
+export const MELDUNGEN_VERWALTUNG = ['verwaltung', 'meldungen'] as const;
+
+export function useMeldungenRedaktion() {
+  const { client, angemeldet } = useAdminClient();
+  return useQuery<Meldungsentwurf[]>({
+    queryKey: MELDUNGEN_VERWALTUNG,
+    enabled: angemeldet,
+    queryFn: async () => {
+      const { data, error, response } = await client.GET('/meldungen/entwuerfe');
+      if (error || !data) throw fehler(response.status, error);
+      return data;
+    },
+  });
+}
+
+/** Eine Meldung der Redaktion; `null` als Kennung heißt „neue Meldung" (kein Abruf). */
+export function useMeldungsentwurf(id: string | null) {
+  const { client, angemeldet } = useAdminClient();
+  const qc = useQueryClient();
+
+  const query = useQuery<Meldungsentwurf>({
+    queryKey: [...MELDUNGEN_VERWALTUNG, id],
+    enabled: angemeldet && id !== null,
+    retry: false,
+    queryFn: async () => {
+      const { data, error, response } = await client.GET('/meldungen/entwuerfe/{entwurfId}', {
+        params: { path: { entwurfId: id! } },
+      });
+      if (error || !data) throw fehler(response.status, error);
+      return data;
+    },
+  });
+
+  function gespeichert(m: Meldungsentwurf) {
+    qc.setQueryData([...MELDUNGEN_VERWALTUNG, m.id], m);
+    void qc.invalidateQueries({ queryKey: MELDUNGEN_VERWALTUNG, exact: true });
+    void qc.invalidateQueries({ queryKey: ['meldungen'] });
+    return m;
+  }
+
+  async function anlegen(eingabe: MeldungsentwurfEingabe): Promise<Meldungsentwurf> {
+    const { data, error, response } = await client.POST('/meldungen/entwuerfe', { body: eingabe });
+    if (error || !data) throw fehler(response.status, error);
+    return gespeichert(data);
+  }
+
+  async function aendern(basis: Meldungsentwurf, eingabe: MeldungsentwurfEingabe): Promise<Meldungsentwurf> {
+    const { data, error, response } = await client.PUT('/meldungen/entwuerfe/{entwurfId}', {
+      params: { path: { entwurfId: basis.id }, header: { 'If-Match': basis.etag } },
+      body: eingabe,
+    });
+    if (error || !data) throw fehler(response.status, error);
+    return gespeichert(data);
+  }
+
+  /**
+   * Aus der Vorschau: legt bei Bedarf an oder übernimmt geänderten Inhalt und
+   * veröffentlicht dann genau diesen Stand (If-Match mit dem frischen ETag).
+   */
+  async function veroeffentlichen(
+    basis: Meldungsentwurf | null,
+    eingabe: MeldungsentwurfEingabe,
+  ): Promise<Meldungsentwurf> {
+    let stand = basis;
+    if (!stand) stand = await anlegen(eingabe);
+    else if (stand.titel !== eingabe.titel || stand.text !== eingabe.text) stand = await aendern(stand, eingabe);
+
+    const { data, error, response } = await client.PUT('/meldungen/entwuerfe/{entwurfId}/veroeffentlichung', {
+      params: { path: { entwurfId: stand.id }, header: { 'If-Match': stand.etag } },
+    });
+    if (error || !data) throw fehler(response.status, error);
+    return gespeichert(data);
+  }
+
+  async function zurueckziehen(basis: Meldungsentwurf): Promise<Meldungsentwurf> {
+    const { error, response } = await client.DELETE('/meldungen/entwuerfe/{entwurfId}/veroeffentlichung', {
+      params: { path: { entwurfId: basis.id } },
+    });
+    if (error || !response.ok) throw fehler(response.status, error);
+    // Neuer Stand samt ETag vom Server, statt ihn hier nachzubilden.
+    const neu = await query.refetch();
+    void qc.invalidateQueries({ queryKey: MELDUNGEN_VERWALTUNG, exact: true });
+    void qc.invalidateQueries({ queryKey: ['meldungen'] });
+    if (!neu.data) throw AppError.from(neu.error);
+    return neu.data;
+  }
+
+  return { query, anlegen, aendern, veroeffentlichen, zurueckziehen };
+}
+
+export type { Stammdaten, Laufweg, Rollenzuweisung, Meldungsentwurf, MeldungsentwurfEingabe };

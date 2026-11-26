@@ -645,7 +645,7 @@
       "erneutVeroeffentlichen": "Erneut veröffentlichen",
       "veroeffentlicht": "Veröffentlicht.",
       "zurueckziehen": "Zurückziehen",
-      "zurueckziehenFrage": "Meldung „{{titel}}“ zurückziehen? Sie verschwindet aus der App; wer sie angepinnt hat, sieht sie als zurückgezogen.",
+      "zurueckziehenFrage": "Meldung „{{titel}}“ zurückziehen? Die Meldung verschwindet aus der App; wer sie angepinnt hat, sieht sie als zurückgezogen.",
       "zurueckgezogen": "Zurückgezogen.",
       "veraltet": "Diese Meldung wurde zwischenzeitlich von jemand anderem geändert. Deine Eingabe bleibt erhalten, bis du den neueren Stand lädst.",
       "neuerenStandLaden": "Neueren Stand laden",

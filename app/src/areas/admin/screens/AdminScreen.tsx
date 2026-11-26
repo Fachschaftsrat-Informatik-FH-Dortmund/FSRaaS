@@ -15,6 +15,7 @@ import { Screen } from '@/ui/Screen';
 // der App und im Web-Export (ADMIN-F-030) — dieselbe Codebasis.
 
 const SEKTIONEN = [
+  { key: 'meldungen', href: '/more/admin/meldungen', rolle: 'fsr-redaktion' as const },
   { key: 'rollen', href: '/more/admin/rollen', rolle: 'fsr-redaktion' as const },
   { key: 'stammdaten', href: '/more/admin/stammdaten', rolle: 'fsr-redaktion' as const },
   { key: 'laufwege', href: '/more/admin/laufwege', rolle: 'fsr-redaktion' as const },
