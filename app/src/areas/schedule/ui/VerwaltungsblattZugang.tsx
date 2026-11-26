@@ -6,6 +6,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { useTheme } from '@/theme';
 import { AppButton } from '@/ui/primitives';
 import { useAnsichtEinstellungen } from '../ansichtEinstellungen';
+import { useEinblendungsStand } from '../einblendungsStand';
 import { useEinrichtung } from '../einrichtung';
 import { useScheduleEntries } from '../planStore';
 
@@ -48,8 +49,10 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
     toggleZeitachse,
     toggleSprungZuHeute,
     toggleFarbautomatik,
-    toggleAlternativenEinblenden,
   } = useAnsichtEinstellungen();
+  // Requirement „Einblendung nur für die laufende Sitzung": beide
+  // Einblendungsschalter kommen aus dem nicht gespeicherten Sitzungsstand.
+  const { stand: einblendung, toggleAlternativen, toggleAlle } = useEinblendungsStand();
   const { clear: planLeeren } = useScheduleEntries();
   const { clear: einrichtungZuruecksetzen } = useEinrichtung();
   const [aktion, setAktion] = useState<Loeschaktion>(null);
@@ -92,8 +95,14 @@ function VerwaltungsBlatt({ sichtbar, onSchliessen }: { sichtbar: boolean; onSch
             {/* Requirement „Einblenden aller Veranstaltungen gewählter Module". */}
             <SchalterZeile
               label={t('schedule.verwaltungAlternativen')}
-              wert={loaded ? einstellungen.alternativenEinblenden : false}
-              onChange={toggleAlternativenEinblenden}
+              wert={einblendung.alternativen}
+              onChange={toggleAlternativen}
+            />
+            {/* Requirement „Einblenden nicht gewählter Veranstaltungen". */}
+            <SchalterZeile
+              label={t('schedule.verwaltungAlleEinblenden')}
+              wert={einblendung.alle}
+              onChange={toggleAlle}
             />
 
             <AppButton variant="secondary" label={t('schedule.planLeeren')} onPress={() => setAktion('leeren')} />
