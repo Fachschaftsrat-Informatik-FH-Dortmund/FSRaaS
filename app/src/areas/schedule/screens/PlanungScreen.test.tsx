@@ -8,6 +8,7 @@ import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
 import { anzeigeFarbe } from '../farbe';
 import { __resetAnsichtEinstellungenForTest } from '../ansichtEinstellungen';
 import { __resetPlanungAktionForTest } from '../planungAktion';
+import { __resetPlanungsEinstellungenForTest } from '../planungseinstellungen';
 import { PlanungSpeichernZugang } from '../ui/PlanungSpeichernZugang';
 import { PlanungScreen } from './PlanungScreen';
 
@@ -819,5 +820,168 @@ describe('Bestätigungsdialoge als Pop-up', () => {
     act(() => dialog.props.onRequestClose());
     expect(offeneDialoge()).toHaveLength(0);
     expect(mockDispatch).not.toHaveBeenCalled();
+  });
+});
+
+// Change `planungsmodus-voreinstellungen-anpinnen`: Vorschlag, Anpinnen und
+// Rücknahme im Planungsmodus. Ausgangslage: Vorlesung Montag (einziger Slot,
+// vorbelegt), Übung Dienstag 10:00 (A-B, fremd) und 12:00 (C5-E, eigene Gruppe C8).
+function eigenerTerminAmDienstag(von: number, bis: number) {
+  return {
+    id: 'job',
+    kind: 'eigen',
+    title: 'Nebenjob',
+    wiederkehrend: true,
+    deaktiviertBis: null,
+    color: '#000000',
+    weekday: 'Tue',
+    timeBeginMin: von,
+    timeEndMin: bis,
+    gruppenzugehoerig: true,
+    abweichendeGruppe: false,
+    akzeptierteKonflikte: [],
+    gueltigVon: null,
+    gueltigBis: null,
+  };
+}
+
+const uebungZehn = () => screen.getByLabelText(/^10:00–11:30 Mathematik für Informatik 3 Ü/);
+const uebungZwoelf = () => screen.getByLabelText(/^12:00–13:30 Mathematik für Informatik 3 Ü/);
+const gewaehlt = (el: { props: { accessibilityState?: { checked?: boolean } } }) => el.props.accessibilityState?.checked;
+const bestehendeUebung = (over: Record<string, unknown> = {}) =>
+  offiziellerEintrag({
+    id: 'bestehend-ue',
+    courseType: 'Ü',
+    studentSet: 'A-B',
+    weekday: 'Tue',
+    timeBeginMin: 600,
+    timeEndMin: 690,
+    ...over,
+  });
+
+describe('Automatischer Planungsvorschlag', () => {
+  beforeEach(() => __resetPlanungsEinstellungenForTest());
+
+  it('Vorschlag erzeugen und ändern: der Vorschlag steht im Zwischenstand, ist gekennzeichnet und wirkt erst beim Sichern', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Vorschlag'));
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+
+    expect(gewaehlt(uebungZwoelf())).toBe(true);
+    expect(gewaehlt(uebungZehn())).toBe(false);
+    expect(screen.getByText('· Vom Vorschlag')).toBeTruthy();
+    expect(mockMehrereUebernehmen).not.toHaveBeenCalled();
+
+    // Einzeln ändern, bevor der Plan sich ändert.
+    fireEvent.press(uebungZwoelf());
+    fireEvent.press(uebungZehn());
+    expect(gewaehlt(uebungZehn())).toBe(true);
+    expect(mockMehrereUebernehmen).not.toHaveBeenCalled();
+  });
+
+  it('Nicht angepinnter Termin wird umgelegt, wenn er mit einem eigenen Termin kollidiert', () => {
+    mockEntries = [eigenerTerminAmDienstag(570, 630)];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(uebungZehn());
+    fireEvent.press(screen.getByLabelText('Vorschlag'));
+
+    expect(gewaehlt(uebungZehn())).toBe(false);
+    expect(gewaehlt(uebungZwoelf())).toBe(true);
+  });
+
+  it('Keine konfliktfreie Konstellation: zeigt die beste gefundene und nennt die Beteiligten im Pop-up', () => {
+    mockEntries = [eigenerTerminAmDienstag(570, 900)];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Vorschlag'));
+
+    expect(screen.getByText(/Nicht alles passt ohne Konflikt/)).toBeTruthy();
+    expect(screen.getByText(/Mathematik für Informatik 3 Ü ↔ Nebenjob/)).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Verstanden'));
+    expect(screen.queryByText(/Nicht alles passt ohne Konflikt/)).toBeNull();
+  });
+
+  it('meldet, wenn der Vorschlag nichts umlegt', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(uebungZwoelf());
+    fireEvent.press(screen.getByLabelText('Vorschlag'));
+    expect(screen.getByText(/bereits die beste/)).toBeTruthy();
+  });
+
+  it('führt über die Werkzeugzeile zu den Planungseinstellungen und nennt die gewählte Voreinstellung', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Planungseinstellungen öffnen, Voreinstellung: Fahrten zur Uni'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/planung-einstellungen');
+  });
+});
+
+describe('Anpinnen eines Termins', () => {
+  beforeEach(() => __resetPlanungsEinstellungenForTest());
+
+  it('Angepinnter Termin bei erneuter Optimierung: bleibt an seinem Zeitslot und wird mit Pin gesichert', () => {
+    mockEntries = [eigenerTerminAmDienstag(570, 630)];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(uebungZehn());
+    fireEvent.press(screen.getByLabelText('Termin anpinnen'));
+    expect(screen.getByLabelText('Termin anpinnen').props.accessibilityState).toMatchObject({ checked: true });
+
+    fireEvent.press(screen.getByLabelText('Vorschlag'));
+    expect(gewaehlt(uebungZehn())).toBe(true);
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+    const [hinzuzufuegen] = mockMehrereUebernehmen.mock.calls[0]!;
+    expect(hinzuzufuegen.find((e: { courseType: string }) => e.courseType === 'Ü')).toMatchObject({
+      timeBeginMin: 600,
+      angepinnt: true,
+    });
+  });
+
+  it('pinnt einen bereits gespeicherten Termin an und schreibt den Pin erst beim Sichern', () => {
+    mockEntries = [offiziellerEintrag({}), bestehendeUebung()];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText('Termin anpinnen'));
+    expect(mockMehrereUebernehmen).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+    const [, entfernen, aktualisierungen] = mockMehrereUebernehmen.mock.calls[0]!;
+    expect(entfernen).toEqual([]);
+    expect(aktualisierungen).toEqual([{ id: 'bestehend-ue', patch: { angepinnt: true } }]);
+  });
+
+  it('Anpinnen zurücknehmen: zweimal umschalten hinterlässt keine ungesicherte Änderung', () => {
+    mockEntries = [offiziellerEintrag({}), bestehendeUebung()];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText('Termin anpinnen'));
+    fireEvent.press(screen.getByLabelText('Termin anpinnen'));
+    expect(screen.getByLabelText('Planung sichern')).toBeTruthy();
+  });
+});
+
+describe('Rücknahme einer übernommenen Optimierung', () => {
+  beforeEach(() => __resetPlanungsEinstellungenForTest());
+
+  it('Optimierung zurücknehmen: stellt den Termin der eigenen Gruppe wieder her und lässt eigene Termine unverändert', () => {
+    mockEntries = [offiziellerEintrag({}), bestehendeUebung(), eigenerTerminAmDienstag(900, 960)];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Nach Gruppe'));
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    expect(gewaehlt(uebungZwoelf())).toBe(true);
+    expect(gewaehlt(uebungZehn())).toBe(false);
+
+    fireEvent.press(screen.getByLabelText('Planung sichern — ungesicherte Änderungen vorhanden'));
+    const [hinzuzufuegen, entfernen] = mockMehrereUebernehmen.mock.calls[0]!;
+    expect(entfernen).toEqual(['bestehend-ue']);
+    expect(hinzuzufuegen).toEqual([expect.objectContaining({ courseType: 'Ü', timeBeginMin: 720 })]);
+  });
+
+  it('lässt einen angepinnten Termin bei der Rücknahme stehen', () => {
+    mockEntries = [offiziellerEintrag({}), bestehendeUebung({ angepinnt: true })];
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Nach Gruppe'));
+    expect(screen.getByText(/entspricht bereits der Einteilung/)).toBeTruthy();
   });
 });

@@ -344,3 +344,140 @@ public class UebersichtAllerRaeumeImRaumplanZwischenspeicher
         Assert.Equal(Abruf, alle.StandAlter.AbgerufenAm);
     }
 }
+
+/// <summary>
+/// Requirement „Tagesbelegung eines Raums aus dem Raumplan-Zwischenspeicher"
+/// (Capability <c>backend-and-api</c>), trägt „Belegung eines gewählten Raums
+/// anzeigen" (Capability <c>room-finder</c>).
+/// </summary>
+public class TagesbelegungEinesRaumsAusDemRaumplanZwischenspeicher
+{
+    // 2026-06-10 ist ein Mittwoch; Berlin liegt im Juni bei UTC+2.
+    static readonly DateTimeOffset Abruf = new(2026, 6, 10, 5, 0, 0, TimeSpan.Zero);
+
+    static RaumplanTerminEintrag Eintrag(string roomId, string name, DateTimeOffset beginn, DateTimeOffset ende,
+        string quelle = "") => new()
+    {
+        RoomId = roomId, RoomIdQuelle = quelle == "" ? roomId : quelle, Name = name, EventType = "Course",
+        Beginn = beginn, Ende = ende, Weekday = "Wed", TimeBegin = "0000", TimeEnd = "0000",
+    };
+
+    static async Task Befuellen(TestAppFactory factory)
+    {
+        using var scope = factory.NewScope();
+        var db = scope.ServiceProvider.GetRequiredService<Fb4DbContext>();
+        db.RaumplanStand.Add(new RaumplanStand
+        {
+            AbgerufenAm = Abruf, LetzterVersuchAm = Abruf, LetzterVersuchErfolgreich = true,
+        });
+        db.RaumplanRaeume.Add(new RaumplanRaum { RoomId = "Z.9.99" });
+        db.RaumplanTermine.AddRange(
+            // Reihenfolge absichtlich vertauscht: die Antwort sortiert nach Beginn.
+            Eintrag("A.E.01", "Nachmittag", new(2026, 6, 10, 12, 0, 0, TimeSpan.Zero), new(2026, 6, 10, 13, 30, 0, TimeSpan.Zero)),
+            Eintrag("A.E.01", "Vormittag", new(2026, 6, 10, 6, 15, 0, TimeSpan.Zero), new(2026, 6, 10, 7, 45, 0, TimeSpan.Zero)),
+            // 23:30 Ortszeit am Vortag bis 00:30 Ortszeit — berührt den Tag.
+            Eintrag("A.E.01", "Über Mitternacht", new(2026, 6, 9, 21, 30, 0, TimeSpan.Zero), new(2026, 6, 9, 22, 30, 0, TimeSpan.Zero)),
+            // 01:00 UTC am 10. ist 03:00 Ortszeit am 10. — gehört dazu; 22:30 UTC am 10. ist 00:30 am 11. — nicht.
+            Eintrag("A.E.01", "Nächster Tag", new(2026, 6, 10, 22, 30, 0, TimeSpan.Zero), new(2026, 6, 10, 23, 30, 0, TimeSpan.Zero)),
+            Eintrag("C.E.44", "Aus dem Namensfeld", new(2026, 6, 10, 8, 0, 0, TimeSpan.Zero), new(2026, 6, 10, 9, 0, 0, TimeSpan.Zero), quelle: "*"));
+        await db.SaveChangesAsync();
+    }
+
+    sealed record Belegung(List<Raumtermin> Termine, StandAlter StandAlter);
+
+    [Fact]
+    public async Task Raum_mit_Terminen_am_Tag()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+
+        var antwort = await factory.CreateClient().GetFromJsonAsync<Belegung>("/v1/raeume/A.E.01/belegung?datum=2026-06-10");
+
+        Assert.Equal(["Über Mitternacht", "Vormittag", "Nachmittag"], antwort!.Termine.Select(t => t.Bezeichnung));
+        Assert.Equal(Abruf, antwort.StandAlter.AbgerufenAm);
+    }
+
+    [Fact]
+    public async Task Raum_allein_aus_dem_Namensfeld_hat_eine_Belegung()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+
+        var antwort = await factory.CreateClient().GetFromJsonAsync<Belegung>("/v1/raeume/C.E.44/belegung?datum=2026-06-10");
+
+        Assert.Equal("Aus dem Namensfeld", Assert.Single(antwort!.Termine).Bezeichnung);
+    }
+
+    [Fact]
+    public async Task Nicht_kuratierter_Raum()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+
+        var antwort = await factory.CreateClient().GetAsync("/v1/raeume/Z.9.99/belegung?datum=2026-06-10");
+
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+        Assert.Empty((await antwort.Content.ReadFromJsonAsync<Belegung>())!.Termine);
+    }
+
+    [Fact]
+    public async Task Kuratierter_Raum_ohne_Raumplan_Eintrag_ist_bekannt()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+        string kuratiert;
+        using (var scope = factory.NewScope())
+            kuratiert = scope.ServiceProvider.GetRequiredService<Fb4DbContext>().Raeume.Select(r => r.RoomId)
+                .AsEnumerable().First(r => r is not ("A.E.01" or "C.E.44" or "Z.9.99"));
+
+        var antwort = await factory.CreateClient().GetAsync($"/v1/raeume/{kuratiert}/belegung?datum=2026-06-10");
+
+        Assert.Equal(HttpStatusCode.OK, antwort.StatusCode);
+    }
+
+    [Fact]
+    public async Task Unbekannter_Raum()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+
+        var antwort = await factory.CreateClient().GetAsync("/v1/raeume/X.0.00/belegung?datum=2026-06-10");
+
+        Assert.Equal(HttpStatusCode.NotFound, antwort.StatusCode);
+        Assert.Equal("application/problem+json", antwort.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("raum_unbekannt", await antwort.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Pseudoraum_ist_kein_Raum()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+
+        var antwort = await factory.CreateClient().GetAsync("/v1/raeume/%2A/belegung?datum=2026-06-10");
+
+        Assert.Equal(HttpStatusCode.NotFound, antwort.StatusCode);
+    }
+
+    [Fact]
+    public async Task Kein_Bestand_vorhanden()
+    {
+        using var factory = new TestAppFactory();
+
+        var antwort = await factory.CreateClient().GetAsync("/v1/raeume/A.E.01/belegung");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, antwort.StatusCode);
+        Assert.Contains("raumplan_nicht_verfuegbar", await antwort.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Ungueltiges_Datum()
+    {
+        using var factory = new TestAppFactory();
+        await Befuellen(factory);
+
+        var antwort = await factory.CreateClient().GetAsync("/v1/raeume/A.E.01/belegung?datum=10.06.2026");
+
+        Assert.Equal(HttpStatusCode.BadRequest, antwort.StatusCode);
+    }
+}

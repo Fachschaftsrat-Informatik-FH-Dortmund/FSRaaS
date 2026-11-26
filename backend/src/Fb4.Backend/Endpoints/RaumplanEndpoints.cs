@@ -9,13 +9,15 @@ namespace Fb4.Backend.Endpoints;
 
 /// <summary>
 /// Kontofreie Lese-Endpunkte auf dem Raumplan-Zwischenspeicher (INT-009):
-/// Raumübersicht (Requirement „Übersicht aller Räume im Raumplan-Zwischenspeicher")
-/// und Raumplan-Termine (Requirement „Raumplan-Termine für lokalen
-/// Stundenplan-Abgleich"). Beide lesen ausschließlich den eigenen Bestand.
+/// Raumübersicht (Requirement „Übersicht aller Räume im Raumplan-Zwischenspeicher"),
+/// Tagesbelegung eines Raums (Requirement „Tagesbelegung eines Raums aus dem
+/// Raumplan-Zwischenspeicher") und Raumplan-Termine (Requirement „Raumplan-Termine
+/// für lokalen Stundenplan-Abgleich"). Alle lesen ausschließlich den eigenen Bestand.
 /// </summary>
 public static class RaumplanEndpoints
 {
     static readonly string[] Werktage = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    static readonly TimeZoneInfo Ortszeit = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
 
     public static IEndpointRouteBuilder MapRaumplanEndpoints(this IEndpointRouteBuilder app)
     {
@@ -63,6 +65,36 @@ public static class RaumplanEndpoints
             }).ToList();
 
             return Results.Ok(new { raeume = status, standAlter });
+        }).AllowAnonymous().WithTags("raum");
+
+        app.MapGet("/raeume/{roomId}/belegung", async (
+            string roomId, string? datum, Fb4DbContext db, TimeProvider zeit, CancellationToken ct) =>
+        {
+            DateOnly tag;
+            if (string.IsNullOrWhiteSpace(datum))
+                tag = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(zeit.GetUtcNow(), Ortszeit).DateTime);
+            else if (!DateOnly.TryParseExact(datum, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out tag))
+                throw ApiException.BadRequest("datum_ungueltig", "Das Datum muss im Format JJJJ-MM-TT angegeben sein.");
+
+            var standAlter = await StandAlterAsync(db, ct);
+
+            var bekannt = roomId != RaumAufloesung.Pseudoraum && (
+                await db.RaumplanRaeume.AsNoTracking().AnyAsync(r => r.RoomId == roomId, ct)
+                || await db.RaumplanTermine.AsNoTracking().AnyAsync(x => x.RoomId == roomId, ct)
+                || await db.Raeume.AsNoTracking().AnyAsync(r => r.RoomId == roomId, ct));
+            if (!bekannt)
+                throw ApiException.NotFound("raum_unbekannt",
+                    "Dieser Raum ist weder im Raumplan noch in der gepflegten Raumliste bekannt.");
+
+            var (von, bis) = Ortstag(tag);
+            var termine = (await db.RaumplanTermine.AsNoTracking()
+                    .Where(x => x.RoomId == roomId && x.Beginn < bis && x.Ende > von)
+                    .ToListAsync(ct))
+                .OrderBy(x => x.Beginn).ThenBy(x => x.Ende)
+                .Select(Raumtermin)
+                .ToList();
+
+            return Results.Ok(new { termine, standAlter });
         }).AllowAnonymous().WithTags("raum");
 
         app.MapGet("/raumplan/termine", async (
@@ -118,6 +150,17 @@ public static class RaumplanEndpoints
             QuelleErreichbar = stand.LetzterVersuchErfolgreich,
             QuelleStand = null,
         };
+    }
+
+    /// <summary>Beginn und Ende eines Kalendertags in Ortszeit Europe/Berlin, als UTC-Zeitpunkte.</summary>
+    static (DateTimeOffset Von, DateTimeOffset Bis) Ortstag(DateOnly tag)
+    {
+        DateTimeOffset Mitternacht(DateOnly d)
+        {
+            var lokal = d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+            return new DateTimeOffset(lokal, Ortszeit.GetUtcOffset(lokal));
+        }
+        return (Mitternacht(tag), Mitternacht(tag.AddDays(1)));
     }
 
     static Raumtermin Raumtermin(RaumplanTerminEintrag x) => new()

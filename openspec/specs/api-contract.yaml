@@ -240,7 +240,13 @@ paths:
     get:
       tags: [raum]
       summary: Belegung eines einzelnen Raums
-      description: Erfüllt RAUM-F-010.
+      description: |
+        Erfüllt RAUM-F-010 (Requirement „Belegung eines gewählten Raums anzeigen")
+        und das Requirement „Tagesbelegung eines Raums aus dem
+        Raumplan-Zwischenspeicher" (Capability `backend-and-api`). Liefert alle
+        Termine des Raums, die den Tag (Ortszeit Europe/Berlin) berühren, nach
+        Beginn sortiert. Ohne `datum` gilt der heutige Ortstag. Vor dem ersten
+        erfolgreichen Raumplan-Abruf 503 mit Code `raumplan_nicht_verfuegbar`.
       security: []
       parameters:
         - name: roomId
@@ -265,7 +271,9 @@ paths:
                     items: { $ref: "#/components/schemas/Raumtermin" }
                   standAlter: { $ref: "#/components/schemas/StandAlter" }
         "404":
-          description: Raum nicht in der gepflegten Liste (RAUM, Abschnitt 9)
+          description: >-
+            Raum weder im Raumplan-Zwischenspeicher noch in der gepflegten Liste
+            (Code `raum_unbekannt`, RAUM Abschnitt 9)
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Fehler" }

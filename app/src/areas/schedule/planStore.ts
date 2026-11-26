@@ -48,6 +48,8 @@ function istGueltigeBasis(e: Record<string, unknown>): boolean {
     typeof e.gruppenzugehoerig === 'boolean' &&
     typeof e.abweichendeGruppe === 'boolean' &&
     istKennungsliste(e.akzeptierteKonflikte) &&
+    // Requirement „Anpinnen eines Termins": optional, fehlt bei Altbeständen.
+    (e.angepinnt === undefined || typeof e.angepinnt === 'boolean') &&
     (e.gueltigVon === null || typeof e.gueltigVon === 'number') &&
     (e.gueltigBis === null || typeof e.gueltigBis === 'number')
   );
