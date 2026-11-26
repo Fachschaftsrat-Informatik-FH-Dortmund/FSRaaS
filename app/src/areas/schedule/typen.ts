@@ -77,6 +77,14 @@ interface PlanEntryBase {
    * entscheidet anhand dieses Feldes (`anzeigeFarbe`, `farbe.ts`).
    */
   farbeVonNutzer?: boolean;
+  /**
+   * Requirement „Anpinnen eines Termins": `true` hält den Zeitslot fest — der
+   * automatische Planungsvorschlag und die Rücknahme einer Optimierung fassen
+   * die Reihe dieses Termins nicht an (`planungsvorschlag.ts`). Fehlt das
+   * Feld (jeder vor dem Change `planungsmodus-voreinstellungen-anpinnen`
+   * gespeicherte Eintrag), gilt der Termin als nicht angepinnt.
+   */
+  angepinnt?: boolean;
 }
 
 export interface OfficialPlanEntry extends PlanEntryBase {

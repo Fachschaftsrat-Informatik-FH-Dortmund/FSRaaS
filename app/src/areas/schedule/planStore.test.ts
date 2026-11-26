@@ -365,3 +365,38 @@ describe('Ausdrückliches Sichern der Planung', () => {
     expect(await readScheduleEntries()).toHaveLength(2);
   });
 });
+
+describe('Anpinnen eines Termins', () => {
+  it('liest Einträge ohne angepinnt-Feld weiter und bewahrt einen gespeicherten Pin', async () => {
+    const angepinnt = eigenerTermin({ id: 'p1', angepinnt: true });
+    await writeJson('scheduleEntries', [eigenerTermin({ id: 'alt' }), angepinnt]);
+    __resetScheduleEntriesForTest();
+
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.entries.map((e) => [e.id, e.angepinnt])).toEqual([
+      ['alt', undefined],
+      ['p1', true],
+    ]);
+  });
+
+  it('verwirft einzeln einen Eintrag mit unlesbarem angepinnt-Feld', async () => {
+    await writeJson('scheduleEntries', [eigenerTermin({ id: 'ok' }), { ...eigenerTermin({ id: 'kaputt' }), angepinnt: 'ja' }]);
+    __resetScheduleEntriesForTest();
+
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    expect(result.current.entries.map((e) => e.id)).toEqual(['ok']);
+    expect(result.current.verworfeneEintraegeAnzahl).toBe(1);
+    errorSpy.mockRestore();
+  });
+
+  it('Anpinnen zurücknehmen: das Sichern schreibt den Pin als Aktualisierung', async () => {
+    const { result } = renderHook(() => useScheduleEntries());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+    act(() => result.current.hinzufuegen(eigenerTermin({ id: 'x', angepinnt: true })));
+    act(() => result.current.mehrereUebernehmen([], [], [{ id: 'x', patch: { angepinnt: false } }]));
+    expect((await readScheduleEntries())[0]!.angepinnt).toBe(false);
+  });
+});
