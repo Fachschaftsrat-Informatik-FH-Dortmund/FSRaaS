@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { ThemeProvider } from '@/theme';
 import { WeiterZugang } from './WeiterZugang';
 import { ModulauswahlVerwerfenZugang } from './ModulauswahlVerwerfenZugang';
-import { __resetWeiterAktionForTest, registriereWeiterAktion } from '../weiterAktion';
+import { __resetWeiterAktionForTest, meldeWeiterAktionAb, registriereWeiterAktion } from '../weiterAktion';
 import { __resetModulauswahlAktionForTest, registriereModulauswahlAktion } from '../modulauswahlAktion';
 
 beforeEach(() => {
@@ -37,6 +37,29 @@ describe('Weiterführender Bedienweg in der Kopfzeile', () => {
 
     fireEvent.press(zugang);
     expect(weiter).toHaveBeenCalledTimes(1);
+  });
+
+  // Issue #124: Einrichtung → Weiter → Zurück, danach fehlte das Symbol. Der
+  // Weg meldet sich vor der Navigation ab und beim Zurückkehren wieder an;
+  // dazwischen darf die Kopfzeilen-Ansicht nicht auf 0×0 zusammenfallen, sonst
+  // vermisst die native Kopfzeile auf Android sie beim Wiederanmelden nicht neu.
+  it('hält seinen Platz in der Kopfzeile über Ab- und Wiederanmeldung hinweg (Issue #124)', () => {
+    const marke = {};
+    const weiter = jest.fn();
+    renderZugang();
+    const platzhalter = () => screen.getByTestId('weiter-zugang-platzhalter', { includeHiddenElements: true });
+
+    expect(platzhalter().props.style).toMatchObject({ minWidth: 44, minHeight: 44 });
+
+    act(() => registriereWeiterAktion(marke, { freigegeben: true, weiter }));
+    expect(screen.getByLabelText('Weiter zum nächsten Schritt')).toBeTruthy();
+
+    act(() => meldeWeiterAktionAb(marke));
+    expect(screen.queryByLabelText('Weiter zum nächsten Schritt')).toBeNull();
+    expect(platzhalter().props.style).toMatchObject({ minWidth: 44, minHeight: 44 });
+
+    act(() => registriereWeiterAktion(marke, { freigegeben: true, weiter }));
+    expect(screen.getByLabelText('Weiter zum nächsten Schritt')).toBeTruthy();
   });
 
   it('bleibt ohne Freigabe bedienbar, damit der Bildschirm die fehlende Angabe benennen kann', () => {

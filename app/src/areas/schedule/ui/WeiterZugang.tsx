@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Ionicons from "@react-native-vector-icons/ionicons";
 
@@ -11,6 +11,15 @@ import { useWeiterAktion } from '../weiterAktion';
 // Außerhalb dieser drei Bildschirme liefert `useWeiterAktion` `null`, die
 // Schaltfläche verschwindet dann vollständig.
 //
+// Issue #124: Verschwunden ist dabei nur die Schaltfläche, nie der Platz. Der
+// Weiter-Weg meldet sich beim Antippen vor der Navigation ab (Change
+// `weiter-bedienweg-absturzschutz`, Entscheidung 2) und nach „Zurück" wieder
+// an. Rendert die Kopfzeilen-Komponente dazwischen `null`, schrumpft die native
+// headerRight-Ansicht von react-native-screens auf Android auf 0×0 und wird beim
+// erneuten Füllen nicht neu vermessen — das Symbol bleibt unsichtbar, obwohl
+// der Eintrag im Register steht. Ein Platzhalter gleicher Größe hält die
+// Ansicht vermessen; für Bedienungshilfen ist er unsichtbar.
+//
 // Ohne Freigabe bleibt sie sichtbar und bedienbar: Was ein Antippen dann tut,
 // entscheidet der Bildschirm. Der Schritt zur Gruppenkennung benennt die
 // fehlende Angabe, statt wortlos nichts zu tun. Der zurückgenommene Zustand
@@ -21,7 +30,16 @@ export function WeiterZugang() {
   const { colors } = useTheme();
   const aktion = useWeiterAktion();
 
-  if (!aktion) return null;
+  if (!aktion) {
+    return (
+      <View
+        testID="weiter-zugang-platzhalter"
+        style={styles.zugang}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
+    );
+  }
 
   return (
     <Pressable
