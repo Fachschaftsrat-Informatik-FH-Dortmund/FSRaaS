@@ -583,5 +583,84 @@
       "ticketUnten": "Unten",
       "dateError": "Bitte alle Datumsfelder im Format JJJJ-MM-TT ausfüllen oder leer lassen."
     }
+  },
+  "raum": {
+    "sichtLabel": "Sicht im Raum-Bereich",
+    "sicht": {
+      "frei": "Freie Räume",
+      "uebersicht": "Übersicht",
+      "laufend": "Läuft gerade"
+    },
+    "offlineTitel": "Raumsuche offline nicht verfügbar",
+    "offlineHinweis": "Ob ein Raum frei ist, lässt sich nur mit aktuellem Raumplan sagen. Verbinde dich mit dem Internet und versuche es erneut.",
+    "standVeraltet": "Der Raumplan ist nicht auf dem aktuellen Stand",
+    "frei": "frei",
+    "belegt": "belegt",
+    "symbolFrei": "○",
+    "symbolBelegt": "●",
+    "groesse": {
+      "klein": "klein",
+      "mittel": "mittel",
+      "gross": "groß"
+    },
+    "groesseLabel": "Größe: {{groesse}}",
+    "ekey": "🔑 mit E-Key zugänglich",
+    "pruefung": "Prüfung",
+    "notiz": "Hinweis: {{note}}",
+    "freiBis": "frei bis {{zeit}}",
+    "freiBisSchliesszeit": "frei bis {{zeit}} (Gebäudeschließung)",
+    "keinWeitererTermin": "frei, kein weiterer Termin bekannt",
+    "belegtBis": "{{bezeichnung}} · bis {{zeit}}",
+    "ohneBezeichnung": "Veranstaltung ohne Bezeichnung",
+    "datumZeit": "{{datum}} {{zeit}}",
+    "oeffnen": "Belegung von {{roomId}} anzeigen",
+    "freiSuche": {
+      "beginnLabel": "Beginn",
+      "beginn": "ab {{zeit}}",
+      "frueher": "30 Minuten früher",
+      "frueherKurz": "−30 Min.",
+      "spaeter": "30 Minuten später",
+      "spaeterKurz": "+30 Min.",
+      "jetzt": "Jetzt",
+      "dauerLabel": "Dauer",
+      "dauer": "{{count}} Std.",
+      "groesseFilterLabel": "Größenklasse",
+      "alleGroessen": "alle",
+      "nurEkey": "Nur mit E-Key zugängliche Räume",
+      "zeitraum": "Freie Räume von {{von}} bis {{bis}}",
+      "leerTitel": "Keine freien Räume gefunden",
+      "leerHinweis": "Im gewählten Zeitraum ist kein Raum der Raumliste durchgehend frei. Versuch es mit einem späteren Zeitfenster oder einer kürzeren Dauer.",
+      "leerFilterHinweis": "Mit den gesetzten Filtern ist im gewählten Zeitraum kein Raum frei. Setz die Filter zurück oder versuch ein späteres Zeitfenster.",
+      "eineStundeSpaeter": "Eine Stunde später suchen",
+      "filterZuruecksetzen": "Filter zurücksetzen"
+    },
+    "uebersichtSicht": {
+      "sucheLabel": "Raumkennung suchen",
+      "suchePlatzhalter": "z. B. C.E.44",
+      "belegungAnzeigen": "Belegung anzeigen",
+      "zustandLabel": "Belegungszustand",
+      "alle": "alle",
+      "leerTitel": "Kein Raum im Raumplan",
+      "leerHinweis": "Der Raumplan führt derzeit keine Räume. Versuch es später noch einmal.",
+      "keinTrefferTitel": "Kein Raum im gewählten Zustand",
+      "keinTrefferHinweis": "Kein Raum passt zu Zustand und Suche. Setz den Filter zurück, um alle Räume zu sehen.",
+      "filterZuruecksetzen": "Filter zurücksetzen"
+    },
+    "laufendSicht": {
+      "leerTitel": "Gerade findet keine erfasste Veranstaltung statt",
+      "leerHinweis": "Unter „Freie Räume“ findest du einen Raum für deine Lerngruppe.",
+      "bis": "bis {{zeit}}",
+      "raeume": "Räume"
+    },
+    "tag": {
+      "titel": "Tagesbelegung",
+      "ueberschrift": "{{roomId}} heute",
+      "leerTitel": "Heute keine Termine",
+      "leerHinweis": "Der Raumplan führt für diesen Raum heute keinen Termin. Prüf in der Übersicht, ob die Kennung stimmt.",
+      "zeitspanne": "{{von}}–{{bis}}",
+      "laeuftGerade": "läuft gerade",
+      "unbekanntTitel": "Raum unbekannt",
+      "unbekanntHinweis": "Zur Kennung {{roomId}} führen weder der Raumplan noch die Raumliste Angaben. Prüf die Schreibweise, etwa C.E.44."
+    }
   }
 }
