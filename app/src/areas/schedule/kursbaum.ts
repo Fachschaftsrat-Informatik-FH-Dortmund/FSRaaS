@@ -15,7 +15,7 @@
 // Vorbild `canteen/consolidate.ts` (Gruppierung mit stabiler
 // Eingabereihenfolge über eine `Map`).
 
-import { logError } from '@/errors/AppError';
+import { logDatenhinweis } from '@/errors/AppError';
 
 import { terminSchluessel } from './planungsstand';
 import type { OfficialTermin } from './typen';
@@ -109,6 +109,11 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
 
   const module = new Map<string, ModulAccum>();
   let modulIndex = 0;
+  // Issue #125: Das Zusammenfassen ist ein erwarteter, behandelter Befund im
+  // Live-Bestand (belegt für `44232|Ü|Tue|720|765|C.E.32|A-P`), kein Fehler.
+  // Es wird daher einmal je Aufbau mit der Anzahl protokolliert, nicht je
+  // Duplikat als `unknown — Error` auf console.error.
+  let zusammengefasst = 0;
 
   for (const endpunkt of perEndpunkt) {
     for (const termin of endpunkt.termine) {
@@ -135,15 +140,16 @@ export function baueModulliste(perEndpunkt: readonly EndpunktTermine[]): ModulAb
       // braucht.
       const terminKennung = terminSchluessel(termin);
       if (m.schluesselGesehen.has(terminKennung)) {
-        logError(
-          'kursbaum.baueModulliste.deckungsgleich',
-          new Error(`deckungsgleicher Rohtermin zusammengefasst: ${terminKennung}`),
-        );
+        zusammengefasst++;
         continue;
       }
       m.schluesselGesehen.add(terminKennung);
       m.termine.push(termin);
     }
+  }
+
+  if (zusammengefasst > 0) {
+    logDatenhinweis('kursbaum.baueModulliste.deckungsgleich', 'deckungsgleiche Rohtermine zusammengefasst', zusammengefasst);
   }
 
   interface AbschnittAccum {

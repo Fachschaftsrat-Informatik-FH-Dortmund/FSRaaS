@@ -71,7 +71,6 @@ function offiziell(over: Partial<OfficialPlanEntry> & { id: string }): OfficialP
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     courseId: '43051',
@@ -95,7 +94,6 @@ function eigen(over: Partial<CustomPlanEntry> & { id: string }): CustomPlanEntry
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     title: 'Lerngruppe',
@@ -266,6 +264,16 @@ describe('Blättern über Wochengrenzen', () => {
 
     fireEvent.press(screen.getByLabelText('Nächste Woche'));
     await waitFor(() => expect(screen.getByText('14.09.')).toBeTruthy());
+  });
+});
+
+describe('Einheitliche Blätter-Symbole', () => {
+  it('zeigt an den Wochen-Pfeilen das gemeinsame Symbolpaar', async () => {
+    await seed([ANALYSIS]);
+    await zeige();
+
+    expect(within(screen.getByLabelText('Vorige Woche')).getByText('chevron-back')).toBeTruthy();
+    expect(within(screen.getByLabelText('Nächste Woche')).getByText('chevron-forward')).toBeTruthy();
   });
 });
 
@@ -500,9 +508,12 @@ describe('Konflikthinweis bei überschneidenden Terminen', () => {
     ]);
     await zeige();
 
-    // Das angenommene Paar trägt allein die Kennzeichnung …
-    expect(screen.getByLabelText(/Datenbanken.*Angenommener Konflikt/)).toBeTruthy();
-    expect(screen.queryByLabelText(/Datenbanken.*· Konflikt ·/)).toBeNull();
+    // Das angenommene Paar trägt die Kennzeichnung genau einmal, beschriftet
+    // als „Konflikt" (Requirement „Bewusste Übernahme trotz Konflikt",
+    // Change `planungsmodus-anzeige`) …
+    expect(screen.getByLabelText(/Datenbanken.*· Konflikt/)).toBeTruthy();
+    expect(screen.queryByLabelText(/Datenbanken.*Konflikt.*Konflikt/)).toBeNull();
+    expect(screen.queryByLabelText(/Angenommen/)).toBeNull();
     // … das offene Paar den Hinweis.
     expect(screen.getByLabelText(/Praktikum.*Konflikt/)).toBeTruthy();
   });
@@ -526,16 +537,6 @@ describe('Kennzeichnung eigener Termine', () => {
 
     expect(screen.getByLabelText(/Lerngruppe.*Eigener Termin/)).toBeTruthy();
     expect(screen.queryByLabelText(/Analysis.*Eigener Termin/)).toBeNull();
-  });
-});
-
-describe('Visuelle Kennzeichnung von Prüfungsterminen', () => {
-  it('stellt einen Prüfungstermin gesondert von regulären Terminen dar', async () => {
-    await seed([ANALYSIS, eigen({ id: 'klausur', title: 'Klausur Analysis', istPruefung: true })]);
-    await zeige();
-
-    expect(screen.getByLabelText(/Klausur Analysis.*Prüfung/)).toBeTruthy();
-    expect(screen.queryByLabelText(/· Analysis.*Prüfung/)).toBeNull();
   });
 });
 

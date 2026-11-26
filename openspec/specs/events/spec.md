@@ -54,7 +54,7 @@ Wenn ein importiertes ICS-Event den Status `CANCELLED` trägt, muss das System e
 
 ## Entfallene Anforderungen (historisch)
 
-**EVENT-F-040 (entfallen).** „Das System muss der FSR-Redaktion das Anlegen, Bearbeiten und Absagen von Events ermöglichen." Herkunft: NEU. Grund: Redaktionsweg-Entscheidung FSR FB4, 2026-08-25: Events werden über den externen ICS-Kalender (INT-011) gepflegt, nicht über eine vom System bereitgestellte Verwaltungsoberfläche. Ersetzt durch das Requirement „Periodischer Import aus dem ICS-Kalender" (vormals EVENT-F-060). Die Kennzeichnung abgesagter Events (vormals EVENT-F-050) bleibt gültig, ihre Auslösung ändert sich jedoch von einer redaktionellen Aktion im Backend zu einem importierten `STATUS`-Feld (vormals EVENT-F-070).
+**EVENT-F-040 (entfallen).** „Das System muss der FSR-Redaktion das Anlegen, Bearbeiten und Absagen von Events ermöglichen." Herkunft: NEU. Grund: Redaktionsweg entschieden 2026-08-25: Events werden über den externen ICS-Kalender (INT-011) gepflegt, nicht über eine vom System bereitgestellte Verwaltungsoberfläche. Ersetzt durch das Requirement „Periodischer Import aus dem ICS-Kalender" (vormals EVENT-F-060). Die Kennzeichnung abgesagter Events (vormals EVENT-F-050) bleibt gültig, ihre Auslösung ändert sich jedoch von einer redaktionellen Aktion im Backend zu einem importierten `STATUS`-Feld (vormals EVENT-F-070).
 
 ## Scope / Nicht-Scope
 
@@ -69,7 +69,7 @@ Wenn ein importiertes ICS-Event den Status `CANCELLED` trägt, muss das System e
 - Redaktionelle Pflege der Events innerhalb dieser App — die Pflege erfolgt extern im ICS-Kalendertool des FSR, nicht in einer von dieser Capability bereitgestellten Oberfläche (siehe Capability `integrations`, INT-011).
 - Helfer-Anmeldung selbst — siehe Capability `event-volunteers`.
 - Externe Veranstaltungen (Hochschulsport, Uni-Esports, laut `linkstapel.de`) — bleiben externe Links, siehe `specs/product/vision.md` Abschnitt 5.
-- Erstsemester-Orientierungswoche als eigenständiges Feature — wird als reguläres Event über denselben ICS-Kalender gepflegt (Entscheidung FSR FB4, 2026-08-25), kein Sonderfall in dieser Capability.
+- Erstsemester-Orientierungswoche als eigenständiges Feature — wird als reguläres Event über denselben ICS-Kalender gepflegt (entschieden 2026-08-25), kein Sonderfall in dieser Capability.
 
 ## Nutzergeschichten
 

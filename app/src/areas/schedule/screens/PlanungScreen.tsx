@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove, type NavigationAction } from 'expo-router/react-navigation';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +12,7 @@ import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/reducedMotion';
 import { useStudiengaenge, useTermineFuerEndpunkte } from '../api';
-import { useAnsichtEinstellungen } from '../ansichtEinstellungen';
+import { useAnsichtEinstellungen, type AnsichtEinstellungen, type Hervorhebung } from '../ansichtEinstellungen';
 import { useEinrichtung } from '../einrichtung';
 import { farbeFuerVeranstaltung } from '../farbe';
 import { gruppenzugehoerig } from '../groupMatch';
@@ -24,7 +25,9 @@ import {
   terminEntsprichtEintrag,
   terminSchluessel,
   vorbelegteSlots,
+  zeilenStand,
   type VeranstaltungsartStand,
+  type ZeilenStand,
 } from '../planungsstand';
 import { useScheduleEntries } from '../planStore';
 import type { OfficialPlanEntry, OfficialTermin, PlanEntry, Weekday } from '../typen';
@@ -73,7 +76,6 @@ function baueSessionEintrag(slot: OfficialTermin): OfficialPlanEntry {
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: slot.gueltigVon,
     gueltigBis: slot.gueltigBis,
     courseId: slot.courseId,
@@ -112,7 +114,7 @@ export function PlanungScreen() {
   const { einrichtung, loaded: einrichtungGeladen } = useEinrichtung();
   const { entries, loaded: planGeladen, mehrereUebernehmen } = useScheduleEntries();
   const { studiengaenge } = useStudiengaenge();
-  const { einstellungen: ansichtEinstellungen } = useAnsichtEinstellungen();
+  const { einstellungen: ansichtEinstellungen, toggleHervorhebung } = useAnsichtEinstellungen();
 
   const gewaehlteEndpunkte = useMemo(
     () =>
@@ -219,6 +221,11 @@ export function PlanungScreen() {
   // Rückfrage „ungesicherte Änderungen" (unten) die eigene Sicherung ab
   // (design.md, Entscheidung 13).
   //
+  // Requirement „Kein Rückweg in den Planungsmodus nach dem Sichern" (Change
+  // `planungsmodus-anzeige`, design.md Entscheidung 6): `dismissTo` räumt den
+  // Stapel bis zur vorhandenen Wochenansicht ab. `replace` legte eine zweite
+  // Wochenansicht über Modulauswahl und Gruppenkennung — mit Zurück-Pfeil.
+  //
   // Der Navigationsaufruf selbst liegt einen Frame hinter dem Zustandslauf
   // (Change `planungsmodus-sichern-absturz`, design.md Entscheidung 2): so ist
   // das Abmelden der Kopfzeilen-Aktion (unten) vollständig committet, bevor
@@ -228,7 +235,7 @@ export function PlanungScreen() {
   // for a different fragment`).
   useEffect(() => {
     if (!gesichert) return;
-    requestAnimationFrame(() => router.replace('/'));
+    requestAnimationFrame(() => router.dismissTo('/'));
   }, [gesichert, router]);
 
   // Requirement „Ausdrückliches Sichern der Planung": Speichern-Symbol in der
@@ -420,6 +427,8 @@ export function PlanungScreen() {
         }))}
       />
 
+      <HervorhebungsSchalter einstellungen={ansichtEinstellungen} onUmschalten={toggleHervorhebung} />
+
       <ScrollView ref={scrollRef} contentContainerStyle={styles.liste}>
         {zeilenDesTages.length === 0 ? (
           <MessageView symbol="—" title={t('schedule.planungTagLeerTitel')} style={styles.tagLeer} />
@@ -431,7 +440,9 @@ export function PlanungScreen() {
               termin={termin}
               gewaehlt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e))}
               stand={planungsstand.find((s) => s.modulKey === modul.key && s.art === termin.courseType)}
+              gruppenkennung={gruppenkennung}
               eigeneGruppe={gruppenzugehoerig(gruppenkennung, termin.studentSet)}
+              einstellungen={ansichtEinstellungen}
               konfliktstufe={pruefeKandidatGegenZwischenstand(
                 termin,
                 zwischenstand.filter((e) => !terminEntsprichtEintrag(termin, e)),
@@ -535,12 +546,84 @@ function PlanungTagEintrag({ tag, aktiv }: { tag: Weekday; aktiv: boolean }) {
   );
 }
 
+const HERVORHEBUNGEN: readonly { schluessel: Hervorhebung; label: string }[] = [
+  { schluessel: 'hervorhebungEigeneGruppe', label: 'schedule.planungHervorhebungEigeneGruppe' },
+  { schluessel: 'hervorhebungKonflikte', label: 'schedule.planungHervorhebungKonflikte' },
+  { schluessel: 'hervorhebungEingeplant', label: 'schedule.planungHervorhebungEingeplant' },
+];
+
+/**
+ * Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus" (Change
+ * `planungsmodus-anzeige`, design.md Entscheidung 4): drei umschaltbare
+ * Plaketten unter der Wochentagsleiste. Der Zustand steht zusätzlich zur Farbe
+ * im Symbol (Kästchen gefüllt/leer) und im `accessibilityState`.
+ */
+function HervorhebungsSchalter({
+  einstellungen,
+  onUmschalten,
+}: {
+  einstellungen: AnsichtEinstellungen;
+  onUmschalten: (welche: Hervorhebung) => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  return (
+    <View style={styles.schalterZeile}>
+      <Text style={{ color: colors.textMuted, fontSize: 12 }}>{t('schedule.planungHervorhebungTitel')}</Text>
+      {HERVORHEBUNGEN.map(({ schluessel, label }) => {
+        const an = einstellungen[schluessel];
+        return (
+          <Pressable
+            key={schluessel}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: an }}
+            accessibilityLabel={t(label)}
+            onPress={() => onUmschalten(schluessel)}
+            style={[
+              styles.schalter,
+              { borderColor: an ? colors.accent : colors.border, backgroundColor: an ? `${colors.accent}22` : undefined },
+            ]}
+          >
+            <Ionicons name={an ? 'checkbox' : 'square-outline'} size={16} color={an ? colors.accent : colors.textMuted} />
+            <Text style={{ color: colors.text, fontSize: 13 }}>{t(label)}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const STAND_SYMBOL = {
+  eingeplant: 'checkmark-circle',
+  mehrfach: 'checkmark-done-circle',
+  anderweitig: 'swap-horizontal',
+  offen: 'ellipse-outline',
+} as const satisfies Record<ZeilenStand['art'], string>;
+
+function useStandText(): (stand: ZeilenStand) => string {
+  const { t } = useTranslation();
+  return (stand) => {
+    switch (stand.art) {
+      case 'eingeplant':
+        return t('schedule.planungStandEingeplant');
+      case 'mehrfach':
+        return t('schedule.planungStandMehrfach', { count: stand.anzahl });
+      case 'anderweitig':
+        return t('schedule.planungStandAnderweitig', { count: stand.anzahl });
+      case 'offen':
+        return t('schedule.planungStandOffen');
+    }
+  };
+}
+
 function TerminZeile({
   modul,
   termin,
   gewaehlt,
   stand,
+  gruppenkennung,
   eigeneGruppe,
+  einstellungen,
   konfliktstufe,
   hervorgehoben,
   onLayout,
@@ -550,7 +633,9 @@ function TerminZeile({
   termin: OfficialTermin;
   gewaehlt: boolean;
   stand: VeranstaltungsartStand | undefined;
+  gruppenkennung: string;
   eigeneGruppe: boolean;
+  einstellungen: AnsichtEinstellungen;
   konfliktstufe: 'konfliktfrei' | 'konflikt';
   hervorgehoben: boolean;
   onLayout: (y: number) => void;
@@ -558,19 +643,32 @@ function TerminZeile({
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const standText = useStandText();
 
-  // Requirement „Unterscheidung abgeleiteter Angaben von Quelldaten": eigene,
-  // abgesetzte dritte Zeile mit vorangestelltem Symbol für die Schlüsse der
-  // App — getrennt von Zeit, Bezeichnung, Art, Raum und lehrender Person, die
-  // unverändert aus INT-002 stammen (design.md, Entscheidung 11).
-  const abgeleitet: string[] = [];
-  if (!gewaehlt && stand && stand.stand !== 'gewaehlt') abgeleitet.push(t('schedule.planungZeileNichtEingeplant'));
-  if (stand && stand.stand === 'gewaehlt' && stand.gewaehlteSlots.length > 1) {
-    abgeleitet.push(t('schedule.planungZeileZugewiesen', { count: stand.gewaehlteSlots.length }));
-  }
-  if (!gewaehlt && konfliktstufe === 'konflikt') abgeleitet.push(t('schedule.planungZeileKonflikt'));
-  if (eigeneGruppe) abgeleitet.push(t('schedule.planungEigeneGruppe'));
-  if (gewaehlt) abgeleitet.push(t('schedule.planungGewaehlt'));
+  // Requirement „Kennzeichnung des Planungsstands je Veranstaltungsreihe"
+  // (design.md Entscheidungen 1 und 2): jede Zeile trägt immer genau einen
+  // Stand aus Symbol und Text — die Zeile verliert beim Wählen keine Zeile
+  // und verrutscht nicht (Issue #123).
+  const zStand = zeilenStand(stand, gewaehlt);
+  const konflikt = !gewaehlt && konfliktstufe === 'konflikt';
+  const standFarbe = gewaehlt ? colors.accent : colors.textMuted;
+  const zeitraum = `${formatZeit(termin.timeBeginMin)}–${formatZeit(termin.timeEndMin)}`;
+
+  // Requirement „Anzeige der zugewiesenen Gruppenkennungen im Planungsmodus"
+  // (design.md Entscheidung 3).
+  const rohKennung = termin.studentSet === '*' ? t('schedule.planungAlleGruppen') : termin.studentSet;
+  const rohIstEigene = termin.studentSet.toUpperCase() === gruppenkennung.toUpperCase();
+
+  // Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus":
+  // Konflikt hat Vorrang vor der eigenen Gruppe; „eingeplant" blendet die
+  // anderweitig erledigten Zeilen ab. Keine Wirkung ändert die Zeilenhöhe.
+  const hintergrund =
+    konflikt && einstellungen.hervorhebungKonflikte
+      ? `${colors.danger}22`
+      : eigeneGruppe && einstellungen.hervorhebungEigeneGruppe
+        ? `${colors.accent}22`
+        : undefined;
+  const abgeblendet = einstellungen.hervorhebungEingeplant && zStand.art === 'anderweitig';
 
   return (
     <View
@@ -578,18 +676,18 @@ function TerminZeile({
       onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
       style={[
         styles.zeile,
-        { borderColor: colors.border },
-        eigeneGruppe && { backgroundColor: `${colors.accent}22` },
         // Requirement „Kennzeichnung gewählter Termine im Planungsmodus": eine
-        // farbige Umrandung der gesamten Zeile, zusätzlich zum Symbol.
-        gewaehlt && { borderColor: colors.accent, borderWidth: 2 },
+        // farbige Umrandung der gesamten Zeile, zusätzlich zum Symbol. Die
+        // Breite ist immer 2 dp, nur die Farbe wechselt (Issue #123).
+        { borderColor: gewaehlt ? colors.accent : colors.border, backgroundColor: hintergrund },
+        abgeblendet && styles.zeileAbgeblendet,
         hervorgehoben && { borderColor: colors.text, borderWidth: 3 },
       ]}
     >
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: gewaehlt }}
-        accessibilityLabel={`${formatZeit(termin.timeBeginMin)}–${formatZeit(termin.timeEndMin)} ${modul.name} ${termin.courseType}`}
+        accessibilityLabel={`${zeitraum} ${termin.name} ${termin.courseType}`}
         onPress={onUmschalten}
         style={styles.zeileInhalt}
       >
@@ -597,16 +695,48 @@ function TerminZeile({
           {gewaehlt ? '☑' : '☐'}
         </Text>
         <View style={styles.zeileText}>
-          <Text style={{ color: colors.text, fontWeight: '600' }}>
-            {`${formatZeit(termin.timeBeginMin)}–${formatZeit(termin.timeEndMin)} · ${modul.name}`}
-          </Text>
+          {/* Requirement „Unveränderte Modulnamen im Planungsmodus" (design.md
+           * Entscheidung 5): Name des Termins, nicht der zusammengeführte. */}
+          <Text style={{ color: colors.text, fontWeight: '600' }}>{`${zeitraum} · ${termin.name}`}</Text>
           <Text style={{ color: colors.textMuted, fontSize: 12 }}>
             {/* Requirement „Lehrende Person in der Terminzeile des Planungsmodus" */}
             {[termin.courseType, termin.roomId, termin.lecturerName || null].filter(Boolean).join(' · ')}
           </Text>
-          {abgeleitet.length > 0 ? (
-            <Text style={{ color: colors.textMuted, fontSize: 12 }}>{`ⓘ ${abgeleitet.join(' · ')}`}</Text>
-          ) : null}
+          <View style={styles.kennungen}>
+            <Text
+              accessibilityLabel={
+                rohIstEigene ? t('schedule.planungEigeneGruppeKennung', { kennung: rohKennung }) : rohKennung
+              }
+              style={[
+                styles.kennung,
+                { color: colors.text, borderColor: rohIstEigene ? colors.text : colors.border },
+                rohIstEigene && styles.kennungEigene,
+              ]}
+            >
+              {rohKennung}
+            </Text>
+            {eigeneGruppe && !rohIstEigene ? (
+              <Text
+                accessibilityLabel={t('schedule.planungEigeneGruppeKennung', { kennung: gruppenkennung })}
+                style={[styles.kennung, styles.kennungEigene, { color: colors.text, borderColor: colors.text }]}
+              >
+                {gruppenkennung}
+              </Text>
+            ) : null}
+          </View>
+          {/* Requirement „Unterscheidung abgeleiteter Angaben von Quelldaten":
+           * die Schlüsse der App in einer eigenen, abgesetzten Zeile. */}
+          <View style={styles.standZeile}>
+            <Ionicons name={STAND_SYMBOL[zStand.art]} size={14} color={standFarbe} />
+            <Text style={{ color: standFarbe, fontSize: 12 }}>{standText(zStand)}</Text>
+            {konflikt ? (
+              <Text
+                style={{ color: einstellungen.hervorhebungKonflikte ? colors.danger : colors.textMuted, fontSize: 12 }}
+              >
+                {`· ⚠ ${t('schedule.planungZeileKonflikt')}`}
+              </Text>
+            ) : null}
+          </View>
         </View>
       </Pressable>
     </View>
@@ -696,7 +826,22 @@ function AusstehendLeiste({
 const styles = StyleSheet.create({
   liste: { gap: 8, paddingVertical: 8 },
   tagLeer: { paddingVertical: 24 },
-  zeile: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, minHeight: 44 },
+  zeile: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderRadius: 10, minHeight: 44 },
+  zeileAbgeblendet: { opacity: 0.55 },
+  kennungen: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  kennung: { fontSize: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 4, paddingHorizontal: 4 },
+  kennungEigene: { fontWeight: '700', borderWidth: 1.5 },
+  standZeile: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  schalterZeile: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, paddingVertical: 6 },
+  schalter: {
+    minHeight: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 10,
+  },
   zeileInhalt: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },
   zeileText: { flex: 1, gap: 2 },
   // Requirement „Leiste der ausstehenden Veranstaltungen": feste Höhe,

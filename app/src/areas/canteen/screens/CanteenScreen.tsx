@@ -16,6 +16,7 @@ import type { TFunction } from 'i18next';
 import { quelleMaxAlter } from '@/cache/ttl';
 import { useConsent } from '@/consent/ConsentProvider';
 import { useTheme } from '@/theme';
+import { BlaetterSymbol } from '@/ui/BlaetterSymbol';
 import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
@@ -154,7 +155,7 @@ export function CanteenScreen() {
           onPress={() => blaettern(-1)}
           style={styles.pfeil}
         >
-          <Text style={[styles.pfeilGlyph, { color: amAnfang ? colors.border : colors.text }]}>◀</Text>
+          <BlaetterSymbol richtung="zurueck" aus={amAnfang} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -175,7 +176,7 @@ export function CanteenScreen() {
           onPress={() => blaettern(1)}
           style={styles.pfeil}
         >
-          <Text style={[styles.pfeilGlyph, { color: colors.text }]}>▶</Text>
+          <BlaetterSymbol richtung="vor" />
         </Pressable>
       </View>
 
@@ -226,13 +227,15 @@ function MensaListe({
   // gewählten Mensen: der Hinweis soll den schlechtesten angezeigten Stand
   // nennen, nicht den besten (Requirement „Altershinweis bei veralteten Daten
   // der Mensa-Schnittstelle").
-  const quelleStaende = ergebnisse
+  // Nicht als Zeitpunkt lesbare Angaben fallen vorab heraus: ein `NaN` gewänne
+  // je nach Reihenfolge den Vergleich und unterdrückte den Hinweis, obwohl eine
+  // andere Mensa einen gültigen, überalterten Stand meldet.
+  const quelleStaendeMs = ergebnisse
     .map((r) => r.data?.standAlter?.quelleStand)
-    .filter((x): x is string => typeof x === 'string' && x.length > 0);
+    .map((x) => (typeof x === 'string' ? Date.parse(x) : Number.NaN))
+    .filter((ms) => !Number.isNaN(ms));
   const aeltesterQuelleStand =
-    quelleStaende.length > 0
-      ? quelleStaende.reduce((a, b) => (Date.parse(a) <= Date.parse(b) ? a : b))
-      : null;
+    quelleStaendeMs.length > 0 ? new Date(Math.min(...quelleStaendeMs)).toISOString() : null;
 
   const aktualisierteMs = ergebnisse
     .filter((r) => r.data !== undefined && r.dataUpdatedAt > 0)
@@ -851,7 +854,6 @@ function tageDifferenz(von: string, bis: string): number {
 const styles = StyleSheet.create({
   kopf: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pfeil: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  pfeilGlyph: { fontSize: 18 },
   datumFeld: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   datum: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
   zuHeute: { fontSize: 12, fontWeight: '600', marginTop: 1 },

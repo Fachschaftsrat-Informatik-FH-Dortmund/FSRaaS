@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RefreshControl } from 'react-native';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 
 import { AppError } from '@/errors/AppError';
 import { ThemeProvider } from '@/theme';
@@ -386,6 +386,14 @@ describe('MENSA-F-018 / MENSA-F-025 Abschnitt je Mensa, Angaben der Abschnitts-M
     fireEvent.press(screen.getByLabelText('Mensa Süd'));
     await waitFor(() => expect(screen.getByText('Studierende 9,90 €')).toBeTruthy());
     expect(screen.getByText('Studierende 3,30 €')).toBeTruthy();
+  });
+});
+
+describe('Einheitliche Blätter-Symbole', () => {
+  it('zeigt an den Tages-Pfeilen das gemeinsame Symbolpaar', () => {
+    renderScreen();
+    expect(within(screen.getByLabelText('Vorheriger Tag')).getByText('chevron-back')).toBeTruthy();
+    expect(within(screen.getByLabelText('Nächster Tag')).getByText('chevron-forward')).toBeTruthy();
   });
 });
 
@@ -972,6 +980,24 @@ describe('Altershinweis bei veralteten Daten der Mensa-Schnittstelle', () => {
   it('richtet sich nach der ältesten gemeldeten Angabe über die gewählten Mensen', async () => {
     mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn() };
     mockPlaene = { Mensa: mitQuelleStand(60_000), Sued: mitQuelleStand(7 * TAG) };
+    renderScreen();
+    await waitFor(() =>
+      expect(screen.getByText(/Die Mensa-Schnittstelle meldet einen veralteten Stand/)).toBeTruthy(),
+    );
+  });
+
+  it('übergeht eine nicht lesbare Standangabe, statt sie für die älteste zu halten', async () => {
+    // Die unlesbare Angabe steht hinten: ein ungeschützter Vergleich hätte sie
+    // als „älteste" gewählt und damit den Hinweis für Mensa unterdrückt.
+    mockSelection = { ids: ['Mensa', 'Sued'], loaded: true, toggle: jest.fn() };
+    const kaputt = qr([gericht()], {
+      data: {
+        gerichte: [gericht()],
+        standAlter: { abgerufenAm: new Date().toISOString(), quelleStand: 'kein Datum' },
+        naechsteOeffnung: null,
+      },
+    });
+    mockPlaene = { Mensa: mitQuelleStand(7 * TAG), Sued: kaputt };
     renderScreen();
     await waitFor(() =>
       expect(screen.getByText(/Die Mensa-Schnittstelle meldet einen veralteten Stand/)).toBeTruthy(),

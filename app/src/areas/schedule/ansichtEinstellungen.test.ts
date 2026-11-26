@@ -86,6 +86,9 @@ describe('Schalter zum Ausblenden gruppenfremder Termine und zum Abschalten alle
       sprungZuHeute: true,
       farbautomatik: true,
       alternativenEinblenden: false,
+      hervorhebungEigeneGruppe: true,
+      hervorhebungKonflikte: false,
+      hervorhebungEingeplant: false,
     });
     expect(gelesen).not.toHaveProperty('gruppenfremdeAusblenden');
     expect(gelesen).not.toHaveProperty('alleAnzeigen');

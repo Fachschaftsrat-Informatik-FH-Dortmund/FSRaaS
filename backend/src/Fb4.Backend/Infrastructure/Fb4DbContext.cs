@@ -19,6 +19,9 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
     public DbSet<LaufwegEintrag> Laufwege => Set<LaufwegEintrag>();
     public DbSet<SammlungsRevision> Revisionen => Set<SammlungsRevision>();
     public DbSet<Verwaltungsprotokoll> Verwaltungsprotokolle => Set<Verwaltungsprotokoll>();
+    public DbSet<RaumplanTerminEintrag> RaumplanTermine => Set<RaumplanTerminEintrag>();
+    public DbSet<RaumplanRaum> RaumplanRaeume => Set<RaumplanRaum>();
+    public DbSet<RaumplanStand> RaumplanStand => Set<RaumplanStand>();
 
 
     protected override void OnModelCreating(ModelBuilder b)
@@ -48,6 +51,25 @@ public class Fb4DbContext(DbContextOptions<Fb4DbContext> options) : DbContext(op
         {
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.ZeitpunktUtc);
+        });
+
+        // Raumplan-Zwischenspeicher (INT-009): wird je Abruf vollständig ersetzt.
+        b.Entity<RaumplanTerminEintrag>(e =>
+        {
+            e.ToTable("RaumplanTermine");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.RoomId, x.Beginn });
+        });
+        b.Entity<RaumplanRaum>(e =>
+        {
+            e.ToTable("RaumplanRaeume");
+            e.HasKey(x => x.RoomId);
+        });
+        b.Entity<RaumplanStand>(e =>
+        {
+            e.ToTable("RaumplanStand");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
         });
     }
 }

@@ -60,7 +60,6 @@ export function alternativenDesTages(
         gruppenzugehoerig: gruppenzugehoerig(gruppenkennung, termin.studentSet),
         abweichendeGruppe: false,
         akzeptierteKonflikte: [],
-        istPruefung: false,
         gueltigVon: termin.gueltigVon,
         gueltigBis: termin.gueltigBis,
         courseId: termin.courseId,

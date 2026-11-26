@@ -6,6 +6,7 @@ import type { TFunction } from 'i18next';
 
 import { useTheme } from '@/theme';
 import { useOnlineStatus } from '@/state/useOnlineStatus';
+import { BlaetterSymbol } from '@/ui/BlaetterSymbol';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { AsyncStates, type QueryLike } from '@/ui/state/AsyncStates';
@@ -525,7 +526,7 @@ function Wochenkopf({
         onPress={() => onWechsel({ ...stand, wochenanfang: verschiebeWoche(stand.wochenanfang, -1) })}
         style={styles.blaettern}
       >
-        <Text style={{ color: colors.accent, fontSize: 18 }}>‹</Text>
+        <BlaetterSymbol richtung="zurueck" />
       </Pressable>
 
       <Pressable
@@ -546,7 +547,7 @@ function Wochenkopf({
         onPress={() => onWechsel({ ...stand, wochenanfang: verschiebeWoche(stand.wochenanfang, 1) })}
         style={styles.blaettern}
       >
-        <Text style={{ color: colors.accent, fontSize: 18 }}>›</Text>
+        <BlaetterSymbol richtung="vor" />
       </Pressable>
     </View>
   );
@@ -894,9 +895,8 @@ export function TerminKachel({
   if (entry.kind === 'eigen') kennzeichen.push(t('schedule.kennzeichenEigen'));
   if (deaktiviert) kennzeichen.push(t('schedule.kennzeichenDeaktiviert'));
   if (!entry.gruppenzugehoerig) kennzeichen.push(t('schedule.kennzeichenGruppenfremd'));
-  if (entry.istPruefung) kennzeichen.push(t('schedule.kennzeichenPruefung'));
   if (konflikte.hinweisIds.has(entry.id)) kennzeichen.push(t('schedule.konfliktHinweis'));
-  if (konflikte.angenommenIds.has(entry.id)) kennzeichen.push(t('schedule.konfliktAngenommen'));
+  if (konflikte.angenommenIds.has(entry.id)) kennzeichen.push(t('schedule.konfliktKennzeichen'));
   if (laeuft) kennzeichen.push(t('schedule.laeuftGerade'));
 
   const zeitraum = `${formatZeit(entry.timeBeginMin)}–${formatZeit(entry.timeEndMin)}`;
@@ -909,7 +909,6 @@ export function TerminKachel({
       style={[
         styles.kachel,
         { backgroundColor: farbe },
-        entry.istPruefung && [styles.kachelPruefung, { borderLeftColor: textfarbe }],
         laeuft && { borderColor: colors.text, borderWidth: 3 },
         deaktiviert && styles.kachelDeaktiviert,
         // Requirement „Einblenden aller Veranstaltungen gewählter Module":
@@ -968,7 +967,6 @@ const styles = StyleSheet.create({
   uhrzeitMarke: { position: 'absolute', left: 0, right: 0, height: 2, borderRadius: 1 },
   liste: { gap: 8 },
   kachel: { flex: 1, minHeight: 44, borderRadius: 8, padding: 8, gap: 2, justifyContent: 'flex-start' },
-  kachelPruefung: { borderLeftWidth: 6 },
   // Requirement „Wirkung eines deaktivierten Termins": zurückgenommen dargestellt,
   // die Bedeutung trägt zusätzlich das Textkennzeichen (nie allein die Opazität).
   kachelDeaktiviert: { opacity: 0.55 },

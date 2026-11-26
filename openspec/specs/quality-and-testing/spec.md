@@ -171,7 +171,7 @@ Ausnahmen von der zwingenden Testpflicht: Gestaltung/Barrierefreiheit (Prüfprot
 | Alle Verweise zeigen auf existierende Ziele | `tools/spec-check` prüft referenzierte Capabilities und ADRs gegen den tatsächlichen Bestand |
 | Struktur von Proposal, Spec-Delta, Design, Tasks | `openspec validate` |
 
-Kontrolle: automatisierte CI-Pipeline, nicht eine benannte Kontrollperson (Entscheidung FSR FB4, 2026-08-25) — überlebt den jährlichen Wechsel der FSR-Besetzung zuverlässiger als eine an eine Person gebundene Prüfpflicht. Die Pipeline läuft bei jedem Pull Request; ein Verstoß blockiert den Merge.
+Kontrolle: automatisierte CI-Pipeline, nicht eine benannte Kontrollperson (entschieden 2026-08-25) — überlebt den jährlichen Wechsel der FSR-Besetzung zuverlässiger als eine an eine Person gebundene Prüfpflicht. Die Pipeline läuft bei jedem Pull Request; ein Verstoß blockiert den Merge.
 
 ## Dependency- und Security-Scanning
 

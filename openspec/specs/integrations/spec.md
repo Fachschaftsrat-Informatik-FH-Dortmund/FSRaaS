@@ -229,7 +229,7 @@ Die Antwort ist ein JSON-Objekt mit Feld `meals`, UTF-8-kodiert (wie bei INT-003
 
 **Ersatzoption:** **INT-015** (Mensa-API des ITMC der TU Dortmund). Die Android-Alt-App nutzt bereits eine offizielle, TLS-gesicherte und deutlich reichhaltigere Quelle.
 
-**Status:** **Abgelöst durch INT-015** (Entscheidung FSR FB4, 2026-08-25). INT-015 liefert dieselben Inhalte über HTTPS, ohne private Vermittler-Infrastruktur, zusätzlich mit Öffnungszeiten und zweisprachigen Bezeichnungen — womit alle drei in `specs/decisions/0007-datenquellen-mensa-und-news.md` genannten Probleme (unklare Trägerschaft, fehlendes TLS, Vermittler statt Primärquelle) auf einmal entfallen.
+**Status:** **Abgelöst durch INT-015** (entschieden 2026-08-25). INT-015 liefert dieselben Inhalte über HTTPS, ohne private Vermittler-Infrastruktur, zusätzlich mit Öffnungszeiten und zweisprachigen Bezeichnungen — womit alle drei in `specs/decisions/0007-datenquellen-mensa-und-news.md` genannten Probleme (unklare Trägerschaft, fehlendes TLS, Vermittler statt Primärquelle) auf einmal entfallen.
 
 Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meals_repository.dart`, Modell `alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/models/meal.dart`
 
@@ -242,7 +242,7 @@ Quelle: `alte apps/fb4_app-main/fb4_app-main/lib/areas/canteen/repositories/meal
 Das System muss Nutzerinnen und Nutzer über neue News-Meldungen benachrichtigen können, sofern aktiviert, mit plattformabhängigem Zustellweg. Herkunft: Alt: alte apps/fb4_app-main/fb4_app-main/lib/utils/plugins/push_notification_manager.dart.
 
 **Aufruf**
-Nach Plattform unterschieden (Entscheidung FSR FB4, 2026-08-25, `specs/decisions/0008-vertrieb-ueber-drei-app-stores.md`):
+Nach Plattform unterschieden (entschieden 2026-08-25, `specs/decisions/0008-vertrieb-ueber-drei-app-stores.md`):
 
 | Plattform | Zustellweg | Registrierung/Abmeldung |
 |---|---|---|
@@ -385,7 +385,7 @@ Beobachtete Schlüssel unter `/data`: `semester_beginning`, `semester_end`, `ws_
 
 **Der Datenbestand ist veraltet:** Die live abgefragte Antwort vom 2026-08-25 liefert `semester_beginning: 25.09.2023` und `semester_end: 19.01.2024` — Werte aus dem Wintersemester 2023/24. Der Dienst läuft, wird aber nicht mehr gepflegt.
 
-Entscheidung FSR FB4, 2026-08-25: Das fachliche Konzept der ferngepflegten Stammdaten wird übernommen, die technische Umsetzung neu gebaut. Die Pflege wandert in die Admin-Oberfläche (Capability `admin`), die Auslieferung in den OpenAPI-Vertrag. `app.fsrfb4.de` wird nach der Umstellung abgeschaltet; die dort verlinkte private Domain `hoolycraap.de` entfällt damit ebenfalls.
+Entschieden 2026-08-25: Das fachliche Konzept der ferngepflegten Stammdaten wird übernommen, die technische Umsetzung neu gebaut. Die Pflege wandert in die Admin-Oberfläche (Capability `admin`), die Auslieferung in den OpenAPI-Vertrag. `app.fsrfb4.de` wird nach der Umstellung abgeschaltet; die dort verlinkte private Domain `hoolycraap.de` entfällt damit ebenfalls.
 
 Der Rückfallmechanismus `studiengaenge.json` ist übernehmenswert: Er macht die Studiengangsauswahl unabhängig von der Erreichbarkeit des Hochschulsystems und gehört als Muster in den Zwischenspeicher-Anteil des neuen Backends. Anmerkung 2026-08-26: Im abgelegten Quellcode-Stand von `app.fsrfb4.de` ist keine `studiengaenge.json` als statische Datei auffindbar — möglicherweise, weil die vorliegende Ablage nicht jede statische Asset-Datei enthält. Live-Erreichbarkeit war am 2026-08-25 nicht Gegenstand der Prüfung; vor Umsetzung kurz zu bestätigen, dass der Rückfallbestand tatsächlich noch existiert.
 
@@ -506,7 +506,7 @@ Die übrigen Felder (`name`, `roomId`, `weekday`, `timeBegin`/`timeEnd` im Forma
 **Status: geklärt (2026-08-25).** Das System muss die Fachbereichs-Nachrichtenseite `aktuelles-ni` per HTML-Auswertung als Quelle für die Klassifizierung „FB-Aktuelles" laden. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/util/NewsParserImpl.java.
 
 **Zweck**
-Liefert die Fachbereichs-Nachrichtenseite (Prüfungsinfos, Raumänderungen, Stellenausschreibungen, Fundsachen) als Quelle für die Klassifizierung „FB-Aktuelles" in NEWS. Entscheidung FSR FB4, 2026-08-25: `aktuelles-ni` wird als zusätzliche News-Quelle integriert, siehe Capability `news`.
+Liefert die Fachbereichs-Nachrichtenseite (Prüfungsinfos, Raumänderungen, Stellenausschreibungen, Fundsachen) als Quelle für die Klassifizierung „FB-Aktuelles" in NEWS. Entschieden 2026-08-25: `aktuelles-ni` wird als zusätzliche News-Quelle integriert, siehe Capability `news`.
 
 **Aufruf**
 ```
@@ -536,10 +536,10 @@ Quelle: `alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/News
 
 ### Requirement: INT-011 — FSR-Event-Kalender (ICS)
 
-**Status: Dienst geklärt, technische Details offen.** Das System muss die vom FSR redaktionell gepflegten Events als ICS-Kalender laden. Herkunft: NEU. Ersetzt die ursprünglich vorgesehene Backend-Redaktionsoberfläche für Events — Entscheidung FSR FB4, 2026-08-25.
+**Status: Dienst geklärt, technische Details offen.** Das System muss die vom FSR redaktionell gepflegten Events als ICS-Kalender laden. Herkunft: NEU. Ersetzt die ursprünglich vorgesehene Backend-Redaktionsoberfläche für Events — entschieden 2026-08-25.
 
 **Aufruf**
-Google Calendar (Entscheidung FSR FB4, 2026-08-25). Eine spätere Ablösung durch ein selbstgehostetes Produkt (z. B. CalDAV auf dem FSR-eigenen Hetzner-VPS) ist ausdrücklich vorgemerkt, aber nicht terminiert. Zugriff über die von Google Calendar bereitgestellte öffentliche ICS-Freigabe-URL des FSR-Kalenders, die das eigene Backend (INT-008) periodisch importiert.
+Google Calendar (entschieden 2026-08-25). Eine spätere Ablösung durch ein selbstgehostetes Produkt (z. B. CalDAV auf dem FSR-eigenen Hetzner-VPS) ist ausdrücklich vorgemerkt, aber nicht terminiert. Zugriff über die von Google Calendar bereitgestellte öffentliche ICS-Freigabe-URL des FSR-Kalenders, die das eigene Backend (INT-008) periodisch importiert.
 
 **Antwortstruktur**
 Standard-iCalendar-Format (RFC 5545): `VEVENT`-Komponenten mit u. a. `UID`, `SUMMARY`, `DTSTART`, `DTEND`, `LOCATION`, `DESCRIPTION`, `STATUS` (u. a. `CONFIRMED`, `CANCELLED`).
@@ -560,7 +560,7 @@ Standard-iCalendar-Format (RFC 5545): `VEVENT`-Komponenten mit u. a. `UID`, `SUM
 
 ### Requirement: INT-012 — Authentik (Identitätsanbieter)
 
-**Status: Anbieter entschieden, Federation zur FH ausstehend.** Das System muss Authentik als einzigen Identitätsanbieter für App, Admin-Oberfläche und Backend verwenden. Herkunft: NEU. Entscheidung FSR FB4, 2026-08-25, siehe `specs/decisions/0010-authentik-als-identitaetsanbieter.md`.
+**Status: Anbieter entschieden, Federation zur FH ausstehend.** Das System muss Authentik als einzigen Identitätsanbieter für App, Admin-Oberfläche und Backend verwenden. Herkunft: NEU. Entschieden 2026-08-25, siehe `specs/decisions/0010-authentik-als-identitaetsanbieter.md`.
 
 **Zweck**
 Trägt das Konto, das für das Verfassen von Mensa-Bewertungen (RATE), die E-Key-Verwaltung (EKEY) und den Zugang zur Verwaltung (ADMIN) benötigt wird, und liefert zugleich die Rollenzugehörigkeit (FSR-Redaktion, Moderation) als Claim.
@@ -608,7 +608,7 @@ Die Verwaltungsoberfläche listet Konten mit bestehender Rolle über den Gruppen
 **Status: zu definieren.** Das System muss sich mit dem bestehenden E-Key-Verwaltungstool integrieren, statt eine eigene parallele Datenhaltung aufzubauen. Herkunft: NEU.
 
 **Zweck**
-Bestehendes, vom FSR bereits eigenständig betriebenes Tool zur Verwaltung von E-Key-Ausgaben, Berechtigungen und Status — System der Wahrheit für alle E-Key-Daten. Das neue App-Backend (INT-008) integriert sich hiermit (Entscheidung FSR FB4, 2026-08-25, siehe Capability `e-key`).
+Bestehendes, vom FSR bereits eigenständig betriebenes Tool zur Verwaltung von E-Key-Ausgaben, Berechtigungen und Status — System der Wahrheit für alle E-Key-Daten. Das neue App-Backend (INT-008) integriert sich hiermit (entschieden 2026-08-25, siehe Capability `e-key`).
 
 **Aufruf**
 Unbekannt, ob das Tool eine API bereitstellt oder ob ausschließlich direkter Datenbankzugriff auf die zugrunde liegende Postgres-Instanz vorgesehen ist. Direkter Datenbankzugriff zweier unabhängiger Anwendungen ohne vermittelnde API ist riskant (Schema-Kopplung) und vor Umsetzung zu klären.
@@ -627,7 +627,7 @@ Unbekannt, ob das Tool eine API bereitstellt oder ob ausschließlich direkter Da
 
 ### Requirement: INT-015 — Mensa-API des ITMC (TU Dortmund) (abgelöst durch INT-020)
 
-**Status: abgelöst durch INT-020 (Entscheidung FSR FB4, 2026-09-22).** Das System hat Speisepläne, Gerichtskategorien und Zusatzstoff-/Allergenschlüssel über die ITMC-API geladen. Ersetzte INT-004, ersetzt durch INT-020. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java.
+**Status: abgelöst durch INT-020 (entschieden 2026-09-22).** Das System hat Speisepläne, Gerichtskategorien und Zusatzstoff-/Allergenschlüssel über die ITMC-API geladen. Ersetzte INT-004, ersetzt durch INT-020. Herkunft: Alt: alte apps/android-fb4/FB4/fB4/src/main/java/de/fsrfb4/fb4/retrofit/MenuApi.java.
 
 **Aufruf**
 ```
@@ -738,7 +738,7 @@ Anmeldung über die Formularfelder `asdf` (Benutzername) und `fdsa` (Passwort), 
 
 **Ersatzoption:** Manueller Import des Ticket-PDFs durch die Nutzerin, wie in beiden Alt-Apps ebenfalls vorhanden.
 
-**Status:** **Für die Neuentwicklung ausgeschlossen** (Entscheidung FSR FB4, 2026-08-25). Zunächst ist mit der Authentik-Federation (INT-012) zu prüfen, ob sich das Ticket über einen offiziellen, tokenbasierten Weg beziehen lässt; bis dahin bleibt es beim manuellen Import. Der Komfortverlust gegenüber dem Stand der Android-Alt-App wird bewusst in Kauf genommen und ist in Capability `semester-ticket` dokumentiert.
+**Status:** **Für die Neuentwicklung ausgeschlossen** (entschieden 2026-08-25). Zunächst ist mit der Authentik-Federation (INT-012) zu prüfen, ob sich das Ticket über einen offiziellen, tokenbasierten Weg beziehen lässt; bis dahin bleibt es beim manuellen Import. Der Komfortverlust gegenüber dem Stand der Android-Alt-App wird bewusst in Kauf genommen und ist in Capability `semester-ticket` dokumentiert.
 
 **Nebenbefund zum Ticket-Zuschnitt.** Die Koordinaten für den Bildausschnitt des Tickets liegen in der Android-Alt-App nicht im Quellcode, sondern kommen als Fernkonfiguration vom bestehenden Backend (`ticket_rect_coordinates`, live abgefragt am 2026-08-25: `[161, 148, 555, 350]`). Das löst den in `specs/product/legacy-inventory.md` als M-010 geführten Mangel der Flutter-Alt-App und ist als Muster übernehmenswert, unabhängig davon, wie das PDF ins Gerät gelangt.
 
@@ -943,7 +943,7 @@ Drei Eigenschaften erschweren den Import: Die Kopfzeilen-Position schwankt zwisc
 
 **Ersatzoption:** Keine bekannte automatisierte Alternative.
 
-**Status:** Struktur grob erfasst. Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen, FSR FB4, 2026-08-25. Feldgenaue Festlegung erfolgt bewusst erst bei Umsetzung in der zweiten Ausbaustufe.
+**Status:** Struktur grob erfasst. Grundsatzentscheidung (halbautomatischer Import statt Live-API-Zugriff) getroffen 2026-08-25. Feldgenaue Festlegung erfolgt bewusst erst bei Umsetzung in der zweiten Ausbaustufe.
 
 **Nebenbefund (2026-08-25).** Die Android-Alt-App importiert den Prüfungsplan nicht, sondern verlinkt ihn nur (Schlüssel `examplan`, aktuell `http://hoolycraap.de/fh/pruefungsplan.pdf`, unverschlüsselt). Der geplante Import ist eine echte Neuerung gegenüber dem Stand beider Alt-Apps.
 

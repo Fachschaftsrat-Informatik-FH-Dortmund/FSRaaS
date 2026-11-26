@@ -36,13 +36,27 @@ export interface AnsichtEinstellungen {
    * Termine der gewählten Module anzeigen (`alternativen.ts`).
    */
   alternativenEinblenden: boolean;
+  /**
+   * Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus"
+   * (Change `planungsmodus-anzeige`, design.md Entscheidung 4): drei einzeln
+   * schaltbare Farbwirkungen. Abgeschaltet bleibt die Angabe als Text oder
+   * Symbol stehen; nur die Farbe entfällt.
+   */
+  hervorhebungEigeneGruppe: boolean;
+  hervorhebungKonflikte: boolean;
+  hervorhebungEingeplant: boolean;
 }
+
+export type Hervorhebung = 'hervorhebungEigeneGruppe' | 'hervorhebungKonflikte' | 'hervorhebungEingeplant';
 
 const STANDARD: AnsichtEinstellungen = {
   zeitachse: true,
   sprungZuHeute: true,
   farbautomatik: true,
   alternativenEinblenden: false,
+  hervorhebungEigeneGruppe: true,
+  hervorhebungKonflikte: false,
+  hervorhebungEingeplant: false,
 };
 
 let snapshot: AnsichtEinstellungen = STANDARD;
@@ -69,6 +83,9 @@ function bereinige(v: unknown): AnsichtEinstellungen {
     sprungZuHeute: alsBoolean(roh.sprungZuHeute, STANDARD.sprungZuHeute),
     farbautomatik: alsBoolean(roh.farbautomatik, STANDARD.farbautomatik),
     alternativenEinblenden: alsBoolean(roh.alternativenEinblenden, STANDARD.alternativenEinblenden),
+    hervorhebungEigeneGruppe: alsBoolean(roh.hervorhebungEigeneGruppe, STANDARD.hervorhebungEigeneGruppe),
+    hervorhebungKonflikte: alsBoolean(roh.hervorhebungKonflikte, STANDARD.hervorhebungKonflikte),
+    hervorhebungEingeplant: alsBoolean(roh.hervorhebungEingeplant, STANDARD.hervorhebungEingeplant),
   };
 }
 
@@ -130,10 +147,16 @@ export function useAnsichtEinstellungen() {
     () => schreiben({ ...snapshot, alternativenEinblenden: !snapshot.alternativenEinblenden }),
     [],
   );
+  /** Requirement „Einstellbare farbliche Hervorhebung im Planungsmodus". */
+  const toggleHervorhebung = useCallback(
+    (welche: Hervorhebung) => schreiben({ ...snapshot, [welche]: !snapshot[welche] }),
+    [],
+  );
 
   return {
     einstellungen,
     loaded,
+    toggleHervorhebung,
     toggleZeitachse,
     toggleSprungZuHeute,
     toggleFarbautomatik,

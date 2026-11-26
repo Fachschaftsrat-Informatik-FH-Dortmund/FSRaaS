@@ -15,7 +15,6 @@ function eintrag(color: string, farbeVonNutzer?: boolean): CustomPlanEntry {
     gruppenzugehoerig: true,
     abweichendeGruppe: false,
     akzeptierteKonflikte: [],
-    istPruefung: false,
     gueltigVon: null,
     gueltigBis: null,
     wiederkehrend: true,

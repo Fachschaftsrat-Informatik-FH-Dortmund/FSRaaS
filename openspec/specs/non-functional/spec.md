@@ -86,7 +86,7 @@ Umfangreiche Abrufe (z. B. Wiki-Vorabladen) sollten Rücksicht auf Mobilfunkverb
 
 ### Requirement: Deutsch als einzige Oberflächensprache (entfallen)
 
-Das System muss Deutsch als einzige Oberflächensprache verwenden. — entfallen, ersetzt durch das Requirement „Wahl zwischen Deutsch und Englisch als Oberflächensprache" (Entscheidung FSR FB4, 2026-08-25: Mehrsprachigkeit von Anfang an statt nur vorsorglich architektonisch offenzuhalten). Herkunft: Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37 (vormals NFR-F-110).
+Das System muss Deutsch als einzige Oberflächensprache verwenden. — entfallen, ersetzt durch das Requirement „Wahl zwischen Deutsch und Englisch als Oberflächensprache" (entschieden 2026-08-25: Mehrsprachigkeit von Anfang an statt nur vorsorglich architektonisch offenzuhalten). Herkunft: Alt: alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37 (vormals NFR-F-110).
 
 #### Scenario: Nicht mehr geltendes Verhalten
 - **WHEN** die App eine Oberflächensprache wählt
@@ -110,7 +110,7 @@ Das System muss Datums-, Zeit- und Währungsangaben nach deutscher Konvention fo
 
 ### Requirement: Architektonische Offenheit für künftige Mehrsprachigkeit (entfallen)
 
-Die Architektur sollte künftige Mehrsprachigkeit nicht grundsätzlich ausschließen, auch wenn sie aktuell nicht umgesetzt wird. — entfallen, da Mehrsprachigkeit (Deutsch + Englisch) von Anfang an umgesetzt wird statt nur vorsorglich offengehalten (Entscheidung FSR FB4, 2026-08-25). Herkunft: NEU (vormals NFR-N-130).
+Die Architektur sollte künftige Mehrsprachigkeit nicht grundsätzlich ausschließen, auch wenn sie aktuell nicht umgesetzt wird. — entfallen, da Mehrsprachigkeit (Deutsch + Englisch) von Anfang an umgesetzt wird statt nur vorsorglich offengehalten (entschieden 2026-08-25). Herkunft: NEU (vormals NFR-N-130).
 
 #### Scenario: Nicht mehr geltendes Verhalten
 - **WHEN** die Architektur auf Mehrsprachigkeit geprüft wird
@@ -118,7 +118,7 @@ Die Architektur sollte künftige Mehrsprachigkeit nicht grundsätzlich ausschlie
 
 ### Requirement: Keine Verhaltensänderung ohne Spec-Änderung
 
-Das System muss so betrieben werden, dass jede Verhaltensänderung mit einer Änderung der zugehörigen Spec einhergeht — durch eine automatisierte CI-Pipeline durchgesetzt, nicht durch eine benannte Kontrollperson (Entscheidung FSR FB4, 2026-08-25). Herkunft: NEU (vormals NFR-N-140). Die automatisierbare Prüfung dieser Regel ist Sache der Capability `quality-and-testing`.
+Das System muss so betrieben werden, dass jede Verhaltensänderung mit einer Änderung der zugehörigen Spec einhergeht — durch eine automatisierte CI-Pipeline durchgesetzt, nicht durch eine benannte Kontrollperson (entschieden 2026-08-25). Herkunft: NEU (vormals NFR-N-140). Die automatisierbare Prüfung dieser Regel ist Sache der Capability `quality-and-testing`.
 
 #### Scenario: Pull Request ändert Verhalten ohne Spec-Delta
 - **WHEN** ein Pull Request eine Verhaltensänderung enthält, aber kein zugehöriges Spec-Delta mitbringt
@@ -210,7 +210,7 @@ Anzeigeversion und fortlaufende Build-Nummer müssen über alle drei Vertriebswe
 
 ### Requirement: Fester Store-Titel der App
 
-Die App muss auf allen drei Vertriebswegen unter dem Titel „FSR Informatik – FH Dortmund" geführt werden. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-07). Der Titel nennt Träger, Fachgebiet und Hochschule und deckt damit die Begriffe ab, unter denen die Zielgruppe sucht; „FB4" allein ist außerhalb der Hochschule bedeutungslos. Mit 28 Zeichen bleibt er innerhalb der von Google Play zugelassenen 30 Zeichen. Der Titel ist vom Gerätenamen zu unterscheiden, siehe Requirement „Vom Store-Titel getrennter Gerätename".
+Die App muss auf allen drei Vertriebswegen unter dem Titel „FSR Informatik – FH Dortmund" geführt werden. Herkunft: NEU (entschieden 2026-09-07). Der Titel nennt Träger, Fachgebiet und Hochschule und deckt damit die Begriffe ab, unter denen die Zielgruppe sucht; „FB4" allein ist außerhalb der Hochschule bedeutungslos. Mit 28 Zeichen bleibt er innerhalb der von Google Play zugelassenen 30 Zeichen. Der Titel ist vom Gerätenamen zu unterscheiden, siehe Requirement „Vom Store-Titel getrennter Gerätename".
 
 #### Scenario: Store-Eintrag wird angelegt oder geändert
 - **WHEN** der Eintrag der App in einem der drei Vertriebswege angelegt oder geändert wird
@@ -222,7 +222,7 @@ Die App muss auf allen drei Vertriebswegen unter dem Titel „FSR Informatik –
 
 ### Requirement: Unveränderlicher Paket-Identifikator
 
-Die App muss auf Android und iOS dauerhaft unter dem Identifikator `de.fsrfb4.app` veröffentlicht werden. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-07). Der Identifikator folgt der Reverse-DNS-Konvention aus `fsrfb4.de`, einer Domain im Verfügungsbereich des FSR (dort läuft unter `app.fsrfb4.de` das Altbackend, Capability `integrations` INT-008). Er ist nach der ersten Veröffentlichung weder bei Google Play noch bei F-Droid änderbar; ein Wechsel erzwingt einen neuen Store-Eintrag und verwirft Bewertungen, Installationszahlen und die automatische Update-Zustellung an Bestandsnutzende. Der Identifikator der Android-Alt-App (`de.fsrfb4.fb4`) bleibt davon unberührt — beide Einträge bestehen nebeneinander.
+Die App muss auf Android und iOS dauerhaft unter dem Identifikator `de.fsrfb4.app` veröffentlicht werden. Herkunft: NEU (entschieden 2026-09-07). Der Identifikator folgt der Reverse-DNS-Konvention aus `fsrfb4.de`, einer Domain im Verfügungsbereich des FSR (dort läuft unter `app.fsrfb4.de` das Altbackend, Capability `integrations` INT-008). Er ist nach der ersten Veröffentlichung weder bei Google Play noch bei F-Droid änderbar; ein Wechsel erzwingt einen neuen Store-Eintrag und verwirft Bewertungen, Installationszahlen und die automatische Update-Zustellung an Bestandsnutzende. Der Identifikator der Android-Alt-App (`de.fsrfb4.fb4`) bleibt davon unberührt — beide Einträge bestehen nebeneinander.
 
 #### Scenario: Erzeugung eines Veröffentlichungs-Builds
 - **WHEN** ein Build für Android oder iOS erzeugt wird
@@ -234,7 +234,7 @@ Die App muss auf Android und iOS dauerhaft unter dem Identifikator `de.fsrfb4.ap
 
 ### Requirement: Vom Store-Titel getrennter Gerätename
 
-Die App muss auf dem Gerät unter dem Namen „FSR Informatik" erscheinen. Herkunft: NEU (abgeleitet aus der Entscheidung FSR FB4, 2026-09-07). Der Name unter dem App-Symbol ist ein vom Store-Titel getrenntes Feld und unterliegt einer erheblich engeren Längengrenze; beide Plattformen kürzen ihn mit Auslassungspunkten. Der vollständige Store-Titel erschiene dort als Fragment, weshalb der Gerätename bewusst kürzer gehalten ist.
+Die App muss auf dem Gerät unter dem Namen „FSR Informatik" erscheinen. Herkunft: NEU (abgeleitet aus der Entscheidung vom 2026-09-07). Der Name unter dem App-Symbol ist ein vom Store-Titel getrenntes Feld und unterliegt einer erheblich engeren Längengrenze; beide Plattformen kürzen ihn mit Auslassungspunkten. Der vollständige Store-Titel erschiene dort als Fragment, weshalb der Gerätename bewusst kürzer gehalten ist.
 
 #### Scenario: Darstellung auf dem Startbildschirm
 - **WHEN** die App auf dem Startbildschirm eines Geräts erscheint
@@ -248,8 +248,8 @@ Die App muss auf dem Gerät unter dem Namen „FSR Informatik" erscheinen. Herku
 
 | Plattform | Wert | Begründung | Status |
 |---|---|---|---|
-| iOS | 15 | Übliches Support-Fenster aktueller Apple-Geräte, aktueller React-Native-Standardwert | bestätigt, FSR FB4, 2026-08-25 |
-| Android | 10 (API 29) | React-Native-Mindestunterstützung und übliche Verbreitung. Die Android-Alt-App setzt API 26 als Untergrenze — die höhere Schwelle schließt ältere Geräte aus, die dort noch bedient wurden; bewusst in Kauf genommen | bestätigt, FSR FB4, 2026-08-25 |
+| iOS | 15 | Übliches Support-Fenster aktueller Apple-Geräte, aktueller React-Native-Standardwert | bestätigt 2026-08-25 |
+| Android | 10 (API 29) | React-Native-Mindestunterstützung und übliche Verbreitung. Die Android-Alt-App setzt API 26 als Untergrenze — die höhere Schwelle schließt ältere Geräte aus, die dort noch bedient wurden; bewusst in Kauf genommen | bestätigt 2026-08-25 |
 
 ## Leistung
 
@@ -282,7 +282,7 @@ Hintergrundabrufe laufen in festen, sparsamen Intervallen statt fortlaufendem Po
 
 ## Sprache
 
-Die App unterstützt Deutsch und Englisch als Oberflächensprachen von Anfang an (Entscheidung FSR FB4, 2026-08-25) — anders als die Alt-App, die ausschließlich `de_DE` initialisiert (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37`). Datums-, Zeit- und Währungsformate folgen weiterhin der deutschen Konvention unabhängig von der gewählten Oberflächensprache, sofern nicht bei Umsetzung anders festgelegt (siehe „Offene Fragen").
+Die App unterstützt Deutsch und Englisch als Oberflächensprachen von Anfang an (entschieden 2026-08-25) — anders als die Alt-App, die ausschließlich `de_DE` initialisiert (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:37`). Datums-, Zeit- und Währungsformate folgen weiterhin der deutschen Konvention unabhängig von der gewählten Oberflächensprache, sofern nicht bei Umsetzung anders festgelegt (siehe „Offene Fragen").
 
 ## Wartbarkeit
 
@@ -290,13 +290,13 @@ Jede Verhaltensänderung zieht eine Spec-Änderung nach sich (spec-anchored Vorg
 
 ## Bildschirmausrichtung
 
-Die Alt-App erzwingt Hochformat (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113-115`). Entschieden (FSR FB4, 2026-08-25): Die Neuentwicklung übernimmt das unverändert — durchgehend Hochformat, ohne Ausnahmen für einzelne Ansichten. Breite Inhalte (z. B. Wiki-Tabellen, Raumpläne) werden stattdessen horizontal scrollbar gestaltet, siehe Capability `ux-and-theming`.
+Die Alt-App erzwingt Hochformat (`alte apps/fb4_app-main/fb4_app-main/lib/main.dart:113-115`). Entschieden 2026-08-25: Die Neuentwicklung übernimmt das unverändert — durchgehend Hochformat, ohne Ausnahmen für einzelne Ansichten. Breite Inhalte (z. B. Wiki-Tabellen, Raumpläne) werden stattdessen horizontal scrollbar gestaltet, siehe Capability `ux-and-theming`.
 
 ## Store-Veröffentlichung
 
-Die App wird über drei Vertriebswege veröffentlicht: Apple App Store, Google Play Store und F-Droid (Entscheidung FSR FB4, 2026-08-25, `specs/decisions/0008-vertrieb-ueber-drei-app-stores.md`). F-Droid existiert ausschließlich für Android und verlangt zusätzlich zu den beiden anderen Wegen einen vollständig quelloffenen, aus dem öffentlichen Quellcode reproduzierbar baubaren Build ohne proprietäre Abhängigkeiten — die technische Auflösung des daraus entstehenden Konflikts mit der ursprünglich vorgesehenen Push-Bibliothek steht in ADR 0008 und Capability `integrations` (INT-005), hier nur die daraus folgenden plattformübergreifenden Anforderungen.
+Die App wird über drei Vertriebswege veröffentlicht: Apple App Store, Google Play Store und F-Droid (entschieden 2026-08-25, `specs/decisions/0008-vertrieb-ueber-drei-app-stores.md`). F-Droid existiert ausschließlich für Android und verlangt zusätzlich zu den beiden anderen Wegen einen vollständig quelloffenen, aus dem öffentlichen Quellcode reproduzierbar baubaren Build ohne proprietäre Abhängigkeiten — die technische Auflösung des daraus entstehenden Konflikts mit der ursprünglich vorgesehenen Push-Bibliothek steht in ADR 0008 und Capability `integrations` (INT-005), hier nur die daraus folgenden plattformübergreifenden Anforderungen.
 
-**Name und Identifikator (Entscheidung FSR FB4, 2026-09-07).** Die App erscheint im Store unter dem Titel „FSR Informatik – FH Dortmund" und trägt auf Android wie iOS den Identifikator `de.fsrfb4.app`. Der Identifikator ist die folgenreichere der beiden Festlegungen: Er ist nach der ersten Veröffentlichung unwiderruflich — ein Wechsel erzwingt einen neuen Store-Eintrag und verwirft Bewertungen, Installationszahlen und die automatische Update-Zustellung. Die Android-Alt-App behält daneben ihren eigenen Identifikator `de.fsrfb4.fb4` (`specs/product/legacy-inventory.md` Abschnitt 4); die Neuentwicklung übernimmt deren Store-Eintrag nicht, beide bestehen nebeneinander. Auf dem Gerät selbst erscheint der kürzere Name „FSR Informatik", weil der Startbildschirm längere Namen kürzt — Store-Titel und Gerätename sind getrennte Felder und werden getrennt entschieden.
+**Name und Identifikator (entschieden 2026-09-07).** Die App erscheint im Store unter dem Titel „FSR Informatik – FH Dortmund" und trägt auf Android wie iOS den Identifikator `de.fsrfb4.app`. Der Identifikator ist die folgenreichere der beiden Festlegungen: Er ist nach der ersten Veröffentlichung unwiderruflich — ein Wechsel erzwingt einen neuen Store-Eintrag und verwirft Bewertungen, Installationszahlen und die automatische Update-Zustellung. Die Android-Alt-App behält daneben ihren eigenen Identifikator `de.fsrfb4.fb4` (`specs/product/legacy-inventory.md` Abschnitt 4); die Neuentwicklung übernimmt deren Store-Eintrag nicht, beide bestehen nebeneinander. Auf dem Gerät selbst erscheint der kürzere Name „FSR Informatik", weil der Startbildschirm längere Namen kürzt — Store-Titel und Gerätename sind getrennte Felder und werden getrennt entschieden.
 
 | Vertriebsweg | Entwicklerkonto | Kosten | Besonderheit |
 |---|---|---|---|
@@ -306,9 +306,9 @@ Die App wird über drei Vertriebswege veröffentlicht: Apple App Store, Google P
 
 ## Begründungen zu entfallenen und geänderten Requirements
 
-**Deutsch als einzige Oberflächensprache / architektonische Offenheit für künftige Mehrsprachigkeit (beide entfallen).** Entscheidung FSR FB4, 2026-08-25: Mehrsprachigkeit (Deutsch + Englisch) von Anfang an statt nur vorsorglich architektonisch offenzuhalten. Ersetzt durch „Wahl zwischen Deutsch und Englisch als Oberflächensprache". „Deutsche Formatkonvention für Datum, Zeit und Währung" bleibt unverändert gültig — deutsche Formatkonvention unabhängig von der Oberflächensprache; ob Englisch eine abweichende Formatierung braucht, ist bei Umsetzung zu bewerten (siehe „Offene Fragen").
+**Deutsch als einzige Oberflächensprache / architektonische Offenheit für künftige Mehrsprachigkeit (beide entfallen).** Entschieden 2026-08-25: Mehrsprachigkeit (Deutsch + Englisch) von Anfang an statt nur vorsorglich architektonisch offenzuhalten. Ersetzt durch „Wahl zwischen Deutsch und Englisch als Oberflächensprache". „Deutsche Formatkonvention für Datum, Zeit und Währung" bleibt unverändert gültig — deutsche Formatkonvention unabhängig von der Oberflächensprache; ob Englisch eine abweichende Formatierung braucht, ist bei Umsetzung zu bewerten (siehe „Offene Fragen").
 
-**Hochformat als einzige Bildschirmausrichtung.** Verschärft von „sollte" auf „muss" — Entscheidung FSR FB4, 2026-08-25, löst die zuvor an Capability `ux-and-theming` delegierte Frage nach Querformat-Ausnahmen auf: breite Inhalte werden horizontal scrollbar gestaltet statt die Ausrichtung zu ändern. **Ergänzung 2026-08-26:** Die ursprüngliche Formulierung „ohne Ausnahmen" berücksichtigte Tablets und Faltgeräte (z. B. Split View, Stage Manager) nicht gesondert. Auf großen Bildschirmen ab 1024 px Breite — derselbe Schwellwert wie in der Capability `admin` (ADMIN-N-010) — gilt die Ausrichtung nicht als erzwungen; adaptives Layout ist dort zulässig. Für gewöhnliche Smartphones ändert sich nichts.
+**Hochformat als einzige Bildschirmausrichtung.** Verschärft von „sollte" auf „muss" — entschieden 2026-08-25, löst die zuvor an Capability `ux-and-theming` delegierte Frage nach Querformat-Ausnahmen auf: breite Inhalte werden horizontal scrollbar gestaltet statt die Ausrichtung zu ändern. **Ergänzung 2026-08-26:** Die ursprüngliche Formulierung „ohne Ausnahmen" berücksichtigte Tablets und Faltgeräte (z. B. Split View, Stage Manager) nicht gesondert. Auf großen Bildschirmen ab 1024 px Breite — derselbe Schwellwert wie in der Capability `admin` (ADMIN-N-010) — gilt die Ausrichtung nicht als erzwungen; adaptives Layout ist dort zulässig. Für gewöhnliche Smartphones ändert sich nichts.
 
 **Firebase nur als Messaging-Modul auf iOS.** Standard-Firebase-Setups aktivieren Google Analytics for Firebase/Crashlytics standardmäßig mit, sobald das SDK eingebunden wird. Ohne diese ausdrückliche Einschränkung würde die auf Android konsequent verfolgte Datensparsamkeits-Linie auf iOS unbemerkt unterlaufen — das Requirement „Kein Absturzbericht an Dritte" (Capability `security-and-privacy`) gilt für iOS genauso wie für Android.
 

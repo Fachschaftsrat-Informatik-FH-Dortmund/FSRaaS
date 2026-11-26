@@ -46,7 +46,7 @@ Das System muss der FSR-Redaktion eine Übersicht aller Rollen/Schichten eines E
 
 ### Requirement: Schließung und Benachrichtigung bei Event-Absage
 
-Wenn ein Event abgesagt wird, muss das System alle zugehörigen Helfer-Anmeldungen als geschlossen kennzeichnen und die angemeldeten Personen per Push-Benachrichtigung und In-App-Hinweis informieren. Herkunft: NEU (vormals HELFER-F-060). Kanalwahl (Push + In-App, kein E-Mail-Versand über den hinterlegten Kontaktweg) Entscheidung FSR FB4, 2026-08-25. Da eine Helfer-Anmeldung ohne Konto erfolgt (siehe Capability `identity-and-moderation`), kann die Push-Zustellung nicht wie bei News über ein Themen-Abonnement laufen, sondern braucht eine an die einzelne Anmeldung gebundene Geräte-Kennung — technische Ausgestaltung siehe „Offene Fragen".
+Wenn ein Event abgesagt wird, muss das System alle zugehörigen Helfer-Anmeldungen als geschlossen kennzeichnen und die angemeldeten Personen per Push-Benachrichtigung und In-App-Hinweis informieren. Herkunft: NEU (vormals HELFER-F-060). Kanalwahl (Push + In-App, kein E-Mail-Versand über den hinterlegten Kontaktweg) Entschieden 2026-08-25. Da eine Helfer-Anmeldung ohne Konto erfolgt (siehe Capability `identity-and-moderation`), kann die Push-Zustellung nicht wie bei News über ein Themen-Abonnement laufen, sondern braucht eine an die einzelne Anmeldung gebundene Geräte-Kennung — technische Ausgestaltung siehe „Offene Fragen".
 
 #### Scenario: Event abgesagt
 - **WHEN** ein Event mit bestehenden Helfer-Anmeldungen abgesagt wird

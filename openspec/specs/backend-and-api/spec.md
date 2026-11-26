@@ -122,7 +122,7 @@ Das System muss alle Aufrufe zwischen App und Backend ausschließlich über TLS 
 
 ### Requirement: Event-Pflege durch die Redaktion (entfallen)
 
-Das System sollte ursprünglich der FSR-Redaktion die Pflege von Events ermöglichen. Entfallen: Redaktionsweg-Entscheidung FSR FB4, 2026-08-25 — Events werden über einen vom FSR extern gepflegten ICS-Kalender importiert, nicht über eine Redaktionsoberfläche im eigenen Backend. Ersetzt durch das Requirement „Import von Events aus ICS-Kalender“. Herkunft: NEU (vormals API-F-080, entfallen).
+Das System sollte ursprünglich der FSR-Redaktion die Pflege von Events ermöglichen. Entfallen: Redaktionsweg entschieden 2026-08-25 — Events werden über einen vom FSR extern gepflegten ICS-Kalender importiert, nicht über eine Redaktionsoberfläche im eigenen Backend. Ersetzt durch das Requirement „Import von Events aus ICS-Kalender“. Herkunft: NEU (vormals API-F-080, entfallen).
 
 #### Scenario: Nachweis der Ablösung
 - **WHEN** geprüft wird, ob das Backend eine Event-Pflegeoberfläche bereitstellt
@@ -154,7 +154,7 @@ Das System muss die vom FSR im externen ICS-Kalender gepflegten Events periodisc
 
 ### Requirement: Eigene E-Key-Datenhaltung (entfallen)
 
-Das System sollte ursprünglich E-Key-Verknüpfungen, deren Status und die semesterweisen Bestätigungen serverseitig speichern. Entfallen: Architektur-Klarstellung FSR FB4, 2026-08-25 — der FSR betreibt bereits ein eigenständiges E-Key-Verwaltungstool mit eigener Postgres-Datenhaltung; das neue Backend baut keine parallele Datenhaltung auf. Ersetzt durch das Requirement „Prüfung gegen bestehendes E-Key-Verwaltungstool“. Herkunft: NEU (vormals API-F-170, entfallen).
+Das System sollte ursprünglich E-Key-Verknüpfungen, deren Status und die semesterweisen Bestätigungen serverseitig speichern. Entfallen: Architektur-Klarstellung 2026-08-25 — der FSR betreibt bereits ein eigenständiges E-Key-Verwaltungstool mit eigener Postgres-Datenhaltung; das neue Backend baut keine parallele Datenhaltung auf. Ersetzt durch das Requirement „Prüfung gegen bestehendes E-Key-Verwaltungstool“. Herkunft: NEU (vormals API-F-170, entfallen).
 
 #### Scenario: Nachweis der Ablösung
 - **WHEN** geprüft wird, ob das Backend eine eigene E-Key-Datenhaltung führt
@@ -174,7 +174,7 @@ Das System muss aus dem zwischengespeicherten Raumplan (INT-009, siehe Capabilit
 
 Der Spike hat die tragende Annahme zur Hälfte bestätigt und zur Hälfte widerlegt. Bestätigt: Die Termine stehen rechtzeitig — im Median 55 Tage vor der Prüfung, bei 87 % der Einträge mindestens 42 Tage —, und wo ein Modul geführt wird, stimmt der Prüfungstag in 61 von 64 Fällen exakt mit dem offiziellen Plan überein. Widerlegt: Von 91 Modulen des Prüfungsplans SoSe 2026 fehlen 27, bis auf zwei Ausnahmen sämtlich wirtschaftswissenschaftliche Module der Studiengänge Wirtschaftsinformatik. Für diese Studiengänge fehlt damit ein erheblicher Teil des Prüfungsplans.
 
-**Entscheidung (Rücksprache FSR FB4, 2026-09-10): Die Lücke wird hingenommen und ausgewiesen, keine Excel-Reaktivierung.** Ursache ist strukturell, nicht behebbar: Ein Teil der wirtschaftswissenschaftlichen Prüfungen findet außerhalb der FB4-eigenen Gebäude statt und wird dort nicht über den vom Fachbereich Informatik geführten Raumplan gebucht — INT-009 kann diese Termine deshalb grundsätzlich nicht enthalten, unabhängig von Namensmuster oder Zeitraum. Eine Reaktivierung des entfallenen Excel-Imports (INT-013) würde genau die jährlich wechselnde Freiwilligen-Abhängigkeit zurückholen, deren Wegfall der Grund für dessen Abschaffung war (Entscheidung 2026-09-06) — für eine Lücke, die dadurch ohnehin nicht vollständig geschlossen würde.
+**Entschieden 2026-09-10: Die Lücke wird hingenommen und ausgewiesen, keine Excel-Reaktivierung.** Ursache ist strukturell, nicht behebbar: Ein Teil der wirtschaftswissenschaftlichen Prüfungen findet außerhalb der FB4-eigenen Gebäude statt und wird dort nicht über den vom Fachbereich Informatik geführten Raumplan gebucht — INT-009 kann diese Termine deshalb grundsätzlich nicht enthalten, unabhängig von Namensmuster oder Zeitraum. Eine Reaktivierung des entfallenen Excel-Imports (INT-013) würde genau die jährlich wechselnde Freiwilligen-Abhängigkeit zurückholen, deren Wegfall der Grund für dessen Abschaffung war (Entscheidung 2026-09-06) — für eine Lücke, die dadurch ohnehin nicht vollständig geschlossen würde.
 
 #### Scenario: Prüfungseintrag im Raumplan
 - **WHEN** der Raumplan-Zwischenspeicher einen Eintrag mit dem Namensmuster `Prüfung <Modulnummer> <Bezeichnung>` enthält
@@ -571,7 +571,7 @@ Betreiber: FSR FB4 selbst, auf einem eigenen Hetzner-VPS. Entschieden 2026-08-25
 
 ## Redaktionsweg
 
-Entschieden 2026-08-25 (FSR FB4):
+Entschieden 2026-08-25:
 
 | Inhalt | Weg | Begründung |
 |---|---|---|
@@ -584,13 +584,13 @@ BookStack bleibt ausschließlich Grundlage für Capability `wiki`, nicht für Ne
 
 ## Technologiewahl
 
-ASP.NET Core mit PostgreSQL und Entity Framework Core; periodische Aufgaben (Zwischenspeicher-Auffrischung, Importe) als Hosted Services im selben Dienst. Entscheidung FSR FB4, 2026-08-25, siehe `specs/decisions/0011-monorepo-und-openapi-vertrag.md`. PostgreSQL auch deshalb, weil das bestehende E-Key-Verwaltungstool bereits darauf läuft und die spätere Integration damit einfacher bleibt. Details zum Betrieb auf dem Hetzner-VPS siehe `specs/decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
+ASP.NET Core mit PostgreSQL und Entity Framework Core; periodische Aufgaben (Zwischenspeicher-Auffrischung, Importe) als Hosted Services im selben Dienst. Entschieden 2026-08-25, siehe `specs/decisions/0011-monorepo-und-openapi-vertrag.md`. PostgreSQL auch deshalb, weil das bestehende E-Key-Verwaltungstool bereits darauf läuft und die spätere Integration damit einfacher bleibt. Details zum Betrieb auf dem Hetzner-VPS siehe `specs/decisions/0003-eigenes-backend-fuer-community-funktionen.md`.
 
 ## Ablösung des bestehenden Backends
 
 Unter `https://app.fsrfb4.de` läuft bereits ein Backend, das die Android-Alt-App bedient: ferngepflegte Stammdaten (`/data`), versions- und sprachabhängige Hinweise an die App (`/messages/messages.php`) und eine Rückfallliste der Studiengänge (`/studiengaenge.json`). Vollständige Beschreibung: Capability `integrations`, Eintrag INT-008, Abschnitt „Vorgänger“.
 
-Der Dienst ist erreichbar, aber inhaltlich veraltet — die live abgefragten Semestertermine stammen aus dem Wintersemester 2023/24, und der hinterlegte Prüfungsplan-Verweis zeigt auf eine private, unverschlüsselte Domain. Entscheidung FSR FB4, 2026-08-25: Das fachliche Konzept wird übernommen, die Umsetzung neu gebaut, der Altdienst nach der Umstellung abgeschaltet. Bis dahin läuft er für die Android-Bestandsnutzung weiter.
+Der Dienst ist erreichbar, aber inhaltlich veraltet — die live abgefragten Semestertermine stammen aus dem Wintersemester 2023/24, und der hinterlegte Prüfungsplan-Verweis zeigt auf eine private, unverschlüsselte Domain. Entschieden 2026-08-25: Das fachliche Konzept wird übernommen, die Umsetzung neu gebaut, der Altdienst nach der Umstellung abgeschaltet. Bis dahin läuft er für die Android-Bestandsnutzung weiter.
 
 Zwei Lehren aus dem Altbestand sind in die Anforderungen eingeflossen: Stammdaten brauchen eine Pflegeoberfläche, sonst veralten sie (Capability `admin`), und mitgelieferte Ausgangsbestände verhindern, dass ein Ausfall der Stammdaten die App unbrauchbar macht.
 

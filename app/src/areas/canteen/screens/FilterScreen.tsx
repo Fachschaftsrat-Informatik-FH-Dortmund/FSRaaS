@@ -218,7 +218,15 @@ export function FilterScreen() {
 
       <AsyncStates<Verzeichnisse>
         query={query}
-        isEmpty={(d) => d.zusatzstoffe.length === 0 && d.kennzeichnungen.length === 0}
+        // Leer nur, wenn kein einziger Abschnitt etwas anzubieten hätte — auch die
+        // CO₂-Klassen stammen aus einem eigenen Teil der Legende und können ohne
+        // Kennzeichnungen und Zusatzstoffe geliefert werden.
+        isEmpty={(d) =>
+          d.zusatzstoffe.length === 0 &&
+          (d.allergene ?? []).length === 0 &&
+          d.kennzeichnungen.length === 0 &&
+          (d.co2Klassen ?? []).length === 0
+        }
         emptyTitle={t('mensa.unvertraeglichkeitenLeerTitel')}
         emptyNextStep={t('mensa.unvertraeglichkeitenLeerHinweis')}
       >
