@@ -18,7 +18,15 @@ jest.mock('expo-router', () => ({
 const mockOnline = jest.fn(() => true);
 jest.mock('@/state/useOnlineStatus', () => ({ useOnlineStatus: () => mockOnline() }));
 
-const jetzt = Date.now();
+// Fester Bezugspunkt am Vormittag, damit Termine um „jetzt" nie über Mitternacht
+// reichen und die Tests nicht von der Tageszeit abhängen.
+const jetzt = new Date(2026, 10, 26, 10, 0).getTime();
+beforeAll(() => {
+  jest.useFakeTimers({ now: jetzt, advanceTimers: true });
+});
+afterAll(() => {
+  jest.useRealTimers();
+});
 const iso = (minuten: number) => new Date(jetzt + minuten * 60_000).toISOString();
 
 let mockQuery: Record<string, unknown>;
