@@ -18,7 +18,7 @@ info:
   # unabhängig vom Wire-Versionssegment /v1 in der Server-URL unten. Ein Anstieg hier
   # begleitet jede inhaltliche Änderung dieses Vertrags; /v1 ändert sich nur bei einer
   # brechenden Schnittstellenänderung. Siehe decisions/0016-api-versionierung-und-deprecation.md.
-  version: 0.7.0
+  version: 0.7.1
   description: |
     Schreibpfade, Zwischenspeicher und Stammdaten der FB4-App.
     Aufgabenschnitt und Prinzipien: specs/platform/backend-and-api.md.
@@ -148,41 +148,7 @@ paths:
           description: Schlüsselverzeichnisse
           content:
             application/json:
-              schema:
-                type: object
-                required: [kategorien, zusatzstoffe, kennzeichnungen]
-                properties:
-                  kategorien:
-                    type: array
-                    items: { $ref: "#/components/schemas/Schluesselwert" }
-                  zusatzstoffe:
-                    type: array
-                    description: >-
-                      Zusatzstoffe **und** Allergene, wie schon vor der Ablösung von
-                      INT-015 (INT-020 `legend.additives` + `legend.allergens`). Die
-                      Bedeutung bleibt unverändert, damit eine ältere App sich nicht
-                      anders verhält (ADR 0016).
-                    items: { $ref: "#/components/schemas/Schluesselwert" }
-                  allergene:
-                    type: array
-                    description: >-
-                      Allein die Allergene (INT-020 `legend.allergens`), damit die App
-                      sie von den Zusatzstoffen getrennt führen kann. Teilmenge von
-                      `zusatzstoffe`.
-                    items: { $ref: "#/components/schemas/Schluesselwert" }
-                  kennzeichnungen:
-                    type: array
-                    description: Ernährungs-/Herkunftsmerkmale (INT-020 `legend.tags`), erfüllt MENSA-F-035.
-                    items: { $ref: "#/components/schemas/Schluesselwert" }
-                  co2Klassen:
-                    type: array
-                    description: >-
-                      CO₂-Klassen mit ihren Klartexten (INT-020 `legend.climate`). `id`
-                      ist der Schlüssel, den `Gericht.co2Klasse` führt. Grundlage des
-                      Ausschlusses nach CO₂-Klasse im Filtermenü (Capability `canteen`,
-                      Requirement „Ausschluss nach Kennzeichnung"); die App zählt die
-                      Klassen deshalb nicht selbst auf.
-                    items: { $ref: "#/components/schemas/Schluesselwert" }
+              schema: { $ref: "#/components/schemas/Verzeichnisse" }
         default: { $ref: "#/components/responses/Fehler" }
 
   /mensen/{mensaId}/oeffnungszeiten:
@@ -1177,6 +1143,43 @@ components:
       properties:
         id: { type: string }
         bezeichnung: { type: string }
+
+    Verzeichnisse:
+      description: Schlüsselverzeichnisse der Mensa-Daten, Antwort von `GET /mensen/verzeichnisse`.
+      type: object
+      required: [kategorien, zusatzstoffe, kennzeichnungen]
+      properties:
+        kategorien:
+          type: array
+          items: { $ref: "#/components/schemas/Schluesselwert" }
+        zusatzstoffe:
+          type: array
+          description: >-
+            Zusatzstoffe **und** Allergene, wie schon vor der Ablösung von
+            INT-015 (INT-020 `legend.additives` + `legend.allergens`). Die
+            Bedeutung bleibt unverändert, damit eine ältere App sich nicht
+            anders verhält (ADR 0016).
+          items: { $ref: "#/components/schemas/Schluesselwert" }
+        allergene:
+          type: array
+          description: >-
+            Allein die Allergene (INT-020 `legend.allergens`), damit die App
+            sie von den Zusatzstoffen getrennt führen kann. Teilmenge von
+            `zusatzstoffe`.
+          items: { $ref: "#/components/schemas/Schluesselwert" }
+        kennzeichnungen:
+          type: array
+          description: Ernährungs-/Herkunftsmerkmale (INT-020 `legend.tags`), erfüllt MENSA-F-035.
+          items: { $ref: "#/components/schemas/Schluesselwert" }
+        co2Klassen:
+          type: array
+          description: >-
+            CO₂-Klassen mit ihren Klartexten (INT-020 `legend.climate`). `id`
+            ist der Schlüssel, den `Gericht.co2Klasse` führt. Grundlage des
+            Ausschlusses nach CO₂-Klasse im Filtermenü (Capability `canteen`,
+            Requirement „Ausschluss nach Kennzeichnung"); die App zählt die
+            Klassen deshalb nicht selbst auf.
+          items: { $ref: "#/components/schemas/Schluesselwert" }
 
     Raumgroesse:
       type: string
