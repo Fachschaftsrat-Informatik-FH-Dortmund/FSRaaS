@@ -1,19 +1,19 @@
 ## 1. Kriterien und Voreinstellungen
 
-- [ ] 1.1 `planungskriterien.ts`: acht Kriterien als Bewertung eines Planentwurfs (design.md, Entscheidung 1), lexikographischer Vergleich; Test `describe('Reihung nach der Kriterienrangfolge')`
-- [ ] 1.2 Fünf Voreinstellungen mit fester Reihenfolge; Test `describe('Kriterienrangfolge für die Planung')` (Szenario „Voreinstellung wählen")
-- [ ] 1.3 Zielwert je Veranstaltungsart mit allgemeinem Rückfall; Test `describe('Vorbereitungszeit je Veranstaltungsart')`
+- [x] 1.1 `planungskriterien.ts`: acht Kriterien als Bewertung eines Planentwurfs (design.md, Entscheidung 1), lexikographischer Vergleich; Test `describe('Reihung nach der Kriterienrangfolge')`
+- [x] 1.2 Fünf Voreinstellungen mit fester Reihenfolge; Test `describe('Kriterienrangfolge für die Planung')` (Szenario „Voreinstellung wählen")
+- [x] 1.3 Zielwert je Veranstaltungsart mit allgemeinem Rückfall; Test `describe('Vorbereitungszeit je Veranstaltungsart')`
 
 ## 2. Einstellungen und Anpinnen (Daten)
 
-- [ ] 2.1 `planungseinstellungen.ts`: Voreinstellung, Vorbereitungszeiten, Mindestabstand; gerätelokal, feldweise Bereinigung
-- [ ] 2.2 `angepinnt?: boolean` in `typen.ts`, Prüfung in `planStore.ts`; Test `describe('Anpinnen eines Termins')`
+- [x] 2.1 `planungseinstellungen.ts`: Voreinstellung, Vorbereitungszeiten, Mindestabstand; gerätelokal, feldweise Bereinigung
+- [x] 2.2 `angepinnt?: boolean` in `typen.ts`, Prüfung in `planStore.ts`; Test `describe('Anpinnen eines Termins')`
 
 ## 3. Vorschlag und Rücknahme (Logik)
 
-- [ ] 3.1 `planungsvorschlag.ts`: Reihen, Gruppen-Slots, greedy Belegung, Konflikt mit Beteiligten; Tests `describe('Automatischer Planungsvorschlag')` und `describe('Gemeinsames Umlegen der Termine eines Gruppen-Slots')`
-- [ ] 3.2 Angepinnte Reihen bleiben feste Umgebung; Test `describe('Konfliktprüfung gegenüber angepinnten Terminen')`
-- [ ] 3.3 Einteilung nach Gruppenkennung; Tests `describe('Rücknahme einer übernommenen Optimierung')` und `describe('Ausgangszustand ohne Optimierung')`
+- [x] 3.1 `planungsvorschlag.ts`: Reihen, Gruppen-Slots, greedy Belegung, Konflikt mit Beteiligten; Tests `describe('Automatischer Planungsvorschlag')` und `describe('Gemeinsames Umlegen der Termine eines Gruppen-Slots')`
+- [x] 3.2 Angepinnte Reihen bleiben feste Umgebung; Test `describe('Konfliktprüfung gegenüber angepinnten Terminen')`
+- [x] 3.3 Einteilung nach Gruppenkennung; Tests `describe('Rücknahme einer übernommenen Optimierung')` und `describe('Ausgangszustand ohne Optimierung')`
 
 ## 4. Oberfläche
 
