@@ -14,16 +14,16 @@
 
 ## 3. Oberfläche
 
-- [ ] 3.1 `AsyncStates`: optionaler Hinweisschlüssel in `quelleStand`; bestehende Tests grün, neuer Test für den eigenen Hinweistext
-- [ ] 3.2 Route `app/app/(tabs)/rooms/` als Stack (`index`, `raum/[roomId]`), Tab-Layout unverändert beschriftet
-- [ ] 3.3 `RoomFinderScreen` mit Sichtwahl und Offline-Kennzeichnung; Tests „Wechsel zwischen den drei Sichten", „Raumsuche offline nicht verfügbar"
-- [ ] 3.4 Sicht „Freie Räume" (Zeitraum, Filter, Ergebnisliste, Leerzustand mit „Eine Stunde später"); Komponententest „Suche nach freien Räumen", „E-Key-Zugänglichkeit kennzeichnen"
-- [ ] 3.5 Sicht „Übersicht" (Suche, Zustandsfilter mit Zurücksetzen, Zeilen mit laufendem Termin oder „frei bis", kuratierte Merkmale, `note`); Komponententests „Übersicht aller Räume mit Belegungszustand", „Laufende Veranstaltung bei belegtem Raum", „Größenklasse und E-Key-Kennzeichen in der Übersicht", „Freitextfeld eines Raumplan-Termins anzeigen", „Tagesbelegung aus Übersicht oder laufenden Veranstaltungen öffnen"
-- [ ] 3.6 Sicht „Laufende Veranstaltungen"; Komponententest „Raum, Bezeichnung und Endzeitpunkt je laufender Veranstaltung"
-- [ ] 3.7 `RoomDayScreen` (Tagesbelegung, „Raum unbekannt" bei 404); Komponententest „Belegung eines gewählten Raums anzeigen"
-- [ ] 3.8 Texte de/en in `i18n`; `parity.test.ts` grün
+- [x] 3.1 `AsyncStates`: optionaler Hinweisschlüssel in `quelleStand`; bestehende Tests grün, neuer Test für den eigenen Hinweistext
+- [x] 3.2 Route `app/app/(tabs)/rooms/` als Stack (`index`, `raum/[roomId]`), Tab-Layout unverändert beschriftet
+- [x] 3.3 `RoomFinderScreen` mit Sichtwahl und Offline-Kennzeichnung; Tests „Wechsel zwischen den drei Sichten", „Raumsuche offline nicht verfügbar"
+- [x] 3.4 Sicht „Freie Räume" (Zeitraum, Filter, Ergebnisliste, Leerzustand mit „Eine Stunde später"); Komponententest „Suche nach freien Räumen", „E-Key-Zugänglichkeit kennzeichnen"
+- [x] 3.5 Sicht „Übersicht" (Suche, Zustandsfilter mit Zurücksetzen, Zeilen mit laufendem Termin oder „frei bis", kuratierte Merkmale, `note`); Komponententests „Übersicht aller Räume mit Belegungszustand", „Laufende Veranstaltung bei belegtem Raum", „Größenklasse und E-Key-Kennzeichen in der Übersicht", „Freitextfeld eines Raumplan-Termins anzeigen", „Tagesbelegung aus Übersicht oder laufenden Veranstaltungen öffnen"
+- [x] 3.6 Sicht „Laufende Veranstaltungen"; Komponententest „Raum, Bezeichnung und Endzeitpunkt je laufender Veranstaltung"
+- [x] 3.7 `RoomDayScreen` (Tagesbelegung, „Raum unbekannt" bei 404); Komponententest „Belegung eines gewählten Raums anzeigen"
+- [x] 3.8 Texte de/en in `i18n`; `parity.test.ts` grün
 
 ## 4. Prüfungen und Abschluss
 
-- [ ] 4.1 `npx jest`, `npx tsc --noEmit` (nach `node tools/contract-codegen/src/generate.mjs`), `npm run lint`, `node tools/spec-check/src/cli.js`, `openspec validate raumsuche-app` grün
+- [x] 4.1 `npx jest`, `npx tsc --noEmit` (nach `node tools/contract-codegen/src/generate.mjs`), `npm run lint`, `node tools/spec-check/src/cli.js`, `openspec validate raumsuche-app` grün
 - [ ] 4.2 Geräteabnahme der drei Sichten und der Tagesbelegung gegen das laufende Backend mit echtem Raumplan-Bestand (Prüfprotokoll unter `specs/pruefprotokolle/`)
