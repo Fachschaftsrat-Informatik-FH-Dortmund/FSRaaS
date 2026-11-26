@@ -1,7 +1,7 @@
 ## 1. Vertrag und Backend
 
-- [ ] 1.1 404-Beschreibung von `/raeume/{roomId}/belegung` in `api-contract.yaml` berichtigen (Raumplan oder kuratierte Liste, Code `raum_unbekannt`), Vertragsfassung anheben; prüfen mit `node tools/contract-codegen/src/generate.mjs` ohne Typänderung
-- [ ] 1.2 `GET /v1/raeume/{roomId}/belegung` in `RaumplanEndpoints.cs` umsetzen (Ortstag Europe/Berlin, nach Beginn sortiert, 404 `raum_unbekannt`, 503 ohne Bestand); Tests „Tagesbelegung eines Raums aus dem Raumplan-Zwischenspeicher" in `Fb4.Backend.Tests`, `dotnet test` grün
+- [x] 1.1 404-Beschreibung von `/raeume/{roomId}/belegung` in `api-contract.yaml` berichtigen (Raumplan oder kuratierte Liste, Code `raum_unbekannt`), Vertragsfassung anheben; prüfen mit `node tools/contract-codegen/src/generate.mjs` ohne Typänderung
+- [x] 1.2 `GET /v1/raeume/{roomId}/belegung` in `RaumplanEndpoints.cs` umsetzen (Ortstag Europe/Berlin, nach Beginn sortiert, 404 `raum_unbekannt`, 503 ohne Bestand); Tests „Tagesbelegung eines Raums aus dem Raumplan-Zwischenspeicher" in `Fb4.Backend.Tests`, `dotnet test` grün
 
 ## 2. Datenzugriff und reine Logik der App
 
