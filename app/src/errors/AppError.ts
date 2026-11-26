@@ -80,3 +80,17 @@ export function logError(context: string, error: unknown): AppError {
   console.error(`[${context}] ${appError.kind}${appError.code ? ` (${appError.code})` : ''}${causeName}`);
   return appError;
 }
+
+/**
+ * Protokolliert einen erwarteten, behandelten Datenbefund — kein Fehler, aber
+ * auch nichts, das stillschweigend verschwinden darf (SEC-F-060). Beispiel:
+ * deckungsgleiche Rohtermine, die vor der Darstellung zusammengefasst werden.
+ * Anders als logError() geht der Eintrag auf console.warn: Im Dev-Client
+ * erscheint so kein roter Fehlerhinweis für einen Vorfall, den die App
+ * bestimmungsgemäß behandelt hat (Issue #125). Wie bei logError nur Kontext,
+ * Befundart und Anzahl, keine Nutzdaten (SEC-N-120).
+ */
+export function logDatenhinweis(context: string, befund: string, anzahl: number): void {
+  // console.warn ist hier bewusst gewollt (SEC-F-060) und in eslint.config.js erlaubt.
+  console.warn(`[${context}] ${befund}: ${anzahl}`);
+}

@@ -114,17 +114,27 @@ function normalisiereText(wert: string): string {
     .toLowerCase();
 }
 
+/**
+ * Requirement „Freitextsuche in der Endpunktauswahl" (Change
+ * `endpunktsuche-mehrere-woerter`, Issue #56): Der Suchtext zerfällt an
+ * Leerraum in Wörter; ein Endpunkt passt, wenn jedes Wort in Klar- oder
+ * Kurzname vorkommt — Reihenfolge egal, auch als Wortteil. „Bachelor
+ * Technisch" trifft so „Bachelor Informatik (StgPO 2019), VR Technische Inf.".
+ */
 export function filtereEndpunktGruppen(gruppen: readonly EndpunktGruppe[], suchtext: string): EndpunktGruppe[] {
-  const text = suchtext.trim();
-  if (!text) return [...gruppen];
-  const normalisiert = normalisiereText(text);
+  const woerter = normalisiereText(suchtext).split(/\s+/).filter((w) => w !== '');
+  if (woerter.length === 0) return [...gruppen];
+
+  const passt = (e: EndpunktEintrag): boolean => {
+    const name = normalisiereText(e.name);
+    const sname = normalisiereText(e.sname);
+    return woerter.every((w) => name.includes(w) || sname.includes(w));
+  };
 
   return gruppen
     .map((gruppe) => ({
       ...gruppe,
-      eintraege: gruppe.eintraege.filter(
-        (e) => normalisiereText(e.name).includes(normalisiert) || normalisiereText(e.sname).includes(normalisiert),
-      ),
+      eintraege: gruppe.eintraege.filter(passt),
     }))
     .filter((gruppe) => gruppe.eintraege.length > 0);
 }

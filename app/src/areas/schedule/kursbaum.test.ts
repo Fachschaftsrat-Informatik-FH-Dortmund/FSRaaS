@@ -191,7 +191,7 @@ describe('Anzeigename paralleler Termingruppen ohne bedeutungslose Endzahl', () 
 
 describe('Zusammenfassen deckungsgleicher Rohtermine', () => {
   it('fasst zwei in allen sechs Merkmalen übereinstimmende Rohtermine zu einem zusammen und protokolliert es', () => {
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const endpunkt: EndpunktTermine = {
       sname: 'INPBPI',
       name: 'Bachelor Informatik (StgPO 2019)',
@@ -203,8 +203,44 @@ describe('Zusammenfassen deckungsgleicher Rohtermine', () => {
     const abschnitte = baueModulliste([endpunkt]);
 
     expect(abschnitte.flatMap((a) => a.module).flatMap((m) => m.termine)).toHaveLength(1);
-    expect(errorSpy).toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  // Issue #125: Im Live-Bestand kommen deckungsgleiche Rohtermine regelmäßig
+  // vor. Das Protokoll meldete jeden einzeln als `unknown — Error` auf
+  // console.error — im Dev-Client ein roter Fehlerhinweis je Duplikat und
+  // Neuberechnung, obwohl nichts geworfen wurde und die App den Fall wie
+  // gefordert behandelt.
+  it('protokolliert das Zusammenfassen einmal je Aufbau mit Anzahl als Datenhinweis, nicht als Fehler (Issue #125)', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const doppelt = { courseId: '44232', courseType: 'Ü', weekday: 'Tue', timeBeginMin: 720, timeEndMin: 765, roomId: 'C.E.32', studentSet: 'A-P' } as const;
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [termin(doppelt), termin(doppelt), termin(doppelt), termin({ ...doppelt, courseId: '44233' }), termin({ ...doppelt, courseId: '44233' })],
+    };
+    baueModulliste([endpunkt]);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0]![0]).toBe('[kursbaum.baueModulliste.deckungsgleich] deckungsgleiche Rohtermine zusammengefasst: 3');
+    warnSpy.mockRestore();
     errorSpy.mockRestore();
+  });
+
+  it('protokolliert nichts, wenn keine deckungsgleichen Rohtermine vorliegen', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const endpunkt: EndpunktTermine = {
+      sname: 'INPBPI',
+      name: 'Bachelor Informatik (StgPO 2019)',
+      termine: [termin({ courseId: '44232' }), termin({ courseId: '44233' })],
+    };
+    baueModulliste([endpunkt]);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('lässt zwei Termine mit abweichendem Raum getrennt (courseId 411031, zwei Räume unter einem Modul)', () => {

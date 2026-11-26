@@ -127,6 +127,27 @@ describe('Freitextsuche in der Endpunktauswahl', () => {
     expect(filtereEndpunktGruppen(gruppen, '')).toEqual(gruppen);
   });
 
+  // Issue #56: mehrere Wörter, nicht unmittelbar aufeinanderfolgend.
+  it('Suche über mehrere Wörter in beliebiger Reihenfolge: „Bachelor Technisch" findet VR Technische Informatik', () => {
+    const gruppen = gruppiereEndpunkte(BESTAND_2026_09_08);
+    const gefundene = (text: string) => filtereEndpunktGruppen(gruppen, text).flatMap((g) => g.eintraege.map((e) => e.sname));
+    expect(gefundene('Bachelor Technisch')).toEqual(['INPBTI']);
+    expect(gefundene('technisch   BACHELOR')).toEqual(['INPBTI']);
+    expect(gefundene('master medizinische')).toEqual(['MIPM']);
+  });
+
+  it('Ein Wort passt nicht: der Endpunkt fällt aus dem Ergebnis', () => {
+    const gruppen = gruppiereEndpunkte(BESTAND_2026_09_08);
+    const gefiltert = filtereEndpunktGruppen(gruppen, 'Bachelor Technisch Dual');
+    expect(gefiltert).toEqual([]);
+  });
+
+  it('wertet Wörter über Klar- und Kurznamen gemeinsam aus', () => {
+    const gruppen = gruppiereEndpunkte(BESTAND_2026_09_08);
+    const gefiltert = filtereEndpunktGruppen(gruppen, 'inpbti technische');
+    expect(gefiltert.flatMap((g) => g.eintraege.map((e) => e.sname))).toEqual(['INPBTI']);
+  });
+
   it('lässt eine Gruppe ganz aus dem Ergebnis, wenn kein Eintrag passt', () => {
     const gruppen = gruppiereEndpunkte(BESTAND_2026_09_08);
     const gefiltert = filtereEndpunktGruppen(gruppen, 'nichts passt hier');
