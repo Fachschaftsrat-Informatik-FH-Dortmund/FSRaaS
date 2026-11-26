@@ -190,7 +190,7 @@ Das System muss den Quellcode nach fachlichen Bereichen schneiden, sodass Modell
 | News (FSR-News) | App → Backend → Fremdquelle | Ablösung privater Infrastruktur |
 | News (FB-Aktuelles) | App → Backend → Fachbereichsseite | Zwischenspeicher, keine direkte App-Abhängigkeit von der Fachbereichsseite |
 | Mensa-Speiseplan | App → Backend → Mensa-Feed | Zwischenspeicher, Ausfallpuffer; Ablösung privater Infrastruktur |
-| Events | App → Backend → ICS-Kalender | Import aus vom FSR gepflegtem ICS-Kalender, keine Backend-Redaktionsoberfläche (Entscheidung FSR FB4, 2026-08-25) |
+| Events | App → Backend → ICS-Kalender | Import aus vom FSR gepflegtem ICS-Kalender, keine Backend-Redaktionsoberfläche (entschieden 2026-08-25) |
 | Anmeldung (Konto) | App bzw. Admin-Oberfläche → Authentik, direkt | Redirect-Fluss im Systembrowser; die App nimmt nie Zugangsdaten entgegen |
 | Verwaltung und Redaktion | Admin-Oberfläche → Backend | Schreibpfad mit Rollenprüfung, siehe Capability `admin` |
 

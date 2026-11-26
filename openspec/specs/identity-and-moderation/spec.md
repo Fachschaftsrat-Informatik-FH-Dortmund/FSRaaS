@@ -194,7 +194,7 @@ Der Fachbereich wünscht ausdrücklich eine „einfache Möglichkeit für Studie
 
 ## Entscheidung (ADR 0004)
 
-Entschieden in `specs/decisions/0004-identitaet-und-anmeldung.md`, FSR FB4, 2026-08-25:
+Entschieden 2026-08-25 in `specs/decisions/0004-identitaet-und-anmeldung.md`:
 
 | Funktion | Identitätsstufe | Hürde |
 |---|---|---|
@@ -205,7 +205,7 @@ Entschieden in `specs/decisions/0004-identitaet-und-anmeldung.md`, FSR FB4, 2026
 
 Zusätzlich kontogebunden ist der Zugang zur Verwaltungs- und Redaktionsoberfläche (Capability `admin`), dort über die Rollen aus Abschnitt „Rollen“.
 
-Das Konto entsteht über eine eigenbetriebene Authentik-Instanz als einzigen Identitätsanbieter, angebunden per OpenID Connect im Systembrowser. Authentik meldet sich seinerseits gegen den Microsoft-Mandanten der FH Dortmund an, sobald die dafür nötige App-Registrierung erteilt ist; bis dahin führt Authentik eigene Konten mit E-Mail-Verifizierung. Für App und Backend ist dieser Unterschied unsichtbar. Passwort-Replay gegen ein Hochschulsystem bleibt in beiden Fällen ausgeschlossen. Entscheidung FSR FB4, 2026-08-25, siehe `specs/decisions/0010-authentik-als-identitaetsanbieter.md`; Zielkonflikt und Abstufung siehe ADR 0004.
+Das Konto entsteht über eine eigenbetriebene Authentik-Instanz als einzigen Identitätsanbieter, angebunden per OpenID Connect im Systembrowser. Authentik meldet sich seinerseits gegen den Microsoft-Mandanten der FH Dortmund an, sobald die dafür nötige App-Registrierung erteilt ist; bis dahin führt Authentik eigene Konten mit E-Mail-Verifizierung. Für App und Backend ist dieser Unterschied unsichtbar. Passwort-Replay gegen ein Hochschulsystem bleibt in beiden Fällen ausgeschlossen. Entschieden 2026-08-25, siehe `specs/decisions/0010-authentik-als-identitaetsanbieter.md`; Zielkonflikt und Abstufung siehe ADR 0004.
 
 ## Rollen
 

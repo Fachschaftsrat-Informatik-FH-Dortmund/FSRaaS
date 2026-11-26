@@ -6,7 +6,7 @@ Bietet die übergeordnete Navigationsstruktur, über die alle Features erreichba
 
 ### Requirement: Tab-Leiste mit Sammel-Einstieg statt gleichrangiger Tabs
 
-Das System muss eine Navigationsstruktur aus einer Tab-Leiste mit den meistgenutzten Kernbereichen sowie einem zusätzlichen Sammel-Einstieg („Mehr") für alle übrigen Bereiche bereitstellen, statt alle Bereiche als gleichrangige Einträge einer einzigen Tab-Leiste zu häufen. Herkunft: Alt: bewusst verworfen (vormals SHELL-F-010). Entscheidung FSR FB4, 2026-08-25: Muster „Tab-Leiste + Mehr-Sammelpunkt" statt Drawer/Seitenmenü oder Hybrid — bei inzwischen vierzehn Feature-Capabilities ist eine flache Tab-Leiste nicht mehr tragfähig (siehe Capability `architecture`, ARCH-N-010).
+Das System muss eine Navigationsstruktur aus einer Tab-Leiste mit den meistgenutzten Kernbereichen sowie einem zusätzlichen Sammel-Einstieg („Mehr") für alle übrigen Bereiche bereitstellen, statt alle Bereiche als gleichrangige Einträge einer einzigen Tab-Leiste zu häufen. Herkunft: Alt: bewusst verworfen (vormals SHELL-F-010). Entschieden 2026-08-25: Muster „Tab-Leiste + Mehr-Sammelpunkt" statt Drawer/Seitenmenü oder Hybrid — bei inzwischen vierzehn Feature-Capabilities ist eine flache Tab-Leiste nicht mehr tragfähig (siehe Capability `architecture`, ARCH-N-010).
 
 #### Scenario: Vierzehn Bereiche, vier Tabs
 - **WHEN** die App vierzehn Feature-Bereiche umfasst
@@ -46,7 +46,7 @@ Das System muss die Navigationsstruktur datei-basiert abbilden, wobei jede Route
 
 ### Requirement: Bereichszuordnung der Tab-Leiste
 
-Das System muss die Tab-Leiste mit genau den Bereichen Stundenplan, Mensaplan, News und Raumsuche besetzen; alle übrigen Bereiche sind ausschließlich über „Mehr" erreichbar. Herkunft: NEU (vormals SHELL-F-060). Entscheidung FSR FB4/technische Leitung, 2026-08-26: Die vier meistgenutzten Kernfunktionen der ersten Ausbaustufe besetzen die Tab-Leiste. Semesterticket, Einstellungen und Verwaltung liegen unter „Mehr", ebenso — sobald Ausbaustufe 2 beginnt — Events, Helfer-Anmeldung, Wiki, Notenübersicht und E-Key-Verwaltung.
+Das System muss die Tab-Leiste mit genau den Bereichen Stundenplan, Mensaplan, News und Raumsuche besetzen; alle übrigen Bereiche sind ausschließlich über „Mehr" erreichbar. Herkunft: NEU (vormals SHELL-F-060). Entschieden 2026-08-26: Die vier meistgenutzten Kernfunktionen der ersten Ausbaustufe besetzen die Tab-Leiste. Semesterticket, Einstellungen und Verwaltung liegen unter „Mehr", ebenso — sobald Ausbaustufe 2 beginnt — Events, Helfer-Anmeldung, Wiki, Notenübersicht und E-Key-Verwaltung.
 
 #### Scenario: Feste vier Tabs
 - **WHEN** die Tab-Leiste dargestellt wird

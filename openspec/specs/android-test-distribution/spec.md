@@ -6,7 +6,7 @@ Ermöglicht dem FSR FB4, signierte Android-Testversionen der App vor der eigentl
 
 ### Requirement: Signierter Release-Build statt Debug-Signatur
 
-Das System muss Android-Release-Builds für diesen Vertriebsweg mit einem eigenen Upload-Keystore signieren, nicht mit dem Debug-Keystore. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Das System muss Android-Release-Builds für diesen Vertriebsweg mit einem eigenen Upload-Keystore signieren, nicht mit dem Debug-Keystore. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Bau einer Testversion
 - **WHEN** eine Release-APK für den Direktdownload gebaut wird
@@ -14,7 +14,7 @@ Das System muss Android-Release-Builds für diesen Vertriebsweg mit einem eigene
 
 ### Requirement: app.json als Quelle für versionCode und versionName
 
-Das System muss `versionCode` und `versionName` des Android-Builds aus `app.json` ableiten; ein Versions-Bump ändert zuerst `app.json`, der daraus per `expo prebuild` entstehende Diff in `android/app/build.gradle` wird im selben Merge committet. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Das System muss `versionCode` und `versionName` des Android-Builds aus `app.json` ableiten; ein Versions-Bump ändert zuerst `app.json`, der daraus per `expo prebuild` entstehende Diff in `android/app/build.gradle` wird im selben Merge committet. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Versions-Bump vor einem neuen Testbuild
 - **WHEN** eine neue Testversion vorbereitet wird
@@ -22,7 +22,7 @@ Das System muss `versionCode` und `versionName` des Android-Builds aus `app.json
 
 ### Requirement: Eindeutig aufsteigende Versionsnummer je Testbuild
 
-Jeder über diesen Weg veröffentlichte Build muss einen `versionCode` tragen, der strikt größer ist als der des vorherigen, damit ein Fehlerbericht eindeutig einer Quellcode-Version zuordenbar bleibt. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Jeder über diesen Weg veröffentlichte Build muss einen `versionCode` tragen, der strikt größer ist als der des vorherigen, damit ein Fehlerbericht eindeutig einer Quellcode-Version zuordenbar bleibt. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Zwei aufeinanderfolgende Testbuilds
 - **WHEN** ein zweiter Testbuild nach einem ersten veröffentlicht wird
@@ -30,7 +30,7 @@ Jeder über diesen Weg veröffentlichte Build muss einen `versionCode` tragen, d
 
 ### Requirement: Öffentlich erreichbarer Download ohne Anmeldung
 
-Das System muss die jeweils aktuelle signierte Testversion unter einer öffentlich erreichbaren URL bereitstellen, die ohne GitHub-Anmeldung und unabhängig von der Sichtbarkeit des Quellcode-Repositories abrufbar ist. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Das System muss die jeweils aktuelle signierte Testversion unter einer öffentlich erreichbaren URL bereitstellen, die ohne GitHub-Anmeldung und unabhängig von der Sichtbarkeit des Quellcode-Repositories abrufbar ist. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Abruf durch eine testende Person
 - **WHEN** eine testende Person die auf der FSR-Webseite verlinkte Download-URL aufruft
@@ -38,7 +38,7 @@ Das System muss die jeweils aktuelle signierte Testversion unter einer öffentli
 
 ### Requirement: Bereitstellung unabhängig vom Backend-Deployment
 
-Die Ablage der Testversion muss von der bestehenden Backend-Auslieferung (`deploy.yml`) unabhängig sein, sodass ein Backend-Deployment die zuletzt veröffentlichte Testversion nicht entfernt oder unerreichbar macht. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Die Ablage der Testversion muss von der bestehenden Backend-Auslieferung (`deploy.yml`) unabhängig sein, sodass ein Backend-Deployment die zuletzt veröffentlichte Testversion nicht entfernt oder unerreichbar macht. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Backend-Deployment nach Veröffentlichung eines Testbuilds
 - **WHEN** nach der Veröffentlichung eines Testbuilds ein Backend-Deployment über `deploy.yml` läuft
@@ -46,7 +46,7 @@ Die Ablage der Testversion muss von der bestehenden Backend-Auslieferung (`deplo
 
 ### Requirement: Manuelle Auslösung des Build- und Veröffentlichungsvorgangs
 
-Der Workflow, der eine signierte Testversion baut und veröffentlicht, muss ausschließlich manuell ausgelöst werden, nicht automatisch bei jedem Merge. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Der Workflow, der eine signierte Testversion baut und veröffentlicht, muss ausschließlich manuell ausgelöst werden, nicht automatisch bei jedem Merge. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Merge auf den Hauptzweig
 - **WHEN** ein Merge auf den Hauptzweig erfolgt
@@ -54,7 +54,7 @@ Der Workflow, der eine signierte Testversion baut und veröffentlicht, muss auss
 
 ### Requirement: Kein Geheimnis im Quellcode-Repository
 
-Der Upload-Keystore und die zugehörigen Passwörter dürfen zu keinem Zeitpunkt im Quellcode-Repository liegen; sie werden ausschließlich als CI-Geheimnisse verwaltet. Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Der Upload-Keystore und die zugehörigen Passwörter dürfen zu keinem Zeitpunkt im Quellcode-Repository liegen; sie werden ausschließlich als CI-Geheimnisse verwaltet. Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Prüfung eines Commits
 - **WHEN** ein Commit im Repository auf enthaltene Geheimnisse geprüft wird
@@ -62,7 +62,7 @@ Der Upload-Keystore und die zugehörigen Passwörter dürfen zu keinem Zeitpunkt
 
 ### Requirement: Kein Ersatz für die offizielle Auslieferung
 
-Dieser Downloadweg gilt nicht als vierter, dauerhafter Vertriebsweg im Sinne von ADR 0008 und muss keine der dortigen Store-Auflagen erfüllen (z. B. Google-Play-Testauflage, F-Droids Anforderung an einen reproduzierbaren, secret-losen Build). Herkunft: NEU (Entscheidung FSR FB4, 2026-09-09).
+Dieser Downloadweg gilt nicht als vierter, dauerhafter Vertriebsweg im Sinne von ADR 0008 und muss keine der dortigen Store-Auflagen erfüllen (z. B. Google-Play-Testauflage, F-Droids Anforderung an einen reproduzierbaren, secret-losen Build). Herkunft: NEU (entschieden 2026-09-09).
 
 #### Scenario: Abgrenzung zu den drei offiziellen Vertriebswegen
 - **WHEN** dieser Downloadweg mit App Store, Play Store oder F-Droid verglichen wird

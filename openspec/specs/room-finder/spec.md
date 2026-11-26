@@ -130,7 +130,7 @@ Solange die meldende Person dieselbe Gerätesitzung verwendet, muss das System i
 
 ### Requirement: Übersicht aller Räume mit Belegungszustand
 
-Das System muss der Nutzerin eine Übersicht aller im Raumplan-Zwischenspeicher (INT-009) geführten Räume mit ihrem aktuellen Belegungszustand (frei oder belegt) anzeigen. Herkunft: NEU (vormals RAUM-F-150). Anders als die Freie-Raum-Suche nicht auf die kuratierte Liste beschränkt (Entscheidung FSR FB4, 2026-09-03).
+Das System muss der Nutzerin eine Übersicht aller im Raumplan-Zwischenspeicher (INT-009) geführten Räume mit ihrem aktuellen Belegungszustand (frei oder belegt) anzeigen. Herkunft: NEU (vormals RAUM-F-150). Anders als die Freie-Raum-Suche nicht auf die kuratierte Liste beschränkt (entschieden 2026-09-03).
 
 #### Scenario: Übersicht zeigt alle Raumplan-Räume
 - **WHEN** die Raumübersicht geöffnet wird
@@ -247,7 +247,7 @@ Falls der Raumplan-Zwischenspeicher älter als die vorgesehene Aktualisierungsfr
 
 **Erweiterung vom 2026-09-03.** Neben der Suche nach einem freien Raum brauchen Studierende zwei weitere Blickrichtungen auf dieselben Raumtermine: eine Übersicht aller Räume mit ihrer aktuellen Belegung und deren Umkehrung, eine Ansicht der gerade laufenden Veranstaltungen. Beide leiten sich ohne zusätzliche Schnittstelle aus dem Raumplan-Zwischenspeicher (INT-009) ab. Der daraus ebenfalls mögliche Abgleich „mein Stundenplan-Termin gegen den Raumplan" ist in Capability `schedule` (SCHED-F-410 bis SCHED-F-450) verortet, weil er im Stundenplan angezeigt wird, nicht hier.
 
-**Nicht-Scope.** Raumbuchung/-reservierung (FBWS ist rein lesend), persönlicher Stundenplan (Capability `schedule`), Navigation/Wegbeschreibung im Gebäude, Geräte-Standortzugriff (GPS — bewusst nicht genutzt, Entscheidung FSR FB4, 2026-08-25, stattdessen manuelle Referenzraum-Eingabe mit serverseitigen Laufwege-Daten), Lokalisierung über WLAN-Access-Points (möglicher künftiger Ausbauschritt, nicht Teil dieses Umfangs), Hinweis auf Raumänderung/Ausfall am Stundenplan-Eintrag (Capability `schedule`, SCHED-F-410 ff.).
+**Nicht-Scope.** Raumbuchung/-reservierung (FBWS ist rein lesend), persönlicher Stundenplan (Capability `schedule`), Navigation/Wegbeschreibung im Gebäude, Geräte-Standortzugriff (GPS — bewusst nicht genutzt, entschieden 2026-08-25, stattdessen manuelle Referenzraum-Eingabe mit serverseitigen Laufwege-Daten), Lokalisierung über WLAN-Access-Points (möglicher künftiger Ausbauschritt, nicht Teil dieses Umfangs), Hinweis auf Raumänderung/Ausfall am Stundenplan-Eintrag (Capability `schedule`, SCHED-F-410 ff.).
 
 **Kuratierte Raumliste.** Die Android-Alt-App führt eine gepflegte Liste von 19 Räumen mit je einer Größenklasse (klein, mittel, groß) und einem Kennzeichen für E-Key-Zugänglichkeit; der Terminbestand liefert nur die Belegung dazu. Nicht jeder Raum im Terminbestand eignet sich für eine Lerngruppe — Hörsäle, Labore und Räume anderer Fachbereiche sind keine sinnvollen Suchergebnisse. Pflege über die Verwaltungsoberfläche (Capability `admin`), Auslieferung über das Backend (Capability `backend-and-api`, API-F-230).
 
@@ -302,7 +302,7 @@ Keine über Capability `non-functional` hinausgehenden Anforderungen.
 ## Offene Fragen
 
 - Aktualisierungsfrequenz des serverseitigen Abrufs: 15 Minuten (Arbeitsziel, konsistent mit Capability `data-and-storage` Abschnitt 4).
-- Herkunft der Größenklassen und Gebäudeschließzeiten für die Raumliste: eingeschätzt 2026-08-26 (FSR FB4) als vermutlich noch aktuell, keine Vollprüfung vor Übernahme vorgesehen; Korrektur bei Bedarf über die Verwaltungsoberfläche (Capability `admin`).
+- Herkunft der Größenklassen und Gebäudeschließzeiten für die Raumliste: eingeschätzt 2026-08-26 als vermutlich noch aktuell, keine Vollprüfung vor Übernahme vorgesehen; Korrektur bei Bedarf über die Verwaltungsoberfläche (Capability `admin`).
 - Herkunft der Laufwege-Datenstruktur: geklärt 2026-08-26 — ein früherer Lageplan existierte, ist aber nicht mehr erreichbar; die Daten müssen von Hand erstellt und über die Laufwege-Verwaltung in Capability `admin` (ADMIN-F-090) gepflegt werden. Detailgrad: ein Nachbarschaftsgraph mit Fußweg-Minuten als Gewicht, grobe Etage-/Gebäude-Granularität.
 - Zeitfenster, nach dem eine Besetzt-Meldung verfällt: 90 Minuten (Arbeitsziel).
 - Lokalisierung über WLAN-Access-Points: eigenständiges Infrastrukturvorhaben, bei Bedarf als spätere Erweiterung zu behandeln, nicht Teil des aktuellen Umfangs.
