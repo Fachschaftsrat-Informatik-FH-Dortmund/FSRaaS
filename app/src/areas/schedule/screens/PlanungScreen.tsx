@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '@/theme';
 import { SCHEDULE_NEUTRAL } from '@/theme/tokens';
+import { ConfirmDialog } from '@/ui/ConfirmDialog';
 import { AppButton, MessageView } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/reducedMotion';
@@ -476,6 +477,9 @@ export function PlanungScreen() {
   );
 }
 
+// Requirement „Bestätigungsdialoge als Pop-up": beide Rückfragen erscheinen
+// über der Ansicht (und damit auch über dem Kopfzeilen-Bedienweg, der sie
+// ausgelöst hat). Schließen ohne Antwort gilt als Abbruch.
 function VerwerfenBestaetigung({
   onBestaetigen,
   onAbbrechen,
@@ -484,15 +488,16 @@ function VerwerfenBestaetigung({
   onAbbrechen: () => void;
 }) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   return (
-    <View style={[styles.verlassenBestaetigung, { borderColor: colors.border, backgroundColor: colors.background }]}>
-      <Text style={{ color: colors.text }}>{t('schedule.planungVerwerfenFrage')}</Text>
-      <View style={styles.verlassenAktionen}>
-        <AppButton variant="destructive" label={t('schedule.planungVerwerfenBestaetigen')} onPress={onBestaetigen} />
-        <AppButton variant="secondary" label={t('common.cancel')} onPress={onAbbrechen} />
-      </View>
-    </View>
+    <ConfirmDialog
+      visible
+      message={t('schedule.planungVerwerfenFrage')}
+      actions={[
+        { label: t('schedule.planungVerwerfenBestaetigen'), variant: 'destructive', onPress: onBestaetigen },
+        { label: t('common.cancel'), onPress: onAbbrechen },
+      ]}
+      onDismiss={onAbbrechen}
+    />
   );
 }
 
@@ -506,16 +511,17 @@ function VerlassenBestaetigung({
   onAbbrechen: () => void;
 }) {
   const { t } = useTranslation();
-  const { colors } = useTheme();
   return (
-    <View style={[styles.verlassenBestaetigung, { borderColor: colors.border, backgroundColor: colors.background }]}>
-      <Text style={{ color: colors.text }}>{t('schedule.planungVerlassenFrage')}</Text>
-      <View style={styles.verlassenAktionen}>
-        <AppButton label={t('schedule.planungVerlassenSichern')} onPress={onSichern} />
-        <AppButton variant="destructive" label={t('schedule.planungVerlassenVerwerfen')} onPress={onVerwerfen} />
-        <AppButton variant="secondary" label={t('schedule.planungVerlassenZurueck')} onPress={onAbbrechen} />
-      </View>
-    </View>
+    <ConfirmDialog
+      visible
+      message={t('schedule.planungVerlassenFrage')}
+      actions={[
+        { label: t('schedule.planungVerlassenSichern'), variant: 'primary', onPress: onSichern },
+        { label: t('schedule.planungVerlassenVerwerfen'), variant: 'destructive', onPress: onVerwerfen },
+        { label: t('schedule.planungVerlassenZurueck'), onPress: onAbbrechen },
+      ]}
+      onDismiss={onAbbrechen}
+    />
   );
 }
 
@@ -716,6 +722,4 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     gap: 6,
   },
-  verlassenBestaetigung: { position: 'absolute', left: 12, right: 12, bottom: 12, borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 },
-  verlassenAktionen: { gap: 8, flexDirection: 'row', flexWrap: 'wrap' },
 });

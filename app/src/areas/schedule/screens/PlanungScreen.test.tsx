@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { Modal, StyleSheet } from 'react-native';
 
 import { writeJson } from '@/storage/kv';
 import { ThemeProvider } from '@/theme';
@@ -671,5 +671,36 @@ describe('Bewusste Übernahme trotz Konflikt', () => {
     expect(neuerEintrag.akzeptierteKonflikte).toContain('kollidierend');
     const aktualisierungFuerBestehenden = aktualisierungen.find((a: any) => a.id === 'kollidierend');
     expect(aktualisierungFuerBestehenden.patch.akzeptierteKonflikte).toContain(neuerEintrag.id);
+  });
+});
+
+describe('Bestätigungsdialoge als Pop-up', () => {
+  function offeneDialoge() {
+    return screen.UNSAFE_queryAllByType(Modal).filter((m) => m.props.visible);
+  }
+
+  it('Rückfrage vor einer zerstörenden Aktion: das Verwerfen der Planung fragt im Pop-up', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+    fireEvent.press(screen.getByLabelText('Auswahl verwerfen'));
+
+    const [dialog] = offeneDialoge();
+    expect(offeneDialoge()).toHaveLength(1);
+    expect(within(dialog).getByText('Verwerfen')).toBeTruthy();
+  });
+
+  it('Auslösender Bedienweg während der Rückfrage: das Verlassen fragt im Pop-up, Zurück-Taste kehrt zur Bearbeitung zurück', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Dienstag'));
+    fireEvent.press(screen.getByLabelText(/10:00–11:30 Mathematik für Informatik 3 Ü/));
+    act(() => letztePreventRemove!.callback({ data: { action: { type: 'POP' } } }));
+
+    const [dialog] = offeneDialoge();
+    expect(within(dialog).getByText('Es gibt ungesicherte Änderungen. Was möchtest du tun?')).toBeTruthy();
+
+    act(() => dialog.props.onRequestClose());
+    expect(offeneDialoge()).toHaveLength(0);
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 });

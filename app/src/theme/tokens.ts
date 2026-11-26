@@ -15,6 +15,8 @@ export interface ThemeColors {
   danger: string;
   banner: string;
   onBanner: string;
+  /** Abdunklung hinter einem Pop-up (Requirement „Bestätigungsdialoge als Pop-up"). */
+  scrim: string;
 }
 
 const ACCENT = '#FF6600';
@@ -30,6 +32,7 @@ export const lightColors: ThemeColors = {
   danger: '#B3261E',
   banner: '#3A3A3C',
   onBanner: '#FFFFFF',
+  scrim: 'rgba(0,0,0,0.4)',
 };
 
 export const darkColors: ThemeColors = {
@@ -43,6 +46,7 @@ export const darkColors: ThemeColors = {
   danger: '#F2B8B5',
   banner: '#48484A',
   onBanner: '#FFFFFF',
+  scrim: 'rgba(0,0,0,0.6)',
 };
 
 export function colorsFor(scheme: Scheme): ThemeColors {
