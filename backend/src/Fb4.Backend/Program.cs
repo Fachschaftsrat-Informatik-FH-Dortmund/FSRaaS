@@ -4,6 +4,7 @@ using Fb4.Backend.Infrastructure;
 using Fb4.Backend.Infrastructure.Audit;
 using Fb4.Backend.Infrastructure.Auth;
 using Fb4.Backend.Infrastructure.Mensa;
+using Fb4.Backend.Infrastructure.Raumplan;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 
@@ -39,6 +40,17 @@ builder.Services.AddHttpClient<FsrMensaClient>(c =>
     .AddHttpMessageHandler<AntwortGueltigkeitHandler>()
     .AddStandardResilienceHandler();
 
+// Raumplan INT-009 (FBWS): Zielsystem aus der Konfiguration, nur https,
+// Standard-Resilienz wie bei der Mensa (API-N-120). Der Abruf-Job legt den
+// Bestand im eigenen Zwischenspeicher ab (Requirement „Raumtermine über
+// Platzhalter-Aufruf beziehen").
+builder.Services.AddHttpClient<FbwsRaumplanClient>(c =>
+{
+    c.BaseAddress = RaumplanQuelleOptions.BasisadresseAus(builder.Configuration);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd(RaumplanQuelleOptions.UserAgent);
+})
+    .AddStandardResilienceHandler();
+
 // PostgreSQL über EF Core (ADR 0011, backend-and-api.md Abschnitt 8).
 // Ohne Verbindungszeichenfolge bleibt der Context nicht konfiguriert — das
 // Gerüst startet trotzdem, damit /health auch ohne Datenbank antwortet.
@@ -49,11 +61,13 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<StammdatenStore>();
     builder.Services.AddScoped<AuditLog>();
     builder.Services.AddScoped<MensaQuelle>();
+    builder.Services.AddScoped<RaumplanAbruf>();
 
     // Reihenfolge zählt: der Host wartet StartAsync des DbInitializers vollständig
     // ab (Migration + Seed), bevor die periodischen Jobs ihren ersten Durchlauf beginnen.
     builder.Services.AddHostedService<DbInitializer>();
     builder.Services.AddHostedService<VerwaltungsprotokollAufraeumJob>();
+    builder.Services.AddHostedService<RaumplanAbrufJob>();
 }
 else
 {
@@ -103,6 +117,7 @@ app.MapGet("/health", (JobStatusRegistry jobs) => Results.Ok(new
 var v1 = app.MapGroup("/v1");
 v1.MapStammdatenEndpoints();
 v1.MapMensaEndpoints();
+v1.MapRaumplanEndpoints();
 v1.MapVerwaltungEndpoints();
 
 // Web-Export der Verwaltungsoberfläche (ADR 0018, Entscheidung 2026-09-02):

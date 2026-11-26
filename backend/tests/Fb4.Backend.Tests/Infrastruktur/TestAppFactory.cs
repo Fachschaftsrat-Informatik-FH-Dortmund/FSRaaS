@@ -6,6 +6,7 @@ using Fb4.Backend.Infrastructure;
 using Fb4.Backend.Infrastructure.Audit;
 using Fb4.Backend.Infrastructure.Auth;
 using Fb4.Backend.Infrastructure.Mensa;
+using Fb4.Backend.Infrastructure.Raumplan;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -82,6 +83,7 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
         // Zielsystem der Mensa-Schnittstelle kommt ausschliesslich aus der
         // Konfiguration; im Test zeigt es ins Leere und wird abgefangen.
         builder.UseSetting(MensaQuelleOptions.BasisadresseSchluessel, "https://mensa.test.invalid/");
+        builder.UseSetting(RaumplanQuelleOptions.BasisadresseSchluessel, "https://fbws.test.invalid/rest/");
 
         builder.ConfigureTestServices(services =>
         {
@@ -93,6 +95,7 @@ public sealed class TestAppFactory : WebApplicationFactory<Program>
             services.AddScoped<StammdatenStore>();
             services.AddScoped<AuditLog>();
             services.AddScoped<MensaQuelle>();
+            services.AddScoped<RaumplanAbruf>();
 
             // Die Mensa-Schnittstelle wird durch den Stub ersetzt. Resilienz aus:
             // Wiederholungsversuche wuerden die Abrufzaehlung verfaelschen, an der
