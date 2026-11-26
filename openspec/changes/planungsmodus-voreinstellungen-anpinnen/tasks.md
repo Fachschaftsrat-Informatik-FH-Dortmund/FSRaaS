@@ -17,14 +17,14 @@
 
 ## 4. Oberfläche
 
-- [ ] 4.1 Werkzeugzeile im Planungsmodus: Voreinstellung, „Vorschlag erzeugen", „Nach Gruppe einteilen"; Vorschlag ersetzt den Zwischenstand der betroffenen Reihen, Kennzeichnung „vom Vorschlag", Konflikthinweis über `ConfirmDialog`
-- [ ] 4.2 Pin-Schalter an gewählten Zeilen, gesammelt bis zum Sichern
-- [ ] 4.3 `PlanungEinstellungenScreen` samt Route `planung-einstellungen`
-- [ ] 4.4 Texte de/en
-- [ ] 4.5 Bildschirmtests in `PlanungScreen.test.tsx` und `PlanungEinstellungenScreen.test.tsx`
+- [x] 4.1 Werkzeugzeile im Planungsmodus: Voreinstellung, „Vorschlag erzeugen", „Nach Gruppe einteilen"; Vorschlag ersetzt den Zwischenstand der betroffenen Reihen, Kennzeichnung „vom Vorschlag", Konflikthinweis über `ConfirmDialog`
+- [x] 4.2 Pin-Schalter an gewählten Zeilen, gesammelt bis zum Sichern
+- [x] 4.3 `PlanungEinstellungenScreen` samt Route `planung-einstellungen`
+- [x] 4.4 Texte de/en
+- [x] 4.5 Bildschirmtests in `PlanungScreen.test.tsx` und `PlanungEinstellungenScreen.test.tsx`
 
 ## 5. Prüfung und Abschluss
 
-- [ ] 5.1 `npx jest src/areas/schedule`, `npx tsc --noEmit`, `npm run lint`, spec-check, i18n-Parität grün
+- [x] 5.1 `npx jest src/areas/schedule`, `npx tsc --noEmit`, `npm run lint`, spec-check, i18n-Parität grün
 - [ ] 5.2 Hinweis des Vorschlags auf die „Pflicht"-Markierung (Requirement „Automatischer Planungsvorschlag", Szenario „Keine konfliktfreie Konstellation"). Hängt an der noch nicht umgesetzten Pflicht-Markierung und bleibt offen, bis sie kommt.
 - [ ] 5.3 Geräteabnahme Android: Werkzeugzeile passt, Vorschlag und Rücknahme wirken, Pin übersteht Sichern und erneuten Aufruf. Prüfprotokoll unter `specs/pruefprotokolle/`

@@ -19,6 +19,8 @@ import { gruppenzugehoerig } from '../groupMatch';
 import { pruefeKandidatGegenZwischenstand } from '../konflikt';
 import { baueModulliste, type Modul } from '../kursbaum';
 import { registriereePlanungAktion } from '../planungAktion';
+import { parameterAus, rangfolgeAus, usePlanungsEinstellungen } from '../planungseinstellungen';
+import { einteilungNachGruppe, erzeugeVorschlag, type ReihenErgebnis } from '../planungsvorschlag';
 import {
   ermittlePlanungsstand,
   planEintraegeFuerModul,
@@ -115,6 +117,9 @@ export function PlanungScreen() {
   const { entries, loaded: planGeladen, mehrereUebernehmen } = useScheduleEntries();
   const { studiengaenge } = useStudiengaenge();
   const { einstellungen: ansichtEinstellungen, toggleHervorhebung } = useAnsichtEinstellungen();
+  // Die Planungseinstellungen gehen erst beim Auslösen des Vorschlags ein;
+  // bis sie geladen sind, gelten ihre Vorgaben — kein eigener Ladezustand.
+  const { einstellungen: planungsEinstellungen } = usePlanungsEinstellungen();
 
   const gewaehlteEndpunkte = useMemo(
     () =>
@@ -152,6 +157,15 @@ export function PlanungScreen() {
   // `akzeptierteKonflikte`-Nennungen für bereits gespeicherte Einträge,
   // gesammelt bis zum Sichern (design.md, Entscheidung 6 — nichts wirkt vorher).
   const [gespeicherteAktualisierungen, setGespeicherteAktualisierungen] = useState<Record<string, string[]>>({});
+  // Requirement „Anpinnen eines Termins": geänderte Pins bereits gespeicherter
+  // Einträge, gesammelt bis zum Sichern wie die Konfliktannahmen (Change
+  // `planungsmodus-voreinstellungen-anpinnen`, design.md Entscheidung 6).
+  const [anpinnAenderungen, setAnpinnAenderungen] = useState<Record<string, boolean>>({});
+  // Requirement „Automatischer Planungsvorschlag", Szenario „Nicht angepinnter
+  // Termin wird umgelegt": vom Vorschlag gesetzte Termine (`terminSchluessel`),
+  // ausgewiesen bis zum Verlassen oder Verwerfen.
+  const [vorschlagMarken, setVorschlagMarken] = useState<ReadonlySet<string>>(new Set());
+  const [vorschlagHinweis, setVorschlagHinweis] = useState<string | null>(null);
   const [aktiverWochentag, setAktiverWochentag] = useState<Weekday>('Mon');
   const [hervorgehoben, setHervorgehoben] = useState<string | null>(null);
   const [gesichert, setGesichert] = useState(false);
@@ -182,8 +196,11 @@ export function PlanungScreen() {
   }, [allesGeladen, relevanteModule, gespeicherterPlanRelevant, ansichtEinstellungen.farbautomatik]);
 
   const gespeichertSichtbar = useMemo(
-    () => gespeicherterPlanRelevant.filter((e) => !entfernteIds.has(e.id)),
-    [gespeicherterPlanRelevant, entfernteIds],
+    () =>
+      gespeicherterPlanRelevant
+        .filter((e) => !entfernteIds.has(e.id))
+        .map((e) => (e.id in anpinnAenderungen ? { ...e, angepinnt: anpinnAenderungen[e.id] } : e)),
+    [gespeicherterPlanRelevant, entfernteIds, anpinnAenderungen],
   );
   const zwischenstand = useMemo(
     () => [...gespeichertSichtbar, ...sessionEntscheidungen],
@@ -194,27 +211,43 @@ export function PlanungScreen() {
     [relevanteModule, zwischenstand],
   );
 
-  const hatUngesicherteAenderungen = sessionEntscheidungen.length > 0 || entfernteIds.size > 0;
+  const hatUngesicherteAenderungen =
+    sessionEntscheidungen.length > 0 || entfernteIds.size > 0 || Object.keys(anpinnAenderungen).length > 0;
 
   const verwerfeZwischenstand = useCallback(() => {
     setSessionEntscheidungen([]);
     setEntfernteIds(new Set());
     setGespeicherteAktualisierungen({});
+    setAnpinnAenderungen({});
+    setVorschlagMarken(new Set());
   }, []);
 
   const sichern = useCallback(() => {
-    const aktualisierungen = Object.entries(gespeicherteAktualisierungen).map(([id, zusaetzlich]) => ({
-      id,
-      patch: {
+    const patches = new Map<string, Partial<PlanEntry>>();
+    for (const [id, zusaetzlich] of Object.entries(gespeicherteAktualisierungen)) {
+      patches.set(id, {
         akzeptierteKonflikte: [
           ...new Set([...(gespeichertSichtbar.find((e) => e.id === id)?.akzeptierteKonflikte ?? []), ...zusaetzlich]),
         ],
-      },
-    }));
+      });
+    }
+    for (const [id, angepinnt] of Object.entries(anpinnAenderungen)) {
+      if (entfernteIds.has(id)) continue;
+      patches.set(id, { ...patches.get(id), angepinnt });
+    }
+    const aktualisierungen = [...patches].map(([id, patch]) => ({ id, patch }));
     mehrereUebernehmen(sessionEntscheidungen, [...entfernteIds], aktualisierungen);
     verwerfeZwischenstand();
     setGesichert(true);
-  }, [sessionEntscheidungen, entfernteIds, gespeicherteAktualisierungen, gespeichertSichtbar, mehrereUebernehmen, verwerfeZwischenstand]);
+  }, [
+    sessionEntscheidungen,
+    entfernteIds,
+    gespeicherteAktualisierungen,
+    anpinnAenderungen,
+    gespeichertSichtbar,
+    mehrereUebernehmen,
+    verwerfeZwischenstand,
+  ]);
 
   // Requirement „Ausdrückliches Sichern der Planung": Sichern muss den
   // Zustandslauf abschließen, bevor navigiert wird — sonst fängt die
@@ -331,6 +364,105 @@ export function PlanungScreen() {
     setSessionEntscheidungen((bisher) => [...bisher, neu]);
   }
 
+  // Requirement „Anpinnen eines Termins": schaltet den Pin des gewählten
+  // Eintrags zu diesem Termin um. Ein Sitzungseintrag trägt ihn sofort, ein
+  // gespeicherter erst mit dem Sichern.
+  function pinUmschalten(slot: OfficialTermin) {
+    const sessionTreffer = sessionEntscheidungen.find((e) => terminEntsprichtEintrag(slot, e));
+    if (sessionTreffer) {
+      setSessionEntscheidungen((bisher) =>
+        bisher.map((e) => (e.id === sessionTreffer.id ? { ...e, angepinnt: e.angepinnt !== true } : e)),
+      );
+      return;
+    }
+    const gespeicherterTreffer = gespeichertSichtbar.find((e) => terminEntsprichtEintrag(slot, e));
+    if (!gespeicherterTreffer) return;
+    const urspruenglich = gespeicherterPlanRelevant.find((e) => e.id === gespeicherterTreffer.id)?.angepinnt === true;
+    const neu = gespeicherterTreffer.angepinnt !== true;
+    setAnpinnAenderungen((bisher) => {
+      const naechste = { ...bisher };
+      if (neu === urspruenglich) delete naechste[gespeicherterTreffer.id];
+      else naechste[gespeicherterTreffer.id] = neu;
+      return naechste;
+    });
+  }
+
+  /**
+   * Requirements „Automatischer Planungsvorschlag" und „Rücknahme einer
+   * übernommenen Optimierung" (design.md, Entscheidung 4): überträgt das
+   * Ergebnis in den Zwischenstand. Termine, die bleiben, behalten ihren
+   * Eintrag samt Kennung, Farbe und Pin; nichts wirkt vor dem Sichern.
+   */
+  function wendeErgebnisAn(ergebnisse: readonly ReihenErgebnis[], markieren: boolean): number {
+    let session = [...sessionEntscheidungen];
+    const entfernt = new Set(entfernteIds);
+    const marken = new Set(markieren ? vorschlagMarken : []);
+    let geaendert = 0;
+    for (const r of ergebnisse) {
+      if (!r.geaendert) continue;
+      geaendert++;
+      const nachherSchluessel = new Set(r.nachher.map(terminSchluessel));
+      for (const t of r.vorher) {
+        if (nachherSchluessel.has(terminSchluessel(t))) continue;
+        for (const e of gespeicherterPlanRelevant) if (terminEntsprichtEintrag(t, e)) entfernt.add(e.id);
+        session = session.filter((e) => !terminEntsprichtEintrag(t, e));
+        marken.delete(terminSchluessel(t));
+      }
+      for (const t of r.nachher) {
+        const gespeichert = gespeicherterPlanRelevant.find((e) => terminEntsprichtEintrag(t, e));
+        if (gespeichert) {
+          entfernt.delete(gespeichert.id);
+        } else if (!session.some((e) => terminEntsprichtEintrag(t, e))) {
+          session.push(baueSessionEintrag(t));
+        }
+        if (markieren && !r.vorher.some((v) => terminSchluessel(v) === terminSchluessel(t))) {
+          marken.add(terminSchluessel(t));
+        }
+      }
+    }
+    setSessionEntscheidungen(session);
+    setEntfernteIds(entfernt);
+    setVorschlagMarken(marken);
+    return geaendert;
+  }
+
+  function planungsEingabe() {
+    const relevanteIds = new Set(gespeicherterPlanRelevant.map((e) => e.id));
+    return {
+      module: relevanteModule,
+      zwischenstand,
+      umgebung: entries.filter((e) => !relevanteIds.has(e.id)),
+      gruppenkennung: einrichtung.gruppenkennung ?? '',
+      jetztSek,
+    };
+  }
+
+  function vorschlagErzeugen() {
+    const ergebnisse = erzeugeVorschlag({
+      ...planungsEingabe(),
+      rangfolge: rangfolgeAus(planungsEinstellungen),
+      parameter: parameterAus(planungsEinstellungen),
+    });
+    const geaendert = wendeErgebnisAn(ergebnisse, true);
+    // Szenario „Keine konfliktfreie Konstellation": die beteiligten
+    // Veranstaltungen benennen. Der Hinweis auf die „Pflicht"-Markierung
+    // folgt mit dieser (tasks.md, 5.2).
+    const konflikte = ergebnisse.filter((r) => r.konfliktMit.length > 0);
+    if (konflikte.length > 0) {
+      const liste = konflikte
+        .map((r) => `${r.reihe.modulName} ${r.reihe.art} ↔ ${r.konfliktMit.join(', ')}`)
+        .join('\n');
+      setVorschlagHinweis(t('schedule.planungVorschlagKonflikt', { liste }));
+    } else if (geaendert === 0) {
+      setVorschlagHinweis(t('schedule.planungVorschlagUnveraendert'));
+    }
+  }
+
+  function nachGruppeEinteilen() {
+    const geaendert = wendeErgebnisAn(einteilungNachGruppe(planungsEingabe()), false);
+    if (geaendert === 0) setVorschlagHinweis(t('schedule.planungNachGruppeUnveraendert'));
+  }
+
   // Requirement „Leiste der ausstehenden Veranstaltungen": Sprung mit
   // kurzzeitiger Hervorhebung und Scrollen ins Sichtfeld (design.md,
   // Entscheidung 10).
@@ -429,6 +561,13 @@ export function PlanungScreen() {
 
       <HervorhebungsSchalter einstellungen={ansichtEinstellungen} onUmschalten={toggleHervorhebung} />
 
+      <Werkzeugzeile
+        voreinstellung={t(`schedule.planungVoreinstellung.${planungsEinstellungen.voreinstellung}`)}
+        onEinstellungen={() => router.push('/planung-einstellungen')}
+        onVorschlag={vorschlagErzeugen}
+        onNachGruppe={nachGruppeEinteilen}
+      />
+
       <ScrollView ref={scrollRef} contentContainerStyle={styles.liste}>
         {zeilenDesTages.length === 0 ? (
           <MessageView symbol="—" title={t('schedule.planungTagLeerTitel')} style={styles.tagLeer} />
@@ -439,6 +578,9 @@ export function PlanungScreen() {
               modul={modul}
               termin={termin}
               gewaehlt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e))}
+              angepinnt={zwischenstand.some((e) => terminEntsprichtEintrag(termin, e) && e.angepinnt === true)}
+              vomVorschlag={vorschlagMarken.has(terminSchluessel(termin))}
+              onPinUmschalten={() => pinUmschalten(termin)}
               stand={planungsstand.find((s) => s.modulKey === modul.key && s.art === termin.courseType)}
               gruppenkennung={gruppenkennung}
               eigeneGruppe={gruppenzugehoerig(gruppenkennung, termin.studentSet)}
@@ -474,6 +616,15 @@ export function PlanungScreen() {
             setVerwerfenBestaetigen(false);
           }}
           onAbbrechen={() => setVerwerfenBestaetigen(false)}
+        />
+      ) : null}
+
+      {vorschlagHinweis !== null ? (
+        <ConfirmDialog
+          visible
+          message={vorschlagHinweis}
+          actions={[{ label: t('schedule.planungHinweisVerstanden'), variant: 'primary', onPress: () => setVorschlagHinweis(null) }]}
+          onDismiss={() => setVorschlagHinweis(null)}
         />
       ) : null}
 
@@ -593,6 +744,52 @@ function HervorhebungsSchalter({
   );
 }
 
+/**
+ * Change `planungsmodus-voreinstellungen-anpinnen`, design.md Entscheidung 7:
+ * Werkzeugzeile mit der gewählten Voreinstellung (führt zu den
+ * Planungseinstellungen), dem Vorschlag und der Rücknahme als sichtbarem
+ * Bedienweg (Requirement „Rücknahme einer übernommenen Optimierung").
+ */
+function Werkzeugzeile({
+  voreinstellung,
+  onEinstellungen,
+  onVorschlag,
+  onNachGruppe,
+}: {
+  voreinstellung: string;
+  onEinstellungen: () => void;
+  onVorschlag: () => void;
+  onNachGruppe: () => void;
+}) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const knopf = (symbol: 'options-outline' | 'sparkles-outline' | 'people-outline', label: string, a11y: string, onPress: () => void) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      onPress={onPress}
+      style={[styles.werkzeug, { borderColor: colors.border }]}
+    >
+      <Ionicons name={symbol} size={16} color={colors.accent} />
+      <Text numberOfLines={1} style={{ color: colors.text, fontSize: 13, flexShrink: 1 }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+  return (
+    <View style={styles.werkzeugZeile}>
+      {knopf(
+        'options-outline',
+        voreinstellung,
+        t('schedule.planungEinstellungenOeffnen', { voreinstellung }),
+        onEinstellungen,
+      )}
+      {knopf('sparkles-outline', t('schedule.planungVorschlag'), t('schedule.planungVorschlag'), onVorschlag)}
+      {knopf('people-outline', t('schedule.planungNachGruppe'), t('schedule.planungNachGruppe'), onNachGruppe)}
+    </View>
+  );
+}
+
 const STAND_SYMBOL = {
   eingeplant: 'checkmark-circle',
   mehrfach: 'checkmark-done-circle',
@@ -620,6 +817,9 @@ function TerminZeile({
   modul,
   termin,
   gewaehlt,
+  angepinnt,
+  vomVorschlag,
+  onPinUmschalten,
   stand,
   gruppenkennung,
   eigeneGruppe,
@@ -632,6 +832,9 @@ function TerminZeile({
   modul: Modul;
   termin: OfficialTermin;
   gewaehlt: boolean;
+  angepinnt: boolean;
+  vomVorschlag: boolean;
+  onPinUmschalten: () => void;
   stand: VeranstaltungsartStand | undefined;
   gruppenkennung: string;
   eigeneGruppe: boolean;
@@ -736,9 +939,30 @@ function TerminZeile({
                 {`· ⚠ ${t('schedule.planungZeileKonflikt')}`}
               </Text>
             ) : null}
+            {/* Requirement „Automatischer Planungsvorschlag": umgelegte und neu
+             * gesetzte Termine weist das System aus. */}
+            {gewaehlt && vomVorschlag ? (
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{`· ${t('schedule.planungVomVorschlag')}`}</Text>
+            ) : null}
           </View>
         </View>
       </Pressable>
+      {/* Requirement „Anpinnen eines Termins": nur an gewählten Zeilen; die
+       * Fläche ist immer reserviert, damit die Zeile beim Wählen nicht
+       * verrutscht (Issue #123). */}
+      <View style={styles.pinFlaeche}>
+        {gewaehlt ? (
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: angepinnt }}
+            accessibilityLabel={t('schedule.planungAnpinnen')}
+            onPress={onPinUmschalten}
+            style={styles.pin}
+          >
+            <Ionicons name={angepinnt ? 'pin' : 'pin-outline'} size={20} color={angepinnt ? colors.accent : colors.textMuted} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -842,6 +1066,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 10,
   },
+  werkzeugZeile: { flexDirection: 'row', gap: 6, paddingBottom: 6 },
+  werkzeug: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+  },
+  pinFlaeche: { width: 44, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  pin: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   zeileInhalt: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8 },
   zeileText: { flex: 1, gap: 2 },
   // Requirement „Leiste der ausstehenden Veranstaltungen": feste Höhe,

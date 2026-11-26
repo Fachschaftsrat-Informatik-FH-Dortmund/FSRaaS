@@ -82,6 +82,7 @@ export default function ScheduleLayout() {
         name="planung"
         options={{ title: t('schedule.planungTitel'), headerRight: () => <PlanungSpeichernZugang /> }}
       />
+      <Stack.Screen name="planung-einstellungen" options={{ title: t('schedule.planungEinstellungenTitel') }} />
       <Stack.Screen name="detail" options={{ title: t('schedule.detailTitel') }} />
       <Stack.Screen name="termin" options={{ title: t('schedule.terminTitel') }} />
     </Stack>
