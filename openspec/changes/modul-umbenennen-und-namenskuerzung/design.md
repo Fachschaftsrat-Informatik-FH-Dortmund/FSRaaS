@@ -78,13 +78,13 @@ mit Terminen in zwei Fachsemestern soll ohnehin einen Namen tragen.
 **3. Kürzung: Zerlegen als reine Funktion, Kürzen durch das Textlayout.**
 `teileEndzahl(name)` in `app/src/areas/schedule/namenskuerzung.ts` liefert
 `{ stamm, endzahl }`. Als Endzahl gilt eine Ziffernfolge am Ende des Namens,
-der mindestens ein anderes Zeichen als Ziffer oder Leerraum vorausgeht
-(„Mathematik für Informatiker 1" → „Mathematik für Informatiker" + „1";
-„Mathe2" → „Mathe" + „2"). Kein Treffer bei einer Zahl in der Mitte
+auch mit Punkten gegliedert, der mindestens ein Zeichen vorausgeht, das weder
+Ziffer, Punkt noch Leerraum ist („Mathematik für Informatiker 1" →
+„Mathematik für Informatiker" + „1"; „Mathe2" → „Mathe" + „2"; „Web 2.0" →
+„Web" + „2.0"). Kein Treffer bei einer Zahl in der Mitte
 („Web 2.0 Technologien"), bei einem reinen Zahlnamen und bei römischen Ziffern
 — die Anforderung spricht von einer Zahl, im FBWS-Bestand tragen verwandte
-Veranstaltungen arabische Ziffern (vgl. `namensstamm` in `kursbaum.ts`, gleiche
-Regel).
+Veranstaltungen arabische Ziffern (vgl. `namensstamm` in `kursbaum.ts`).
 
 Die Kachel stellt einen Namen mit Endzahl als waagerechte Zeile aus zwei
 `Text`-Elementen dar: der Stamm mit `flexShrink: 1`, `numberOfLines={2}` und

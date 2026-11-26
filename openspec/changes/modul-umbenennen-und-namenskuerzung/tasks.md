@@ -1,7 +1,7 @@
 ## 1. Logikschicht
 
-- [ ] 1.1 `app/src/areas/schedule/namenskuerzung.ts` mit `teileEndzahl(name)` anlegen (design.md, Entscheidung 3). Verifikation: `namenskuerzung.test.ts` mit `describe('Kürzung langer Veranstaltungsnamen unter Erhalt einer Endzahl', …)` deckt Name mit Endzahl, ohne Endzahl, Zahl in der Mitte, reinen Zahlnamen und Endzahl ohne Leerzeichen ab und läuft grün.
-- [ ] 1.2 `app/src/areas/schedule/modulnamen.ts` anlegen: reaktiver Speicher `scheduleModuleNames` mit `useModulnamen()` (`setzen`, `entfernen`), `modulSchluesselVon(entry)` und `kachelTitel(entry, namen)`; ungültige gespeicherte Einträge einzeln verwerfen (design.md, Entscheidungen 1, 2 und 4). Verifikation: `modulnamen.test.ts` mit `describe('Eigener Name je Modul', …)` belegt Setzen, Entfernen, Geltung für alle Veranstaltungsarten eines Moduls, Geltung für einen später hinzukommenden Termin, keine Geltung für eigene Termine und das einzelne Verwerfen defekter Einträge; läuft grün.
+- [x] 1.1 `app/src/areas/schedule/namenskuerzung.ts` mit `teileEndzahl(name)` anlegen (design.md, Entscheidung 3). Verifikation: `namenskuerzung.test.ts` mit `describe('Kürzung langer Veranstaltungsnamen unter Erhalt einer Endzahl', …)` deckt Name mit Endzahl, ohne Endzahl, Zahl in der Mitte, reinen Zahlnamen und Endzahl ohne Leerzeichen ab und läuft grün.
+- [x] 1.2 `app/src/areas/schedule/modulnamen.ts` anlegen: reaktiver Speicher `scheduleModuleNames` mit `useModulnamen()` (`setzen`, `entfernen`), `modulSchluesselVon(entry)` und `kachelTitel(entry, namen)`; ungültige gespeicherte Einträge einzeln verwerfen (design.md, Entscheidungen 1, 2 und 4). Verifikation: `modulnamen.test.ts` mit `describe('Eigener Name je Modul', …)` belegt Setzen, Entfernen, Geltung für alle Veranstaltungsarten eines Moduls, Geltung für einen später hinzukommenden Termin, keine Geltung für eigene Termine und das einzelne Verwerfen defekter Einträge; läuft grün.
 
 ## 2. Wochenansicht
 
